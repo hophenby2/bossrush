@@ -1,5 +1,30 @@
 # 六作原作自机校准
 
+## 26.11.19-player-fidelity：本次反馈的修复范围
+
+此前的发弹数量和 Bomb 检查没有覆盖以下行为，不能据此认定整体对齐。本次针对反馈修正：
+
+| 作品 | 确认的缺口与修复 |
+|---|---|
+| 祈华梦 | 移除宿主对子机相对阵型 `sp` 的逐帧覆盖，保留原作 0.5 跟随系数；彩色道具恢复 26 帧飞出、4 帧停顿、逐步加速吸附、原作大小与拾取半径、3 帧动画；掉落数量不再合并，恢复原作散布；小夜点也使用原图与原控制器。 |
+| 雪莲华 | 动画第一关键帧前保留 Sprite，切换动画控制器时重新计时；执行原 `Lan_ins_jiance` 生成锁定球，补齐三角函数、延迟任务、子对象淡出和 Unity 销毁对象的空值比较。已销毁组件的托管字段保留可访问，避免把球的 `dam` 引用直接抹成 nil。 |
+| 永夜篇 | `39_selfbarrage1..5.png` 原来实际为 DX10 DDS。导出器现在真正解码成 PNG，包含同入口的 `spscore` 和 `bosslist`；全部 RGBA 像素与原 XNA 解码结果对照。 |
+| 夏夜祭 | Boss 换图后重设引擎实际 `a/b`，避免只设置 `A/B` 而遗留图集的 2 像素半径；体术使用原 `BaseObject.HitCheck` 与出生 9 帧保护。 |
+
+祈华梦本体按原图复核：灵梦切片 140×120，紫切片 138×138，本体 0.8 与全局 0.5 相乘后分别为 56×48、55.2×55.2。原图逐字节核对，实际渲染出口另检查 0.4 缩放。道具大小分别为红/蓝 2.25、绿 1.75、夜点 0.5，再应用全局 0.5。
+
+对应验证入口（每例使用 `/tmp` 独立存档）：
+
+```sh
+python3 tools/native-player-tests/native_logic.py --variant fidelity --levels 39 --frames 280 --out /tmp/fidelity-theis
+python3 tools/native-player-tests/native_logic.py --variant fidelity --levels 36 --card 38001 --frames 350 --out /tmp/fidelity-unity
+python3 tools/native-player-tests/native_logic.py --variant fidelity --levels 37 --card 39001 --frames 280 --out /tmp/fidelity-night
+python3 tools/native-player-tests/native_logic.py --variant fidelity --levels 38 --card 68001 --frames 180 --out /tmp/fidelity-summer
+python3 tools/native-player-tests/check_reported_assets.py --night-content <永夜原作Content> --theis-source <祈华梦code/data>
+```
+
+专项检查移动中的子机相对位置/跟随、原作道具控制器逐字段结果、真实拾取边界、多次切换后的球和追踪、每次绘制均存在自机、灵梦主炮的实际绘制，以及复制实际 Boss 判定参数后的引擎内外边界碰撞。另检查实际截图中永夜主炮与副武器可见。这些证据仅覆盖上述反馈，不代表六作其余内容逐帧等价。
+
 顺序模式、关卡练习和符卡练习共享原生自机。录像初态保存机体和版本号，早期录像根据原有的项目机体播放。符卡练习沿用项目的无敌规则。
 
 - 春雪篇 4 台：原始 `EquipShoot`、`Equipment`、`SelfBarrage`、`SingleBomb` 与 `SpecialSystem`；原子机轨迹、射击节拍、火力、Bomb、樱花开花／破裂与收集范围。

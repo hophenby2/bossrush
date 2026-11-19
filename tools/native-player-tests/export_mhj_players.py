@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """导出两作幕华祭的原始装备/自机弹/Bomb 逻辑，以及永夜篇武器数据。"""
 import argparse,hashlib,importlib.util,json,subprocess,sys,tempfile
+from io import BytesIO
+from PIL import Image
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]
 ap=argparse.ArgumentParser(description=__doc__)
@@ -48,11 +50,12 @@ for name in ('reimu','marisa','sanae','mokou'):
 (dest/'night_data.lua').write_text('-- 原作 Data/10.xna 的移动、Bomb 与 A/B 武器数值。\nreturn '+export.lua(data)+'\n')
 for i in range(1,6):
     src=args.night_content/'Graphics/List'/('selfbarrage'+str(i)+'.xna');hashes[str(src)]=hashlib.sha256(src.read_bytes()).hexdigest()
-    (ROOT/'Resources/native_players/source'/('39_selfbarrage'+str(i)+'.png')).write_bytes(art.read(src,0))
+    # 原 XNA 解密后可能是 DX10 DDS；扩展名改成 png 并不构成格式转换。
+    Image.open(BytesIO(art.read(src,0))).convert('RGBA').save(ROOT/'Resources/native_players/source'/('39_selfbarrage'+str(i)+'.png'))
 src=args.night_content/'Data/7.xna';hashes[str(src)]=hashlib.sha256(src.read_bytes()).hexdigest()
 raw=art.read(src,1);settings=[list(map(int,line.split(','))) for line in raw.decode('utf-16' if raw.startswith((b'\xff\xfe',b'\xfe\xff')) else 'utf-8-sig').splitlines()]
 (dest/'night_settings.lua').write_text('-- 原作 Data/7.xna 的灯笼等级、能量与涨槽规则。\nreturn '+export.lua(settings)+'\n')
 for name in ('spscore','bosslist'):
     src=args.night_content/'Graphics/List'/(name+'.xna');hashes[str(src)]=hashlib.sha256(src.read_bytes()).hexdigest()
-    (ROOT/'Resources/native_players/source'/('39_'+name+'.png')).write_bytes(art.read(src,0))
+    Image.open(BytesIO(art.read(src,0))).convert('RGBA').save(ROOT/'Resources/native_players/source'/('39_'+name+'.png'))
 (dest/'sources.json').write_text(json.dumps(hashes,ensure_ascii=False,indent=2)+'\n')

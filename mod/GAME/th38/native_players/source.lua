@@ -15,8 +15,8 @@ if (not self.youdao) then
 do return  end
 end
 local num=CS.f(100000)
-if (Sincos.zhuqiang_aim == nil) then
-if (Sincos.enemy ~= nil) then
+if CS.isNull(Sincos.zhuqiang_aim) then
+if not CS.isNull(Sincos.enemy) then
 for _,item in CS.each(Sincos.enemy) do
 local __break1,__continue1=false,false
 repeat
@@ -29,7 +29,7 @@ until true
 if __break1 then break end
 end
 end
-if (Sincos.boss ~= nil) then
+if not CS.isNull(Sincos.boss) then
 for _,item2 in CS.each(Sincos.boss) do
 local __break2,__continue2=false,false
 repeat
@@ -45,7 +45,7 @@ end
 else
 self.obj=Sincos.zhuqiang_aim
 end
-if ((self.obj ~= nil) and (((((self.obj.position.x < CS.f(0)) or (self.obj.position.x > CS.f(9))) or (self.obj.position.y > (-CS.f(0)))) or (self.obj.position.y < (-CS.f(10)))))) then
+if (not CS.isNull(self.obj) and (((((self.obj.position.x < CS.f(0)) or (self.obj.position.x > CS.f(9))) or (self.obj.position.y > (-CS.f(0)))) or (self.obj.position.y < (-CS.f(10)))))) then
 self.obj=nil
 end
 end
@@ -64,7 +64,7 @@ end
 self.yidongx=CS.f((self.speed * CS.invoke(Sincos,"Dcos",self.sudufangxiang)))
 self.yidongy=CS.f((self.speed * CS.invoke(Sincos,"Dsin",self.sudufangxiang)))
 self.transform.position=CS.copy((self.transform.position + CS.new("Vector3",self.yidongx,self.yidongy,CS.f(0))))
-if (self.youdao and (self.obj ~= nil)) then
+if (self.youdao and not CS.isNull(self.obj)) then
 local num=CS.invoke(Sincos,"Distance",self.transform,self.obj)
 if (num > CS.f(1)) then
 num=CS.f(CS.f(1))
@@ -76,10 +76,10 @@ local num3=CS.invoke(Mathf,"Sin",f)
 self.transform.position=CS.copy((self.transform.position + CS.new("Vector3",(num2 * num),(num3 * num),CS.f(0))))
 end
 if (self.time == self.baozha) then
-if (self.a ~= nil) then
+if not CS.isNull(self.a) then
 CS.invoke(Object,"Instantiate",self.a,self.transform.position,self.transform.rotation)
 end
-if (self.au ~= nil) then
+if not CS.isNull(self.au) then
 CS.invoke(self.au,"Play")
 end
 end
@@ -240,8 +240,8 @@ function Bulletmove_ziji_youdao:Start()
 
 self.speedmax=CS.f(CS.f(0.5))
 self.dis=CS.f(CS.f(100000))
-if (Sincos.zhuqiang_aim == nil) then
-if (Sincos.enemy ~= nil) then
+if CS.isNull(Sincos.zhuqiang_aim) then
+if not CS.isNull(Sincos.enemy) then
 for _,item in CS.each(Sincos.enemy) do
 local __break1,__continue1=false,false
 repeat
@@ -254,7 +254,7 @@ until true
 if __break1 then break end
 end
 end
-if (Sincos.boss ~= nil) then
+if not CS.isNull(Sincos.boss) then
 for _,item2 in CS.each(Sincos.boss) do
 local __break2,__continue2=false,false
 repeat
@@ -270,13 +270,13 @@ end
 else
 self.obj=Sincos.zhuqiang_aim
 end
-if ((self.obj ~= nil) and (((((self.obj.position.x < CS.f(0)) or (self.obj.position.x > CS.f(9))) or (self.obj.position.y > (-CS.f(0)))) or (self.obj.position.y < (-CS.f(10)))))) then
+if (not CS.isNull(self.obj) and (((((self.obj.position.x < CS.f(0)) or (self.obj.position.x > CS.f(9))) or (self.obj.position.y > (-CS.f(0)))) or (self.obj.position.y < (-CS.f(10)))))) then
 self.obj=nil
 end
 end
 function Bulletmove_ziji_youdao:FixedUpdate()
 
-if (self.obj ~= nil) then
+if not CS.isNull(self.obj) then
 if ((((self.obj.position.x < CS.f(0)) or (self.obj.position.x > CS.f(9))) or (self.obj.position.y > (-CS.f(0)))) or (self.obj.position.y < (-CS.f(10)))) then
 self.obj=nil
 else
@@ -295,7 +295,7 @@ end
 else
 if (self.lk > 0) then
 self.lk=self.lk-1
-if (Sincos.enemy ~= nil) then
+if not CS.isNull(Sincos.enemy) then
 self.dis=CS.f(CS.f(100000))
 for _,item in CS.each(Sincos.enemy) do
 local __break3,__continue3=false,false
@@ -309,7 +309,7 @@ until true
 if __break3 then break end
 end
 end
-if (Sincos.boss ~= nil) then
+if not CS.isNull(Sincos.boss) then
 self.dis=CS.f(CS.f(100000))
 for _,item2 in CS.each(Sincos.boss) do
 local __break4,__continue4=false,false
@@ -323,7 +323,7 @@ until true
 if __break4 then break end
 end
 end
-if ((self.obj ~= nil) and (((((self.obj.position.x < CS.f(0.5)) or (self.obj.position.x > CS.f(8.5))) or (self.obj.position.y > (-CS.f(0.5)))) or (self.obj.position.y < (-CS.f(9.5)))))) then
+if (not CS.isNull(self.obj) and (((((self.obj.position.x < CS.f(0.5)) or (self.obj.position.x > CS.f(8.5))) or (self.obj.position.y > (-CS.f(0.5)))) or (self.obj.position.y < (-CS.f(9.5)))))) then
 self.obj=nil
 end
 end
@@ -401,6 +401,18 @@ end
 function Center_ziji_zhixiang.defaults(self)
 self.zhixiang_max=0
 self.zhixiang_changespeed=0
+end
+-- Centerxuanzhuan.cs SHA256 49d8d6752447eca115460e5525338c1b2dfcecb9bc2c433854cb2e35acfb5517
+Centerxuanzhuan={__get={},__set={}}
+Centerxuanzhuan.__index=function(o,k) local getter=Centerxuanzhuan.__get[k];if getter then return getter(o) end;return Centerxuanzhuan[k] end
+Centerxuanzhuan.__newindex=function(o,k,v) local setter=Centerxuanzhuan.__set[k];if setter then setter(o,v) else rawset(o,k,v) end end
+Centerxuanzhuan.__base="MonoBehaviour"
+function Centerxuanzhuan:FixedUpdate()
+
+CS.invoke(self.transform,"Rotate",CS.new("Vector3",CS.f(0),CS.f(0),self.a))
+end
+function Centerxuanzhuan.defaults(self)
+self.a=0
 end
 -- Damage1.cs SHA256 14a3937772e743dd9db07c2b1b494e477b2ab756c5fba8e1fea0e69b37f3d601
 Damage1={__get={},__set={}}
@@ -497,7 +509,7 @@ Damage4.__base="MonoBehaviour"
 function Damage4:Start()
 
 self.au=CS.invoke(self,"GetComponent","AudioSource")
-if (self.transform.parent ~= nil) then
+if not CS.isNull(self.transform.parent) then
 self.speed=CS.invoke(self.transform.parent,"GetComponent","Bullet_xiaodan_lizi")
 else
 self.speed=CS.invoke(self.transform,"GetComponent","Bullet_xiaodan_lizi")
@@ -525,16 +537,16 @@ repeat
 self.bm=CS.invoke(item,"GetComponent","Enemymove")
 if ((((((((item.position.x - self.transform.position.x)) * ((item.position.x - self.transform.position.x))) + (((item.position.y - self.transform.position.y)) * ((item.position.y - self.transform.position.y)))) < (((self.range + self.bm.sdbj)) * ((self.range + self.bm.sdbj)))) and (not self.bm.panding_off)) and (self.bm.wudi_time <= 0)) and (not self.bm.zidanwudi)) then
 self.bm.life=(self.bm.life - self.damage)
-if (self.au ~= nil) then
+if not CS.isNull(self.au) then
 CS.invoke(self.au,"Play")
 end
-if ((Sincos.effect_cut < 2) and (self.damage_texiao ~= nil)) then
+if ((Sincos.effect_cut < 2) and not CS.isNull(self.damage_texiao)) then
 self.bili=CS.f((self.bm.sdbj / CS.invoke(Sincos,"Distance",CS.new("Vector2",item.position.x,item.position.y),CS.new("Vector2",self.transform.position.x,self.transform.position.y))))
 self.dx=CS.f((((self.transform.position.x - item.position.x)) * self.bili))
 self.dy=CS.f((((self.transform.position.y - item.position.y)) * self.bili))
 CS.invoke(Object,"Instantiate",self.damage_texiao,CS.new("Vector3",(item.position.x + self.dx),(item.position.y + self.dy),CS.f(0)),CS.invoke(Quaternion,"Euler",CS.f(0),CS.f(0),(-CS.f(30))))
 end
-if ((self.speed ~= nil) and (self.speed.speed > self.speed_min)) then
+if (not CS.isNull(self.speed) and (self.speed.speed > self.speed_min)) then
 self.speed.speed=CS.f((self.speed.speed - self.speed_reduce))
 end
 Sincos.fenshu_now=(Sincos.fenshu_now + 10)
@@ -548,17 +560,17 @@ repeat
 self.bm2=CS.invoke(item2,"GetComponent","Bossmove")
 if (((((((item2.transform.position.x - self.transform.position.x)) * ((item2.transform.position.x - self.transform.position.x))) + (((item2.transform.position.y - self.transform.position.y)) * ((item2.transform.position.y - self.transform.position.y)))) < (((self.range + self.bm2.sdbj)) * ((self.range + self.bm2.sdbj)))) and (self.bm2.wudi_time <= 0)) and (not self.bm2.zidanwudi)) then
 self.bm2.life=(self.bm2.life - self.damage)
-if (self.au ~= nil) then
+if not CS.isNull(self.au) then
 CS.invoke(self.au,"Play")
 end
-if ((Sincos.effect_cut < 2) and (self.damage_texiao ~= nil)) then
+if ((Sincos.effect_cut < 2) and not CS.isNull(self.damage_texiao)) then
 self.bili=CS.f((self.bm2.sdbj / CS.invoke(Sincos,"Distance",CS.new("Vector2",item2.transform.position.x,item2.transform.position.y),CS.new("Vector2",self.transform.position.x,self.transform.position.y))))
 self.dx=CS.f((((self.transform.position.x - item2.transform.position.x)) * self.bili))
 self.dy=CS.f((((self.transform.position.y - item2.transform.position.y)) * self.bili))
 CS.invoke(Object,"Instantiate",self.damage_texiao,CS.new("Vector3",(item2.transform.position.x + self.dx),(item2.transform.position.y + self.dy),CS.f(0)),CS.invoke(Quaternion,"Euler",CS.f(0),CS.f(0),(-CS.f(30))))
 CS.invoke(Object,"Instantiate",self.damage_texiao,CS.new("Vector3",(item2.transform.position.x + self.dx),(item2.transform.position.y + self.dy),CS.f(0)),CS.invoke(Quaternion,"Euler",CS.f(0),CS.f(0),CS.f(60)))
 end
-if ((self.speed ~= nil) and (self.speed.speed > self.speed_min)) then
+if (not CS.isNull(self.speed) and (self.speed.speed > self.speed_min)) then
 self.speed.speed=CS.f((self.speed.speed - self.speed_reduce))
 end
 Sincos.fenshu_now=(Sincos.fenshu_now + 10)
@@ -673,10 +685,10 @@ repeat
 self.bm=CS.invoke(item,"GetComponent","Enemymove")
 if (((((((((item.position.x - self.transform.position.x)) * ((item.position.x - self.transform.position.x))) + (((item.position.y - self.transform.position.y)) * ((item.position.y - self.transform.position.y)))) < (((self.damage_r_wai + self.bm.sdbj)) * ((self.damage_r_wai + self.bm.sdbj)))) and (not self.bm.panding_off)) and (((((item.position.x - self.transform.position.x)) * ((item.position.x - self.transform.position.x))) + (((item.position.y - self.transform.position.y)) * ((item.position.y - self.transform.position.y)))) > (((self.damage_r_nei + self.bm.sdbj)) * ((self.damage_r_nei + self.bm.sdbj))))) and (self.bm.wudi_time <= 0)) and (not self.bm.zidanwudi)) then
 self.bm.life=(self.bm.life - self.damage)
-if (self.au ~= nil) then
+if not CS.isNull(self.au) then
 CS.invoke(self.au,"Play")
 end
-if ((Sincos.effect_cut < 2) and (self.damage_texiao ~= nil)) then
+if ((Sincos.effect_cut < 2) and not CS.isNull(self.damage_texiao)) then
 self.dis=CS.f(CS.invoke(Sincos,"Distance",CS.new("Vector2",item.position.x,item.position.y),CS.new("Vector2",self.transform.position.x,self.transform.position.y)))
 if ((self.dis + self.bm.sdbj) < self.damage_r_wai) then
 self.bili=CS.f((((self.dis + self.bm.sdbj)) / self.dis))
@@ -698,10 +710,10 @@ repeat
 self.bm2=CS.invoke(item2,"GetComponent","Bossmove")
 if ((((((((item2.transform.position.x - self.transform.position.x)) * ((item2.transform.position.x - self.transform.position.x))) + (((item2.transform.position.y - self.transform.position.y)) * ((item2.transform.position.y - self.transform.position.y)))) < (((self.damage_r_wai + self.bm2.sdbj)) * ((self.damage_r_wai + self.bm2.sdbj)))) and (((((item2.transform.position.x - self.transform.position.x)) * ((item2.transform.position.x - self.transform.position.x))) + (((item2.transform.position.y - self.transform.position.y)) * ((item2.transform.position.y - self.transform.position.y)))) > (((self.damage_r_nei + self.bm2.sdbj)) * ((self.damage_r_nei + self.bm2.sdbj))))) and (self.bm2.wudi_time <= 0)) and (not self.bm2.zidanwudi)) then
 self.bm2.life=(self.bm2.life - self.damage)
-if (self.au ~= nil) then
+if not CS.isNull(self.au) then
 CS.invoke(self.au,"Play")
 end
-if ((Sincos.effect_cut < 2) and (self.damage_texiao ~= nil)) then
+if ((Sincos.effect_cut < 2) and not CS.isNull(self.damage_texiao)) then
 self.dis=CS.f(CS.invoke(Sincos,"Distance",CS.new("Vector2",item2.transform.position.x,item2.transform.position.y),CS.new("Vector2",self.transform.position.x,self.transform.position.y)))
 if ((self.dis + self.bm2.sdbj) < self.damage_r_wai) then
 self.bili=CS.f((((self.dis + self.bm2.sdbj)) / self.dis))
@@ -758,7 +770,7 @@ repeat
 self.bm=CS.invoke(item,"GetComponent","Enemymove")
 if ((((((((item.position.x - self.transform.position.x)) * ((item.position.x - self.transform.position.x))) + (((item.position.y - self.transform.position.y)) * ((item.position.y - self.transform.position.y)))) < (((self.damage_r_wai + self.bm.sdbj)) * ((self.damage_r_wai + self.bm.sdbj)))) and (not self.bm.panding_off)) and (self.bm.wudi_time <= 0)) and (not self.bm.zidanwudi)) then
 self.bm.life=(self.bm.life - self.damage)
-if (self.texiao ~= nil) then
+if not CS.isNull(self.texiao) then
 local num=CS.invoke(Sincos,"Distance",CS.new("Vector2",item.position.x,item.position.y),CS.new("Vector2",self.transform.position.x,self.transform.position.y))
 if (num == CS.f(0)) then
 self.bili=CS.f(CS.f(0))
@@ -771,7 +783,7 @@ if (Sincos.effect_cut < 2) then
 CS.invoke(Object,"Instantiate",self.texiao,CS.new("Vector3",(item.position.x + self.dx),(item.position.y + self.dy),CS.f(0)),CS.invoke(Quaternion,"Euler",CS.f(0),CS.f(0),(-CS.f(30))))
 end
 end
-if (self.au ~= nil) then
+if not CS.isNull(self.au) then
 CS.invoke(self.au,"Play")
 end
 Sincos.fenshu_now=(Sincos.fenshu_now + 10)
@@ -785,7 +797,7 @@ repeat
 self.bm2=CS.invoke(item2,"GetComponent","Bossmove")
 if (((((((item2.transform.position.x - self.transform.position.x)) * ((item2.transform.position.x - self.transform.position.x))) + (((item2.transform.position.y - self.transform.position.y)) * ((item2.transform.position.y - self.transform.position.y)))) < (((self.damage_r_wai + self.bm2.sdbj)) * ((self.damage_r_wai + self.bm2.sdbj)))) and (self.bm2.wudi_time <= 0)) and (not self.bm2.zidanwudi)) then
 self.bm2.life=(self.bm2.life - self.damage)
-if (self.texiao ~= nil) then
+if not CS.isNull(self.texiao) then
 local num2=CS.invoke(Sincos,"Distance",CS.new("Vector2",item2.transform.position.x,item2.transform.position.y),CS.new("Vector2",self.transform.position.x,self.transform.position.y))
 if (num2 == CS.f(0)) then
 self.bili=CS.f(CS.f(0))
@@ -799,7 +811,7 @@ CS.invoke(Object,"Instantiate",self.texiao,CS.new("Vector3",(item2.transform.pos
 CS.invoke(Object,"Instantiate",self.texiao,CS.new("Vector3",(item2.transform.position.x + self.dx),(item2.transform.position.y + self.dy),CS.f(0)),CS.invoke(Quaternion,"Euler",CS.f(0),CS.f(0),CS.f(60)))
 end
 end
-if (self.au ~= nil) then
+if not CS.isNull(self.au) then
 CS.invoke(self.au,"Play")
 end
 Sincos.fenshu_now=(Sincos.fenshu_now + 10)
@@ -1570,7 +1582,7 @@ if (Sincos.anjian_now[5] and (not Sincos.ifduihua)) then
 if (self.time > 0) then
 self.time=self.time-1
 else
-if ((CS.rem(((Sincos.gametime + self.zhouqi_pianyi)),self.zhouqi) == 0) and (self.fasheti ~= nil)) then
+if ((CS.rem(((Sincos.gametime + self.zhouqi_pianyi)),self.zhouqi) == 0) and not CS.isNull(self.fasheti)) then
 CS.invoke(Object,"Instantiate",self.fasheti,self.transform.position,CS.invoke(Quaternion,"Euler",self.transform.rotation.x,self.transform.rotation.y,self.chaoxiang))
 end
 end
@@ -1683,6 +1695,36 @@ self.a=false
 self.key=false
 self.au=nil
 end
+-- Lan_ins_jiance.cs SHA256 4bc19adabf6f3f21a5467b67f5b8bbde8dff99faff1a8d0330a0dd0c7545ee85
+Lan_ins_jiance={__get={},__set={}}
+Lan_ins_jiance.__index=function(o,k) local getter=Lan_ins_jiance.__get[k];if getter then return getter(o) end;return Lan_ins_jiance[k] end
+Lan_ins_jiance.__newindex=function(o,k,v) local setter=Lan_ins_jiance.__set[k];if setter then setter(o,v) else rawset(o,k,v) end end
+Lan_ins_jiance.__base="MonoBehaviour"
+function Lan_ins_jiance:Start()
+
+if not CS.isNull(Sincos.bayunlan) then
+Sincos.if_bayunlan=1
+CS.invoke(self.gameObject,"GetComponent","SpriteRenderer").color=CS.new("Color",CS.f(1),CS.f(1),CS.f(1),CS.f(0))
+end
+if not CS.isNull(Sincos.bayunlan_ins) then
+CS.invoke(self.gameObject,"GetComponent","SpriteRenderer").color=CS.new("Color",CS.f(1),CS.f(1),CS.f(1),CS.f(0))
+end
+end
+function Lan_ins_jiance:FixedUpdate()
+
+if not CS.isNull(Sincos.bayunlan) then
+Sincos.bayunlan.muti=self.gameObject
+else
+if (CS.isNull(Sincos.bayunlan_ins) and (not self.bug_fix)) then
+CS.invoke(Object,"Instantiate",self.lan_ins,CS.new("Vector3",self.transform.position.x,(self.transform.position.y - CS.f(1)),CS.f(0)),self.transform.rotation)
+self.bug_fix=true
+end
+end
+end
+function Lan_ins_jiance.defaults(self)
+self.lan_ins=nil
+self.bug_fix=false
+end
 -- Lan_ins_kongzhi.cs SHA256 a8108af77a1b4e8d22858133f00cd9f8429c9253e99e1eccc4232d1deed2356e
 Lan_ins_kongzhi={__get={},__set={}}
 Lan_ins_kongzhi.__index=function(o,k) local getter=Lan_ins_kongzhi.__get[k];if getter then return getter(o) end;return Lan_ins_kongzhi[k] end
@@ -1705,7 +1747,7 @@ if (self.xuanzhuan.zhuansu < (-CS.f(0.1))) then
 self.xuanzhuan.zhuansu=CS.f((self.xuanzhuan.zhuansu + CS.f(0.1)))
 end
 if (self.time == 0) then
-if (Sincos.bayunlan == nil) then
+if CS.isNull(Sincos.bayunlan) then
 CS.invoke(Object,"Instantiate",self.lan_ins,self.transform.position,self.transform.rotation)
 end
 CS.invoke(UnityEngine.Object,"Destroy",self.gameObject)
@@ -1733,7 +1775,7 @@ Sincos.bayunlan=self
 self.dis=CS.f(CS.f(100000))
 self.ps=CS.invoke(self,"GetComponent","ParticleSystem")
 self.au=CS.invoke(self,"GetComponent","AudioSource")
-if (Sincos.enemy ~= nil) then
+if not CS.isNull(Sincos.enemy) then
 for _,item in CS.each(Sincos.enemy) do
 local __break1,__continue1=false,false
 repeat
@@ -1746,7 +1788,7 @@ until true
 if __break1 then break end
 end
 end
-if (Sincos.boss ~= nil) then
+if not CS.isNull(Sincos.boss) then
 for _,item2 in CS.each(Sincos.boss) do
 local __break2,__continue2=false,false
 repeat
@@ -1759,7 +1801,7 @@ until true
 if __break2 then break end
 end
 end
-if ((self.obj ~= nil) and (((((self.obj.position.x < CS.f(0)) or (self.obj.position.x > CS.f(9))) or (self.obj.position.y > CS.f(0))) or (self.obj.position.y < (-CS.f(10)))))) then
+if (not CS.isNull(self.obj) and (((((self.obj.position.x < CS.f(0)) or (self.obj.position.x > CS.f(9))) or (self.obj.position.y > CS.f(0))) or (self.obj.position.y < (-CS.f(10)))))) then
 self.obj=nil
 end
 end
@@ -1789,7 +1831,7 @@ self.maxtime=60
 else
 self.maxtime=self.maxtime-1
 end
-if (self.obj ~= nil) then
+if not CS.isNull(self.obj) then
 if ((((self.obj.position.x < CS.f(0)) or (self.obj.position.x > CS.f(9))) or (self.obj.position.y > CS.f(0))) or (self.obj.position.y < (-CS.f(10)))) then
 self.obj=nil
 else
@@ -1813,7 +1855,7 @@ self.transform.position=CS.copy((self.transform.position + CS.new("Vector3",(num
 end
 else
 self.dis=CS.f(CS.f(100000))
-if (Sincos.enemy ~= nil) then
+if not CS.isNull(Sincos.enemy) then
 for _,item3 in CS.each(Sincos.enemy) do
 local __break3,__continue3=false,false
 repeat
@@ -1826,7 +1868,7 @@ until true
 if __break3 then break end
 end
 end
-if (Sincos.boss ~= nil) then
+if not CS.isNull(Sincos.boss) then
 for _,item4 in CS.each(Sincos.boss) do
 local __break4,__continue4=false,false
 repeat
@@ -1839,7 +1881,7 @@ until true
 if __break4 then break end
 end
 end
-if ((self.obj ~= nil) and (((((self.obj.position.x < CS.f(0)) or (self.obj.position.x > CS.f(9))) or (self.obj.position.y > CS.f(0))) or (self.obj.position.y < (-CS.f(10)))))) then
+if (not CS.isNull(self.obj) and (((((self.obj.position.x < CS.f(0)) or (self.obj.position.x > CS.f(9))) or (self.obj.position.y > CS.f(0))) or (self.obj.position.y < (-CS.f(10)))))) then
 self.obj=nil
 end
 end
@@ -1848,7 +1890,7 @@ self.obj=nil
 self.transform.position=CS.copy((self.transform.position + (((CS.new("Vector3",Sincos.zijix,(Sincos.zijiy + CS.f(3)),CS.f(0)) - CS.new("Vector3",self.transform.position.x,self.transform.position.y,CS.f(0)))) / CS.f(15))))
 end
 end
-if (self.muti == nil) then
+if CS.isNull(self.muti) then
 if (Sincos.if_bayunlan == 1) then
 self.time=(CS.trunc(((((Sincos.suipian_beilv_zi - CS.f(1))) * CS.f(480)))) + 1)
 Sincos.if_bayunlan=(-1)
@@ -2471,7 +2513,7 @@ local i=0
 while (i < self.emy.Count) do
 local __break1,__continue1=false,false
 repeat
-if (not ((self.emy[i] ~= nil))) then
+if (not (not CS.isNull(self.emy[i]))) then
 __continue1=true;break
 end
 if (self.emy[i].sdbj < CS.invoke(Mathf,"Abs",(self.transform.position.x - self.emy[i].transform.position.x))) then
@@ -2502,7 +2544,7 @@ local j=0
 while (j < self.bos.Count) do
 local __break2,__continue2=false,false
 repeat
-if (not ((self.bos[j] ~= nil))) then
+if (not (not CS.isNull(self.bos[j]))) then
 __continue2=true;break
 end
 if (self.bos[j].sdbj < CS.invoke(Mathf,"Abs",(self.transform.position.x - self.bos[j].transform.position.x))) then
@@ -2556,19 +2598,19 @@ self.ty=CS.invoke(self,"GetComponent","Tongyong_suofang")
 self.ps=CS.invoke(self,"GetComponent","ParticleSystem")
 if (Sincos.suipian_beilv_hong > CS.f(1)) then
 local num=((((Sincos.suipian_beilv_hong - CS.f(1))) / CS.f(2)) + CS.f(1))
-if (self.ty ~= nil) then
+if not CS.isNull(self.ty) then
 self.ty.mubiao_x=CS.f((self.ty.mubiao_x * num))
 self.ty.mubiao_y=CS.f((self.ty.mubiao_y * num))
 end
 if self.fangdaziji then
 self.transform.localScale=CS.copy(CS.new("Vector3",(self.transform.localScale.x * num),(self.transform.localScale.y * num),CS.f(1)))
 end
-if (self.d5 ~= nil) then
+if not CS.isNull(self.d5) then
 self.d5.damage=CS.trunc(((CS.f(self.d5.damage) * num)))
 self.d5.damage_r_nei=CS.f((self.d5.damage_r_nei * num))
 self.d5.damage_r_wai=CS.f((self.d5.damage_r_wai * num))
 end
-if (self.ps ~= nil) then
+if not CS.isNull(self.ps) then
 local emission=self.ps.emission
 emission.rateOverTime=(emission.rateOverTime.constant * num)
 local shape=self.ps.shape
@@ -2626,11 +2668,11 @@ self.colorfendu=CS.new("Color",(((self.sr.color.r - self.mubiao_color.r)) / CS.f
 end
 function Tongyong_colorchange_sprite:FixedUpdate()
 
-if ((self.time >= self.time_yanshi) and (self.sr ~= nil)) then
+if ((self.time >= self.time_yanshi) and not CS.isNull(self.sr)) then
 self.sr.color=CS.new("Color",(self.sr.color.r - self.colorfendu.r),(self.sr.color.g - self.colorfendu.g),(self.sr.color.b - self.colorfendu.b),(self.sr.color.a - self.colorfendu.a))
 end
 if (self.time == (self.time_yanshi + self.time_long)) then
-if (self.sr ~= nil) then
+if not CS.isNull(self.sr) then
 self.sr.color=self.mubiao_color
 end
 CS.invoke(UnityEngine.Object,"Destroy",self)
@@ -2667,13 +2709,13 @@ Tongyong_gensui_gameobj.__newindex=function(o,k,v) local setter=Tongyong_gensui_
 Tongyong_gensui_gameobj.__base="MonoBehaviour"
 function Tongyong_gensui_gameobj:Start()
 
-if ((Sincos.camera_3D ~= nil) and self.if_camera) then
+if (not CS.isNull(Sincos.camera_3D) and self.if_camera) then
 self.obj=Sincos.camera_3D.gameObject
 end
 end
 function Tongyong_gensui_gameobj:FixedUpdate()
 
-if (self.obj ~= nil) then
+if not CS.isNull(self.obj) then
 self.transform.position=CS.copy((self.obj.transform.position + self.pianyi))
 end
 end
@@ -2711,14 +2753,14 @@ else
 self.time_fendu=CS.f((CS.f(1) / CS.f(self.time_long)))
 end
 if self.yingyongziwuti then
-self.sr_zi=CS.invoke(self.transform,"GetComponentsInChildren")
+self.sr_zi=CS.invoke(self.transform,"GetComponentsInChildren","SpriteRenderer")
 end
 end
 function Tongyong_jianxianjianyin:FixedUpdate()
 
 if (self.time >= self.time_yanshi) then
 if self.jianxian_or_jianyin then
-if (self.sr ~= nil) then
+if not CS.isNull(self.sr) then
 self.sr.color=(self.sr.color + CS.new("Color",CS.f(0),CS.f(0),CS.f(0),self.time_fendu))
 end
 if self.yingyongziwuti then
@@ -2727,7 +2769,7 @@ local i=0
 while (i < self.sr_zi.Length) do
 local __break1,__continue1=false,false
 repeat
-if (self.sr_zi[i] ~= nil) then
+if not CS.isNull(self.sr_zi[i]) then
 self.sr_zi[i].color=(self.sr_zi[i].color + CS.new("Color",CS.f(0),CS.f(0),CS.f(0),self.time_fendu))
 end
 until true
@@ -2737,7 +2779,7 @@ end
 end
 end
 else
-if (self.sr ~= nil) then
+if not CS.isNull(self.sr) then
 self.sr.color=(self.sr.color - CS.new("Color",CS.f(0),CS.f(0),CS.f(0),self.time_fendu))
 end
 if self.yingyongziwuti then
@@ -2746,7 +2788,7 @@ local j=0
 while (j < self.sr_zi.Length) do
 local __break2,__continue2=false,false
 repeat
-if (self.sr_zi[j] ~= nil) then
+if not CS.isNull(self.sr_zi[j]) then
 self.sr_zi[j].color=(self.sr_zi[j].color - CS.new("Color",CS.f(0),CS.f(0),CS.f(0),self.time_fendu))
 end
 until true
@@ -2760,7 +2802,7 @@ end
 if (self.time >= (self.time_yanshi + self.time_long)) then
 if (self.a_kuadu == CS.f(0)) then
 if self.jianxian_or_jianyin then
-if (self.sr ~= nil) then
+if not CS.isNull(self.sr) then
 self.sr.color=CS.new("Color",self.sr.color.r,self.sr.color.g,self.sr.color.b,CS.f(1))
 end
 if self.yingyongziwuti then
@@ -2769,7 +2811,7 @@ local k=0
 while (k < self.sr_zi.Length) do
 local __break3,__continue3=false,false
 repeat
-if (self.sr_zi[k] ~= nil) then
+if not CS.isNull(self.sr_zi[k]) then
 self.sr_zi[k].color=CS.new("Color",self.sr.color.r,self.sr.color.g,self.sr.color.b,CS.f(1))
 end
 until true
@@ -2779,7 +2821,7 @@ end
 end
 end
 else
-if (self.sr ~= nil) then
+if not CS.isNull(self.sr) then
 self.sr.color=CS.new("Color",self.sr.color.r,self.sr.color.g,self.sr.color.b,CS.f(0))
 end
 if self.yingyongziwuti then
@@ -2788,7 +2830,7 @@ local l=0
 while (l < self.sr_zi.Length) do
 local __break4,__continue4=false,false
 repeat
-if (self.sr_zi[l] ~= nil) then
+if not CS.isNull(self.sr_zi[l]) then
 self.sr_zi[l].color=CS.new("Color",self.sr.color.r,self.sr.color.g,self.sr.color.b,CS.f(0))
 end
 until true
@@ -2800,7 +2842,7 @@ end
 end
 else
 if self.jianxian_or_jianyin then
-if (self.sr ~= nil) then
+if not CS.isNull(self.sr) then
 self.sr.color=CS.new("Color",self.sr.color.r,self.sr.color.g,self.sr.color.b,self.a_kuadu)
 end
 if self.yingyongziwuti then
@@ -2809,7 +2851,7 @@ local m=0
 while (m < self.sr_zi.Length) do
 local __break5,__continue5=false,false
 repeat
-if (self.sr_zi[m] ~= nil) then
+if not CS.isNull(self.sr_zi[m]) then
 self.sr_zi[m].color=CS.new("Color",self.sr.color.r,self.sr.color.g,self.sr.color.b,self.a_kuadu)
 end
 until true
@@ -2819,7 +2861,7 @@ end
 end
 end
 else
-if (self.sr ~= nil) then
+if not CS.isNull(self.sr) then
 self.sr.color=CS.new("Color",self.sr.color.r,self.sr.color.g,self.sr.color.b,(CS.f(1) - self.a_kuadu))
 end
 if self.yingyongziwuti then
@@ -2828,7 +2870,7 @@ local n=0
 while (n < self.sr_zi.Length) do
 local __break6,__continue6=false,false
 repeat
-if (self.sr_zi[n] ~= nil) then
+if not CS.isNull(self.sr_zi[n]) then
 self.sr_zi[n].color=CS.new("Color",self.sr.color.r,self.sr.color.g,self.sr.color.b,(CS.f(1) - self.a_kuadu))
 end
 until true
@@ -3030,6 +3072,31 @@ self.zhuansu_range_min=0
 self.shuangxiang=false
 self.zhuansu=0
 end
+-- Zhunxintexiao.cs SHA256 2a888570b7f76b6f4999994e2bdfba3b30765008ea5e2db6b501811654c8fc69
+Zhunxintexiao={__get={},__set={}}
+Zhunxintexiao.__index=function(o,k) local getter=Zhunxintexiao.__get[k];if getter then return getter(o) end;return Zhunxintexiao[k] end
+Zhunxintexiao.__newindex=function(o,k,v) local setter=Zhunxintexiao.__set[k];if setter then setter(o,v) else rawset(o,k,v) end end
+Zhunxintexiao.__base="MonoBehaviour"
+function Zhunxintexiao:Start()
+
+self.sr=CS.invoke(self,"GetComponent","SpriteRenderer")
+end
+function Zhunxintexiao:FixedUpdate()
+
+if CS.bitop("&",Sincos.anjian_now[4],((self.sr.color.a < self.a))) then
+self.i=CS.f((self.i + CS.f(0.1)))
+self.sr.color=CS.new("Color",CS.f(1),CS.f(1),CS.f(1),self.i)
+end
+if CS.bitop("&",(not Sincos.anjian_now[4]),((self.sr.color.a > CS.f(0)))) then
+self.i=CS.f((self.i - CS.f(0.1)))
+self.sr.color=CS.new("Color",CS.f(1),CS.f(1),CS.f(1),self.i)
+end
+end
+function Zhunxintexiao.defaults(self)
+self.sr=nil
+self.i=0
+self.a=0
+end
 -- bailian_xulifanweikuoda.cs SHA256 9c3a1dab6cf47fa0536403c44d745d157754241f400a4a7a3fdf0909ed17093f
 bailian_xulifanweikuoda={__get={},__set={}}
 bailian_xulifanweikuoda.__index=function(o,k) local getter=bailian_xulifanweikuoda.__get[k];if getter then return getter(o) end;return bailian_xulifanweikuoda[k] end
@@ -3044,11 +3111,11 @@ if (Sincos.suipian_beilv_zi > CS.f(1)) then
 local num=(((((((Sincos.suipian_beilv_zi - CS.f(1))) / CS.f(2)) + CS.f(1))) * CS.f(1.3)) + CS.f(0.6))
 self.transform.localScale=CS.copy(CS.new("Vector3",(self.transform.localScale.x * num),(self.transform.localScale.y * num),CS.f(1)))
 self.ba.fangda=CS.f((self.ba.fangda * num))
-if (self.bb ~= nil) then
+if not CS.isNull(self.bb) then
 self.bb.mubiao_x=CS.f((self.bb.mubiao_x * num))
 self.bb.mubiao_y=CS.f((self.bb.mubiao_y * num))
 end
-if (self.d4 ~= nil) then
+if not CS.isNull(self.d4) then
 self.d4.damage=CS.trunc(((CS.f(self.d4.damage) * num)))
 end
 end

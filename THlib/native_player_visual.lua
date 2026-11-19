@@ -84,13 +84,21 @@ function V.bind(p)
         elseif level==36 then
             local name=p.machine.art
             if p.altForm then name=({reimu='yukari',yukari='reimu',byakuren='miko',miko='byakuren'})[name] or name end
+            if state.unityForm~=name then
+                state.unityForm,state.unitySprite=name,p.unity_body_sprite
+                state.unityStart=t
+            end
             local cfg=D.players['36_'..name];local c=D.unity.clips[cfg.clips[dir]]
-            local time=(dir==1 and t or state.turn)/60
+            local time=(dir==1 and t-state.unityStart or state.turn)/60
             time=c.loop==1 and time%math.max(.0001,c.length) or math.min(time,c.length)
             for _,track in ipairs(c.tracks) do
-                local key
+                -- 原动画的首关键帧晚于 0；此前沿用 prefab 初始 Sprite。
+                local key=state.unitySprite or p.unity_body_sprite
                 for _,f in ipairs(track.keys) do if f[1]<=time then key=f[2] end end
-                local img,scale=V.sprite(key)
+                state.unitySprite=key
+                local img,scale
+                if D.unity.sprites[key] then img,scale=V.sprite(key)
+                elseif p.unity_body_image then img,scale=p.unity_body_image(key) end
                 if img then draw(p,img,p.x,p.y,0,scale) end
             end
         elseif level==37 then
@@ -193,8 +201,7 @@ function V.item(o,level,kind,amount)
         end
         return
     elseif level==39 then
-        o.imgup=nil;o.native_item_visual={config={scale=.5},name=kind,level=level}
-        return
+        return -- 祈华梦的大小、飞出、动画和混合模式由原作适配器逐帧处理。
     end
     local cfg=D.items[level]
     if not cfg then return end
@@ -215,12 +222,6 @@ end
 function V.itemRender(o)
     local v=o.native_item_visual;if not v then return false end
     local cfg=v.config;local halo=cfg.halos and cfg.halos[v.name]
-    if v.level==39 then
-        local k=math.min(1,o.timer/40);k=-(k*(k-2))
-        SetImageState(o.img,'',255,255,255,255)
-        Render(o.img,o.x,o.y,4*sin(o.ani*4),cfg.scale*k)
-        return true
-    end
     if halo then
         local img=V.image(cfg.tex,unpack(halo));SetImageState(img,'',255,255,255,255)
         Render(img,o.x,o.y,-o.timer*.04*180/math.pi,math.min(1,math.max(0,o.timer-50)/60)*.8*cfg.scale)

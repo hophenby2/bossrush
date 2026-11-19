@@ -40,6 +40,9 @@ function B.load(name)
 end
 function B.bind(p)
     local s=B.load(p.machine.id);p.theis_source=s
+    -- 原作 sp 是相对子机阵型，宿主的环绕子机会把它改写为绝对坐标。
+    p._playersys:removeFrameEvent('frame.updateSupport')
+    p._playersys:removeFrameEvent('frame.itemCollect')
     s.class.init(p)
     p.theis_support={p.x,p.y}
 end

@@ -69,7 +69,7 @@ while q:
    elif k in (58,61):node['components'].append({'id':str(j),'type':'Collider2D','fields':convert(v)})
    elif k==198:node['components'].append({'id':str(j),'type':'ParticleSystem','fields':{}})
 # 仅执行自机/武器行为，音量控制、通用界面与结界库存由宿主边界处理。
-skip={'Centeryidong','Zijidonghua','Zijiwudi','Pl_shoot_se','Zhunxintexiao','Centerxuanzhuan','Soundyinliangkongzhi','Tongyong_sr_color_to_shader','Tongyong_sr_Alpha_to_shader','Jiejie_shifang','Jiejie_break','Jiejie_bailian','Lan_ins_jiance','Bomb'}
+skip={'Centeryidong','Zijidonghua','Zijiwudi','Pl_shoot_se','Soundyinliangkongzhi','Tongyong_sr_color_to_shader','Tongyong_sr_Alpha_to_shader','Jiejie_shifang','Jiejie_break','Jiejie_bailian','Bomb'}
 selected=[p for n,p in sorted(scripts.items()) if n not in skip]
 # 倍率条只去掉 UI 绘制准备，切换、衰减和暴走计时保留原文。
 import tempfile

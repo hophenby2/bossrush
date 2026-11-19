@@ -6,13 +6,21 @@ local P=NativePlayers
 if P then dofile('mod/GAME/ports/theis/player.lua') end
 local function resources() return P and P.enabled(nil,W.level) and P.state() end
 local function drop(x,y,kind,count)
-    if count and count>0 then P.pickup(x,y,kind,count) end
+    if not count or count<1 then return end
+    local r=math.sqrt(count-1)*5
+    for _=1,count do
+        local radius=math.sqrt(ran:Float(1,4))*r;local angle=ran:Float(0,360)
+        P.pickup(x+radius*cos(angle),y+radius*sin(angle),kind,1)
+    end
 end
 local env,load,assets=dofile('mod/GAME/ports/environment.lua')('theis')
 local api=env.lstg
 local objects
 local empty=function() end
 local function new(class,...)
+    if resources() and class and class.theis_pickup then
+        local x,y=...;return P.pickup(x,y,class.theis_pickup,1)
+    end
     local o=New(assert(class,'祈华梦对象类缺失'),...)
     if o.group==GROUP.ENEMY or o.group==GROUP.NONTJT then
         (NativeActorCollision or dofile('THlib/native_actor_collision.lua')).preserve(o)
@@ -50,14 +58,15 @@ env.ext=setmetatable({}, {__index=ext})
 env.stage={group={}}
 env.achievement={unlock=empty}
 env.item=setmetatable({StartChipBonus=empty,EndChipBonus=empty,DropItem=item.Dropitem_PFP},{__index=item})
-env.item_faith_minor=item.obj.faith_minor
-env.item_faith=item.obj.faith
-env.item_point=item.obj.point
+env.item_faith_minor=Class(item.obj.faith_minor);env.item_faith_minor.theis_pickup='theisSmall'
+env.item_night_minor=Class(item.obj.faith_minor);env.item_night_minor.theis_pickup='night'
+env.item_faith=Class(item.obj.faith);env.item_faith.theis_pickup='green'
+env.item_point=Class(item.obj.point);env.item_point.theis_pickup='blue'
 env.item_bomb=item.obj.addcharge
 env.item_bombchip=item.obj.addcharge
 env.item_extend=item.obj.revdead
 env.item_chip=item.obj.revdead
-env.item_power=item.obj.faith
+env.item_power=Class(item.obj.faith);env.item_power.theis_pickup='red'
 env.item_power_large=item.obj.faith
 env.item_power_full=item.obj.faith
 env.wabisabi_item=Class(object,{
@@ -65,6 +74,7 @@ env.wabisabi_item=Class(object,{
         if resources() then
             local pickup=P.pickup(x,y,'night',1)
             pickup.img=color==1 and 'sabi_item' or 'wabi_item'
+            pickup.size=.7
         end
         object.RawDel(o)
     end,
@@ -250,10 +260,11 @@ end
 local effects=api.ResourceSet.Create('THEIS.StageEffects','global')
 effects:AddSpriteFromFile('theis_board_color','res/effect/player_board_ch.png',false)
 effects:AddTexture('theis_item_tex','res/item/item.png',false)
-effects:AddSprite('item_red1','theis_item_tex',0,768,40,40)
-effects:AddSprite('item_blue1','theis_item_tex',0,808,40,40)
-effects:AddSprite('item_green1','theis_item_tex',0,848,40,40)
+for kind,y in pairs({red=768,blue=808,green=848}) do
+    for n=1,3 do effects:AddSprite('item_'..kind..n,'theis_item_tex',(n-1)*40,y,40,40) end
+end
 effects:AddSprite('item_night','theis_item_tex',128,888,64,64)
+effects:AddSprite('item_small','theis_item_tex',128,952,64,64)
 effects:AddTexture('theis_point_tex','res/item/bullet_killed_eff.png',false)
 effects:AddSprite('sabi_item','theis_point_tex',0,0,40,40)
 effects:AddSprite('wabi_item','theis_point_tex',40,0,40,40)
@@ -338,12 +349,15 @@ end
 local dropItem=env.item.DropItem
 env.item.DropItem=function(x,y,items)
     if not resources() then return dropItem(x,y,items) end
-    if items then
-        drop(x,y,'red',items[1])
-        drop(x+12,y,'green',items[2])
-        drop(x-12,y,'blue',items[3])
-    end
-    return {}
+    local result={}
+    if not items then return result end
+    local n=(items[1] or 0)+(items[2] or 0)+(items[3] or 0)
+    local r=math.sqrt(math.max(0,n-1))*5
+    for i,kind in ipairs({'red','green','blue'}) do for _=1,items[i] or 0 do
+        local radius=math.sqrt(ran:Float(1,4))*r;local a=ran:Float(0,360)
+        result[#result+1]=P.pickup(x+radius*cos(a),y+radius*sin(a),kind,1)
+    end end
+    return result
 end
 load('EISlib/bullet/bullet.lua')
 load('EISlib/boss/boss.lua')

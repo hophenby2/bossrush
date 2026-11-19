@@ -454,7 +454,7 @@ end
 function N.new(owner,meta)
     local run={owner=owner,time=0,objects={},controllers={},enemies={},bullets={},effects={},random=lstg.tmpvar.th38_random or N.random(lstg.var.th38_seed or 0)}
     N.runs[run]=true
-    local host={run=run,th38_host=true,owner=owner,cx=(owner.x or 0)+320,cy=240-(owner.y or 100),speed=4,direction=0,accel=0,accel_angle=0,scale_x=1,scale_y=1,angle=90,follow=false,age=0,flag=1,hp=meta.hp,maxhp=meta.maxhp or meta.hp,dest={320,136},loopy={},once={},tweens={}}
+    local host={run=run,th38_host=true,owner=owner,cx=(owner.x or 0)+320,cy=240-(owner.y or 100),speed=4,direction=0,accel=0,accel_angle=0,scale_x=1,scale_y=1,width=1,height=1,region=20,angle=90,follow=false,age=0,flag=1,hp=meta.hp,maxhp=meta.maxhp or meta.hp,dest={320,136},loopy={},once={},tweens={}}
     if meta.dest then host.dest={meta.dest[1]+128,meta.dest[2]+16} end
     host.loops={};run.host=host;owner.th38_run=run
     return run
@@ -469,6 +469,14 @@ function N.tick(owner,meta)
         if meta.kind~='road' then
             owner.x,owner.y=o.cx-320,240-o.cy
             if N.visual then N.visual.tickBoss(owner,o) end
+            -- Boss 换图后也必须重设引擎实际判定；A/B 并不会改写 a/b。
+            local radius=o.region*max(o.width,o.height)
+            local collision=NativeActorCollision or dofile('THlib/native_actor_collision.lua')
+            local c=collision.bind(owner,radius,radius,'ellipse')
+            c.contactTest=function(_,target)
+                o.x,o.y=owner.x,owner.y
+                return N.actorHit(o,target)
+            end
         end
     end)
 end

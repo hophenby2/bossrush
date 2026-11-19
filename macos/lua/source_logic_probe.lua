@@ -2,6 +2,9 @@
 local T={}
 local source
 function T.before(p)
+    if not source and os.getenv('BOSSRUSH_MAC_TEST_LOGIC_VARIANT')=='fidelity' then
+        source=dofile('macos/source_logic_fidelity.lua')
+    end
     if not source and os.getenv('BOSSRUSH_MAC_TEST_LOGIC_VARIANT')=='mechanics' then
         source=dofile('macos/source_logic_mechanics.lua')
     end

@@ -107,6 +107,9 @@ class Compiler:
             a, b = n.child_by_field_name('left'), n.child_by_field_name('right')
             op = self.text(n.child_by_field_name('operator'))
             x, y = self.expr(a), self.expr(b)
+            if op in ('==','!=') and (a.type=='null_literal' or b.type=='null_literal'):
+                value=y if a.type=='null_literal' else x
+                return ('' if op=='==' else 'not ') + f'CS.isNull({value})'
             if op == '%': return f'CS.rem({x},{y})'
             if op == '??': return f'CS.coalesce({x},function() return {y} end)'
             if op == '/' and self.kind(a) == self.kind(b) == 'int': return f'CS.idiv({x},{y})'
@@ -131,7 +134,7 @@ class Compiler:
         if t == 'invocation_expression':
             fn = n.child_by_field_name('function'); args = self.args(n.child_by_field_name('arguments'))
             generic=fn if fn.type=='generic_name' else fn.child_by_field_name('name') if fn.type=='member_access_expression' else None
-            if generic and generic.type=='generic_name' and self.text(generic).split('<')[0] in ('GetComponent','GetComponents','AddComponent'):
+            if generic and generic.type=='generic_name' and self.text(generic).split('<')[0] in ('GetComponent','GetComponents','GetComponentsInChildren','AddComponent'):
                 method=self.text(generic).split('<')[0]
                 kind=self.text(generic).split('<',1)[1].rsplit('>',1)[0]
                 receiver=self.expr(fn.child_by_field_name('expression')) if fn.type=='member_access_expression' else 'self'

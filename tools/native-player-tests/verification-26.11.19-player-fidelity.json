@@ -1,0 +1,100 @@
+{
+  "version": "26.11.19-player-fidelity",
+  "platform": "macOS Apple Silicon / LuaSTG-x Metal",
+  "scope": "只覆盖本次反馈，不声明六作整体逐帧等价",
+  "cases": [
+    {
+      "level": 39,
+      "card": null,
+      "frames": 280,
+      "machine": "reimu",
+      "checks": [
+        "相对子机阵型",
+        "0.5跟随",
+        "原道具控制器逐帧",
+        "真实拾取边界",
+        "掉落数量与散布",
+        "小道具入口",
+        "本体0.4缩放"
+      ],
+      "passed": true,
+      "evidence": [
+        "[LOG] SOURCE_LOGIC: 本次自机/道具/判定场景通过 level=39 shots=nil visible=nil body=278 bodyScale=0.40000000596046"
+      ]
+    },
+    {
+      "level": 36,
+      "card": 38001,
+      "frames": 350,
+      "machine": "reimu",
+      "checks": [
+        "三次切换",
+        "锁定球生成及Boss追踪",
+        "每次绘制均有自机",
+        "延迟销毁"
+      ],
+      "passed": true,
+      "evidence": [
+        "[LOG] SOURCE_LOGIC: 本次自机/道具/判定场景通过 level=36 shots=nil visible=nil body=1631 bodyScale=nil"
+      ]
+    },
+    {
+      "level": 37,
+      "card": 39001,
+      "frames": 280,
+      "machine": "reimu",
+      "checks": [
+        "高速低速发弹",
+        "灵梦主炮实际绘制",
+        "截图中主炮副武器可见"
+      ],
+      "passed": true,
+      "evidence": [
+        "[LOG] SOURCE_LOGIC: 本次自机/道具/判定场景通过 level=37 shots=39605 visible=36748 body=nil bodyScale=nil"
+      ]
+    },
+    {
+      "level": 38,
+      "card": 68001,
+      "frames": 180,
+      "machine": "A",
+      "checks": [
+        "实际Boss半径20",
+        "原作体术边界",
+        "引擎20+1及20+15边界"
+      ],
+      "passed": true,
+      "evidence": [
+        "[LOG] SOURCE_LOGIC: 本次自机/道具/判定场景通过 level=38 shots=nil visible=nil body=178 bodyScale=1"
+      ]
+    }
+  ],
+  "assets": {
+    "night_png_count": 7,
+    "night_rgba_equal_to_original": true,
+    "theis_player_original_files_equal": 64,
+    "theis_item_controller_original": true
+  },
+  "source_sha256": {
+    "Resources/native_players/source/39_bosslist.png": "96b05c6b1f4665bdefea86aa888470dc8ce01f7c7cdc7eeb442e47f6af8f7bd9",
+    "Resources/native_players/source/39_selfbarrage1.png": "d466f28c4c7b98bd96e1383be54312b3dbbb9cf71f9b5757a07c5ecb91f0279c",
+    "Resources/native_players/source/39_selfbarrage2.png": "86e0767c03874fe920801c4dea6949e7d10b42be062ce3132613f3deddf61df0",
+    "Resources/native_players/source/39_selfbarrage3.png": "0b12bb152a4d45ef8d852ecd6aff0bea0946b4869a9e49bc0890b83849ac30bc",
+    "Resources/native_players/source/39_selfbarrage4.png": "821677d6afea053d9a0877f37c8185d9124695bed14e7101c08e0de0d7b54bbe",
+    "Resources/native_players/source/39_selfbarrage5.png": "4c710a6ed6308482ae6bf06f12295f894144d27e673b0d0a578fb214e1c7d48c",
+    "Resources/native_players/source/39_spscore.png": "ce71d9397d5a8fdad45861d1d9fb9165741d117d8efb82dc61d6b694f9ff551e",
+    "THlib/UI/UI.lua": "7d8f7f3e77af489a255a65b485cb0a7b3442e12cf72f66fd8d6093530a18b9bd",
+    "THlib/native_player_visual.lua": "4c5bc5543de3f66690e62f953f17cc171ba53b3e63bfb88ee22b2d857b8084ea",
+    "THlib/native_players.lua": "4a6ada85796348d00c6d094c1857f353c430706563c3b114173e894bd23a89be",
+    "macos/lua/source_logic_probe.lua": "a134a83567a96f62878e5e430fa719a18b5caa3b97218fce1826ea08d5ff85f9",
+    "mod/GAME/ports/source_csharp.lua": "65db0322be2297108f1d215bf90bfcb24a5e1a1bf957f82499fc3cca34307f22",
+    "mod/GAME/ports/theis/native_players/bridge.lua": "f99cc83b0abfea9264c584e3d8bf187e5a2075fc327f83bba3cc422fcc363461",
+    "mod/GAME/ports/theis/player.lua": "b5f3ffe71a555fff49753f4353c099e31aeb76f59c511493ede5c55e222ff27f",
+    "mod/GAME/th38/native_players/bridge.lua": "3eb809a0421d7f44d0cccac62783140bc40981ccae271cfc5162d651d6904b2f",
+    "mod/GAME/th38/native_players/source.lua": "a7b43a73712a357b94fbc754924ac5d3c3322ddf71bc023f14e6f95ecee39ad5",
+    "mod/GAME/th40/native.lua": "1a757f51a8aec95c77bcd45e571ed54fc95ead6823cc11427b0ea91bb7245147",
+    "mod/GAME/th41.lua": "e73afa979576934dff08677ee8c7d55000a869b5d32c0f95cb7cd129f4d68d1c",
+    "macos/lua/oracle_theis_item.lua": "050c2dab532c32f8c661d97289dc3b68bda3dd43f0919fa21318d8eacd02fcf4",
+    "macos/lua/source_logic_fidelity.lua": "e7dff5ff8dabd9cac8ccbdc0e23370b9bfec2fdcdbec5729271055bbfaa2bab0"
+  }
+}

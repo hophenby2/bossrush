@@ -159,6 +159,13 @@ function M.new(environment)
         return fn(o,...)
     end
     function C.is(o,kind) return o~=nil and o.__type==kind end
+    function C.isNull(o)
+        if o==nil then return true end
+        if type(o)~='table' then return false end
+        local tr=rawget(o,'transform')
+        local go=rawget(o,'gameObject') or tr and rawget(tr,'gameObject')
+        return not not (rawget(o,'_dead') or go and (go._dead or go._native and IsValid and not IsValid(go._native)))
+    end
     function C.as(o,kind) if C.is(o,kind) then return o end end
     function C.new(kind,...)
         if C[kind] then return C[kind](...) end

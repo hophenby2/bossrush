@@ -173,6 +173,8 @@ function ResourceItem:frame()
     if self.y<lstg.world.b-24 then object.RawDel(self) end
 end
 function ResourceItem:render()
+    local s=P.state();local adapter=s and P.adapters[s.level]
+    if adapter and adapter.itemRender and adapter.itemRender(self) then return end
     if not SourceVisual.itemRender(self) then item.render(self) end
 end
 function ResourceItem:colli(other)

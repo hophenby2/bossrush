@@ -8,7 +8,7 @@ local V=CS.Vector3
 local units,components,mainShots={}, {}, {}
 local p,center,form,config,alternate,clock
 local releases,initialGain,initialLeft,rate,lastState={},0,0,nil,nil
-local instantiate,destroy
+local instantiate,destroy,active
 local function position(o) return V(o.x/48+4.5,o.y/48-4.8,0) end
 local function valid(o) return o and IsValid(o) end
 local function rotate(v,a) return V(v.x*cos(a)-v.y*sin(a),v.x*sin(a)+v.y*cos(a),v.z) end
@@ -62,6 +62,17 @@ local function get(go,kind)
     if kind=='AudioSource' or kind=='ParticleSystem' then local c=media();c.gameObject,c.transform,c.__type=go,go.transform,kind;go.components[#go.components+1]=c;return c end
 end
 function transform:GetComponent(kind) return get(self.gameObject,kind) end
+function transform:GetComponentsInChildren(kind)
+    local result=CS.List()
+    local function visit(t)
+        if active(t.gameObject) then
+            for _,c in ipairs(t.gameObject.components) do if c.__type==kind and not c._dead then result:Add(c) end end
+            for _,child in ipairs(t.children) do visit(child) end
+        end
+    end
+    visit(self)
+    return result
+end
 local function add(go,kind)
     local c=CS.new(kind);c.gameObject,c.transform,c.enabled=go,go.transform,true
     c.GetComponent=function(_,k) return get(go,k) end
@@ -76,7 +87,7 @@ local function gameObject(name)
     go.SetActive=function(_,v) go.activeSelf=v end
     return go
 end
-local function active(go)
+active=function(go)
     if go._dead or not go.activeSelf then return false end
     local t=go.transform.parent
     return not t or active(t.gameObject)
@@ -140,7 +151,7 @@ E.Object={__static=true,Instantiate=instantiate,Destroy=destroy,DestroyImmediate
 E.UnityEngine={Object=E.Object,Random={__static=true,Range=function(a,b) return ran:Float(a,b) end}}
 E.Quaternion={__static=true,Euler=function(x,y,z) return {eulerAngles=type(x)=='table' and CS.copy(x) or V(x,y,z),x=0,y=0,z=0} end}
 E.MathF=E.Math;E.MathF.PI=math.pi
-E.Mathf={__static=true,PI=math.pi,Atan2=math.atan2,Sin=math.sin,Cos=math.cos,Abs=math.abs,Pow=math.pow,Sqrt=math.sqrt,Min=math.min,Max=math.max,Clamp=function(x,a,b) return math.max(a,math.min(b,x)) end,Lerp=function(a,b,t) return a+(b-a)*math.max(0,math.min(1,t)) end}
+E.Mathf={__static=true,PI=math.pi,Atan=math.atan,Atan2=math.atan2,Sin=math.sin,Cos=math.cos,Abs=math.abs,Pow=math.pow,Sqrt=math.sqrt,Min=math.min,Max=math.max,Clamp=function(x,a,b) return math.max(a,math.min(b,x)) end,Lerp=function(a,b,t) return a+(b-a)*math.max(0,math.min(1,t)) end}
 local S={__static=true,anjian_now={},enemy=CS.List(),boss=CS.List(),suipian_beilv_hong=1,suipian_beilv_zi=1,hyper_time=0,effect_cut=0,dam6_chengfa=0,se_enemy_hurt_count=0,if_bayunlan=0,select_nandu=3}
 E.Sincos=S
 E['Sincos.Xiaodan_im']={__new=function() return {position=V(),r=0,time=0,index=0,no_daoju=false} end}
@@ -233,10 +244,21 @@ local function resetForm()
     local useB=p.altForm
     local ref=useB and config.ziji_change or config.ziji_pre
     form=instantiate(ref,position(p));form.unit.attached=true
+    local name=p.machine.id
+    if useB then name=({reimu='yukari',yukari='reimu',byakuren='miko',miko='byakuren'})[name] or name end
+    for _,node in ipairs(D.prefabs[D.roots[name]]) do if node.name=='anim' then
+        for _,c in ipairs(node.components) do if c.type=='SpriteRenderer' then p.unity_body_sprite=c.fields.sprite.sprite end end
+    end end
     S.ziji_ziji_now=form;alternate=p.altForm
 end
 function M.bind(player)
     p=player;units,components,mainShots={},{},{};clock=0
+    p.unity_body_image=function(key)
+        local d=D.sprites[key]
+        if d then return image(key),d.scale end
+    end
+    S.bayunlan,S.bayunlan_ins=nil,nil
+    S.renwu=CS.List()
     center=instantiate({prefab=D.roots[p.machine.id] or D.roots[p.machine.art]},position(p));center.unit.attached,center.unit.center=true,true
     for _,d in ipairs(D.prefabs[D.roots[p.machine.id] or D.roots[p.machine.art]]) do for _,c in ipairs(d.components) do if c.type=='Centeryidong' then config=c.fields end end end
     if lastState~=P.state() then S.suipian_beilv_hong,S.suipian_beilv_zi,S.kaiguan_a,S.kaiguan_b,S.hyper_time=3,1,false,false,0;lastState=P.state() end
@@ -256,6 +278,17 @@ function M.bind(player)
     end)
 end
 local function advance()
+    -- Unity 已销毁对象与 null 相等；Lua 引用必须在执行原脚本前失效。
+    local function dead(v)
+        if type(v)~='table' then return false end
+        local go=v.gameObject or v.transform and v.transform.gameObject
+        return v._dead or go and (go._dead or go._native and not valid(go._native))
+    end
+    for k,v in pairs(S) do if dead(v) then S[k]=nil end end
+    for i=S.renwu.Count-1,0,-1 do
+        local action=S.renwu[i];action.time=action.time-1
+        if action.time<=0 then if action.ac then action.ac() end;S.renwu:RemoveAt(i) end
+    end
     if initialLeft>0 then P.state().barrier=math.min(299999,P.state().barrier+initialGain);initialLeft=initialLeft-1 end
     rate:FixedUpdate()
     if S.hyper_time>0 then S.hyper_time=S.hyper_time-1 end
@@ -275,10 +308,6 @@ local function advance()
     local count=#components
     for i=1,count do local c=components[i]
         if not c._dead and active(c.gameObject) and c.enabled then
-            for k,v in pairs(c) do if type(v)=='table' then
-                local go=v.gameObject or v.transform and v.transform.gameObject
-                if go and go._native and not valid(go._native) then c[k]=nil end
-            end end
             if not c._started then c._started=true;if c.Start then c:Start() end end
             if not c._dead and c.FixedUpdate then c:FixedUpdate() end
         end
