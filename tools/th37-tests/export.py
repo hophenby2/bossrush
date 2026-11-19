@@ -89,6 +89,8 @@ def main():
   if kind=='batch':
    for k,v in zip(['Cover','Rebound','Force','Deepbind'],raw[70:]):o[k]=atom(v)
   elif kind=='laser' and len(raw)>58:o['Deepbind']=atom(raw[58])
+  elif kind=='cover':
+   for k,v in zip(['bindid','Deepbind'],raw[23:]):o[k]=atom(v)
   out=lua(o)[:-1]
   for k in ('Parentevents','Sonevents'):
    if k in fields:out+=','+k+'='+events(raw[fields.index(k)],kind if k=='Parentevents' else kind+'-son')

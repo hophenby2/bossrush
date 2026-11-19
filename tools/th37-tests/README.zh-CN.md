@@ -85,3 +85,23 @@ python3 tools/th37-tests/native.py --card 37006 --frames 1000 --out /tmp/th37-la
 - Mac真实引擎验证一面激光符1000帧，以及眠符600帧后重试再跑600帧；重试前后同种子对象状态哈希相同，动态精灵资源仍有效。
 
 这些原生样本不是八面全部通关、全部碰撞边界或Windows Sub实测。机器可读记录见本目录的verification JSON。
+
+## 2026-11-19：灯笼与区域事件校准
+
+对照原 `CrazyStorm.cs`、`Cover.cs`、`Barrage.cs`、`Force.cs` 和 `b652.xna`，修复共用区域后端：
+
+- 重新导出92处覆盖区域的 `bindid/Deepbind`，包括21处对象绑定；绑定对象尚未出生或已经回收时，区域不生效。
+- `controlid` 按原作一基编号选择零基弹源；非绑定区域使用 `(x-4,y+16)`，圆形半径为半宽/半高的最大值。
+- 覆盖区域在进入时附加事件、离开时卸载，使用弹龄而非驻留时间；事件按附加顺序执行，区域结束和循环重置后停止生效。
+- 力场使用相同的目标编号和坐标规则，保留弹体现有速度及横纵倍率。
+
+`诱魂「彷徨的空蝉」` 中，灯笼存活时覆盖区域会抹掉Boss的扇弹；追踪球接触灯笼、灯笼结束消散后才放行。没有为这张卡另写固定延时发弹。
+
+`check_fields.lua` 使用实际 b652/b843 数据，核对未追到灯笼0发有效弹、追到后21发、弹龄340触发、离开卸载及0.007吸引力。macOS真实引擎另运行900逻辑帧，实际追踪并验证等待和放行。区域涉及的21个战斗/道中练习阶段另做完整时限回归；记录见 `verification-mechanics-2026-11-19.json`。
+
+```sh
+STAGE_STRICT_NEW=1 luajit tools/th37-tests/check_fields.lua
+python3 tools/native-player-tests/native_logic.py --levels 35 --card 37064 --variant mechanics --frames 900 --out /tmp/spring-mechanics
+```
+
+这些检查覆盖上述区域机制，不代表全部激光、随机序列或原作全局缓时已经等价。

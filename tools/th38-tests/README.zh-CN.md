@@ -69,3 +69,19 @@ python3 tools/th38-tests/native.py --card 38066 --frames 9000 --out /tmp/asl-fin
 - 两种子、五个代表阶段的3600/7200帧峰值一致，普通弹池始终不超过1500，结束归零。
 - 练习22110项、顺序1770项、精简/录像边界603项断言通过；117份修改/新增Lua脚本通过LuaJIT语法检查，字段审计通过。
 - Mac实机：L开场600帧并验证敌机通过真实自机弹碰撞100→70HP；Extra A开场1000帧；练习700帧重试两次状态哈希一致；双Boss1000帧、激光1200帧；六面最终攻击9000帧经过p2/p3/p4，约59FPS。另回归幕华祭开场600帧。
+
+## 2026-11-19：霜寒亿万劫的时间流速
+
+对照 `Enemy_chuliluo.cs`、`Timegame.cs`、`Basic.cs` 和空Sprite预制体 `enemy/emy42.prefab`，将敌机类型21恢复为隐藏的时间控制器。扫描全部99组弹幕，该类型只被 `L/stage6/boss1/9/slow0.txt` 使用；其原始事件以1440tick为周期，在180、780、1150tick触发，持续270、120、240tick，倍率0.33。
+
+`THlib/native_time.lua` 在正常游戏、录像和练习的共用逻辑入口累积时间预算，同时减速自机移动、C#射击更新、敌弹、碰撞和符卡计时。持续时间结束后，按原C#单精度每tick加0.01恢复；切卡、清场、重试和切换场景复位。时间控制器不生成普通妖精，也没有敌机贴图和体术判定。渲染、音乐和暂停菜单继续运行。
+
+`check_time.lua` 核对三次触发、持续时长、69tick恢复及时间预算。macOS真实引擎运行1100逻辑帧；减速窗口的100个渲染帧推进32个逻辑帧，自机位移32次，敌弹和自机射击时钟同步推进64tick，三轮均恢复正常。另在300逻辑帧、尚处减速时重试，两轮状态哈希一致；完整时限3690帧无运行错误、清场残留0。记录见 `verification-mechanics-2026-11-19.json`。
+
+```sh
+STAGE_STRICT_NEW=1 luajit tools/th38-tests/check_time.lua
+python3 tools/native-player-tests/native_logic.py --levels 36 --card 38065 --variant mechanics --frames 1100 --out /tmp/asl-mechanics
+python3 tools/th38-tests/native.py --card 38065 --repeat --frames 300 --out /tmp/asl-slow-retry
+```
+
+LuaSTG仍按60Hz宿主帧成对推进原作120Hz tick，存在一个宿主帧内的量化差异；上述检查不表示其他Unity专用组件或Windows Sub已完成等价验证。

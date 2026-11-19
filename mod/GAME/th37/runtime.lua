@@ -235,6 +235,14 @@ R.classes.projectile=Class(bullet,{
             end
             updateShadows(s)
             if s.Sonevents then s.Sonevents(s,t,R) end
+            -- 覆盖区域向弹体附加事件；“当前帧”仍是弹龄，离开区域后卸载。
+            local order=s.coverOrder or {};local j=1
+            for i=1,#order do
+                local region=order[i];local events=s.covers[region]
+                if events and region.active and region.owner.active then events(s,t,R);order[j]=region;j=j+1
+                else s.covers[region]=nil end
+            end
+            for i=#order,j,-1 do order[i]=nil end
             interpolate(s)
             if t>s.life then
                 if not s.Dispel or s.type<=0 then clean(b);return end
@@ -408,19 +416,41 @@ local function emitter(spec,c)
     o.aspeedd=direction(o.aspeedd,o,o.fx or o.x,o.fy or o.y,o.aspeedds)
     return o
 end
-local function area(o,s,c)
+local function area(o,s,c,center)
     if s.layerid~=o.parentid then return false end
-    if o.type==1 and s.parentid~=o.controlid then return false end
-    local dx,dy=s.fx-(o.x+c.offsetx),s.fy-(o.y+c.offsety)
-    if o.Circle then return dx*dx/max(1,o.halfw^2)+dy*dy/max(1,o.halfh^2)<=1 end
+    if o.type==1 and s.parentid~=o.controlid-1 then return false end
+    local x,y=o.x-4+c.offsetx,o.y+16+c.offsety
+    if center then x,y=center.fx,center.fy end
+    local dx,dy=s.fx-x,s.fy-y
+    if o.Circle then return dx*dx+dy*dy<=max(o.halfw,o.halfh)^2 end
     return abs(dx)<=o.halfw and abs(dy)<=o.halfh
 end
 local function field(o,c,t)
     if o.kind=='cover' then
-        for b,s in pairs(c.bullets) do if valid(b) and s.Cover and area(o,s,c) then
-            s.cover_times=s.cover_times or {};local n=(s.cover_times[o] or 0)+1;s.cover_times[o]=n
-            if o.Sonevents then o.Sonevents(s,n,R) end
-        end end
+        o.regions=o.regions or {}
+        for _,region in pairs(o.regions) do region.active=false end
+        local centers={}
+        if o.bound_source then
+            centers[1]={fx=o.bound_source.fx-4,fy=o.bound_source.fy+16,key=o.bound_source}
+        elseif o.bindid and o.bindid>=0 then
+            for b,s in pairs(c.bullets) do
+                if valid(b) and s.kind~='laser' and s.parentid==o.bindid and s.layerid==o.parentid and (not s.Mist or s.age>=15) then centers[#centers+1]=s end
+            end
+        else centers[1]=false end
+        for _,center in ipairs(centers) do
+            local key=center and (center.key or center) or o
+            local region=o.regions[key] or {owner=o};o.regions[key]=region;region.active=true
+            for b,s in pairs(c.bullets) do
+                if valid(b) and s.Cover and s.kind~='laser' and (not s.Mist or s.age>15) then
+                    s.covers=s.covers or {}
+                    if s~=center and area(o,s,c,center) then
+                        if not s.covers[region] then s.coverOrder=s.coverOrder or {};s.coverOrder[#s.coverOrder+1]=region end
+                        s.covers[region]=o.Sonevents
+                    else s.covers[region]=nil end
+                end
+            end
+        end
+        for key,region in pairs(o.regions) do if not region.active then o.regions[key]=nil end end
     elseif o.kind=='rebound' then
         local ox,oy=o.x+c.offsetx,o.y+c.offsety;local ca,sa=cos(o.angle),sin(o.angle)
         for b,s in pairs(c.bullets) do if valid(b) and s.Rebound then
@@ -432,14 +462,25 @@ local function field(o,c,t)
             end
         end end
     elseif o.kind=='force' then
-        for b,s in pairs(c.bullets) do if valid(b) and s.Force and area(o,s,c) then
+        local x,y=o.x-4+c.offsetx,o.y+16+c.offsety
+        local function forceAngle(fx,fy)
             local a=o.addaspeedd or 0
-            if o.Suction or o.Repulsion then a=angle(s.fx,s.fy,o.x+c.offsetx,o.y+c.offsety)+(o.Repulsion and 180 or 0) end
-            s.mx=(s.mx or 0)+(o.addaspeed or 0)*cos(a);s.my=(s.my or 0)+(o.addaspeed or 0)*sin(a)
+            if o.Suction or o.Repulsion then a=angle(fx,fy,x,y)+(o.Repulsion and 180 or 0) end
+            return a
+        end
+        for b,s in pairs(c.bullets) do if valid(b) and s.kind~='laser' and s.Force and (not s.Mist or s.age>15) and area(o,s,c) then
+            local a=forceAngle(s.fx,s.fy)
+            if s.mx==nil or s.sonmotion_dirty then
+                s.mx=(s.xscale or 1)*s.sonspeed*cos(s.sonspeedd);s.my=(s.yscale or 1)*s.sonspeed*sin(s.sonspeedd);s.sonmotion_dirty=false
+            end
+            s.mx=s.mx+(s.xscale or 1)*(o.addaspeed or 0)*cos(a);s.my=s.my+(s.yscale or 1)*(o.addaspeed or 0)*sin(a)
         end end
     end
 end
 local function reset(c)
+    for _,o in ipairs(c.emitters or {}) do
+        o.active=false;for _,child in pairs(o.children) do child.active=false end
+    end
     local initial=c.pattern.center
     c.emitters={};c.center=copy{fx=initial[1],fy=initial[2],ox=initial[1],oy=initial[2],speed=initial[3],speedd=initial[4],aspeed=initial[5],aspeedd=initial[6],is_center=true,host=c.host}
     for _,spec in ipairs(c.pattern.emitters) do c.emitters[#c.emitters+1]=emitter(spec,c) end
@@ -461,6 +502,7 @@ function R.tick(c)
         c.offsetx=center.ox-center.fx;c.offsety=center.oy-center.fy
     else c.offsetx,c.offsety=0,0 end
     local function step(o,ot,bound)
+        o.active=ot>=1 and ot<=o.life
         if ot<1 or ot>o.life then return end
         o.time=ot
         local mx,my=motion(o,false);o.x,o.y=o.x+mx,o.y+my
@@ -475,7 +517,8 @@ function R.tick(c)
         else field(o,c,ot) end
     end
     for _,o in ipairs(c.emitters) do
-        if o.Deepbind and o.bindid and o.bindid>=0 and o.bindid~=o.id then
+        if o.Deepbind and o.bindid and o.bindid>=0 and (o.kind=='cover' or o.bindid~=o.id) then
+            for _,child in pairs(o.children) do child.active=false end
             local targets={}
             for b,s in pairs(c.bullets) do if valid(b) and s.parentid==o.bindid and s.layerid==o.parentid and (not s.Mist or s.age>15) then targets[#targets+1]={b,s} end end
             for _,pair in ipairs(targets) do

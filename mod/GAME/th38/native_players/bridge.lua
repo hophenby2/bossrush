@@ -314,6 +314,7 @@ function M.frame(player,state)
     targets()
     S.zidonghuishou=p.y>((p.machine.art=='marisa' and -3.75 or -3.15)+4.8)*48
     local key=p._playersys.keyState
+    S.chuliluo_speed=NativeTime and NativeTime.scale or 1
     for i,k in pairs({[0]='up',[1]='down',[2]='left',[3]='right',[4]='slow',[5]='shoot',[6]='spell',[7]='special'}) do S.anjian_now[i]=key[k] or false end
     if p.native_body_hidden then S.anjian_now[5]=false end
     for _=1,2 do clock=clock+1;S.gametime=clock;advance() end

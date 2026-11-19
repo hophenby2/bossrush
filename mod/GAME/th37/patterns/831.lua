@@ -217,12 +217,12 @@ if t==(14+math.floor(t/20)*20) then R.change(o,"type",1.0,0,1,"正比",1) end
 if t==(19+math.floor(t/20)*20) then R.change(o,"type",3.0,0,2,"正比",1) end
 if t==(91) then R.change(o,"sonspeed",1.0,0.5,1,"正比",260) end
 end},
-{["id"]=0,["parentid"]=3,["x"]=0,["y"]=384,["begin"]=1,["life"]=600,["halfw"]=80,["halfh"]=100,["Circle"]=false,["type"]=0,["controlid"]=1,["speed"]=0,["speedd"]=0,["speedds"]={0.0,0.0},["aspeed"]=0,["aspeedd"]=0,["aspeedds"]={0.0,0.0},["rand"]={},["kind"]="cover",Parentevents=function(o,t,R)
+{["id"]=0,["parentid"]=3,["x"]=0,["y"]=384,["begin"]=1,["life"]=600,["halfw"]=80,["halfh"]=100,["Circle"]=false,["type"]=0,["controlid"]=1,["speed"]=0,["speedd"]=0,["speedds"]={0.0,0.0},["aspeed"]=0,["aspeedd"]=0,["aspeedds"]={0.0,0.0},["rand"]={},["kind"]="cover",["bindid"]=-1,["Deepbind"]=false,Parentevents=function(o,t,R)
 
 end,Sonevents=function(o,t,R)
 if t>(1) then R.change(o,"life",0.0,0,0,"正比",1) end
 end},
-{["id"]=1,["parentid"]=3,["x"]=640,["y"]=384,["begin"]=1,["life"]=600,["halfw"]=80,["halfh"]=100,["Circle"]=false,["type"]=0,["controlid"]=1,["speed"]=0,["speedd"]=0,["speedds"]={0.0,0.0},["aspeed"]=0,["aspeedd"]=0,["aspeedds"]={0.0,0.0},["rand"]={},["kind"]="cover",Parentevents=function(o,t,R)
+{["id"]=1,["parentid"]=3,["x"]=640,["y"]=384,["begin"]=1,["life"]=600,["halfw"]=80,["halfh"]=100,["Circle"]=false,["type"]=0,["controlid"]=1,["speed"]=0,["speedd"]=0,["speedds"]={0.0,0.0},["aspeed"]=0,["aspeedd"]=0,["aspeedds"]={0.0,0.0},["rand"]={},["kind"]="cover",["bindid"]=-1,["Deepbind"]=false,Parentevents=function(o,t,R)
 
 end,Sonevents=function(o,t,R)
 if t>(1) then R.change(o,"life",0.0,0,0,"正比",1) end

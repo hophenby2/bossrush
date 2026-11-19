@@ -177,7 +177,7 @@ if t==(1) then R.change(o,"hscale",3.0,0,0,"正比",120) end
 if t==(1) then R.change(o,"head",90.0,0,2,"正比",120) end
 if t==(1) then R.change(o,"alpha",0.0,0,0,"正比",120) end
 end},
-{["id"]=0,["parentid"]=2,["x"]=320,["y"]=320,["begin"]=1,["life"]=6200,["halfw"]=150,["halfh"]=150,["Circle"]=true,["type"]=1,["controlid"]=6,["speed"]=0,["speedd"]=0,["speedds"]={0.0,0.0},["aspeed"]=0,["aspeedd"]=0,["aspeedds"]={0.0,0.0},["rand"]={},["kind"]="cover",Parentevents=function(o,t,R)
+{["id"]=0,["parentid"]=2,["x"]=320,["y"]=320,["begin"]=1,["life"]=6200,["halfw"]=150,["halfh"]=150,["Circle"]=true,["type"]=1,["controlid"]=6,["speed"]=0,["speedd"]=0,["speedds"]={0.0,0.0},["aspeed"]=0,["aspeedd"]=0,["aspeedds"]={0.0,0.0},["rand"]={},["kind"]="cover",["bindid"]=0,["Deepbind"]=false,Parentevents=function(o,t,R)
 if t==(1+math.floor(t/120)*120) then R.change(o,"halfh",140.0,0,0,"正弦",119) end
 if t==(1+math.floor(t/120)*120) then R.change(o,"halfw",140.0,0,0,"正弦",119) end
 end,Sonevents=function(o,t,R)

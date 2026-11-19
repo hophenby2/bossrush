@@ -1,0 +1,221 @@
+{
+  "date": "2026-11-19",
+  "scope": "原作区域绑定、目标编号、覆盖事件及力场；不代表全作逐帧等价",
+  "source_sha256": {
+    "src/THMHJ/THMHJ/CrazyStorm.cs": "09be0ef39ff4090532799233f109b49e5e4e92cfa6e639163550d00993ecf8dc",
+    "src/THMHJ/THMHJ/Barrage.cs": "0bb4e046a50b0e3dc781aac533933236ca0e68553f0dc5e5d4fffe0ea7e34223",
+    "src/THMHJ/THMHJ/Cover.cs": "16dbe05263861dcd630f7f860f1f52fd15a72e1872933d3688e8503473362b8b",
+    "src/THMHJ/THMHJ/Force.cs": "2339e3fdc6b761dfb21e6365f194366c7ed80c258500a22d287dc5b5540929b8",
+    "src/THMHJ/bin/x86/Debug/net461/Content/Data/b652.xna": "d1bac877b8a9622fdc822d2915513a240c2fb63dadfd0887f17e2591f5c6a3a0",
+    "src/THMHJ/bin/x86/Debug/net461/Content/Data/b843.xna": "b063fcc2df2e7e93a838c09577d1b868a1d796423162a37ffe377f7e748ebb78"
+  },
+  "audit": {
+    "covers_including_player_effects": 92,
+    "bound_covers": 21,
+    "cover_event_groups_with_nonzero_addtime": 0
+  },
+  "unit": {
+    "script": "tools/th37-tests/check_fields.lua",
+    "passed": true,
+    "boss_threats_before_catch": 0,
+    "boss_threats_after_catch": 21,
+    "bullet_age": 340,
+    "force_acceleration": 0.007
+  },
+  "simulation": {
+    "kind": "LuaJIT模拟",
+    "seed": 20260916,
+    "stages": 21,
+    "frames": 77550,
+    "failures": 0,
+    "rows": [
+      {
+        "id": 37007,
+        "frames": 2250,
+        "peak": 687,
+        "peak_bullets": 687,
+        "remaining": 0
+      },
+      {
+        "id": 37024,
+        "frames": 2850,
+        "peak": 763,
+        "peak_bullets": 763,
+        "remaining": 0
+      },
+      {
+        "id": 37025,
+        "frames": 3150,
+        "peak": 1571,
+        "peak_bullets": 1571,
+        "remaining": 0
+      },
+      {
+        "id": 37049,
+        "frames": 2850,
+        "peak": 2121,
+        "peak_bullets": 2121,
+        "remaining": 0
+      },
+      {
+        "id": 37050,
+        "frames": 5550,
+        "peak": 2162,
+        "peak_bullets": 2162,
+        "remaining": 0
+      },
+      {
+        "id": 37060,
+        "frames": 3150,
+        "peak": 995,
+        "peak_bullets": 995,
+        "remaining": 0
+      },
+      {
+        "id": 37064,
+        "frames": 3870,
+        "peak": 670,
+        "peak_bullets": 670,
+        "remaining": 0
+      },
+      {
+        "id": 37065,
+        "frames": 2430,
+        "peak": 1390,
+        "peak_bullets": 1390,
+        "remaining": 0
+      },
+      {
+        "id": 37079,
+        "frames": 3150,
+        "peak": 990,
+        "peak_bullets": 990,
+        "remaining": 0
+      },
+      {
+        "id": 37085,
+        "frames": 3150,
+        "peak": 703,
+        "peak_bullets": 703,
+        "remaining": 0
+      },
+      {
+        "id": 37091,
+        "frames": 3930,
+        "peak": 814,
+        "peak_bullets": 814,
+        "remaining": 0
+      },
+      {
+        "id": 37092,
+        "frames": 6090,
+        "peak": 1238,
+        "peak_bullets": 1238,
+        "remaining": 0
+      },
+      {
+        "id": 37093,
+        "frames": 6090,
+        "peak": 5122,
+        "peak_bullets": 5122,
+        "remaining": 0
+      },
+      {
+        "id": 37101,
+        "frames": 3150,
+        "peak": 470,
+        "peak_bullets": 470,
+        "remaining": 0
+      },
+      {
+        "id": 37105,
+        "frames": 3150,
+        "peak": 651,
+        "peak_bullets": 651,
+        "remaining": 0
+      },
+      {
+        "id": 37107,
+        "frames": 3150,
+        "peak": 292,
+        "peak_bullets": 292,
+        "remaining": 0
+      },
+      {
+        "id": 37111,
+        "frames": 3150,
+        "peak": 1054,
+        "peak_bullets": 1054,
+        "remaining": 0
+      },
+      {
+        "id": 37113,
+        "frames": 3150,
+        "peak": 497,
+        "peak_bullets": 497,
+        "remaining": 0
+      },
+      {
+        "id": 37116,
+        "frames": 2550,
+        "peak": 752,
+        "peak_bullets": 752,
+        "remaining": 0
+      },
+      {
+        "id": 37117,
+        "frames": 6090,
+        "peak": 1054,
+        "peak_bullets": 1054,
+        "remaining": 0
+      },
+      {
+        "id": 37119,
+        "frames": 4650,
+        "peak": 2528,
+        "peak_bullets": 2528,
+        "remaining": 0
+      }
+    ]
+  },
+  "flow": {
+    "chapters": 8,
+    "boss_cards": 93,
+    "continue_branches": 8,
+    "passed": true
+  },
+  "native": {
+    "platform": "macOS / LuaSTG-x / Metal",
+    "level": 35,
+    "passed": true,
+    "exit": 0,
+    "error": null,
+    "source_sha256": {
+      "THlib/ext/ext.lua": "893ceb10ed664d1ea1bf95d24c47406dbbd84567c6d24a3b8cc1dac0aa4643bd",
+      "THlib/native_time.lua": "e6f802b1f02423599417b6fd268b71e8bd914f497b0e274d5d392f56bbdb8657",
+      "THlib/native_players.lua": "8c32a5c1c6ae9012b456f5bd28b9fca27c7e2723f809b17daa47fd69c1d226b3",
+      "mod/GAME/th37/runtime.lua": "360e331617fb7adea757552a5e8789ade8acebde20f13b0ab804b04adf3fe21a",
+      "mod/GAME/th37/patterns/652.lua": "02a835ff9fb9debea538892a8f8dd7826147eb62be9e38cf7f618112ae5c6cf9",
+      "macos/lua/test.lua": "d5f446c2292f23e33d532d55d917e21a5f9e7da5e7eeff291cc96c899ca54764",
+      "macos/lua/source_logic_probe.lua": "03063159e66391105957e3e5375b08fdea7b0e90b1edde6b9c251b5b78a3f1cc",
+      "macos/lua/source_logic_mechanics.lua": "ee3b2ffb995f8829a6680408f356ee940fa4e703ba95e6974b394d2e655537da"
+    },
+    "result": {
+      "card": 37064,
+      "logic_frames": 900,
+      "checkpoint": "0e0ae9026c41e88794bdc1d620328fb7be614ec7d04f332061fb6744bfbcaf78",
+      "fps": 60.288974446221,
+      "peak": 665,
+      "renderer": "macOS_GPUFamily2_v1 / Apple M4 Max",
+      "jit": true
+    },
+    "assertions": [
+      "SOURCE_LOGIC: 彷徨的空蝉真实引擎灯笼触发通过"
+    ]
+  },
+  "shared_regressions": {
+    "sequence_assertions": 3653,
+    "practice_assertions": 24236,
+    "lua_syntax_files": 40
+  }
+}

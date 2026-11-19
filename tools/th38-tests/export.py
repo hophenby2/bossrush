@@ -143,9 +143,11 @@ for item in [b for pat in patterns.values() for b in pat['items']]:
   dst='custom'+str(len(customs))+'.png' if item['custom'] not in customs else customs[item['custom']]['file']
   w,h=Image.open(path).size;customs[item['custom']]={'file':dst,'w':w,'h':h};shutil.copyfile(path,ASSET/dst);hashes[path.relative_to(SRC).as_posix()]=hashlib.sha256(path.read_bytes()).hexdigest()
  else:missing.append('自定义图缺失：'+str(path.relative_to(SRC)))
-for script in ['Basic','Basic_zi','Bulletmove','Enemymove','Bossmove','Boss_in','Boss_creat','Zairustage1','Sincos','Centeryidong','LSC_6','Boss_zhuanjieduan','Laser_move_zhi','Laser_move_line','Laser_move_wan']:
+for script in ['Basic','Basic_zi','Bulletmove','Enemymove','Enemy_chuliluo','Timegame','Bossmove','Boss_in','Boss_creat','Zairustage1','Sincos','Centeryidong','LSC_6','Boss_zhuanjieduan','Laser_move_zhi','Laser_move_line','Laser_move_wan']:
  f=SRC/'Assets/Scripts'/f'{script}.cs'
  if f.exists():read(f)
+# 21号敌机使用空Sprite的emy42，只承载时间流速组件。
+read(SRC/'Assets/Resources/xuelianhua/prefab/enemy/emy42.prefab')
 dump(OUT/'catalogue.lua',{'chapters':chapters,'extra':extras,'sprites':sprites,'customs':customs,'keys':sorted(patterns)})
 report={'title':'东方雪莲华 ～ Abyss Soul Lotus.','difficulty':['L','EXA'],'statistics':dict(statistics),'chapters':len(chapters),'combat':sum(len(g['cards']) for c in chapters for g in c['bosses']),'roads':sum(len(c['roads']) for c in chapters),'extra':len(extras),'missing':sorted(set(missing)),'sha256':dict(sorted(hashes.items()))}
 (OUT/'sources.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')

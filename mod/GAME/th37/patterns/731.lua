@@ -117,7 +117,7 @@ end},
 end,Sonevents=function(o,t,R)
 if t==(1) then R.change(o,"sonspeedd",0.0,20.0,1,"正弦",280) end
 end},
-{["id"]=0,["parentid"]=0,["x"]=320,["y"]=448,["begin"]=1,["life"]=1200,["halfw"]=500,["halfh"]=100,["Circle"]=false,["type"]=0,["controlid"]=1,["speed"]=0,["speedd"]=0,["speedds"]={0.0,0.0},["aspeed"]=0,["aspeedd"]=0,["aspeedds"]={0.0,0.0},["rand"]={},["kind"]="cover",Parentevents=function(o,t,R)
+{["id"]=0,["parentid"]=0,["x"]=320,["y"]=448,["begin"]=1,["life"]=1200,["halfw"]=500,["halfh"]=100,["Circle"]=false,["type"]=0,["controlid"]=1,["speed"]=0,["speedd"]=0,["speedds"]={0.0,0.0},["aspeed"]=0,["aspeedd"]=0,["aspeedds"]={0.0,0.0},["rand"]={},["kind"]="cover",["bindid"]=-1,["Deepbind"]=false,Parentevents=function(o,t,R)
 
 end,Sonevents=function(o,t,R)
 if t>(1) then R.change(o,"Outdispel",1.0,0,0,"固定",1) end

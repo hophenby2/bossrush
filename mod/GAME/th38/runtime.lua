@@ -2,6 +2,9 @@
 -- Unity坐标中心(4.5,-4.8)，每单位48px；弹图按原100px/单位缩放。
 -- 离线数值表来自Basic/Basic_zi/Bulletmove；游戏内不依赖Unity或外部txt。
 local R={classes={},patterns={},objects=setmetatable({},{__mode='k'}),controllers=setmetatable({},{__mode='k'}),bulletCount=0,bulletLimit=1500}
+local Time=NativeTime or dofile('THlib/native_time.lua')
+local float=require('ffi').typeof('float')
+local function f32(x) return tonumber(float(x)) end
 R.data=dofile('mod/GAME/th38/catalogue.lua')
 local abs,min,max,floor=math.abs,math.min,math.max,math.floor
 local function valid(o) return o and IsValid(o) end
@@ -331,6 +334,11 @@ local function spawn(e,x,y,direction,speed)
         enemyType=e.a48_1,enemyStyle=1+(e.a48_1*2+e.a48_2)%9,laserStyle=e.a54_4 or 0,
         tailTicks=max(5,floor((e.a54_2 or 5)/5)*5),contact=e.a48_4*.01,hit=e.a48_5*.01,immune=e.a48_6,followSpeed=e.a8_9==1,length=e.a54_2 and e.a54_2*.01 or 1,width=e.a54_3 or 1}
     if e.a47==4 then return end -- Unity蓄力/爆炸/震屏只演出，不制造有判定的替代弹。
+    if s.kind=='enemy' and s.enemyType==21 then
+        -- Enemy_chuliluo 的 life 是持续tick、pdbj是时间倍率；没有敌机贴图和碰撞。
+        s.kind='time';s.slowLeft=s.life;s.slowScale=f32(e.a48_4*f32(.01))
+        c.entities[#c.entities+1]=s;attach(e,s);return s
+    end
     local cls=s.kind=='enemy' and R.classes.fairy or s.kind=='curve' and R.classes.curve or s.kind=='beam' and R.classes.beam or R.classes.projectile
     if s.kind=='enemy' then s.vars=c.vars end
     if s.kind=='bullet' then s.pooled=true;R.bulletCount=R.bulletCount+1 end
@@ -437,6 +445,14 @@ local function move(s)
     local boundBullet=parent and s.kind=='bullet'
     if boundBullet then followParent(s,parent) end
     events(s,s.events,s.age,true)
+    if s.kind=='time' then
+        if s.slowLeft>0 then
+            Time.set(c,s.slowScale);s.slowLeft=s.slowLeft-1
+        elseif Time.scale<1 then
+            Time.set(c,f32(Time.scale+f32(.01)))
+        else Time.reset(c);s.alive=false end
+        return
+    end
     if s.kind=='enemy' and valid(s.native) then s.native.hp=s.life end
     if s.kind=='boss' and s.main and valid(c.host) then c.host.hp=s.life end
     local dx,dy
@@ -516,6 +532,7 @@ end
 function R.tick(c) R.step(c);R.step(c) end
 -- 转阶段替换发射器；保留同一卡的倒计时和血量。清弹标记来自Boss_zhuanjieduan。
 function R.transition(c,key,reset,clear)
+    if clear then Time.reset(c) end
     local positions={}
     for _,s in ipairs(c.entities) do if s.kind=='boss' then positions[#positions+1]={s.x,s.y} end end
     local old=c.entities;local keep={}
@@ -540,6 +557,7 @@ function R.transition(c,key,reset,clear)
 end
 function R.clear(c)
     if not c then return end
+    Time.reset(c)
     c.closed=true
     for _,s in ipairs(c.entities) do if valid(s.native) then clean(s.native) else release(s) end;s.alive=false end
     c.emitters,c.entities,c.byName={},{},{};R.controllers[c]=nil

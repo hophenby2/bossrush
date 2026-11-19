@@ -315,7 +315,7 @@ if t==(1) then R.change(o,"wscale",1.0,0,0,"正比",20) end
 if t==(1) then R.change(o,"hscale",1.0,0,0,"正比",20) end
 if t==(10) then R.change(o,"alpha",1.0,0,0,"正比",10) end
 end},
-{["id"]=0,["parentid"]=2,["x"]=320,["y"]=32,["begin"]=1,["life"]=120,["halfw"]=500,["halfh"]=500,["Circle"]=false,["type"]=0,["controlid"]=1,["speed"]=0,["speedd"]=0,["speedds"]={0.0,0.0},["aspeed"]=0,["aspeedd"]=0,["aspeedds"]={0.0,0.0},["rand"]={},["kind"]="cover",Parentevents=function(o,t,R)
+{["id"]=0,["parentid"]=2,["x"]=320,["y"]=32,["begin"]=1,["life"]=120,["halfw"]=500,["halfh"]=500,["Circle"]=false,["type"]=0,["controlid"]=1,["speed"]=0,["speedd"]=0,["speedds"]={0.0,0.0},["aspeed"]=0,["aspeedd"]=0,["aspeedds"]={0.0,0.0},["rand"]={},["kind"]="cover",["bindid"]=-1,["Deepbind"]=false,Parentevents=function(o,t,R)
 
 end,Sonevents=function(o,t,R)
 if t>(1) then R.change(o,"alpha",80.0,0,0,"正比",1) end

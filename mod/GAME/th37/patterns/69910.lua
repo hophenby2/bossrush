@@ -159,7 +159,7 @@ end,Sonevents=function(o,t,R)
 if t==(2) then R.change(o,"alpha",0.0,0,0,"正比",18) end
 if t==(2) then R.change(o,"colorG",1.0,0,0,"正比",18) end
 end},
-{["id"]=0,["parentid"]=1,["x"]=320,["y"]=160,["begin"]=1,["life"]=1200,["halfw"]=40,["halfh"]=40,["Circle"]=true,["type"]=1,["controlid"]=3,["speed"]=0,["speedd"]=0,["speedds"]={0.0,0.0},["aspeed"]=0,["aspeedd"]=0,["aspeedds"]={0.0,0.0},["rand"]={},["kind"]="cover",Parentevents=function(o,t,R)
+{["id"]=0,["parentid"]=1,["x"]=320,["y"]=160,["begin"]=1,["life"]=1200,["halfw"]=40,["halfh"]=40,["Circle"]=true,["type"]=1,["controlid"]=3,["speed"]=0,["speedd"]=0,["speedds"]={0.0,0.0},["aspeed"]=0,["aspeedd"]=0,["aspeedds"]={0.0,0.0},["rand"]={},["kind"]="cover",["bindid"]=-1,["Deepbind"]=false,Parentevents=function(o,t,R)
 
 end,Sonevents=function(o,t,R)
 if t>(1) then R.change(o,"life",0.0,0,0,"正比",1) end

@@ -189,7 +189,9 @@ local function DoFrame()
             ResetPool()
         end
         ChangeGameStage()
+        if NativeTime then NativeTime.reset() end
     end
+    if NativeTime and not NativeTime.allowFrame() then return end
     if SaveResume and not SaveResume.beforeLogic() then return end
     --刷新输入
     GetInput()

@@ -138,7 +138,7 @@ end},
 end,Sonevents=function(o,t,R)
 
 end},
-{["id"]=0,["parentid"]=0,["x"]=320,["y"]=224,["begin"]=3500,["life"]=100,["halfw"]=100,["halfh"]=100,["Circle"]=false,["type"]=1,["controlid"]=5,["speed"]=0,["speedd"]=0,["speedds"]={0.0,0.0},["aspeed"]=0,["aspeedd"]=0,["aspeedds"]={0.0,0.0},["rand"]={},["kind"]="cover",Parentevents=function(o,t,R)
+{["id"]=0,["parentid"]=0,["x"]=320,["y"]=224,["begin"]=3500,["life"]=100,["halfw"]=100,["halfh"]=100,["Circle"]=false,["type"]=1,["controlid"]=5,["speed"]=0,["speedd"]=0,["speedds"]={0.0,0.0},["aspeed"]=0,["aspeedd"]=0,["aspeedds"]={0.0,0.0},["rand"]={},["kind"]="cover",["bindid"]=-1,["Deepbind"]=false,Parentevents=function(o,t,R)
 
 end,Sonevents=function(o,t,R)
 if t==(3600) then R.change(o,"life",0.0,0,0,"正比",1) end
@@ -479,7 +479,7 @@ end,Sonevents=function(o,t,R)
 if t==(1) then R.change(o,"alpha",13.0,0,0,"正比",60) end
 if t==(61) then R.change(o,"alpha",1.0,0,0,"正比",60) end
 end},
-{["id"]=0,["parentid"]=3,["x"]=288,["y"]=96,["begin"]=1000,["life"]=1001,["halfw"]=600,["halfh"]=600,["Circle"]=false,["type"]=1,["controlid"]=2,["speed"]=0,["speedd"]=0,["speedds"]={0.0,0.0},["aspeed"]=0,["aspeedd"]=0,["aspeedds"]={0.0,0.0},["rand"]={},["kind"]="cover",Parentevents=function(o,t,R)
+{["id"]=0,["parentid"]=3,["x"]=288,["y"]=96,["begin"]=1000,["life"]=1001,["halfw"]=600,["halfh"]=600,["Circle"]=false,["type"]=1,["controlid"]=2,["speed"]=0,["speedd"]=0,["speedds"]={0.0,0.0},["aspeed"]=0,["aspeedd"]=0,["aspeedds"]={0.0,0.0},["rand"]={},["kind"]="cover",["bindid"]=-1,["Deepbind"]=false,Parentevents=function(o,t,R)
 
 end,Sonevents=function(o,t,R)
 if t==(1880) then R.change(o,"life",0.0,0,0,"固定",1) end

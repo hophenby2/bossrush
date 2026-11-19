@@ -293,7 +293,7 @@ if t==(1) then R.change(o,"sonspeed",0.0,0,0,"正比",30) end
 if t==(411) then R.change(o,"sonaspeed",0.0,0,0,"正比",30) end
 if t==(291) then R.change(o,"sonaspeed",0.015,0,0,"正比",30) end
 end},
-{["id"]=0,["parentid"]=3,["x"]=352,["y"]=384,["begin"]=1,["life"]=900,["halfw"]=500,["halfh"]=100,["Circle"]=false,["type"]=0,["controlid"]=1,["speed"]=0,["speedd"]=0,["speedds"]={0.0,0.0},["aspeed"]=0,["aspeedd"]=0,["aspeedds"]={0.0,0.0},["rand"]={},["kind"]="cover",Parentevents=function(o,t,R)
+{["id"]=0,["parentid"]=3,["x"]=352,["y"]=384,["begin"]=1,["life"]=900,["halfw"]=500,["halfh"]=100,["Circle"]=false,["type"]=0,["controlid"]=1,["speed"]=0,["speedd"]=0,["speedds"]={0.0,0.0},["aspeed"]=0,["aspeedd"]=0,["aspeedds"]={0.0,0.0},["rand"]={},["kind"]="cover",["bindid"]=-1,["Deepbind"]=false,Parentevents=function(o,t,R)
 
 end,Sonevents=function(o,t,R)
 if t>(1) then R.change(o,"Outdispel",1.0,0,0,"固定",1) end

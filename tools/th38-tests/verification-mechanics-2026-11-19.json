@@ -1,0 +1,99 @@
+{
+  "date": "2026-11-19",
+  "scope": "Enemy_chuliluo全局时间流速；120Hz tick按60Hz宿主帧成对执行，不代表全部Unity组件等价",
+  "source_sha256": {
+    "Assets/Resources/xuelianhua/prefab/enemy/emy42.prefab": "4dd9c46709ab08bafb1b0403ed736445a6bfebe034239ecd8afd1399d787d83a",
+    "Assets/Scripts/Basic.cs": "bdb0b0a6769cb0c003a9fc327c5fd532e4c16a573a41bfb05eeb77822e8e0b29",
+    "Assets/Scripts/Enemy_chuliluo.cs": "b3a5ae45da6801cfdc4eefc1d4cb35f2d487a9f9935c7496ee2c4689bf8d0509",
+    "Assets/Scripts/Timegame.cs": "a914b396094180df79b69ac84854c1138a37d3fc0ad6bfaa6ffe9dc07009495e"
+  },
+  "audit": {
+    "pattern_groups": 99,
+    "time_controller_groups": [
+      "L/stage6/boss1/9"
+    ],
+    "time_controller_enemy_type": 21
+  },
+  "unit": {
+    "script": "tools/th38-tests/check_time.lua",
+    "passed": true,
+    "trigger_ticks": [
+      180,
+      780,
+      1150
+    ],
+    "durations": [
+      270,
+      120,
+      240
+    ],
+    "time_scale": 0.33,
+    "float32_recovery_ticks": 69,
+    "budget_300_wall_frames": 99
+  },
+  "simulation": {
+    "kind": "LuaJIT模拟",
+    "stages": 1,
+    "frames": 3690,
+    "failures": 0,
+    "rows": [
+      {
+        "id": 38065,
+        "frames": 3690,
+        "peak": 1240,
+        "bullets": 1240,
+        "emitters": 830,
+        "transitions": 0,
+        "remaining": 0
+      }
+    ]
+  },
+  "flow": {
+    "chapters": 7,
+    "boss_cards": 71,
+    "passed": true
+  },
+  "native": {
+    "platform": "macOS / LuaSTG-x / Metal",
+    "level": 36,
+    "passed": true,
+    "exit": 0,
+    "error": null,
+    "source_sha256": {
+      "THlib/ext/ext.lua": "893ceb10ed664d1ea1bf95d24c47406dbbd84567c6d24a3b8cc1dac0aa4643bd",
+      "THlib/native_time.lua": "e6f802b1f02423599417b6fd268b71e8bd914f497b0e274d5d392f56bbdb8657",
+      "THlib/native_players.lua": "8c32a5c1c6ae9012b456f5bd28b9fca27c7e2723f809b17daa47fd69c1d226b3",
+      "mod/GAME/th38/runtime.lua": "8c5c4ea31343b84514d0671893295d3a5816ab32574e75c8e9755167b0b7ab54",
+      "mod/GAME/th38/patterns/L_stage6_boss1_9.lua": "efef54aa29eb82fa826f2979070de0f40b4a43a43a6a7b64402faad7980b794d",
+      "macos/lua/test.lua": "d5f446c2292f23e33d532d55d917e21a5f9e7da5e7eeff291cc96c899ca54764",
+      "macos/lua/source_logic_probe.lua": "03063159e66391105957e3e5375b08fdea7b0e90b1edde6b9c251b5b78a3f1cc",
+      "macos/lua/source_logic_mechanics.lua": "ee3b2ffb995f8829a6680408f356ee940fa4e703ba95e6974b394d2e655537da"
+    },
+    "result": {
+      "card": 38065,
+      "logic_frames": 1100,
+      "checkpoint": "88462aaca802876682d6109377b1921513887b6c0d3eded2dcec7cdf1ed1f959",
+      "fps": 61.509019630894,
+      "peak": 1164,
+      "renderer": "macOS_GPUFamily2_v1 / Apple M4 Max",
+      "jit": true
+    },
+    "assertions": [
+      "MECHANICS_TIME: 100渲染帧推进32逻辑帧，自机位移32次",
+      "SOURCE_LOGIC: 霜寒亿万劫真实引擎整场减速、三轮与恢复通过"
+    ]
+  },
+  "retry_during_slowdown": {
+    "card": 38065,
+    "logic_frames": 300,
+    "checkpoint": "48be9a87b746eaa7f8ad115b94be80dd6151f46c04b8b8eabda2988d4ea49299",
+    "mhj_repeated": true,
+    "native_platform": "macOS / LuaSTG-x / Metal",
+    "fps": 59.916623500241
+  },
+  "shared_regressions": {
+    "sequence_assertions": 3653,
+    "practice_assertions": 24236,
+    "lua_syntax_files": 40
+  }
+}

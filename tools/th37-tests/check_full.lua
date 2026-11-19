@@ -14,7 +14,7 @@ function hook.on_card(_,entry)
     if not TH37.runtime._hp_fixture then
         local controller=TH37.runtime.controller
         TH37.runtime.controller=function(host,id,road)
-            if not road and current.meta and current.meta.hp then
+            if host and not road and current.meta and current.meta.hp then
                 if not current.hp_initialized then host.hp=current.meta.hp;current.hp_initialized=true end
                 current.patterns[#current.patterns+1]=id
             end

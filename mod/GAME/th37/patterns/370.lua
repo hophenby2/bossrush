@@ -249,7 +249,7 @@ end,Sonevents=function(o,t,R)
 if t==(361) then R.change(o,"sonspeed",-3.0,0,0,"正比",61) end
 if t==(1) then R.change(o,"sonspeed",0.01,0,0,"正比",61) end
 end},
-{["id"]=0,["parentid"]=1,["x"]=320,["y"]=256,["begin"]=1,["life"]=600,["halfw"]=800,["halfh"]=800,["Circle"]=false,["type"]=0,["controlid"]=1,["speed"]=0,["speedd"]=0,["speedds"]={0.0,0.0},["aspeed"]=0,["aspeedd"]=0,["aspeedds"]={0.0,0.0},["rand"]={},["kind"]="cover",Parentevents=function(o,t,R)
+{["id"]=0,["parentid"]=1,["x"]=320,["y"]=256,["begin"]=1,["life"]=600,["halfw"]=800,["halfh"]=800,["Circle"]=false,["type"]=0,["controlid"]=1,["speed"]=0,["speedd"]=0,["speedds"]={0.0,0.0},["aspeed"]=0,["aspeedd"]=0,["aspeedds"]={0.0,0.0},["rand"]={},["kind"]="cover",["bindid"]=-1,["Deepbind"]=false,Parentevents=function(o,t,R)
 
 end,Sonevents=function(o,t,R)
 if t>(260) then R.change(o,"Outdispel",1.0,0,0,"固定",1) end
@@ -478,7 +478,7 @@ end,Sonevents=function(o,t,R)
 if t==(361) then R.change(o,"sonspeed",-3.0,0,0,"正比",61) end
 if t==(1) then R.change(o,"sonspeed",0.01,0,0,"正比",61) end
 end},
-{["id"]=0,["parentid"]=2,["x"]=320,["y"]=224,["begin"]=501,["life"]=500,["halfw"]=800,["halfh"]=800,["Circle"]=false,["type"]=0,["controlid"]=1,["speed"]=0,["speedd"]=0,["speedds"]={0.0,0.0},["aspeed"]=0,["aspeedd"]=0,["aspeedds"]={0.0,0.0},["rand"]={},["kind"]="cover",Parentevents=function(o,t,R)
+{["id"]=0,["parentid"]=2,["x"]=320,["y"]=224,["begin"]=501,["life"]=500,["halfw"]=800,["halfh"]=800,["Circle"]=false,["type"]=0,["controlid"]=1,["speed"]=0,["speedd"]=0,["speedds"]={0.0,0.0},["aspeed"]=0,["aspeedd"]=0,["aspeedds"]={0.0,0.0},["rand"]={},["kind"]="cover",["bindid"]=-1,["Deepbind"]=false,Parentevents=function(o,t,R)
 
 end,Sonevents=function(o,t,R)
 if t>(760) then R.change(o,"Outdispel",1.0,0,0,"固定",1) end

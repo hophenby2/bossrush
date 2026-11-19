@@ -200,24 +200,24 @@ end},
 end,Sonevents=function(o,t,R)
 
 end},
-{["id"]=0,["parentid"]=1,["x"]=192,["y"]=224,["begin"]=1,["life"]=300,["halfw"]=24,["halfh"]=24,["Circle"]=true,["type"]=1,["controlid"]=3,["speed"]=0,["speedd"]=0,["speedds"]={0.0,0.0},["aspeed"]=0,["aspeedd"]=0,["aspeedds"]={0.0,0.0},["rand"]={},["kind"]="cover",Parentevents=function(o,t,R)
+{["id"]=0,["parentid"]=1,["x"]=192,["y"]=224,["begin"]=1,["life"]=300,["halfw"]=24,["halfh"]=24,["Circle"]=true,["type"]=1,["controlid"]=3,["speed"]=0,["speedd"]=0,["speedds"]={0.0,0.0},["aspeed"]=0,["aspeedd"]=0,["aspeedds"]={0.0,0.0},["rand"]={},["kind"]="cover",["bindid"]=4,["Deepbind"]=false,Parentevents=function(o,t,R)
 
 end,Sonevents=function(o,t,R)
 if t>(1) then R.change(o,"alpha",100.0,0,0,"正比",1) end
 if t>(1) then R.change(o,"life",1000.0,0,0,"正比",1) end
 end},
-{["id"]=1,["parentid"]=1,["x"]=224,["y"]=224,["begin"]=301,["life"]=300,["halfw"]=24,["halfh"]=24,["Circle"]=true,["type"]=1,["controlid"]=10,["speed"]=0,["speedd"]=0,["speedds"]={0.0,0.0},["aspeed"]=0,["aspeedd"]=0,["aspeedds"]={0.0,0.0},["rand"]={},["kind"]="cover",Parentevents=function(o,t,R)
+{["id"]=1,["parentid"]=1,["x"]=224,["y"]=224,["begin"]=301,["life"]=300,["halfw"]=24,["halfh"]=24,["Circle"]=true,["type"]=1,["controlid"]=10,["speed"]=0,["speedd"]=0,["speedds"]={0.0,0.0},["aspeed"]=0,["aspeedd"]=0,["aspeedds"]={0.0,0.0},["rand"]={},["kind"]="cover",["bindid"]=11,["Deepbind"]=false,Parentevents=function(o,t,R)
 
 end,Sonevents=function(o,t,R)
 if t>(1) then R.change(o,"alpha",100.0,0,0,"正比",1) end
 if t>(1) then R.change(o,"life",1000.0,0,0,"正比",1) end
 end},
-{["id"]=2,["parentid"]=1,["x"]=320,["y"]=192,["begin"]=1,["life"]=600,["halfw"]=1600,["halfh"]=1600,["Circle"]=false,["type"]=1,["controlid"]=22,["speed"]=0,["speedd"]=0,["speedds"]={0.0,0.0},["aspeed"]=0,["aspeedd"]=0,["aspeedds"]={0.0,0.0},["rand"]={},["kind"]="cover",Parentevents=function(o,t,R)
+{["id"]=2,["parentid"]=1,["x"]=320,["y"]=192,["begin"]=1,["life"]=600,["halfw"]=1600,["halfh"]=1600,["Circle"]=false,["type"]=1,["controlid"]=22,["speed"]=0,["speedd"]=0,["speedds"]={0.0,0.0},["aspeed"]=0,["aspeedd"]=0,["aspeedds"]={0.0,0.0},["rand"]={},["kind"]="cover",["bindid"]=22,["Deepbind"]=false,Parentevents=function(o,t,R)
 
 end,Sonevents=function(o,t,R)
 if t>(1) then R.change(o,"life",0.0,0,0,"固定",1) end
 end},
-{["id"]=3,["parentid"]=1,["x"]=352,["y"]=192,["begin"]=270,["life"]=331,["halfw"]=1600,["halfh"]=1600,["Circle"]=false,["type"]=1,["controlid"]=24,["speed"]=0,["speedd"]=0,["speedds"]={0.0,0.0},["aspeed"]=0,["aspeedd"]=0,["aspeedds"]={0.0,0.0},["rand"]={},["kind"]="cover",Parentevents=function(o,t,R)
+{["id"]=3,["parentid"]=1,["x"]=352,["y"]=192,["begin"]=270,["life"]=331,["halfw"]=1600,["halfh"]=1600,["Circle"]=false,["type"]=1,["controlid"]=24,["speed"]=0,["speedd"]=0,["speedds"]={0.0,0.0},["aspeed"]=0,["aspeedd"]=0,["aspeedds"]={0.0,0.0},["rand"]={},["kind"]="cover",["bindid"]=25,["Deepbind"]=false,Parentevents=function(o,t,R)
 
 end,Sonevents=function(o,t,R)
 if t>(1) then R.change(o,"life",0.0,0,0,"固定",1) end

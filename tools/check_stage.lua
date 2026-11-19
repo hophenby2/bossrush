@@ -1387,6 +1387,12 @@ end
 dofile('THlib/bullet/visual_match.lua')
 -- ANM的UV滚动会读取纹理尺寸；这项桩只核对执行，不用于像素级验收。
 if not rawget(_G,'GetTextureSize') then GetTextureSize=function() return 512,512 end end
+-- 原作自机适配器在关卡载入时注册；桩也应载入真实注册表。
+if path=='--all' or path:match('th3[789]') then
+    CopyImage=rawget(_G,'CopyImage') or function() end
+    setting=rawget(_G,'setting') or {displayBG=false}
+    dofile('THlib/native_players.lua')
+end
 
 if path == "--all" then
     local ids = {}
@@ -1864,6 +1870,7 @@ for _, __item in ipairs(run_list) do
         addAutoSPPoint = function(_, hp) table.insert(boss_obj._sp_point_auto, hp) end,
         setStatus = function() end,
     }
+    boss_obj._wisys=makeEnemyWisys(boss_obj)
     player.x, player.y = 0, 0
 
     local peak_obj, peak_bul = 0, 0
