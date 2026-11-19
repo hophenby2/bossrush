@@ -5,12 +5,20 @@ GetKeyState=function() return down end
 GetLastKey=function() return last end
 PlaySound=function() end
 local title={alpha=1,locked=false,on_debug_unlocked=function() unlocked=unlocked+1 end}
-local function fresh() down,last=false,0;return dofile('THlib/UI/debug_mode.lua') end
+local function fresh()
+    down,last=false,0
+    local d=dofile('THlib/UI/debug_mode.lua');assert(d.enabled,'调试模式应默认开启')
+    d.enabled=false;d.bind(title);return d
+end
 local function frame(d,key,held)
     last,down=key or 0,held or false;d.frame(title)
 end
 local function press(d) frame(d,56,true);frame(d) end
 local d=fresh()
+local hidden={alpha=0,locked=true}
+for _=1,4 do press(d);d.frame(hidden) end
+press(d);assert(d.enabled,'隐藏的子菜单不能清零主菜单口令')
+d=fresh();unlocked=0
 for _=1,20 do frame(d,56,true) end
 assert(not d.enabled and d.count==1,'长按不能代替五次独立按下')
 frame(d);for _=1,4 do press(d) end

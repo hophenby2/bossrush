@@ -74,7 +74,7 @@ local snapshots={}
 local vars={rogue_run={old=true},current_system=''}
 local environment=setmetatable({stg=stage.group,lstg={var=vars},setting={},GameDrops={VERSION=8},
     GameNet=false,AndroidInput=false,stage={stages={menu={}},Set=function(mode,name)
-        snapshots[#snapshots+1]={version=vars.__sequence_version,key=vars.sequence_key,scale=vars.__hp_scale_version,name=name,native=vars.__native_player_version,machine=vars.native_player_id}
+        snapshots[#snapshots+1]={version=vars.__sequence_version,key=vars.sequence_key,scale=vars.__hp_scale_version,name=name,native=vars.__native_player_version,machine=vars.native_player_id,practice=vars.is_practice,chapter=vars.sequence_practice_chapter}
     end}},{__index=_G})
 local chunk=assert(loadstring(start));setfenv(chunk,environment);chunk()
 -- 入口和Start使用同一份var，版本和key必须在录像快照之前写入。
@@ -86,6 +86,21 @@ for _,e in ipairs(C.entries) do
     check(saved.scale==nil and vars.rogue_run==nil,'顺序模式不继承随机局血量倍率')
     check(e.native and saved.native==P.VERSION and saved.machine==P.machines(e.level)[1].id or not e.native and saved.native==nil,'机体版本写入录像初态')
 end
+-- 从任意面进入，只执行一个完整章节；随后的完整流程不继承练习标记。
+S.start('thasl_lunatic','reimu',nil,'4')
+check(snapshots[#snapshots].practice and snapshots[#snapshots].chapter=='4','章节和练习标记必须先于录像快照')
+local oldChapter,oldFinish=TH38.runChapter,S.finish
+local oldBranch=S.catalog.chapterForRun
+S.catalog.chapterForRun=function() error('章节练习不能因续关重选路线') end
+local called,finished={},0
+TH38.runChapter=function(_,chapter) called[#called+1]=chapter.name end
+S.finish=function(_,won) assert(won);finished=finished+1 end
+S.run({},'thasl_lunatic')
+check(#called==1 and called[1]=='4' and finished==1,'只运行所选章节，结束后返回标题')
+TH38.runChapter,S.finish=oldChapter,oldFinish
+S.catalog.chapterForRun=oldBranch
+S.start('thasl_lunatic','reimu')
+check(vars.sequence_practice_chapter==nil and not vars.is_practice,'完整路线不能继承上次的章节练习')
 DeSerialize=function(v) return v end
 local content=dofile('mod/content.lua')
 for _,e in ipairs(C.entries) do

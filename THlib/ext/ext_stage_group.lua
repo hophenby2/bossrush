@@ -229,7 +229,7 @@ function stg.render()
     RenderClearViewMode(Color(255, 0, 0, 0))
 end
 
-function stg.Start(group,loadout)
+function stg.Start(group,loadout,practice)
     lstg.var.__input_version=2;lstg.var.__drops_version=GameDrops.VERSION;lstg.var.upgrades=nil;lstg.var.__touch_toggle_version=1
     lstg.var.__phase_clear_version=1 -- 初态保存换卡消弹语义，旧录像不受新规则影响。
     lstg.var.__contact_cancel_version=1 -- 随初态存入录像；旧录像未带此标志时保留旧碰撞语义。
@@ -255,8 +255,8 @@ function stg.Start(group,loadout)
     if NativePlayers then
         NativePlayers.configure(group.sequence_native and group.sequence_level,lstg.var.sequence_player,loadout)
     end
-    lstg.var.is_practice = false
-    lstg.var.cheat = false--普通游玩不给自机无敌
+    lstg.var.is_practice = practice==true
+    lstg.var.cheat = false--关卡练习和普通游玩都不给自机无敌
     stage.Set('save', group[1])
     stage.stages[group.title].save_replay = not (GameNet and GameNet.host()) and { group[1] } or nil
 end
@@ -284,6 +284,7 @@ function stg.PracticeStart(stagename, sc_pr, machine, loadout)
     lstg.var.__th40_version=nil
     lstg.var.__th43_version=(stagename=='TH43@BossRush' or sc_pr and lstg.var.sc_group and lstg.var.sc_group[1]==41) and 1 or nil
     lstg.var.__sequence_version,lstg.var.sequence_run=nil,nil
+    lstg.var.sequence_practice_chapter=nil
     lstg.var.__sequence_system_version,lstg.var.original_resources,lstg.var.sequence_player=nil,nil,nil
     lstg.var.th38_route=nil
     lstg.var.theis_route=nil

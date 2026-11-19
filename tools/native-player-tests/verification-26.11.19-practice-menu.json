@@ -1,0 +1,88 @@
+{
+  "version": "26.11.19-practice-menu",
+  "date": "2026-11-19",
+  "platform": "macOS arm64 / LuaSTG-x Metal",
+  "stage_practice": {
+    "works": 12,
+    "chapters": 106,
+    "single_chapter_only": true,
+    "original_branches": true
+  },
+  "static_checks": {
+    "original_registry": 24236,
+    "sequence_and_replay": 3653,
+    "debug_key": true,
+    "menu_reconstruction": true
+  },
+  "native_cases": [
+    {
+      "test": "雪莲华 Boss 符卡练习",
+      "machine": "reimu",
+      "card": 38002,
+      "frames": 700,
+      "passed": true
+    },
+    {
+      "test": "雪莲华 Boss 符卡练习",
+      "machine": "yukari",
+      "card": 38002,
+      "frames": 700,
+      "passed": true
+    },
+    {
+      "test": "雪莲华 Boss 符卡练习",
+      "machine": "marisa",
+      "card": 38002,
+      "frames": 700,
+      "passed": true
+    },
+    {
+      "test": "雪莲华 Boss 符卡练习",
+      "machine": "marisa_b",
+      "card": 38002,
+      "frames": 700,
+      "passed": true
+    },
+    {
+      "test": "雪莲华 Boss 符卡练习",
+      "machine": "byakuren",
+      "card": 38002,
+      "frames": 700,
+      "passed": true
+    },
+    {
+      "test": "雪莲华 Boss 符卡练习",
+      "machine": "miko",
+      "card": 38002,
+      "frames": 700,
+      "passed": true
+    },
+    {
+      "test": "雪莲华四面关卡练习",
+      "chapter": "4",
+      "frames": 700,
+      "passed": true
+    },
+    {
+      "test": "空存档启动与真实菜单往返",
+      "passed": true
+    },
+    {
+      "test": "退出进程后恢复练习选项",
+      "result": {
+        "card": 38010,
+        "passed": true,
+        "debug_reentry": true,
+        "restored": true,
+        "name": "AAAA",
+        "chapter": "4",
+        "mode": "practice-options",
+        "notices": 0
+      },
+      "passed": true
+    }
+  ],
+  "limits": [
+    "原生测试使用隔离存档。Windows Sub 未运行本轮原生回归。"
+  ]
+}

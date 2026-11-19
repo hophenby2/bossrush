@@ -8,6 +8,17 @@ function T.before(p)
     key[setting.keys.spell]=t==65 or t==370
     key[setting.keys.special]=t==90 or t==150 or t==250
     if t==5 then p.protect=100000 end
+    if t==20 and os.getenv('BOSSRUSH_MAC_TEST_PRACTICE_CHAPTER') then
+        assert(lstg.var.is_practice and lstg.var.sequence_run.total==1 and lstg.var.sequence_run.chapter_name==os.getenv('BOSSRUSH_MAC_TEST_PRACTICE_CHAPTER'),'关卡练习没有只进入选定章节')
+    end
+    if tonumber(os.getenv('BOSSRUSH_MAC_TEST_CARD') or '0')>0 then
+        for _,b in ipairs(boss_group) do if IsValid(b) and not b._sequence_road_carrier then b.hp,b.maxhp=1000000000,1000000000 end end
+        if t==40 then
+            local bosses=p.unity_source.Sincos.boss;assert(bosses.Count>0,'符卡练习没有进入 Boss 场景')
+            local c=bosses[0];assert(c:GetComponent('Bossmove')==c and c.transform:GetComponent('Bossmove')==c,'Boss 组件接口不完整')
+            checked.target=true
+        end
+    end
     if t==60 then
         assert(s.barrier>=200000,'初始两层结界没有按原作充能');s.barrier=299999
         checked.initial=true
@@ -24,6 +35,7 @@ end
 function T.after() end
 function T.checkpoint()
     assert(checked.initial and checked.bomb and checked.switch and checked.shot and checked.refund and checked.finish)
+    if tonumber(os.getenv('BOSSRUSH_MAC_TEST_CARD') or '0')>0 then assert(checked.target) end
     lstg.SystemLog('SOURCE_LOGIC: 雪莲华发射器、蓄力、切换暴走和结界释放通过')
 end
 return T

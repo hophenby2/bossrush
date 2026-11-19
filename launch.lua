@@ -143,7 +143,7 @@ _G.KEY = KEY
 
 default_setting = {
     allowsnapshot = true,
-    username = 'User',
+    username = 'AAAA',
     font = '',
     timezone = 8,
     resx = 640,
@@ -254,6 +254,7 @@ function loadConfigure()
         setting = DeSerialize(f:read('*a'))
         f:close()
     end
+    setting.username = 'AAAA'
 end
 
 function saveConfigure()

@@ -179,12 +179,14 @@ local function continuousChapter(scene,chapter,source)
 end
 function S.run(scene,key,first)
     local entry=assert(S.catalog.get(key))
-    local chapters=S.catalog.chapters(key,lstg.var.player_name)
+    local chapters=S.catalog.chapters(key,lstg.var.player_name,lstg.var.sequence_practice_chapter)
     if not first then lstg.var.sequence_run={key=key,title=entry.title,chapter=0,completed=0,total=#chapters,road_time=0} end
     for index,chapter in ipairs(chapters) do
         if not first or index>=first then
             local resources=SequenceResources and SequenceResources.state()
-            chapter=S.catalog.chapterForRun(entry,chapter,lstg.var.player_name,resources and resources.continues or 0)
+            if not lstg.var.sequence_practice_chapter then
+                chapter=S.catalog.chapterForRun(entry,chapter,lstg.var.player_name,resources and resources.continues or 0)
+            end
             local run=lstg.var.sequence_run
             run.chapter,run.chapter_name,run.road_time=index,chapter.name,0
             scene.level=entry.level
@@ -224,9 +226,10 @@ function S.machines(entry)
     end
     return SequenceResources.machines(SequenceResources.gameByLevel[entry.level])
 end
-function S.start(key,machine,loadout)
+function S.start(key,machine,loadout,practiceChapter)
     local entry=assert(S.catalog.get(key),'未知顺序关卡key')
     lstg.var.sequence_key=key
+    lstg.var.sequence_practice_chapter=practiceChapter
     if entry.native then
         local selected=assert(NativePlayers.machine(entry.level,machine or S.machines(entry)[1].id),
             '未知原作机体 '..tostring(machine))
@@ -244,7 +247,7 @@ function S.start(key,machine,loadout)
     lstg.var.rogue_run,lstg.var.sequence_run,lstg.var.timeslow=nil,nil,nil
     lstg.var.current_system=''
     StopMusic('SCORE')
-    stage.group.Start(stage.groups[entry.group],loadout)
+    stage.group.Start(stage.groups[entry.group],loadout,practiceChapter~=nil)
     return true
 end
 for _,entry in ipairs(S.catalog.entries) do

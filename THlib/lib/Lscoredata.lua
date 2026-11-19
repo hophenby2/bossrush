@@ -67,6 +67,7 @@ function InitScoreData()
         data.total_photocount = data.total_photocount or 0--射命丸文总共拍照的照片数
     end
     CheckData(data)
+    data.PlayerBrand = "AAAA"
     scoredata = data
 end
 function InitSpellCardData()

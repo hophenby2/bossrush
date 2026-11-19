@@ -126,3 +126,26 @@ python3 tools/native-player-tests/export_unity_players.py --assets <雪莲华Ass
 python3 tools/native-player-tests/export_summer_players.py --source <夏夜祭Shooting源码目录> --game <夏夜祭完整游戏目录> --parser-lib <解析器目录>
 python3 tools/native-player-tests/export_bdb.py --scripts <栖霞园解包脚本目录> --assets <栖霞园解包素材目录>
 ```
+
+## 练习菜单与启动修正（26.11.19-practice-menu）
+
+雪莲华的原 C# 武器会对 `Bossmove` 组件继续调用 `GetComponent`，目标适配组件现在与普通组件一样提供查询／添加接口。新增实际 Boss 符卡练习回归，不再只用没有 Boss 的道中验证自机。
+
+关卡练习按十二作的原作阶段展开为 106 个入口，包含各面、Extra／Phantasm、永夜抄 4A／4B 和 Final A／B；选关后执行原顺序模式的完整单面流程，结束即返回标题。练习标记和章节名在录像初态前写入；完整顺序模式会清除该标记。特殊独立攻击仍可从符卡练习选择。
+
+关卡练习记住作品、章节、原作机体与 Like Dreamer 装备；符卡练习恢复页签、过滤条件、稳定卡号与机体。选择保存在当前存档中，退出并重新启动后仍可恢复。没有移动原符卡注册数组或历史录像索引。
+
+首次启动直接进入标题，用户名与玩家标签统一为 `AAAA`。调试入口默认开启；`88888` 只由真正的标题菜单计数，隐藏子菜单不再重置输入。自动更新公告由 `GameFeatures.updateNotice=false` 暂停，版本迁移仍执行。
+
+```sh
+luajit tools/check_debug_mode.lua
+luajit tools/check_practice_options.lua
+luajit tools/check_sequence_mode.lua
+luajit tools/check_original_practice.lua
+python3 tools/native-player-tests/native_logic.py --levels 36 --card 38002 --machine reimu --out /tmp/unity-boss-practice
+python3 tools/native-player-tests/native_logic.py --levels 36 --chapter 4 --out /tmp/unity-stage4-practice
+python3 tools/native-player-tests/native_practice_options.py --out /tmp/practice-options
+python3 tools/native-player-tests/native_practice_options.py --restore --out /tmp/practice-options
+```
+
+菜单原生回归使用隔离存档，实际从标题进入雪莲华四面和符卡练习、返回标题并重建菜单，核对恢复位置；还检查空存档的默认用户名、未弹出公告、默认调试入口，以及存在隐藏子菜单时返回标题后连续五次按 8。第二次进程检查上次选项已写入磁盘。

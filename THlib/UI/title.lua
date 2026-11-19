@@ -68,6 +68,7 @@ function stage_menu:init()
     menu_music = New(music_bar)
 
     local function startPractice(source,start)
+        SaveScoreData()
         menu.FadeOut(source);menu.FadeOut(menu_music)
         task.New(stage_menu,function()
             for i=1,60 do SetBGMVolume(menu_music.now,1-i/60);task.Wait() end
@@ -92,9 +93,13 @@ function stage_menu:init()
             {'Shield Enhance','Shot Enhance','Missile Enhance','Double Enhance'},
             {'Auto Fever','Manual Fever'},{'反击弹关闭','反击弹开启'}}
         local labels={'主射击','副射击','Bomb','强化','Fever','反击弹'}
-        local loadout,rows={0,0,0,0,0,0},{}
+        scoredata.practice_loadouts=scoredata.practice_loadouts or {}
+        local saved=scoredata.practice_loadouts[machine.id] or {}
+        local loadout,rows={},{}
+        for i,options in ipairs(choices) do loadout[i]=math.max(0,math.min(#options-1,math.floor(tonumber(saved[i]) or 0))) end
+        scoredata.practice_loadouts[machine.id]=loadout
         for i,options in ipairs(choices) do
-            rows[i]={labels[i]..'　'..options[1],function()
+            rows[i]={labels[i]..'　'..options[loadout[i]+1],function()
                 loadout[i]=(loadout[i]+1)%#options
                 selector.text[i]=labels[i]..'　'..options[loadout[i]+1]
             end,''}
@@ -111,7 +116,9 @@ function stage_menu:init()
         else startPractice(source,function() start(machine.id) end) end
     end
     local function selectNativePractice(source,level,start)
-        local machines=NativePlayers and NativePlayers.machines(level)
+        local route=type(level)=='table' and level
+        level=route and route.level or level
+        local machines=route and OriginalSequence.machines(route) or NativePlayers and NativePlayers.machines(level)
         if not machines then startPractice(source,start);return end
         local selector
         local function back() menu.FadeOut(selector);menu.FadeIn(source) end
@@ -119,11 +126,15 @@ function stage_menu:init()
         for _,machine in ipairs(machines) do
             local id=machine.id
             rows[#rows+1]={machine.name,function()
+                scoredata.practice_machines=scoredata.practice_machines or {}
+                scoredata.practice_machines[tostring(level)]=id
                 launchNative(selector,level,machine,start)
             end,'',key=id}
         end
         rows[#rows+1]={'返回',back,'Back',key='back'}
         selector=New(main_menu,'选择原作机体',rows,back)
+        local saved=scoredata.practice_machines and scoredata.practice_machines[tostring(level)]
+        for i,row in ipairs(rows) do if row.key==saved then selector.pos,selector._pos,selector.pos_pre=i,i,i end end
         menu.FadeOut(source);menu.FadeIn(selector)
     end
     local function createPracticeMenus()
@@ -132,11 +143,23 @@ function stage_menu:init()
             menu.FadeOut(menu_stage_practice);menu.FadeIn(menu_player_system_select)
         end,function(pos)
             local entry=menu_stage_practice.stage_selects[pos]
-            local name=type(entry.stage)~='function' and entry.stage.name
-            selectNativePractice(menu_stage_practice,NativePlayers and NativePlayers.practiceLevel(name),function(id,loadout)
-                lstg.var.sc_index,lstg.var.sc_group=nil,nil
-                if name then stage.group.PracticeStart(name,false,id,loadout) else entry.stage() end
-            end)
+            local selector;local rows={}
+            local function back() menu.FadeOut(selector);menu.FadeIn(menu_stage_practice) end
+            for _,chapter in ipairs(dofile('mod/original_practice.lua').chapters(entry.id)) do
+                local selected=chapter
+                rows[#rows+1]={chapter.title,function()
+                    scoredata.practice_chapters=scoredata.practice_chapters or {}
+                    scoredata.practice_chapters[tostring(entry.id)]=selected.key
+                    selectNativePractice(selector,OriginalSequence.catalog.get(selected.route),function(id,loadout)
+                        OriginalSequence.start(selected.route,id,loadout,selected.chapter)
+                    end)
+                end,'',key=chapter.key}
+            end
+            rows[#rows+1]={'返回',back,'Back',key='back'}
+            selector=New(main_menu,entry.title..' · 选择关卡',rows,back)
+            local saved=scoredata.practice_chapters and scoredata.practice_chapters[tostring(entry.id)]
+            for i,row in ipairs(rows) do if row.key==saved then selector.pos,selector._pos,selector.pos_pre=i,i,i end end
+            menu.FadeOut(menu_stage_practice);menu.FadeIn(selector)
         end)
         menu_spell_practice=New(sc_pr_menu,function(index,group)
             if not index then
@@ -219,6 +242,7 @@ function stage_menu:init()
             menu_title.pos = #menu_title.text
         end
     end)
+    GameDebug.bind(menu_title)
     menu_title.on_debug_unlocked=function()
         -- 原地更新菜单，保留当前选中项；下一次返回标题时直接按会话状态建立两个入口。
         local selected=menu_title.text[menu_title.pos]
@@ -394,9 +418,10 @@ function stage_menu:init()
         --更新版本初始化
         scoredata.version = ui.version
         --Include("mod\\update_init.lua")
-        local file = io.open("Update.txt", "r")
-        New(SimpleNotice, menu_title, "更新日志", file:read("*a"))
-        file:close()
+        if GameFeatures.updateNotice then
+            local file=io.open("Update.txt","r")
+            if file then New(SimpleNotice,menu_title,"更新日志",file:read("*a"));file:close() end
+        end
     end
     if stage.IsReplay then
         --rep播放后返回rep菜单 add by OLC

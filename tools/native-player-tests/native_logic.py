@@ -5,15 +5,19 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]
 ap=argparse.ArgumentParser(description=__doc__)
 ap.add_argument('--variant',default='high');ap.add_argument('--machine');ap.add_argument('--out',type=Path,required=True);ap.add_argument('--levels',default='39')
+ap.add_argument('--card',type=int,help='改为实际符卡练习，覆盖存在 Boss 的自机更新')
+ap.add_argument('--chapter',help='从关卡练习进入指定章节，只运行这一面')
 args=ap.parse_args();args.out=args.out.resolve();args.out.mkdir(parents=True,exist_ok=True)
 cases={35:('thmhj2_lunatic','reimu'),36:('thasl_lunatic','reimu'),37:('thmhj3_lunatic','reimu'),
     38:('thsss_lunatic','A'),39:('theis_lunatic','reimu'),41:('thbdb_lunatic','reimu')}
 binary=ROOT/'macos/dist/Boss Rush HD.app/Contents/MacOS/BossRushHD';rows=[]
 for level in map(int,args.levels.split(',')):
     sequence,machine=cases[level];machine=args.machine or machine;data=args.out/str(level);data.mkdir(exist_ok=True)
-    env=dict(os.environ,BOSSRUSH_MAC_DATA=str(data),BOSSRUSH_MAC_TEST='battle',BOSSRUSH_MAC_TEST_SEQUENCE=sequence,
-        BOSSRUSH_MAC_TEST_MACHINE=machine,BOSSRUSH_MAC_TEST_SOURCE_LOGIC='1',BOSSRUSH_MAC_TEST_LOGIC_VARIANT=args.variant,BOSSRUSH_MAC_TEST_CARD='0',
+    env=dict(os.environ,BOSSRUSH_MAC_DATA=str(data),BOSSRUSH_MAC_TEST='battle',BOSSRUSH_MAC_TEST_SEQUENCE='' if args.card else sequence,
+        BOSSRUSH_MAC_TEST_MACHINE=machine,BOSSRUSH_MAC_TEST_SOURCE_LOGIC='1',BOSSRUSH_MAC_TEST_LOGIC_VARIANT=args.variant,BOSSRUSH_MAC_TEST_CARD=str(args.card or 0),
         BOSSRUSH_MAC_TEST_LOGIC_FRAMES='1200' if level==41 else '700',BOSSRUSH_MAC_TEST_FRAMES='1200' if level==41 else '700',BOSSRUSH_MAC_TEST_SHOOT='0')
+    env.pop('BOSSRUSH_MAC_TEST_PRACTICE_CHAPTER',None)
+    if args.chapter:env['BOSSRUSH_MAC_TEST_PRACTICE_CHAPTER']=args.chapter
     with (data/'stdout.log').open('w') as log:
         p=subprocess.Popen([str(binary)],cwd=data,env=env,stdout=log,stderr=subprocess.STDOUT)
         deadline=time.monotonic()+55;error=None

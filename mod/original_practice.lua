@@ -31,4 +31,22 @@ function P.cards(level)
     for index,unit in ipairs(_sc_pr_table[level] or {}) do out[#out+1]={index=index,unit=unit} end
     return out
 end
+function P.chapters(level)
+    local out,seen={},{}
+    local catalog=OriginalSequence.catalog
+    for _,route in ipairs(catalog.entries) do if route.level==level then
+        for _,row in ipairs(OriginalStageFlow.units(level)) do
+            local allowed=catalog.chapterAllowed(route,row.chapter,'reimu_player') or catalog.chapterAllowed(route,row.chapter,'marisa_player')
+            if route.native=='thbdb' then allowed=allowed and row.difficulty==(route.difficulty=='extra' and 5 or 4) end
+            local key=route.difficulty..':'..row.chapter
+            if allowed and not row.practiceOnly and not seen[key] then
+                seen[key]=true
+                local label=tonumber(row.chapter) and '第 '..row.chapter..' 面' or row.chapter
+                out[#out+1]={key=route.key..':'..row.chapter,route=route.key,chapter=row.chapter,level=level,
+                    title=route.title..' · '..label}
+            end
+        end
+    end end
+    return out
+end
 return P

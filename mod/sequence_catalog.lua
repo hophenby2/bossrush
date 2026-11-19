@@ -106,11 +106,15 @@ local function selected(entry,row,player)
     end
     return true
 end
-function C.chapters(key,player)
+function C.chapters(key,player,practiceChapter)
     local entry=assert(C.get(key),'未知顺序关卡key：'..tostring(key))
     local chapters,last={},nil
     for _,row in ipairs(OriginalStageFlow.units(entry.level)) do
-        if not row.practiceOnly and C.chapterAllowed(entry,row.chapter,player) and selected(entry,row,player) then
+        local allowed=C.chapterAllowed(entry,row.chapter,player)
+        if practiceChapter then
+            allowed=row.chapter==practiceChapter and (C.chapterAllowed(entry,row.chapter,'reimu_player') or C.chapterAllowed(entry,row.chapter,'marisa_player'))
+        end
+        if not row.practiceOnly and allowed and selected(entry,row,player) then
             if not last or last.name~=row.chapter then
                 last={name=row.chapter,level=entry.level,units={}};chapters[#chapters+1]=last
             end

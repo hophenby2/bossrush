@@ -118,7 +118,7 @@ function ReloadSaveProfile()
     SaveProfiles.activate(which)
     InitScoreData()
     InitSpellCardData()
-    scoredata.PlayerBrand=scoredata.PlayerBrand or 'PLAYER'
+    scoredata.PlayerBrand='AAAA'
     -- 符卡注册只在启动时执行一次，换到空存档后须重新补齐所有已注册的历史槽。
     for _,unit in ipairs(_sc_table or {}) do
         local number=unit.card.card_id

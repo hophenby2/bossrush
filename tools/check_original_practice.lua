@@ -27,6 +27,8 @@ New=function(cls,...)
 end
 dofile('mod/_editor_output.lua')
 for game=31,35 do dofile('mod/GAME/th'..game..'.lua') end
+CopyImage=CopyImage or function() end
+dofile('THlib/native_players.lua')
 dofile('mod/GAME/th37.lua')
 dofile('mod/GAME/th38.lua')
 dofile('mod/GAME/th39.lua')

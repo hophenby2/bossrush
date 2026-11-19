@@ -1,8 +1,13 @@
 -- 调试入口只在标题菜单前台识别；状态仅保留本次进程，不写入存档或录像。
 -- 用按下沿计数，避免长按8产生的重复KEYDOWN被当成五次输入。
-local D={enabled=false,count=0,age=0,down=false}
+local D={enabled=true,count=0,age=0,down=false}
 local REQUIRED,GAP=5,120
+function D.bind(title)
+    D.title=title;D.count,D.age,D.down=0,0,false
+end
 function D.frame(title)
+    -- main_menu 也用于子菜单；它们不能覆盖标题的按键边沿与前台状态。
+    if title~=D.title then return end
     local down=GetKeyState(KEY['8'])
     D.titleActive=title.alpha>0 and not title.locked
     if not D.titleActive or D.enabled then

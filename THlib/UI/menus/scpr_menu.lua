@@ -56,11 +56,20 @@ function sc_pr_menu:init(exit_func)
         return rawget(t, (k - 1) % #t + 1)
     end })
     self.ox = 0
-    self.diffpos = 1
+    local saved=type(scoredata.menu_sc_pr)=="table" and scoredata.menu_sc_pr or {}
+    self.diffpos = math.max(1,math.min(tonumber(saved.diffpos) or 1,#self.difficulty))
+    if saved.level then
+        if saved.level=="all" then self.diffpos=#self.difficulty
+        else for i,entry in ipairs(practice_catalog.stages) do if entry.level==saved.level then self.diffpos=i end end end
+    end
     self.cardinfo = spell_card_data
     sc_pr_menu.TweakCard(self, self.onlyshowcard, self.onlyshowspecialcard)
 
-    self.spell = self.spells[1]
+    self.spell = self.spells[self.diffpos]
+    self.pos=math.max(1,math.min(tonumber(saved.pos) or 1,math.max(1,#self.spell)))
+    for i,row in ipairs(self.spell) do
+        if _sc_pr_table[row[4]][row[1]].sc_group[1].card.card_id==saved.card_id then self.pos=i;break end
+    end
     self._spell, self._pos = sp:GetListSection(self.spell, 14, self.pos, 7)
     self.tri = { 1, 1 }
     self.set_index = { 0, 0 }
@@ -103,7 +112,15 @@ function sc_pr_menu:init(exit_func)
         self:settri()
         self.pos_changed = ui.menu.shake_time
     end
+    function self:remember()
+        local row=self.spell[self.pos]
+        local entry=practice_catalog.stages[self.diffpos]
+        scoredata.menu_sc_pr={pos=self.pos,diffpos=self.diffpos,level=entry and entry.level or "all",
+            card_id=row and _sc_pr_table[row[4]][row[1]].sc_group[1].card.card_id}
+        scoredata.onlyshowcard,scoredata.onlyshowspecialcard=self.onlyshowcard,self.onlyshowspecialcard
+    end
     function self:yes()
+        self:remember()
         if #self.spell > 0 then
             local group = self.spell[self.pos][4]
             local index = self.spell[self.pos][1]
@@ -122,9 +139,6 @@ function sc_pr_menu:init(exit_func)
 end
 function sc_pr_menu:frame()
     task.Do(self)
-    scoredata.onlyshowcard = self.onlyshowcard
-    scoredata.onlyshowspecialcard = self.onlyshowspecialcard
-    scoredata.menu_sc_pr = { pos = self.pos, diffpos = self.diffpos }
     for i in ipairs(self.set_index) do
         self.set_index[i] = self.set_index[i] - self.set_index[i] * 0.1
     end
@@ -162,6 +176,7 @@ function sc_pr_menu:frame()
     if menu:keyYes() then
         self:yes()
     elseif menu:keyNo() then
+        self:remember();SaveScoreData()
         PlaySound('cancel00', 0.3)
         if self.exit_func then
             self.exit_func()
@@ -225,6 +240,7 @@ function sc_pr_menu:frame()
     self.ox = self.ox - self.ox * 0.08
     self.pos = sp:TweakValue(self.pos, max(1, #self.spell), 1)
     self.pos = max(1, self.pos)
+    self:remember()
     if self.pos_changed > 0 then
         self.pos_changed = self.pos_changed - 1
     end

@@ -181,6 +181,8 @@ local function targets()
                 end,
                 __newindex=function(t,k,v) if k=='life' then Damage(o,math.max(0,o.hp-v)) else rawset(t,k,v) end end,
             })
+            c.GetComponent=function(_,kind) return get(go,kind) end
+            c.AddComponent=function(_,kind) return add(go,kind) end
             go.components[1]=c
         end
         go.transform.position=position(o)
