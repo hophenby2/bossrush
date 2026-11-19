@@ -150,9 +150,11 @@ end
 function enemybase:colli(other)
     if SequenceResources and SequenceResources.enabled() and SequenceResources.shotHit(self,other) then return end
     if other.dmg then
+        if other.native_th43 then NativePlayers.adapters[41].shotHit(other.dmg) end
         if other.native_main then NativePlayers.hitShot(self) end
         lstg.var.score = lstg.var.score + 10
         local dmg = GameDrops and GameDrops.damage(other.dmg,other) or other.dmg
+        if other.native_summer and NativePlayers.state().enchantment=='red' then dmg=dmg*1.25 end
         Damage(self, dmg)
         if self._master and self._dmg_transfer and IsValid(self._master) then
             Damage(self._master, dmg * self._dmg_transfer)

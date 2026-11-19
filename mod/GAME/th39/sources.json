@@ -16,7 +16,6 @@
   },
   "proxies": {
     "mechanic:BindTeammate": 1,
-    "mechanic:GettingOld": 1,
     "presentation:BanSoundLaser": 3,
     "presentation:BossOrder": 26,
     "presentation:CharacterOrder": 8,

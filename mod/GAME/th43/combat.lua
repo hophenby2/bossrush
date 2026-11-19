@@ -65,6 +65,7 @@ end
 function foe.createDeath(total,fn) return E.New(E.EISlib.Bullet.Shooter.shooter,nil,0,total,fn) end
 function foe.setBoundTime(o,t) o.bound_time=t or 360;o.bound=false end
 function foe.setTauntRank(o,rank) o.taunt_rank=rank end
+function foe.getTauntRank(o) return o.taunt_rank or 0 end
 function foe.changeDrop(o,drop) o._drop=drop end
 function foe.changeDeathFunc(o,fn) o.death=fn end
 function foe.changeDropBlood(o,flag)

@@ -94,6 +94,7 @@ function V.bind(p)
                 if img then draw(p,img,p.x,p.y,0,scale) end
             end
         elseif level==37 then
+            if p.native_source_render then p.native_source_render();return end
             for _,s in ipairs(state.parts) do
                 local a=s.anim
                 if a then
@@ -200,7 +201,11 @@ function V.item(o,level,kind,amount)
     local name=kind
     if (kind=='life' or kind=='bombs') and amount>=5 then name=kind..'Big'
     elseif kind=='power' then name=amount>=400 and 'powerFull' or amount>=20 and 'powerBig' or kind end
-    local r=cfg.rects[name];if not r then return end
+    local r=cfg.rects[name]
+    if level==35 and name=='sakuraGreen' then r={178,16,11,11}
+    elseif level==37 and name=='lanternEnergy' then r={1,416,96,96}
+    elseif level==37 and name=='lanternGreen' then r={507+ran:Int(0,2)*50,221,50,50} end
+    if not r then return end
     o.img=V.image(cfg.tex,unpack(r));o.imgup=nil;o.native_item_visual={config=cfg,name=name}
     o.hscale,o.vscale=cfg.scale,cfg.scale;o.native_item_rotation=0
     -- 原作拾取判定独立于图集切片，换图不能继承LoadImage的零半径。

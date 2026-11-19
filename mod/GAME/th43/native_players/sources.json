@@ -1,0 +1,490 @@
+{
+  "mod/GAME/th43/native_players/equip_system.lua": {
+    "source": "data:EISlib/player/equip_system.lua",
+    "sha256": "1a85bc51b4e26b5d61474e1786dc66dffbc3b2d469d4e9cde2f2283be1914e7d"
+  },
+  "mod/GAME/th43/native_players/reimu/reimu.lua": {
+    "source": "data:EISlib/player/reimu/reimu.lua",
+    "sha256": "47d6811879f80a4780c8fa6d72150138914f55136fdc74f8adacfb9ae9af17f2"
+  },
+  "mod/GAME/th43/native_players/reimu/equip.lua": {
+    "source": "data:EISlib/player/reimu/equip.lua",
+    "sha256": "ddb67785d43786bdae5f612651ef0022ca61c968035bb253728f6df4934b437d"
+  },
+  "mod/GAME/th43/native_players/marisa/marisa.lua": {
+    "source": "data:EISlib/player/marisa/marisa.lua",
+    "sha256": "c3dfd0d2108564691171c98ad491f3edf0bc752ab854319f98d469945592bbdd"
+  },
+  "mod/GAME/th43/native_players/marisa/equip.lua": {
+    "source": "data:EISlib/player/marisa/equip.lua",
+    "sha256": "3095e74516245f958fd7c04928c71b3cbeced9d1d008c4c6014de088e985165a"
+  },
+  "mod/GAME/th43/native_players/sakuya/sakuya.lua": {
+    "source": "data:EISlib/player/sakuya/sakuya.lua",
+    "sha256": "f206bf45b5e8db3300b9acebab9948c3786c420db1c54dc791d0301183dc455f"
+  },
+  "mod/GAME/th43/native_players/sakuya/equip.lua": {
+    "source": "data:EISlib/player/sakuya/equip.lua",
+    "sha256": "7bdba7db1563899777605ee80029b4194293473878bf1406cb25bbddc8cfe02a"
+  },
+  "mod/GAME/th43/native_players/PowerRank.lua": {
+    "source": "data:EISlib/system/PowerRank.lua",
+    "sha256": "72ae4553dacf2d92e9fb5f24c89736d81fc24757a028d6ef4bbc0de6e7626811"
+  },
+  "mod/GAME/th43/native_players/auxiliary.lua": {
+    "source": "data:EISlib/system/spellcard.lua",
+    "sha256": "adf502d48b5fb72de3b046ed0b49d54939cf798839bd497cc8a0faae05059545"
+  },
+  "mod/GAME/th43/native_players/resources.lua": {
+    "source": "data:EISlib/player/playerclass.lua",
+    "sha256": "13fe2589ef776ab188ddfeb53144f58edd5bafc077fee29ec07a5db7b6bad932"
+  },
+  "mod/GAME/th43/native_players/darkmask.lua": {
+    "source": "data:EISlib/player/component.lua",
+    "sha256": "3326ed21ee3a0c6cdab17ee84f40a62f4d6fcb7cf42c567f279e4da7ac84145a"
+  },
+  "mod/GAME/th43/native_players/bomb_effect.lua": {
+    "source": "data:EISlib/effect/effect_item.lua",
+    "sha256": "f96ac778866ade921a46fb2e72c5daf5a584e833ff14e0e4b07fec5a7e780db1"
+  },
+  "Resources/th43/player/board_ch.png": {
+    "source": "player.res:res/player/board_ch.png",
+    "sha256": "ffb22cd4679125bbda15a48ea45dd5e14f0cb7c76333c45e2457fa8ed9a78f1e"
+  },
+  "Resources/th43/player/marisa/bomb2/0.png": {
+    "source": "player.res:res/player/marisa/bomb2/0.png",
+    "sha256": "ea66ad84b55480f73e50a2eb121451ef9399d0865ebfb3f7a344b87772a2e1cc"
+  },
+  "Resources/th43/player/marisa/bomb2/1.png": {
+    "source": "player.res:res/player/marisa/bomb2/1.png",
+    "sha256": "ca6bbea1eb882b3dc0026fb26310f9253c3d1d50025cfae476a8aa6a93554d6c"
+  },
+  "Resources/th43/player/marisa/bomb2/10.png": {
+    "source": "player.res:res/player/marisa/bomb2/10.png",
+    "sha256": "ea7ebd3b3170982c18da6d014b41937200764dbbea692dddacc525901311ba31"
+  },
+  "Resources/th43/player/marisa/bomb2/11.png": {
+    "source": "player.res:res/player/marisa/bomb2/11.png",
+    "sha256": "a9169718a00d28983e0414d4aff62dadba92839674a33f996f7e03e2c749fcab"
+  },
+  "Resources/th43/player/marisa/bomb2/12.png": {
+    "source": "player.res:res/player/marisa/bomb2/12.png",
+    "sha256": "80a5490172a0d17ff7f7214b339c550362598b27fb3fe04b8aa234cd89989ba2"
+  },
+  "Resources/th43/player/marisa/bomb2/13.png": {
+    "source": "player.res:res/player/marisa/bomb2/13.png",
+    "sha256": "c3d94e0d7f54a9ba676ccaca2a319840d8f906d5d8d9b05556ab83941f6f7bae"
+  },
+  "Resources/th43/player/marisa/bomb2/14.png": {
+    "source": "player.res:res/player/marisa/bomb2/14.png",
+    "sha256": "8a99dd93cc8262f52e3e48e59d2343ca341ce73a1526172f128fb7135aa01297"
+  },
+  "Resources/th43/player/marisa/bomb2/15.png": {
+    "source": "player.res:res/player/marisa/bomb2/15.png",
+    "sha256": "bd6b3491df6b5886d7488391976b2020cbcf29402c9b7fe1f1710e35d6ecac0c"
+  },
+  "Resources/th43/player/marisa/bomb2/16.png": {
+    "source": "player.res:res/player/marisa/bomb2/16.png",
+    "sha256": "2ef0aac3ff8b544d9016df38415e32b6fc750e629ac5ae50cbe21d8e2e412b05"
+  },
+  "Resources/th43/player/marisa/bomb2/17.png": {
+    "source": "player.res:res/player/marisa/bomb2/17.png",
+    "sha256": "c24018daa204b6a386b830104681243bb8032a2565b5abd171ba11789769ea2f"
+  },
+  "Resources/th43/player/marisa/bomb2/18.png": {
+    "source": "player.res:res/player/marisa/bomb2/18.png",
+    "sha256": "aeb2fe9dbd044f57b94663512a92e6ef85f0a984f8d63b47ca1c8466b63be5f1"
+  },
+  "Resources/th43/player/marisa/bomb2/2.png": {
+    "source": "player.res:res/player/marisa/bomb2/2.png",
+    "sha256": "856d379f82b6ad8ae7ceacfecbc4d600429961a7d875159fbbf4d6e71854b1f6"
+  },
+  "Resources/th43/player/marisa/bomb2/3.png": {
+    "source": "player.res:res/player/marisa/bomb2/3.png",
+    "sha256": "86c576781ba2194413c56c983e499beb058a0675437da8f06181dcd1d04e92f6"
+  },
+  "Resources/th43/player/marisa/bomb2/4.png": {
+    "source": "player.res:res/player/marisa/bomb2/4.png",
+    "sha256": "047562a9f4a62e289bc1594556ff6ba8a78e25e816e5b692b2bdbc482e0e8284"
+  },
+  "Resources/th43/player/marisa/bomb2/5.png": {
+    "source": "player.res:res/player/marisa/bomb2/5.png",
+    "sha256": "119f4b4301fa99b7eb15ed9003b4eedd66bc2bc0e226b14bcd81090f167e3959"
+  },
+  "Resources/th43/player/marisa/bomb2/6.png": {
+    "source": "player.res:res/player/marisa/bomb2/6.png",
+    "sha256": "f73a2c03f49994a1b43340fa6237cbc2c4301e1d4f75e658cb693909242311d8"
+  },
+  "Resources/th43/player/marisa/bomb2/7.png": {
+    "source": "player.res:res/player/marisa/bomb2/7.png",
+    "sha256": "ebb23117012b7607013c6f88ba67845f191cdacc39e44ec776869b3d0027c2de"
+  },
+  "Resources/th43/player/marisa/bomb2/8.png": {
+    "source": "player.res:res/player/marisa/bomb2/8.png",
+    "sha256": "51ff66c84300db9f42efd8c428b1b79f7fec8a372cc94e3e024a08384dfce269"
+  },
+  "Resources/th43/player/marisa/bomb2/9.png": {
+    "source": "player.res:res/player/marisa/bomb2/9.png",
+    "sha256": "9dc12cae0ceb79e6d16462d09220f6e26c1948f69c3dc679e4137a8ca8591f05"
+  },
+  "Resources/th43/player/marisa/bomb3/0.png": {
+    "source": "player.res:res/player/marisa/bomb3/0.png",
+    "sha256": "9f9374bd85b78dcc826af9f3d0eec588c233205ad8c71930bd1e68cb6534283f"
+  },
+  "Resources/th43/player/marisa/bomb3/1.png": {
+    "source": "player.res:res/player/marisa/bomb3/1.png",
+    "sha256": "d9748b84c88fc8c71dc3554caeed760c775638d2907474820d2387a82618e8e0"
+  },
+  "Resources/th43/player/marisa/bomb3/10.png": {
+    "source": "player.res:res/player/marisa/bomb3/10.png",
+    "sha256": "065c1992edc44cbbd2c865f3b76b50ff31e092f36eabfefd296962569f72c0a8"
+  },
+  "Resources/th43/player/marisa/bomb3/11.png": {
+    "source": "player.res:res/player/marisa/bomb3/11.png",
+    "sha256": "4256e4691835be30c015a51c8ada1e3a7e168fbd9d31e16e43edfbb06df08e53"
+  },
+  "Resources/th43/player/marisa/bomb3/12.png": {
+    "source": "player.res:res/player/marisa/bomb3/12.png",
+    "sha256": "616e21a4b7134546e462d9d645d4509165403a6e6d081d9d64ef4bbf5f14d06b"
+  },
+  "Resources/th43/player/marisa/bomb3/13.png": {
+    "source": "player.res:res/player/marisa/bomb3/13.png",
+    "sha256": "4ae07974cb99f80231cb8be47f720dd8904ccba8bd21ebde9385151348fa0eef"
+  },
+  "Resources/th43/player/marisa/bomb3/14.png": {
+    "source": "player.res:res/player/marisa/bomb3/14.png",
+    "sha256": "d2b1917dd066b94d8b8417435b8ac7a0471253c9bead8b93a67ad4b729ede348"
+  },
+  "Resources/th43/player/marisa/bomb3/15.png": {
+    "source": "player.res:res/player/marisa/bomb3/15.png",
+    "sha256": "4999346596b961fe4cb7713ce2699eef25d631d78d1df61d88a39e55529cc409"
+  },
+  "Resources/th43/player/marisa/bomb3/16.png": {
+    "source": "player.res:res/player/marisa/bomb3/16.png",
+    "sha256": "421987c1e61a82c62f6779d751b551ae605bf785a2fbdd0a5a06b6772478e604"
+  },
+  "Resources/th43/player/marisa/bomb3/17.png": {
+    "source": "player.res:res/player/marisa/bomb3/17.png",
+    "sha256": "c0d6fa4632d9df734154efc5b7de226508797d4d782e941107d84964f24da581"
+  },
+  "Resources/th43/player/marisa/bomb3/18.png": {
+    "source": "player.res:res/player/marisa/bomb3/18.png",
+    "sha256": "782b96097c65b2816e7208beac8856744931d40119f1b879ceb83746a4aa01c5"
+  },
+  "Resources/th43/player/marisa/bomb3/2.png": {
+    "source": "player.res:res/player/marisa/bomb3/2.png",
+    "sha256": "b2ea399c4805033ce9d44e10e3e240a9522877da07184777871b1de65e6deefa"
+  },
+  "Resources/th43/player/marisa/bomb3/3.png": {
+    "source": "player.res:res/player/marisa/bomb3/3.png",
+    "sha256": "1063755b45d9117a79c78890261a69fbeb4e2c5dc3e3b6cdd71148013b503d69"
+  },
+  "Resources/th43/player/marisa/bomb3/4.png": {
+    "source": "player.res:res/player/marisa/bomb3/4.png",
+    "sha256": "cbbed057855e1d17c4cc6f390121fc47dfa9622f89aaef52b33176080e3a46bd"
+  },
+  "Resources/th43/player/marisa/bomb3/5.png": {
+    "source": "player.res:res/player/marisa/bomb3/5.png",
+    "sha256": "5710e739d1d7a0f315a0650752358d5baa7f844528d155f1d7c9ca4c1f1c83db"
+  },
+  "Resources/th43/player/marisa/bomb3/6.png": {
+    "source": "player.res:res/player/marisa/bomb3/6.png",
+    "sha256": "949cfc7b2e50f6b6cd4a58e9962a2a2b611df6774c28adb0542b6af2a8510a35"
+  },
+  "Resources/th43/player/marisa/bomb3/7.png": {
+    "source": "player.res:res/player/marisa/bomb3/7.png",
+    "sha256": "0ce62dd2bcbc2f80f04d46b7ed8e121f5293d5366dbe4e806ae6ce6e03aea1e3"
+  },
+  "Resources/th43/player/marisa/bomb3/8.png": {
+    "source": "player.res:res/player/marisa/bomb3/8.png",
+    "sha256": "c32c7fe208b3be2051624c52e384a8b36c30d5f58c4b1bf88d1fe55639d72236"
+  },
+  "Resources/th43/player/marisa/bomb3/9.png": {
+    "source": "player.res:res/player/marisa/bomb3/9.png",
+    "sha256": "9a5a8327c50f53bf6780162ef3cab6e743cae297423631c4635910531c76360b"
+  },
+  "Resources/th43/player/marisa/boundary1.png": {
+    "source": "player.res:res/player/marisa/boundary1.png",
+    "sha256": "56d9ac23694c3b0f360fe06db8399eb562cd11dfbe2e54d1bdd99afe65afe06b"
+  },
+  "Resources/th43/player/marisa/boundary2.png": {
+    "source": "player.res:res/player/marisa/boundary2.png",
+    "sha256": "f7ad35a8dcd05481e80ca2188ce70a9b8e26290a43d6ef350c8437ec531ad91f"
+  },
+  "Resources/th43/player/marisa/boundary3.png": {
+    "source": "player.res:res/player/marisa/boundary3.png",
+    "sha256": "e02b07b69726f6ccee7a60c6b5447617578da8de215a7e5916fa30e55800bc44"
+  },
+  "Resources/th43/player/marisa/bullets.png": {
+    "source": "player.res:res/player/marisa/bullets.png",
+    "sha256": "96878801b06a43f215f0d521f95f2fb37458cfbcec353cb6884bf8551718b017"
+  },
+  "Resources/th43/player/marisa/hit_eff.png": {
+    "source": "player.res:res/player/marisa/hit_eff.png",
+    "sha256": "271e74d0a6e09eca8fbf542b19a5b253f47f54d289db44850686bed7b68ee015"
+  },
+  "Resources/th43/player/marisa/hyper_main_bullet.png": {
+    "source": "player.res:res/player/marisa/hyper_main_bullet.png",
+    "sha256": "2944ed39a8f21faee3a0824d51d9241109397e4db8457a3e9c0fcab1a1d5ecb7"
+  },
+  "Resources/th43/player/marisa/hyper_shoot_eff.png": {
+    "source": "player.res:res/player/marisa/hyper_shoot_eff.png",
+    "sha256": "7459597e4a2e1a8045b74dd0ae140e72388d57e56ac1ee46f2c40103b51995c0"
+  },
+  "Resources/th43/player/marisa/hyper_sup_bullet1.png": {
+    "source": "player.res:res/player/marisa/hyper_sup_bullet1.png",
+    "sha256": "577b89c97c6991c666e30db0f22c8363877a0a9d39bd070665fb0d4b025fee0c"
+  },
+  "Resources/th43/player/marisa/hyper_sup_bullet2.png": {
+    "source": "player.res:res/player/marisa/hyper_sup_bullet2.png",
+    "sha256": "e889858fe7114f6ca276a13be09e9c62b006c9c44cb38339a68353b1ba46a221"
+  },
+  "Resources/th43/player/marisa/hyper_sup_bullet_eff1.png": {
+    "source": "player.res:res/player/marisa/hyper_sup_bullet_eff1.png",
+    "sha256": "427300fe6078dc3b1df990dea2d871300347f8e0264b2f86561a50e1cdb56535"
+  },
+  "Resources/th43/player/marisa/hyper_sup_bullet_eff2.png": {
+    "source": "player.res:res/player/marisa/hyper_sup_bullet_eff2.png",
+    "sha256": "2faf40c3d058d4551f772fd338790a64db0b4a412c9c0ae4134efaf81b26edf8"
+  },
+  "Resources/th43/player/marisa/laser.png": {
+    "source": "player.res:res/player/marisa/laser.png",
+    "sha256": "d1a18dc03d0d89f9a83128f8e004c8a9f6d2194f2d7654efd45a010c3f03bcd1"
+  },
+  "Resources/th43/player/marisa/laser2.png": {
+    "source": "player.res:res/player/marisa/laser2.png",
+    "sha256": "f6a4d9499499244f583889c74961bce98e5542355b68ccab30e789902538ab57"
+  },
+  "Resources/th43/player/marisa/laser3.png": {
+    "source": "player.res:res/player/marisa/laser3.png",
+    "sha256": "9be7d4f8a609823e7eb8b840ae1739650833cc9e7ecc77307cf5b2a2c20684f5"
+  },
+  "Resources/th43/player/marisa/laser_eff.png": {
+    "source": "player.res:res/player/marisa/laser_eff.png",
+    "sha256": "d466812f9e4b35df5af7ed38d7965f39e96d4be399a42b2bfc053724bc856af0"
+  },
+  "Resources/th43/player/marisa/laser_head.png": {
+    "source": "player.res:res/player/marisa/laser_head.png",
+    "sha256": "92ab5692b4fcb9990702301971a99ee151f6d7a3768a22a0ebc213bab10f46ad"
+  },
+  "Resources/th43/player/marisa/left.png": {
+    "source": "player.res:res/player/marisa/left.png",
+    "sha256": "b3206e3526ddff26eb7d9c8a2f83b2ec44f88a4e1d13d7c1bb03077348f09e6b"
+  },
+  "Resources/th43/player/marisa/magic.png": {
+    "source": "player.res:res/player/marisa/magic.png",
+    "sha256": "18f9932d54abe442846b5de83643df642bf2348a34ed527b5c6b2e8cb722441e"
+  },
+  "Resources/th43/player/marisa/main_eff.png": {
+    "source": "player.res:res/player/marisa/main_eff.png",
+    "sha256": "bcf54f729188fbf5468a93d512fc0546f533a8bd30609d90b406976f63ebc530"
+  },
+  "Resources/th43/player/marisa/normal.png": {
+    "source": "player.res:res/player/marisa/normal.png",
+    "sha256": "a1592a8de1eb56ba098f63d63026d690639a56a792d13df064db95cc80fd33a7"
+  },
+  "Resources/th43/player/marisa/pointer.png": {
+    "source": "player.res:res/player/marisa/pointer.png",
+    "sha256": "25704999f0d18352fd13f7bc8bb9531d49ee7668735e05cbecf522d3950a76b3"
+  },
+  "Resources/th43/player/marisa/right.png": {
+    "source": "player.res:res/player/marisa/right.png",
+    "sha256": "5f3461477ea377b5333cbcd3d2fd30a2151ace8825e5b444d438fccc14626486"
+  },
+  "Resources/th43/player/marisa/spread_eff.png": {
+    "source": "player.res:res/player/marisa/spread_eff.png",
+    "sha256": "7569b36f3b6ec881e027eb0ba07905ebb560cc14ac94cdaf022e28501fdfaa9c"
+  },
+  "Resources/th43/player/marisa/straight_eff.png": {
+    "source": "player.res:res/player/marisa/straight_eff.png",
+    "sha256": "dcb81426da26777070f4c94cd7d7ba909ff3446fcaca546bf3404bc1aa551b18"
+  },
+  "Resources/th43/player/marisa/trail_eff.png": {
+    "source": "player.res:res/player/marisa/trail_eff.png",
+    "sha256": "b306c93c700e23146b8a43b4e126ce22af36048d2b2b9d1632adbf5cd3c09672"
+  },
+  "Resources/th43/player/marisa/短小的.png": {
+    "source": "player.res:res/player/marisa/短小的.png",
+    "sha256": "8cb1a64f43a0b07af361d0f446f416489c54e5e01e0de7f7dee86d9e0fcf2456"
+  },
+  "Resources/th43/player/reimu/bomb/blue_line.png": {
+    "source": "player.res:res/player/reimu/bomb/blue_line.png",
+    "sha256": "d6d2ffc4caf82390e28e0c47a628026c422feecb048bdfa1f93056418a88bba8"
+  },
+  "Resources/th43/player/reimu/bomb/boom.png": {
+    "source": "player.res:res/player/reimu/bomb/boom.png",
+    "sha256": "cf1726e0da087970608f28182ab3832a719f078bc3ef0bce855e47c50ece6c4b"
+  },
+  "Resources/th43/player/reimu/bomb/green_line.png": {
+    "source": "player.res:res/player/reimu/bomb/green_line.png",
+    "sha256": "c822076d78ccee738aa1cfc7391a32966b712cb665a9c24082633380d63171c7"
+  },
+  "Resources/th43/player/reimu/bomb/head.png": {
+    "source": "player.res:res/player/reimu/bomb/head.png",
+    "sha256": "2355e12ac76ec0740853554dfaac187b52a10e0f122d44dcf33ee31757ec925c"
+  },
+  "Resources/th43/player/reimu/bomb/red_line.png": {
+    "source": "player.res:res/player/reimu/bomb/red_line.png",
+    "sha256": "75d3aa5224ce19014042a62f972cddb83b789c1c673f311a4396ac2e805e68bb"
+  },
+  "Resources/th43/player/reimu/bomb1.png": {
+    "source": "player.res:res/player/reimu/bomb1.png",
+    "sha256": "9411deb6b58c6146e27e9b151bb5ab540f7966214107f0ed1a91f60b47e5a85b"
+  },
+  "Resources/th43/player/reimu/boundary1.png": {
+    "source": "player.res:res/player/reimu/boundary1.png",
+    "sha256": "b13bac78f2c7f664d75b730990f84e9564a0715f5a737214e606f2a63325b368"
+  },
+  "Resources/th43/player/reimu/boundary2.png": {
+    "source": "player.res:res/player/reimu/boundary2.png",
+    "sha256": "39e01fe7bbaf9837182a2340b42135e82e74cb902a26d7b22de9c395eef6c6f7"
+  },
+  "Resources/th43/player/reimu/boundary3.png": {
+    "source": "player.res:res/player/reimu/boundary3.png",
+    "sha256": "6d2c69fc26c6201d481b5cfd4e581cda8917d52b7465111ba73da192902ebf35"
+  },
+  "Resources/th43/player/reimu/boundary4.png": {
+    "source": "player.res:res/player/reimu/boundary4.png",
+    "sha256": "111bbfe80a7299d297d2fe9570b6b701e6f15e261d9b9a89c8d897634774acd2"
+  },
+  "Resources/th43/player/reimu/bullets.png": {
+    "source": "player.res:res/player/reimu/bullets.png",
+    "sha256": "4822547495b95062881bc63af8ca330c8c1b76153e442ff5cd92a4376c498793"
+  },
+  "Resources/th43/player/reimu/hit_eff.png": {
+    "source": "player.res:res/player/reimu/hit_eff.png",
+    "sha256": "271e74d0a6e09eca8fbf542b19a5b253f47f54d289db44850686bed7b68ee015"
+  },
+  "Resources/th43/player/reimu/laser.png": {
+    "source": "player.res:res/player/reimu/laser.png",
+    "sha256": "acf56bbc67ab63e5e01b44d81b8b015287bec744cc0d5ac49396f4d913f6fc8b"
+  },
+  "Resources/th43/player/reimu/laser_eff.png": {
+    "source": "player.res:res/player/reimu/laser_eff.png",
+    "sha256": "e48fd68a2e082fd5e26af739f361fffd4ff25cc7938a72dc25f96c38e3e47112"
+  },
+  "Resources/th43/player/reimu/left.png": {
+    "source": "player.res:res/player/reimu/left.png",
+    "sha256": "a4cd46464a81a0a8387f4de34a686f1227632fa23270f8f8bfb5a8d502590ded"
+  },
+  "Resources/th43/player/reimu/magic.png": {
+    "source": "player.res:res/player/reimu/magic.png",
+    "sha256": "7e561cf50a994a398b45fa87d8d39526ed86749d8352b945904748ff5ec671f7"
+  },
+  "Resources/th43/player/reimu/main_eff.png": {
+    "source": "player.res:res/player/reimu/main_eff.png",
+    "sha256": "a9801e20a44173aedfc78304881765e7e49e3c060f74bdb4a74ccabb0a00abd7"
+  },
+  "Resources/th43/player/reimu/normal.png": {
+    "source": "player.res:res/player/reimu/normal.png",
+    "sha256": "89e06f220eb1697d10dac8b4116d17b7684fd477a126dd425350e66d3682ac34"
+  },
+  "Resources/th43/player/reimu/right.png": {
+    "source": "player.res:res/player/reimu/right.png",
+    "sha256": "06ff7a3bbad3799b35839e4a45d9c4ce506c3f2b9928e02445dcfa73b370fac0"
+  },
+  "Resources/th43/player/reimu/spread_eff.png": {
+    "source": "player.res:res/player/reimu/spread_eff.png",
+    "sha256": "deac3d16206e7b2df660d0c805d8bc242925e0d358ee92a24be924697d9d7988"
+  },
+  "Resources/th43/player/reimu/straight_eff.png": {
+    "source": "player.res:res/player/reimu/straight_eff.png",
+    "sha256": "e8f19d2e7d37138949fbdea7ecf79ae8effef456ac1c8658a41316afb18baba9"
+  },
+  "Resources/th43/player/reimu/trail1.png": {
+    "source": "player.res:res/player/reimu/trail1.png",
+    "sha256": "aae3adafbd2736242f1d26fbc37ca6d9eb3cbb3ca03f8f7e0ba52612a3bdb29f"
+  },
+  "Resources/th43/player/reimu/trail2.png": {
+    "source": "player.res:res/player/reimu/trail2.png",
+    "sha256": "5ac4406888547672b94606d0b43bbba273818d8e3503e6b06788728f514a9dfb"
+  },
+  "Resources/th43/player/reimu/trail_eff.png": {
+    "source": "player.res:res/player/reimu/trail_eff.png",
+    "sha256": "75493dee990a97eed7bff8858e85e0c8f1f0355ca11d39a077cc3ac91c977e51"
+  },
+  "Resources/th43/player/reimu/trail_eff1.png": {
+    "source": "player.res:res/player/reimu/trail_eff1.png",
+    "sha256": "cc59b4db1944f3f46cea5b475e54c1a265e334985613ec6195c06c6da94d1b99"
+  },
+  "Resources/th43/player/reimu/trail_eff2.png": {
+    "source": "player.res:res/player/reimu/trail_eff2.png",
+    "sha256": "89261f14623965d6e33cdcf59221780b50c084105db74f8aa082ed7f06bc8d72"
+  },
+  "Resources/th43/player/sakuya/bomb1.png": {
+    "source": "player.res:res/player/sakuya/bomb1.png",
+    "sha256": "784b3abe4970b3044a9b1621b0e9437ca060002de4a20d76db9e1723f658b70f"
+  },
+  "Resources/th43/player/sakuya/bomb2.png": {
+    "source": "player.res:res/player/sakuya/bomb2.png",
+    "sha256": "f8b3dc0bae926848bd32fc651c0667e7e329ab2369ec0dd50d153dfc35b25492"
+  },
+  "Resources/th43/player/sakuya/boundary1.png": {
+    "source": "player.res:res/player/sakuya/boundary1.png",
+    "sha256": "0d2c53bba8a73bc89e7ef9bb7d7c818f1638ea1b67c3280d7b86a8ba287fb5c3"
+  },
+  "Resources/th43/player/sakuya/boundary2/1.png": {
+    "source": "player.res:res/player/sakuya/boundary2/1.png",
+    "sha256": "02bee7cf1482e227feb26f7023b65bd5252083adc9bea36c82dc4c0f5e12fe48"
+  },
+  "Resources/th43/player/sakuya/boundary2/2.png": {
+    "source": "player.res:res/player/sakuya/boundary2/2.png",
+    "sha256": "fb51a634731e94d38c2b59eb23044c4113af9f0d4cb9e63fb4a5c38b106dc24f"
+  },
+  "Resources/th43/player/sakuya/boundary2/3.png": {
+    "source": "player.res:res/player/sakuya/boundary2/3.png",
+    "sha256": "b20025ed173d676f32a1cf0d3c14408074410e2b4ba7b754d0676e730bcef329"
+  },
+  "Resources/th43/player/sakuya/boundary2/4.png": {
+    "source": "player.res:res/player/sakuya/boundary2/4.png",
+    "sha256": "96417adb223d81ac0d2c9bf503de37889f26e74977ac757614b8c21abf54479e"
+  },
+  "Resources/th43/player/sakuya/boundary2.png": {
+    "source": "player.res:res/player/sakuya/boundary2.png",
+    "sha256": "8a96a2f964abefad6c66a13602a15b2cdb834c1416fe1493b20287d206f642fc"
+  },
+  "Resources/th43/player/sakuya/boundary3.png": {
+    "source": "player.res:res/player/sakuya/boundary3.png",
+    "sha256": "c25acba9ca9b3a9d2d6e1965eb3c654d118f61013bb687f9b232933988a5a958"
+  },
+  "Resources/th43/player/sakuya/bullets.png": {
+    "source": "player.res:res/player/sakuya/bullets.png",
+    "sha256": "ed0b59ab18288340d319add264d6c909be03ede4d7f938e47eee5bb3e5040573"
+  },
+  "Resources/th43/player/sakuya/laser.png": {
+    "source": "player.res:res/player/sakuya/laser.png",
+    "sha256": "acf56bbc67ab63e5e01b44d81b8b015287bec744cc0d5ac49396f4d913f6fc8b"
+  },
+  "Resources/th43/player/sakuya/laser_eff.png": {
+    "source": "player.res:res/player/sakuya/laser_eff.png",
+    "sha256": "e48fd68a2e082fd5e26af739f361fffd4ff25cc7938a72dc25f96c38e3e47112"
+  },
+  "Resources/th43/player/sakuya/left.png": {
+    "source": "player.res:res/player/sakuya/left.png",
+    "sha256": "cf605a110721df76f0a046ad2e10f663be2f3667ef04e48fb9de595900d4616f"
+  },
+  "Resources/th43/player/sakuya/main_eff.png": {
+    "source": "player.res:res/player/sakuya/main_eff.png",
+    "sha256": "757caed6979d9b88552cbf202e02694f869830783e2c2451ff30404f67a380d3"
+  },
+  "Resources/th43/player/sakuya/normal.png": {
+    "source": "player.res:res/player/sakuya/normal.png",
+    "sha256": "d420e804e3f770491fb85af7640fa19fdd661d3290bcc52e8f1270f6b332ad7a"
+  },
+  "Resources/th43/player/sakuya/right.png": {
+    "source": "player.res:res/player/sakuya/right.png",
+    "sha256": "934e703d20f3fc2eb9d47312e0e16054f3d0721430da4e9bb3f33977f9db2bd9"
+  },
+  "Resources/th43/player/sakuya/spread_eff.png": {
+    "source": "player.res:res/player/sakuya/spread_eff.png",
+    "sha256": "f1a47f32fce956a6e4852007c11f292363fea05e01c57234cdc35e5f175af839"
+  },
+  "Resources/th43/player/sakuya/straight_eff.png": {
+    "source": "player.res:res/player/sakuya/straight_eff.png",
+    "sha256": "e59e73937d24795db43ed71e851fff4c5f35d9c3f34a577865c84dcf46fccc48"
+  },
+  "Resources/th43/player/sakuya/trail_eff.png": {
+    "source": "player.res:res/player/sakuya/trail_eff.png",
+    "sha256": "06c3c2304551f0583b068a78c7fa02264b5eb1956027615768f1ba7b67a4dc69"
+  }
+}

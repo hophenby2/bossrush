@@ -1,7 +1,7 @@
 -- The native fan-game stages store a separate player version in the replay initial state.
 local P={VERSION=1,adapters={}}
 local lifeThresholds={9,12,15,20,25,30,35,40,40,99}
-local respawnY={[35]=-180,[36]=-176,[37]=-400/3,[38]=-176,[39]=-176,[41]=-176}
+local respawnY={[35]=-180,[36]=-176,[37]=-400/3,[38]=-194,[39]=-176,[41]=-176}
 local profiles={
     [35]={
         {'reimu','博丽灵梦',4.5,2,13,'reimu',10,{20,6}},
@@ -144,11 +144,12 @@ end
 local ResourceItem=Class(item)
 local SourceVisual=dofile('THlib/native_player_visual.lua')
 local ActorCollision=NativeActorCollision or dofile('THlib/native_actor_collision.lua')
+local SourceMovement=dofile('THlib/native_player_movement.lua')
 local SourceDeath=dofile('THlib/native_player_death.lua')
 P.visual,P.death=SourceVisual,SourceDeath
 function ResourceItem:init(x,y,kind,amount)
     local images={life=7,bombs=9,power=1,fragments=7,red=7,green=9,blue=2,night=2,star=2,points=3,bombFragments=9,rankPower=1}
-    item.init(self,x,y,images[kind])
+    item.init(self,x,y,images[kind] or 2)
     self.native_pickup,self.kind,self.amount=true,kind,amount
     local s=P.state()
     local adapter=s and P.adapters[s.level]
@@ -333,190 +334,23 @@ local function ray(p,x,y,dir,width,enemyDamage,bossDamage,visible)
         end
     end)
 end
-local part2Options={
-    reimu={{-20,25},{20,25},{-35,0},{35,0}},
-    marisa={{-12,28},{12,28},{-36,2},{36,2}},
-    sanae={{-12,24},{12,24},{-32,4},{32,4}},
-}
-local part2Focus={{-15,25},{15,25},{-5,30},{5,30}}
-local sanaeFast={93,103,87,77,110,120,70,60}
-local sanaeSlow={88,76,92,104,90,88,90,92}
-local function part2(p,t)
-    local m,key,s=p.machine,p.shotImage,P.state()
-    if t%3==0 then
-        for _,x in ipairs({-10,10}) do emit(p,key..m.art,x,-10,22,90,m.damage,4,.9) end
-    end
-    local layout=part2Options[m.id]
-    if not layout then return end
-    local slow=p.slow==1
-    for i=1,math.min(4,math.floor(s.power/100)) do
-        local pt=(slow and part2Focus or layout)[i]
-        local x,y=pt[1],pt[2]
-        if m.id=='reimu' and t%7==0 then
-            emit(p,key..'amulet',x,y,9,90,16,6,.45,8)
-        elseif m.id=='marisa' then
-            local dir=x>21 and 86 or x< -21 and 94 or 90
-            ray(p,p.x+x,p.y+y,dir,1,slow and 5.2 or 7.8,slow and 4.4 or 6.6,true)
-        elseif m.id=='sanae' and t%6==0 then
-            local dirs=slow and sanaeSlow or sanaeFast
-            -- The source seed itself has zero power. The main stream supplies direct damage.
-            emit(p,key..'seed',x,y,9,dirs[2*i-1],0,10,.8)
-            emit(p,key..'seed',x,y,9,dirs[2*i],0,10,.8)
-        end
-    end
-end
-
-local aslFast={-42,-31,-20,-18,-15,-9,-7,-4,4,7,9,15,18,20,31,42}
-local aslSlow={-30,-15,15,30}
-local aslCharge={45,83,123,163}
-local byakurenCharge={{60,.035},{72,.044},{52,.053},{50,.062}}
-local mikoCharge={36,12,8,8}
-local mikoAlternate={16,14,22,18}
-local byakurenAlternate={90,108,72,64}
-local aslOther={reimu='yukari',yukari='reimu',byakuren='miko',miko='byakuren',
-    marisa='marisa_b',marisa_b='marisa'}
-local function asl(p,t)
-    local m=p.machine
-    local slow=p.slow==1
-    local id=p.altForm and aslOther[m.id] or m.id
-    local mode=P.machine(36,id)
-    local img=p.shotImage..mode.art
-    if t%5==0 then
-        local x,y=7.2,19.2
-        if m.damage==11 then x,y=8.16,7.2 end
-        for _,side in ipairs({-1,1}) do
-            emit(p,img,side*x,y,57.6,90,m.damage,19.2,1,nil,true)
-        end
-    end
-    if id=='reimu' and not p.altForm and t%10==0 then
-        for _,a in ipairs({-21,-9,9,21}) do emit(p,'native_asl_sub',0,0,7.2,90+a,12,3,1,8) end
-    elseif m.art=='yukari' and t%7==0 then
-        for _,x in ipairs({-4.8,4.8}) do
-            emit(p,img,x,p.altForm and 24 or 14.4,p.altForm and 57.6 or 48,90,5,2,1)
-        end
-    elseif m.id=='marisa' and not p.altForm and t%(slow and 15 or 24)==0 then
-        for _,a in ipairs(slow and aslSlow or aslFast) do
-            emit(p,'native_asl_sub',0,0,slow and 4.8 or 11.52,90+a,slow and 15 or 22,4,1,slow and 8)
-        end
-    elseif m.art=='marisa' and (m.id=='marisa_b')~=p.altForm then
-        p.laserStart=math.min(15,(p.laserStart or 0)+1)
-        if p.laserStart>12 then
-            for _,x in ipairs({-16,-6,6,16}) do
-                ray(p,p.x+x,p.y,90,3,slow and 5 or 8,slow and 5 or 8,t%2==0)
-            end
-        end
-        if p.altForm and not slow and t%20==0 then emit(p,'native_asl_sub',-4.32,-2.88,1.92,90,24,6,1) end
-    elseif m.id=='marisa_b' and p.altForm and t%2==0 then
-        emit(p,'native_asl_sub',0,0,slow and 7.2 or 4.8,90,4,4,1)
-    elseif m.damage==11 then
-        p.charge=(p.charge or 0)+1
-        if p.charge>=163 then barrierAdd(P.state(),50) end
-        if p.chargeSlow and not slow then
-            local i=4
-            while i>0 and p.charge<aslCharge[i] do i=i-1 end
-            if i>0 then
-                if m.id=='byakuren' and not p.altForm then
-                    local b=byakurenCharge[i]
-                    emit(p,'native_asl_sub',0,0,b[2]*96,90,b[1],12,2)
-                elseif m.id=='byakuren' then
-                    emit(p,'native_asl_sub',0,0,1.248,90,byakurenAlternate[i],12,2)
-                else
-                    local d=(p.altForm and mikoAlternate or mikoCharge)[i]
-                    ray(p,p.x,p.y,90,5*i,d,d,true)
-                end
-            end
-            p.charge=0
-        end
-        p.chargeSlow=slow
-    end
-end
-
-local function part3(p,t)
-    local m,key=p.machine,p.shotImage
-    local v=m.velocity*projectScale
-    local function fire(x,y,angle,r,scale,damage,speed)
-        emit(p,key..m.art,x*projectScale,y*projectScale,speed and speed*projectScale or v,
-            angle,damage or m.damage,r*projectScale,scale*projectScale)
-    end
-    local slow=p.slow==1
-    if m.id=='reimu' then
-        if t%7==0 then
-            for i=1,4 do
-                local a=(i-1)*(slow and 2 or 4)
-                local speed=30-3*i
-                fire(-30,0,90+a,25,.3,5,speed)
-                fire(30,0,90-a,25,.3,5,speed)
-            end
-        end
-        for _,x in ipairs({-30,-10,10,30}) do fire(x,-math.abs(x),90,15,.7) end
-    elseif m.id=='reimu_b' then
-        local a=p.turn*25
-        for _,pos in ipairs({100,80,120,60,150,30}) do
-            fire(38*cos(pos-a),38*sin(pos-a),90-a,25,.55)
-        end
-        local width=slow and 40 or 60
-        for _,side in ipairs({-1,1}) do
-            fire(side*width*cos(a),-side*width*sin(a),90-a,25,.35,6)
-        end
-    elseif m.art=='marisa' then
-        local a=t*6
-        local width=slow and 27 or 47
-        local x=width*cos(a)*(a%360<180 and 1 or -1)
-        fire(x,0,90,30,.6)
-        if t>=30 then fire(-x,0,90,30,.6) end
-        if t%3==0 then
-            local width=slow and 45 or 60
-            for _,side in ipairs({-1,1}) do
-                fire(side*width,0,90,20,.35,m.id=='marisa' and 8 or 6,30)
-            end
-        end
-    elseif m.art=='sanae' then
-        fire(0,0,90,50,.5)
-        if t%2==0 then
-            local width=slow and 25 or 40
-            local a=slow and 2 or 5
-            fire(-width,0,90+a,25,.25,5,50)
-            fire(width,0,90-a,25,.25,5,50)
-        end
-    elseif t%2==0 then
-        fire(-18,10,90,25,.5)
-        fire(18,10,90,25,.5)
-    end
-    if m.id=='mokou_b' and t%5==0 then
-        for i=0,2 do
-            fire(-90,0,90-10*i,5,.45,6,20)
-            fire(90,0,90+10*i,5,.45,6,20)
-        end
-    elseif m.id=='mokou' and t%(slow and 2 or 3)==0 then
-        local width=slow and 18 or 72
-        fire(-width,0,slow and 140 or 180,50,.4,12,2)
-        fire(width,0,slow and 40 or 0,50,.4,12,2)
-    end
-end
-
+local aslOther={reimu='yukari',yukari='reimu',byakuren='miko',miko='byakuren',marisa='marisa_b',marisa_b='marisa'}
 function Player:shoot()
     local level=self.native_level
-    if self.hit or SourceDeath.locked(self) or self.death>=50 or P.out() or P.state().recover then return end
     local adapter=P.adapters[level]
+    if adapter and adapter.lateControl and not self.native_controls_running then self.native_shoot_pending=true;return end
+    if self.hit or SourceDeath.locked(self) or self.death>=50 or P.out() or P.state().recover then return end
     if adapter and adapter.shoot then
         self.shotClock=self.shotClock+1
         return adapter.shoot(self,self.shotClock,P.state())
     end
-    if level==36 then
-        local tick=self.timer*2
-        asl(self,tick)
-        asl(self,tick+1)
-    else
-        self.shotClock=self.shotClock+1
-        if level==35 then part2(self,self.shotClock)
-        else part3(self,self.shotClock) end
-    end
+    error('原作机体缺少射击适配：'..tostring(level))
 end
 
 local function bomb(p,s)
     if p.dialog or p.death>=50 or p.bombTime or s.recover or P.out() then return end
     local adapter=P.adapters[s.level]
-    if s.level>=38 then
+    if adapter and adapter.bomb then
         if not (adapter and adapter.bomb and adapter.bomb(p,s)) then return end
     elseif s.level==36 then
         if P.barriers(s)<3 then return end
@@ -531,19 +365,24 @@ local function bomb(p,s)
     p.hit=nil
     SourceDeath.cancel(p)
     p.bombTime=p.bombTime or 90
-    p.nextspell=p.bombTime
-    p.protect=math.max(p.protect,p.bombTime)
+    if not (adapter and adapter.ownBomb) then
+        p.nextspell=p.bombTime
+        p.protect=math.max(p.protect,p.bombTime)
+    end
     for _,b in ipairs(boss_group) do
         if IsValid(b) and b.is_combat then b._bosssys:clearBonus('spell') end
     end
-    New(bomb_bullet_killer,p.x,p.y,240,240,false)
-    if s.level~=36 then PlaySound('nep00',.5) end
+    if not (adapter and adapter.ownBomb) then
+        New(bomb_bullet_killer,p.x,p.y,240,240,false)
+        if s.level~=36 then PlaySound('nep00',.5) end
+    end
 end
 function P.miss(p)
     local s=P.state()
     if not s then return end
     if SourceDeath.defer(p) then return end
     local adapter=P.adapters[s.level]
+    if s.level<38 and adapter and adapter.miss then adapter.miss(p,s) end
     if s.level>=38 then
         if adapter and adapter.clearBonus then adapter.clearBonus() end
         if adapter and adapter.miss and adapter.miss(p,s) then return end
@@ -612,7 +451,10 @@ local function tick(p)
     end
     local key=p._playersys.keyState
     local adapter=P.adapters[s.level]
-    if adapter and adapter.frame then adapter.frame(p,s) end
+    -- 原作逐帧读取射击键，不沿用宿主松键后最长 15 帧的射击保持。
+    p.__shoot_flag,p.__shoot_count=key.shoot,0
+    p.slow=adapter and adapter.updateSlow and adapter.updateSlow(p,key.slow) or (key.slow and 1 or 0)
+    if adapter and adapter.frame and not adapter.lateFrame then adapter.frame(p,s) end
     if p.death==50 and not P.out() and not p.native_death_clock then p.x,p.y=0,respawnY[s.level] end
     SourceDeath.frame(p)
     local pressed=key.spell and not p.spellHeld
@@ -641,7 +483,9 @@ local function tick(p)
         if key.left then p.turn=math.max(-1,p.turn-.25)
         elseif key.right then p.turn=math.min(1,p.turn+.25) end
     end
-    if pressed then bomb(p,s) end
+    local useBomb=pressed or adapter and adapter.heldBomb and key.spell
+    if adapter and adapter.lateControl then p.native_bomb_pending=useBomb
+    elseif useBomb then bomb(p,s) end
     if p.hit then
         p.hit=p.hit-1
         if p.hit<=0 then
@@ -706,9 +550,22 @@ function Player:init()
     if adapter and adapter.bind then adapter.bind(self) end
     self.a,self.b=self.A,self.B
     self._playersys:addFrameEvent('native_player',1000,tick)
-    local move=player_lib.defaultFrameEvent['frame.move'][2]
+    self._playersys:addFrameEvent('frame.updateSlow',99,function(p)
+        local slow=p._playersys.keyState.slow
+        p.slow=adapter and adapter.updateSlow and adapter.updateSlow(p,slow) or (slow and 1 or 0)
+    end)
+    self._playersys:addFrameEvent('native_player.late',93,function(p)
+        if adapter and adapter.lateControl then
+            p.native_controls_running=true
+            if p.native_shoot_pending then p.native_shoot_pending=nil;Player.shoot(p) end
+            if p.native_bomb_pending then p.native_bomb_pending=nil;bomb(p,s) end
+            p.native_controls_running=nil
+        end
+        if adapter and adapter.lateFrame and adapter.frame then adapter.frame(p,s) end
+    end)
     self._playersys:addFrameEvent('frame.move',97,function(p)
-        if not p.hit and not SourceDeath.locked(p) and p.death<50 and not s.recover and not P.out() then move(p)
+        if not p.hit and not SourceDeath.locked(p) and p.death<50 and not s.recover and not P.out() then
+            if not (adapter and adapter.move and adapter.move(p,s)) then SourceMovement.step(p,s,adapter) end
         else p.__move_dx,p.__move_dy=0,0 end
     end)
 end
@@ -718,11 +575,12 @@ function Player:colli(other)
         or other.IsBoss and not other.is_combat then return end
     local s=P.state()
     if P.out() then return end
+    local adapter=P.adapters[s.level]
+    if adapter and adapter.beforeHit and adapter.beforeHit(self,other,s) then return true end
     self.hitWindow=self.machine.window or (s.bombs>=10 and 60 or 18)
     if s.level==37 then
         if (tonumber(s.chapter) or 0)>=6 then self.hitWindow=30 end
     end
-    local adapter=P.adapters[s.level]
     if adapter and adapter.hitWindow then self.hitWindow=adapter.hitWindow(self,s) end
     self.hit=self.hitWindow
     SourceDeath.hit(self)

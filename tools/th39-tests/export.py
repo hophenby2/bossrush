@@ -136,6 +136,8 @@ class Export:
         if kind == 'center' and name in ('Petrify', 'Lockdown', 'Control'):
             values = [atom(x) for x in args.split('，')]
             return 'R.' + name.lower() + '(o,' + ','.join(map(lua, values)) + ')'
+        if kind == 'center' and name in ('GettingOld', 'ReturnYouth'):
+            return 'R.' + name.lower() + '(o)'
         if name in ('Petrify', 'Lockdown', 'Control', 'GettingOld'):
             self.proxies['mechanic:' + name] += 1
         else:
@@ -376,10 +378,21 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source', type=Path, required=True)
     parser.add_argument('--content', type=Path, required=True)
+    parser.add_argument('--player-only', action='store_true', help='只导出自机、Bomb 与灯笼使用的 e 系列效果')
     args = parser.parse_args()
     ex = Export(args.source.resolve(), args.content.resolve())
     (OUT / 'patterns').mkdir(parents=True, exist_ok=True)
     ART.mkdir(parents=True, exist_ok=True)
+    if args.player_only:
+        directory = OUT / 'player_patterns'
+        directory.mkdir(parents=True, exist_ok=True)
+        for path in sorted((ex.content / 'Data').glob('e*.xna')):
+            if path.stem[1:].isdigit():
+                ex.pattern(path.stem[1:], prefix='e', directory=directory)
+        (OUT / 'player_effect_sources.json').write_text(json.dumps(
+            dict(sha256=ex.hashes, statistics=dict(ex.counts)), ensure_ascii=False, indent=2) + '\n')
+        print('已导出自机效果', len(ex.patterns))
+        return
     chapters = []
     for stage, difficulty in [(n, 4) for n in range(1, 7)] + [(7, 5), (8, 6)] + [(n, 9) for n in range(1, 7)]:
         key = f'{stage}lw' if difficulty == 9 else f'{stage}0{difficulty}'

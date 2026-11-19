@@ -49,9 +49,21 @@ function B.frame(p)
     support[1],support[2]=p.x+(support[1]-p.x)*.5,p.y+(support[2]-p.y)*.5
     p.supportx,p.supporty=support[1],support[2]
     p.lock_player_shoot=math.max(0,(p.lock_player_shoot or 0)-1)
+    p.lock_player_shift=math.max(0,(p.lock_player_shift or 0)-1)
     s.env.player=p;s.env.lstg.player=p
     s.class.frame(p)
 end
 function B.shoot(p) local s=p.theis_source;s.env.player=p;s.class.shoot(p) end
+function B.spell(p)
+    local s=p.theis_source;s.env.player=p;s.env.lstg.player=p
+    s.class.spell(p)
+end
+function B.shieldHit(p)
+    if not p.shield then return false end
+    p.shield=false;p.nextspell=60;p.protect=math.max(120,p.protect)
+    local s=p.theis_source
+    s.env.New(s.env.bullet_cleaner,p.x,p.y,600,60,60,false,false,0)
+    return true
+end
 function B.render(p) local s=p.theis_source;s.env.player=p;s.class.render(p) end
 return B

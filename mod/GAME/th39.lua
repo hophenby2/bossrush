@@ -1,5 +1,6 @@
 -- TH39 东方幕华祭·永夜篇。练习与顺序模式共用同一份离线展开数据。
 local R=dofile('mod/GAME/th39/runtime.lua')
+assert(loadfile('mod/GAME/ports/mhj/native_players/night_adapter.lua'))(R)
 local D=R.data
 local Media=dofile('mod/GAME/th39/media.lua')
 local BG=dofile('mod/GAME/th39/background.lua')

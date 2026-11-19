@@ -11,6 +11,7 @@ local BG=dofile('mod/GAME/th37/background.lua')
 local Actor=dofile('mod/GAME/th37/actor.lua')
 local C={runtime=R,background=BG,data=D,level=35,cards={},chapters={},classes=R.classes}
 TH37=C
+assert(loadfile('mod/GAME/ports/mhj/native_players/spring_adapter.lua'))(R)
 BG.musicFrames={}
 for _,chapter in ipairs(D.chapters) do
     local cues={};BG.musicFrames[chapter.stage]=cues

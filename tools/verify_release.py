@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""逐文件核对三端安装包与已提交源码快照；WAV 仅忽略容器元数据，比较 PCM 样本。"""
+"""按构建裁剪规则逐文件核对三端安装包；WAV 只忽略容器元数据，比较 PCM 样本。"""
 from pathlib import Path
-import argparse,hashlib,io,json,wave,zipfile
+import argparse,hashlib,io,json,runpy,wave,zipfile
 
 GAME_PATHS=('THlib','Resources','mod','music','BadApple','shader','core.lua','launch','launch.lua','manual','Update.txt')
 
@@ -21,6 +21,7 @@ def inputs(root):
     return result
 
 def verify(path,root,kind):
+    include=runpy.run_path(str(root/'android/asset_policy.py'))['include_asset'] if kind!='windows' else lambda p:True
     # ditto 的 ZIP 保留 UTF-8 名字但不总置 UTF-8 标志；显式解码，避免中文资源被当作 CP437。
     with zipfile.ZipFile(path,metadata_encoding='utf-8') as archive:
         assert archive.testzip() is None,('CRC 失败',path)
@@ -29,11 +30,13 @@ def verify(path,root,kind):
         if kind=='windows':prefix=next(n[:-len('core.lua')] for n in names if n.endswith('/core.lua'))
         elif kind=='android':prefix='assets/game/'
         else:prefix=next(n[:-len('core.lua')] for n in names if n.endswith('/Contents/Resources/game/core.lua'))
-        count=0
+        count=excluded=0
         for source in inputs(root):
             relative=source.relative_to(root).as_posix()
             # Android/Mac 的入口由各自移植层提供，Windows 的 launch 不是 Lua 资源清单成员。
             if kind!='windows' and relative=='launch':continue
+            # Mac 共用 Android 的既有裁剪规则；被宿主替代的菜单/旧图集不要求入包。
+            if not include(relative):excluded+=1;continue
             name=prefix+relative
             assert name in names,('缺少资源',kind,relative)
             assert same(source,archive.read(name)),('与提交快照不一致',kind,relative)
@@ -47,7 +50,7 @@ def verify(path,root,kind):
             assert any(n.endswith('/Contents/MacOS/BossRushHD') for n in names)
             for source in (root/'macos/lua').rglob('*.lua'):
                 assert same(source,archive.read(prefix+'macos/'+source.relative_to(root/'macos/lua').as_posix()))
-        return {'file':path.name,'bytes':path.stat().st_size,'sha256':hashlib.file_digest(path.open('rb'),'sha256').hexdigest(),'game_files_compared':count,'crc':True,'source_matches':True,'user_data_excluded':True}
+        return {'file':path.name,'bytes':path.stat().st_size,'sha256':hashlib.file_digest(path.open('rb'),'sha256').hexdigest(),'game_files_compared':count,'asset_policy_excluded_files':excluded,'crc':True,'source_matches':True,'user_data_excluded':True}
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--source',type=Path,required=True);p.add_argument('--commit',required=True)

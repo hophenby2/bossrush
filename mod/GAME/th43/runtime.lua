@@ -18,6 +18,7 @@ function E._del(o,trigger) if trigger then Del(o) else object.RawDel(o) end end
 local function noop() end
 local function overlay(base,items) return setmetatable(items or {},{__index=base}) end
 E.math=overlay(math,{
+    mod=math.fmod,
     clamp=function(x,a,b) return math.max(a,math.min(b,x)) end,
     inrange=function(x,a,b) return x>=a and x<=b end,
     lerp=function(a,b,t) return a+(b-a)*t end,
@@ -441,8 +442,14 @@ E.r18g={findfile=function() return nil end}
 E.laser_bent=overlay(bent_laser,{
     init=function(o,_,x,y,len,width,texture,node)
         bent_laser.init(o,1,x,y,len,width,texture,false)
+        o.th43_laser_texture=texture and resolve('tex',texture)
     end,
-    render=function(o) o.node=nil;bent_laser.render(o) end,
+    render=function(o)
+        if o.th43_laser_texture then
+            local w,h=GetTextureSize(o.th43_laser_texture)
+            o.data:Render(o.th43_laser_texture,o._blend,Color(o._a*o.alpha,o._r,o._g,o._b),0,0,w,h)
+        else o.node=nil;bent_laser.render(o) end
+    end,
     getLength=function(o) return o.l end,
     setLength=function(o,n) o.l=math.max(2,math.floor(n)) end,
     getAlpha=function(o) return o.alpha end,
@@ -468,6 +475,7 @@ function E.RenderStrokeTTF(_,text,left,right,bottom,top,scale,color)
     ui:RenderText('title',text,(left+right)/2,(bottom+top)/2,scale*.6,color,'center')
 end
 function E.RenderTexture(tex,...) return RenderTexture(resolve('tex',tex),...) end
+stg.RenderTexture=E.RenderTexture
 E.sp.UnitListUpdate=function(list)
     for i=#list,1,-1 do if not valid(list[i]) then table.remove(list,i) end end
 end
@@ -561,7 +569,7 @@ function R.reset(diff,practice)
     E.EISlib.Bullet.Laser.init()
 end
 function R.update()
-    if power.hyper and not power.paused and not power.infinite and power.time then
+    if not power._original and power.hyper and not power.paused and not power.infinite and power.time then
         power.time=power.time-1
         if power.time<=0 then power.hyperNormalEnd(player) end
     end

@@ -2,6 +2,7 @@ return {["id"]="6414",["total"]=1800,["order"]=1,["centerAvailable"]=true,["cent
 if t==(5) then R.sound("ch01") end
 if t==(140) then R.sound("stage6transfer") end
 if t==(300) then R.sound("stage6time") end
+if t==(1020) then R.gettingold(o) end
 end,globalEvents=function(c,t,R)
 
 end,emitters={

@@ -1,12 +1,17 @@
-# 春雪篇、雪莲华和永夜篇的原作自机
+# 六作原作自机校准
 
 顺序模式、关卡练习和符卡练习共享原生自机。录像初态保存机体和版本号，早期录像根据原有的项目机体播放。符卡练习沿用项目的无敌规则。
 
-- 春雪篇 4 台。根据 `Characters.cs`、`Character.cs`、`EquipShoot.cs`、`ItemManager.cs` 接入高速/低速、主炮、子机、决死、火力与残机。掉落取自关卡脚本，Boss 扣血取自 `BossCard.DeHp`。
-- 雪莲华 6 台。根据 Unity 工程的角色预制件、`Centeryidong.cs`、`Damage_zhuqiang.cs`、`Jiemian_system.cs` 接入机体、切换、蓄力、结界、碎片和决死。每帧调度两次 120 Hz 的射击计数，弹体交由 60 Hz 的 LuaSTG 碰撞流程处理。
-- 永夜篇 8 台。根据 `Data/10.xna`、`EquipShoot.cs`、`Character.cs` 接入 A/B 装备、决死、库存与妹红复活。Boss 按原脚本掉落，并按 `BossCard.DeHp` 的开场时间和斜率扣血。
+- 春雪篇 4 台：原始 `EquipShoot`、`Equipment`、`SelfBarrage`、`SingleBomb` 与 `SpecialSystem`；原子机轨迹、射击节拍、火力、Bomb、樱花开花／破裂与收集范围。
+- 雪莲华 6 台：原 Unity 射击组件、94 个可达预制件、120 Hz 更新；高速／低速、三次形态切换、蓄力、动态倍率、结界释放与回流。第二个魔理沙机体使用独立的 `Center_yinqinai`，不再倒置第一机体的武器。
+- 永夜篇 8 台：原 A/B 装备、普通／决死 Bomb、灯笼／支援自机／暴走状态机、能量和收集范围；本体用原始 `Character.DrawSprite` 及分部动画参数绘制。石化、定身、强制移动、衰老状态接入原作方法，保持灯笼暂停／恢复与禁射。
+- 夏夜祭 4 台：原 `Shoot`、`SubPlaneCtrl`、子机滞后、诱导转向、射击计数与图集中心点；五种 Bomb 形态、恋恋护盾、绿结界优先级与红附魔伤害。
+- 祈华梦 3 组：执行原自机类的射击、切换和六种高速／低速 Bomb；恢复禁射、锁速、冷却与幽幽子护盾破裂。
+- 栖霞园 3 组：执行用户提供的完整原作中的自机类、装备系统和 `PowerRank`；原 Hyper、自动发动、暂停保险、决死、收集范围与六种武器形态。
 
-春雪篇的部分子机轨迹、雪莲华的变身派生攻击、永夜篇的部分副武器使用近似表现。主动 Bomb 和结界释放仍有宿主实现；春雪篇樱花系统、雪莲华回流、永夜篇灯笼完整状态机与原作分数体系仍待移植。机体素材用 `export_art.py` 从两作 XNA Content 和雪莲华 Assets 离线切出。
+六作分别使用原移动边界、相反方向键优先级、斜移系数和收集范围。原作 Bomb 自行处理伤害、消弹、保护和库存，避免重复叠加宿主的全屏伤害。原作没有被修改，导出后的脚本、数据和贴图均包含在游戏中。
+
+C# 逻辑由 `csharp_logic.py` 按语法树转换；遇到不支持的语法会停止。兼容层保留零基数组、值类型复制、float32 字段、整数除法和参数数目重载。春雪篇灵梦／魔理沙／早苗的 2332 次发弹已与未修改 C# 实际运行的结果逐字段对照，详见 `oracle/README.zh-CN.md`。这份对照只证明列出的发弹字段；六作其余系统由下面的真实引擎专项覆盖。
 
 ## 六作原图与死亡流程
 
@@ -23,7 +28,7 @@
 | 祈华梦 | 动画渲染统一乘原 globalimagescale=0.5；原低速指针与道具动画 | 原 psi 粒子与延迟扩散圈；仅删除普通弹组，保留无敌弹和激光；40 帧后回场 |
 | 栖霞园 | 原 12 帧待机、4+8 帧转向、自机弹、命中特效及激光；原 enemy/enemy2 样式表 | 原 psi 粒子与扩散圈；仅删除普通弹组，保留无敌弹和激光；原复活曲线与敌机死亡特效 |
 
-这不表示整个移植已经逐像素等价：Unity 粒子／材质与夏夜祭 3D 特效仍由当前引擎表达；上文列出的完整玩法系统也不在本轮移植范围内。
+跨引擎仍有表现差异：Unity 粒子／材质、夏夜祭 3D 装饰特效和部分界面演出仍由当前引擎表达；没有宣称整作的着色器、随机序列和分数体系逐位等价。Windows Sub 未执行本轮原生回归。
 
 专项回归使用隔离存档，检查原图主炮、自机和道具判定、范围内普通弹删除、无敌弹和范围外子弹保留、扣命与复活：
 
@@ -66,7 +71,7 @@ python3 tools/native-player-tests/native_enemy_death.py --out /tmp/source-enemie
 
 ## 自机与敌机判定修正（26.11.19-player-collision）
 
-祈华梦三组机体改为执行原始 `reimu.lua`、`marisa.lua`、`mokou.lua`，资源名称加前缀隔离。灵梦/紫恢复八帧行走、六帧切换、原子机阵型和跟随、诱导锁定、主炮/副武器及命中特效；原作构造器决定缩放、中心点和自机弹判定。`export_theis_players.py --source <原作 code/data>` 同步脚本和 PNG，`native_players/sources.json` 记录原始输入 SHA-256。桥接层只替换资源装载和宿主自机基类；主动 Bomb、残机和录像仍由现有宿主管理。
+祈华梦三组机体改为执行原始 `reimu.lua`、`marisa.lua`、`mokou.lua`，资源名称加前缀隔离。灵梦/紫恢复八帧行走、六帧切换、原子机阵型和跟随、诱导锁定、主炮/副武器及命中特效；原作构造器决定缩放、中心点和自机弹判定。`export_theis_players.py --source <原作 code/data>` 同步脚本和 PNG，`native_players/sources.json` 记录原始输入 SHA-256。桥接层替换资源装载和宿主自机基类；后续校准进一步接入了原主动 Bomb、保护与锁速。
 
 `THlib/native_actor_collision.lua` 分别在体术和自机弹命中阶段设置判定，恢复后保留精灵旋转。判定不再依赖贴图自带的零尺寸。LuaSTG-x 的 `rect=false` 是圆形，非等比椭圆显式选择 `ellipse`；Windows Sub 继续使用原布尔接口。
 
@@ -89,4 +94,35 @@ python3 tools/native-player-tests/native_source_parity.py --levels 39 --machine 
 python3 tools/native-player-tests/native_source_parity.py --levels 39 --machine mokou --out /tmp/theis-mokou
 ```
 
-边界专项通过真实引擎的 `CollisionCheck` 检查矩形四角、横纵边界、椭圆角落以及贴图覆写；自机专项实际计数灵梦/紫本体及子机绘制，并覆盖高速/低速切换。以上是本轮修正和验证范围，不表示前文仍列出的近似实现已全部完成。
+边界专项通过真实引擎的 `CollisionCheck` 检查矩形四角、横纵边界、椭圆角落以及贴图覆写；自机专项实际计数灵梦/紫本体及子机绘制，并覆盖高速/低速切换。以上记录该版本的判定修正和验证范围；后续逻辑校准见下文。
+
+## 自机逻辑回归（26.11.19-player-logic）
+
+`native_logic.py` 在实际 macOS 引擎中运行，每例使用独立存档；通常 700 帧，栖霞园为 1200 帧。断言覆盖库存、无敌、禁射、冷却、切换、自动发动与状态恢复；特效武器另核对敌机／Boss 命中顺序、镜像缩放和永夜篇每帧共享伤害上限。可使用 `--machine` 逐机运行，高／低速 Bomb 使用 `--variant high`／`slow`；永夜篇的 `slow` 指决死 Bomb。
+
+```sh
+python3 tools/native-player-tests/check_csharp_source.py
+luajit tools/native-player-tests/check_movement.lua
+python3 tools/native-player-tests/native_logic.py --levels 35,36,37,38,39,41 --out /tmp/player-logic
+python3 tools/native-player-tests/native_logic.py --levels 35 --variant system --out /tmp/sakura
+python3 tools/native-player-tests/native_logic.py --levels 37 --variant system --out /tmp/lantern
+python3 tools/native-player-tests/native_logic.py --levels 37 --variant status --out /tmp/negative-status
+python3 tools/native-player-tests/native_logic.py --levels 35,37 --variant damage --out /tmp/effect-damage
+python3 tools/native-player-tests/native_logic.py --levels 41 --variant passive --out /tmp/hyper-insurance
+python3 tools/native-player-tests/native_source_parity.py --out /tmp/player-source
+```
+
+通过的案例清单及覆盖边界保存在 `verification-26.11.19-player-logic.json`。
+
+本轮另修复了 LuaSTG-x 碰撞回调改变对象组／类时迭代器失效的崩溃；栖霞园灵梦的原始慢速弹击破回调会触发这条路径。碰撞组在回调前建立对象快照，保持原遍历顺序。
+
+离线导出入口及输入如下；所有目录的 `sources.json` 记录原始输入 SHA-256。`parser-lib` 目录需安装 `tree-sitter`、`tree-sitter-c-sharp`，导出还需 Pillow、PyYAML、pycryptodome；游戏运行无需这些 Python 依赖。
+
+```sh
+python3 tools/native-player-tests/export_mhj_players.py --spring <春雪篇C#目录> --night <永夜篇C#目录> --night-content <永夜篇Content> --parser-lib <解析器目录>
+python3 tools/th37-tests/export.py --source <春雪篇恢复工程根目录> --player-only
+python3 tools/th39-tests/export.py --source <永夜篇恢复工程根目录> --content <永夜篇Content> --player-only
+python3 tools/native-player-tests/export_unity_players.py --assets <雪莲华Assets> --parser-lib <解析器目录>
+python3 tools/native-player-tests/export_summer_players.py --source <夏夜祭Shooting源码目录> --game <夏夜祭完整游戏目录> --parser-lib <解析器目录>
+python3 tools/native-player-tests/export_bdb.py --scripts <栖霞园解包脚本目录> --assets <栖霞园解包素材目录>
+```

@@ -397,11 +397,11 @@ function N.bulletDeath(b)
         for i=1,#b.history,8 do New(BulletEnd,b,unpack(b.history[i])) end
     else New(BulletEnd,b,b.x,b.y) end
 end
-function N.deathClear(x,y,r,giveItems)
+function N.spellClear(contains,giveItems)
     for run in pairs(N.runs) do
         if run then
             for _,b in ipairs(run.bullets) do
-                if valid(b) and not b.invincible and Dist(x,y,b.x,b.y)<r+(b.region or 0) then
+                if valid(b) and not b.invincible and contains(b) then
                     if N.bulletDeath then N.bulletDeath(b) end
                     if giveItems and NativePlayers and b.mode=='bullet' then NativePlayers.pickup(b.x,b.y,'star',1) end
                     erase(b)
@@ -409,6 +409,9 @@ function N.deathClear(x,y,r,giveItems)
             end
         end
     end
+end
+function N.deathClear(x,y,r,giveItems)
+    return N.spellClear(function(b) return Dist(x,y,b.x,b.y)<r+(b.region or 0) end,giveItems)
 end
 function N.deathDamage(x,y,r,damage)
     for run in pairs(N.runs) do

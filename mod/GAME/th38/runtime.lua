@@ -545,12 +545,12 @@ function R.clear(c)
     c.emitters,c.entities,c.byName={},{},{};R.controllers[c]=nil
 end
 function R.clearAll() for c in pairs(R.controllers) do R.clear(c) end;R.bulletCount=0 end
-function R.deathClear(x,y,r)
+function R.deathClear(x,y,r,outside,dropKind)
     for b in pairs(R.objects) do
         local s=b.asl
         if valid(b) and s and s.alive then
             if s.kind=='enemy' or s.kind=='boss' then
-                if s.invincible~=1 and not b.protect and Dist(x,y,b.x,b.y)<r then
+                if not outside and s.invincible~=1 and not b.protect and Dist(x,y,b.x,b.y)<r then
                     if s.kind=='enemy' then b.hp=b.hp-40
                     elseif valid(s.c.host) then Damage(s.c.host,40) end
                 end
@@ -561,14 +561,17 @@ function R.deathClear(x,y,r)
                     local dx,dy=x-b.x,y-b.y;local along=math.max(0,math.min(b.l2,-dx*co-dy*si))
                     return math.sqrt((dx+along*co)^2+(dy+along*si)^2)
                 end
-                while s.length>.08*s.width and distance()<r+(b.w or 0)/2 do
+                while s.length>.08*s.width and (outside and distance()>r or not outside and distance()<r+(b.w or 0)/2) do
                     s.length=s.length-.04;s.x,s.y=s.x-.16*co,s.y-.16*si;sync(b,s)
                 end
             elseif s.kind=='curve' then
                 if s.invincible~=1 then
-                    for _,n in ipairs(s.path) do if Dist(x,y,n.x,n.y)<r then n.dead=true end end
+                    for _,n in ipairs(s.path) do if outside and Dist(x,y,n.x,n.y)>r or not outside and Dist(x,y,n.x,n.y)<r then n.dead=true end end
                 end
-            elseif s.invincible~=1 and Dist(x,y,b.x,b.y)<r then Del(b) end
+            elseif s.invincible~=1 and (outside and Dist(x,y,b.x,b.y)>r or not outside and Dist(x,y,b.x,b.y)<r) then
+                if dropKind then NativePlayers.pickup(b.x,b.y,dropKind,1) end
+                Del(b)
+            end
         end
     end
 end

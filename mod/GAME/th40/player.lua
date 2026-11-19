@@ -29,7 +29,10 @@ function M.images(p,m)
     end
     p.summerImages=prefix
     local images={}
-    for i=1,24 do images[i]=prefix..i end
+    for i=1,24 do
+        images[i]=prefix..i
+        if m.id=='C' or m.id=='D' then SetImageCenter(images[i],17,24) end
+    end
     return images
 end
 function M.bind(p)
@@ -48,24 +51,6 @@ function M.bind(p)
         SetImageState(p.img,'',unpack(p.native_tint or {255,255,255,255}))
         Render(p.img,p.x,p.y,0,1)
     end}
-end
-local focusedOptions={
-    A={{{0,70}}, {{0,70},{0,70}}, {{0,70},{-24,0,87.5},{24,0,92.5}},
-        {{0,70},{0,70},{-24,0,87.5},{24,0,92.5}}},
-    B={{{0,40}}, {{-31,10,83},{31,10,97}}, {{0,40},{-31,10,83},{31,10,97}},
-        {{-31,10,83},{31,10,97},{-14,35,87},{14,35,93}}},
-    C={{{0,30}}, {{-10,30},{10,30}}, {{7,30},{-7,30},{0,30}},
-        {{12,30},{-12,30},{6,30},{-6,30}}},
-    D={{{0,44}}, {{-7,36},{7,36}}, {{16,29},{-16,29},{0,36}},
-        {{16,29},{-16,29},{7,36},{-7,36}}},
-}
-local function option(p,index,count)
-    if p.slow==1 then
-        local point=focusedOptions[p.machine.id][count][index]
-        return point[1],point[2],point[3] or 90
-    end
-    local n=index-(count+1)*.5
-    return n*25,4-math.abs(n)*12,90
 end
 local ShotImpact=Class(object,{
     init=function(o,shot)
@@ -100,7 +85,8 @@ local LaserShot=Class(object,{
         local p=o.source
         if o.timer>=5 or not IsValid(p) then object.RawDel(o);return end
         local distance=o.timer*192-96
-        o.x,o.y=p.x+o.offsetX+distance*o.co,p.y+o.offsetY+distance*o.si
+        local q=o.binding and o.binding.Position
+        o.x,o.y=(q and q.X or p.x+o.offsetX)+distance*o.co,(q and -q.Y or p.y+o.offsetY)+distance*o.si
         if o.damage==0 then return end
         local hit=false
         object.EnemyNontjtDo(function(target)
@@ -119,43 +105,7 @@ local LaserShot=Class(object,{
         Render(img,o.x,o.y,o.rot)
     end,
 },true)
-local function focusShots(p,x,y,dir,count,spread,speed,damage)
-    for i=0,count-1 do
-        local angle=dir+(i/(count-1)-.5)*spread
-        P.emit(p,p.summerImages..'focus',x,y,speed,angle,damage,shotRadius,1).rot=angle
-    end
-end
-function M.shoot(p,t,s)
-    local id,tex=p.machine.id,p.summerImages
-    if t%3==0 then
-        for _,x in ipairs({-7,7}) do P.emit(p,tex..'main',x,0,30,90,p.machine.damage,shotRadius,1,nil,true).rot=90 end
-        PlaySound('plst00',.16,p.x/384)
-    end
-    local count=math.min(4,math.floor(s.power/100))
-    if id~='B' and t%(id=='D' and 10 or 4)~=0 then return end
-    for i=1,count do
-        local x,y,dir=option(p,i,count)
-        if id=='B' then
-            New(LaserShot,p,x,y,dir)
-        elseif p.slow==1 then
-            if id=='A' then focusShots(p,x,y,dir,2,6,18,5)
-            elseif id=='C' then focusShots(p,x,y,dir,2,math.deg(.06),40,3)
-            else focusShots(p,x,y,dir,5,24,15,6) end
-        elseif id=='C' then
-            for a=76,104,14 do P.emit(p,tex..'sub',x,y,13,a,3,shotRadius,.6) end
-        elseif id=='D' then
-            P.emit(p,tex..'sub',x,y,12,90,6,shotRadius,1)
-        else
-            P.emit(p,tex..'sub',x,y,12,90,9,shotRadius,1,5)
-        end
-    end
-end
 function M.render(p,s)
-    local count=math.min(4,math.floor(s.power/100))
-    for i=1,count do
-        local x,y=option(p,i,count)
-        Render(p.summerImages..'option',p.x+x,p.y+y,p.timer*2)
-    end
     if p.slow==1 then
         local images=native().images;local r=p.timer*.02*4*180/math.pi
         if images.SlowEffect01 then
@@ -302,5 +252,7 @@ function M.miss(p,s)
     breakGreen(p,s)
     return true
 end
+M=assert(loadfile("mod/GAME/th40/native_players/bridge.lua"))(M,LaserShot)
+M=assert(loadfile("mod/GAME/th40/native_players/bomb.lua"))(M)
 P.adapters[38]=M
 return M

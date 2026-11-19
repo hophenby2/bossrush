@@ -1,6 +1,6 @@
 -- 祈华梦的高速/低速双机体，射击和道具使用 LuaSTG 对象。
 local P=NativePlayers
-local M={}
+local M={ownBomb=true,lateFrame=true,heldBomb=true}
 local Original=dofile('mod/GAME/ports/theis/native_players/bridge.lua')
 -- bind() 中由原作构造器安装行走图。
 function M.images() return {'img_void'} end
@@ -9,15 +9,22 @@ function M.init(p) p.grazeRadius=32 end
 function M.beforeRender(p) Original.render(p) end
 function M.frame(p) Original.frame(p) end
 function M.shoot(p) return Original.shoot(p) end
-local bombTimes={reimu={270,400},marisa={300,180},mokou={180,420}}
 function M.bomb(p,s)
-    if s.bombs<=0 then return false end
+    if s.bombs<=0 or p.shield or p.nextspell>0 then return false end
     s.bombs=s.bombs-1
-    p.bombTime=bombTimes[p.machine.id][p.slow==1 and 2 or 1]
+    Original.spell(p)
+    p.bombTime,p.cancelOnlyBomb=p.nextspell,true
     M.clearBonus()
     lstg.var.bomb_used=(lstg.var.bomb_used or 0)+1
     return true
 end
+function M.updateSlow(p,slow)
+    if p.slowlock then return 1 end
+    if (p.lock_player_shift or 0)<=0 then p.theis_slow=slow and 1 or 0 end
+    return p.theis_slow or 0
+end
+function M.beforeHit(p) return Original.shieldHit(p) end
+function M.speeds(p) return p.hspeed*(p.speed_rate or 1),p.lspeed*(p.speed_rate or 1) end
 local function addBomb(s,n)
     local stock=s.bombs+n
     s.bombs=math.min(5,stock)

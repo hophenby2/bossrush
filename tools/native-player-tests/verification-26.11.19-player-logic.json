@@ -1,0 +1,394 @@
+{
+  "version": "26.11.19-player-logic",
+  "date": "2026-11-19",
+  "platform": "macOS arm64 / LuaSTG-x Metal",
+  "source_oracle": {
+    "records": 2332,
+    "fields": "切片、坐标、伤害、速度、角度、缩放",
+    "characters": [
+      "reimu",
+      "marisa",
+      "sanae"
+    ],
+    "passed": true
+  },
+  "movement": {
+    "levels": [
+      35,
+      36,
+      37,
+      38,
+      39,
+      41
+    ],
+    "passed": true
+  },
+  "native_case_count": 60,
+  "native_cases": [
+    {
+      "group": "原生逻辑",
+      "case": "spring-reimu-high",
+      "level": 35,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "spring-reimu-slow",
+      "level": 35,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "spring-marisa-high",
+      "level": 35,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "spring-marisa-slow",
+      "level": 35,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "spring-sanae-high",
+      "level": 35,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "spring-sanae-slow",
+      "level": 35,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "spring-youmu-high",
+      "level": 35,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "spring-youmu-slow",
+      "level": 35,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "spring-system",
+      "level": 35,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "unity-reimu-switch-charge-release-reflux",
+      "level": 36,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "unity-yukari-switch-charge-release-reflux",
+      "level": 36,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "unity-marisa-switch-charge-release-reflux",
+      "level": 36,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "unity-marisa_b-switch-charge-release-reflux",
+      "level": 36,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "unity-byakuren-switch-charge-release-reflux",
+      "level": 36,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "unity-miko-switch-charge-release-reflux",
+      "level": 36,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "night-reimu-high",
+      "level": 37,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "night-reimu-slow",
+      "level": 37,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "night-marisa-high",
+      "level": 37,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "night-marisa-slow",
+      "level": 37,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "night-sanae-high",
+      "level": 37,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "night-sanae-slow",
+      "level": 37,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "night-mokou-high",
+      "level": 37,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "night-mokou-slow",
+      "level": 37,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "night-system",
+      "level": 37,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "night-negative-status",
+      "level": 37,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "summer-A-high",
+      "level": 38,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "summer-A-slow",
+      "level": 38,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "summer-B-high",
+      "level": 38,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "summer-C-high",
+      "level": 38,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "summer-D-high",
+      "level": 38,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "theis-reimu-high",
+      "level": 39,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "theis-reimu-slow",
+      "level": 39,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "theis-marisa-high",
+      "level": 39,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "theis-marisa-slow",
+      "level": 39,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "theis-mokou-high",
+      "level": 39,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "theis-mokou-slow",
+      "level": 39,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "bdb-reimu-high",
+      "level": 41,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "bdb-reimu-slow",
+      "level": 41,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "bdb-marisa-high",
+      "level": 41,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "bdb-marisa-slow",
+      "level": 41,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "bdb-sakuya-high",
+      "level": 41,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "bdb-sakuya-slow",
+      "level": 41,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "bdb-auto-and-paused-hyper",
+      "level": 41,
+      "passed": true
+    },
+    {
+      "group": "原生图像与死亡流程",
+      "case": "six-family-source-parity",
+      "level": 35,
+      "passed": true
+    },
+    {
+      "group": "原生图像与死亡流程",
+      "case": "six-family-source-parity",
+      "level": 36,
+      "passed": true
+    },
+    {
+      "group": "原生图像与死亡流程",
+      "case": "six-family-source-parity",
+      "level": 37,
+      "passed": true
+    },
+    {
+      "group": "原生图像与死亡流程",
+      "case": "six-family-source-parity",
+      "level": 38,
+      "passed": true
+    },
+    {
+      "group": "原生图像与死亡流程",
+      "case": "six-family-source-parity",
+      "level": 39,
+      "passed": true
+    },
+    {
+      "group": "原生图像与死亡流程",
+      "case": "six-family-source-parity",
+      "level": 41,
+      "passed": true
+    },
+    {
+      "group": "原生图像与死亡流程",
+      "case": "night-reimu_b",
+      "level": 37,
+      "passed": true
+    },
+    {
+      "group": "原生图像与死亡流程",
+      "case": "night-marisa",
+      "level": 37,
+      "passed": true
+    },
+    {
+      "group": "原生图像与死亡流程",
+      "case": "night-marisa_b",
+      "level": 37,
+      "passed": true
+    },
+    {
+      "group": "原生图像与死亡流程",
+      "case": "night-sanae",
+      "level": 37,
+      "passed": true
+    },
+    {
+      "group": "原生图像与死亡流程",
+      "case": "night-sanae_b",
+      "level": 37,
+      "passed": true
+    },
+    {
+      "group": "原生图像与死亡流程",
+      "case": "night-mokou",
+      "level": 37,
+      "passed": true
+    },
+    {
+      "group": "原生图像与死亡流程",
+      "case": "night-mokou_b",
+      "level": 37,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "mhj-effect-damage",
+      "level": 35,
+      "passed": true
+    },
+    {
+      "group": "原生逻辑",
+      "case": "mhj-effect-damage",
+      "level": 37,
+      "passed": true
+    },
+    {
+      "group": "最终签名包原生逻辑",
+      "case": "signed-spring-youmu-bomb",
+      "level": 35,
+      "passed": true
+    },
+    {
+      "group": "最终签名包原生逻辑",
+      "case": "signed-night-mokou-bomb",
+      "level": 37,
+      "passed": true
+    }
+  ],
+  "limits": [
+    "原生测试在隔离存档中执行，未修改用户存档和录像。",
+    "Windows Sub 未执行本轮运行验证。",
+    "Unity 粒子、材质和夏夜祭三维装饰特效仍由兼容层表达；不表示整作逐像素或随机序列逐位等价。"
+  ]
+}

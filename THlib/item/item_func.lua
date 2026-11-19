@@ -105,6 +105,13 @@ end
 local TweakScore = item.TweakScore
 
 function item.PlayerGraze(...)
+    if NativePlayers and NativePlayers.enabled() then
+        local adapter=NativePlayers.adapters[lstg.var.native_player_level]
+        if adapter and adapter.graze then
+            lstg.var.graze=(lstg.var.graze or 0)+1
+            return adapter.graze(...)
+        end
+    end
     if SequenceResources and SequenceResources.enabled() then return SequenceResources.graze(...) end
     local var = lstg.var
     var.graze = var.graze + 1

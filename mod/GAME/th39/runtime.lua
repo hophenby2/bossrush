@@ -29,13 +29,15 @@ local function copy(s)
     local o={};for k,v in pairs(s) do o[k]=v end
     o.changes={};o.limits={};return o
 end
-function R.player()
+function R.player(context)
+    local c=context and (context.controller or context);local t=c and c.weaponTarget
+    if t then return t.X+145,t.Y end
     if valid(player) then return unproject(player) end
     return 481,560
 end
 local function angle(x,y,tx,ty) return math.deg(math.atan2(ty-y,tx-x)) end
 local function direction(v,o,x,y,point)
-    if v==-99999 then local px,py=R.player();return angle(x,y,px,py)
+    if v==-99999 then local px,py=R.player(o);return angle(x,y,px,py)
     elseif v==-99998 then return angle(x,y,o.x or x,o.y or y)
     elseif v==-100000 and point then return angle(x,y,point[1],point[2]) end
     return v or 0
@@ -65,7 +67,7 @@ function R.change(o,key,value,random,op,mode,duration)
     if value=='自机' or value=='中心' then
         local c=o.controller
         local x,y
-        if value=='中心' then x,y=c.center.ox,c.center.oy else x,y=R.player() end
+        if value=='中心' then x,y=c.center.ox,c.center.oy else x,y=R.player(o) end
         local ox,oy=0,0
         if c and not o.is_projectile and not o.bound_source then ox,oy=c.offsetx,c.offsety end
         local bx,by=o.fx or o.x or o.ox,o.fy or o.y or o.oy
@@ -102,16 +104,21 @@ local function control(o,mode,options)
     player.lock=true
 end
 function R.petrify(o,kind,count)
+    if R.sourceStatus then o.controller.playerStatus=true;R.sourceStatus('Petrify',count and kind or 0,count or kind);return end
     control(o,'petrify',{presses=count or kind})
 end
-function R.lockdown(o,duration)
+function R.lockdown(o,duration,effect)
+    if R.sourceStatus then o.controller.playerStatus=true;R.sourceStatus('Lockdown',duration,effect);return end
     control(o,'lockdown',{duration=duration})
 end
-function R.control(o,startup,x,y,duration,tail)
+function R.control(o,startup,x,y,duration,tail,effect)
+    if R.sourceStatus then o.controller.playerStatus=true;R.sourceStatus('Control',startup,x,y,duration,tail,effect);return end
     if not valid(player) then return end
     x,y=projectBullet(x,y)
     control(o,'move',{startup=startup,duration=duration,tail=tail,x=x,y=y,fromX=player.x,fromY=player.y})
 end
+function R.gettingold(o) if R.sourceStatus then R.sourceStatus('GettingOld') end end
+function R.returnyouth(o) if R.sourceStatus then R.sourceStatus('ReturnYouth') end end
 local function releaseControl(c)
     local control=c.control
     if not control then return end
@@ -220,6 +227,7 @@ local function profile(p,index)
     index=max(1,trunc(index))
     return index<=#D.bulletTypes and D.bulletTypes[index] or p.types[min(index-#D.bulletTypes,#p.types)]
 end
+function R.weaponProfile(s) return profile(s.pattern,s.type) end
 local function texture(s)
     local p=profile(s.pattern,s.type)
     if not p or p[3]<=0 or p[4]<=0 or p[16]=='' then return 'img_void' end
@@ -247,7 +255,7 @@ local function texture(s)
     return R.sprite(name,key,x,y,p[3],p[4],p[5],p[6]),'mhj3_tex_'..key,x,y,p
 end
 function R.loadPattern(id)
-    if not R.patterns[id] then R.patterns[id]=dofile('mod/GAME/th39/patterns/'..id..'.lua') end
+    if not R.patterns[id] then R.patterns[id]=dofile('mod/GAME/th39/'..(id:sub(1,1)=='e' and 'player_patterns/' or 'patterns/')..id..'.lua') end
     return R.patterns[id]
 end
 local function projected(b)
@@ -259,11 +267,11 @@ local function projected(b)
     b.rect=false;b.rot=-((s.Withspeedd and math.deg(math.atan2(s.my or 0,s.mx or 0)) or s.head or 0)+90)
     b.hscale,b.vscale=s.wscale*SCALE,s.hscale*SCALE
     local born=s.Mist and min(1,s.age/15) or 1
-    b._a=max(0,min(255,(s.alpha or 100)*2.55*born));b._r,b._g,b._b=s.colorR or 255,s.colorG or 255,s.colorB or 255
+    b._a=max(0,min(255,(s.alpha or 100)*2.55*born*(s.controller.friendlyAlpha or 1)));b._r,b._g,b._b=s.colorR or 255,s.colorG or 255,s.colorB or 255
     b._blend=s.Blend and 'mul+add' or ''
-    b.layer=LAYER.ENEMY_BULLET+(s.controller.pattern.order==1 and .1 or 0)
-    b.group=(s.Invincible or p and p.invincible) and GROUP.INDES or GROUP.ENEMY_BULLET
-    b.colli=s.age>(s.Mist and 15 or 0) and s.type>1 and r>0 and (s.alpha or 100)>99 and s.wscale~=0 and s.hscale~=0
+    b.layer=(s.controller.effectLayer or LAYER.ENEMY_BULLET)+(s.controller.pattern.order==1 and .1 or 0)
+    b.group=s.controller.effectLayer and GROUP.GHOST or (s.Invincible or p and p.invincible) and GROUP.INDES or GROUP.ENEMY_BULLET
+    b.colli=not s.controller.effectLayer and s.age>(s.Mist and 15 or 0) and s.type>1 and r>0 and (s.alpha or 100)>99 and s.wscale~=0 and s.hscale~=0
 end
 local function clean(b)
     local s=b.mhj
@@ -321,6 +329,7 @@ R.classes.projectile=Class(bullet,{
         end
         if not updateParticle(s) then clean(b);return end
         projected(b)
+        if s.controller.friendly and R.playerWeaponHit then R.playerWeaponHit(b,s) end
         if outOfBounds(s) then clean(b) end
     end,
     render=function(b)
@@ -358,7 +367,8 @@ local function laserStep(b)
     interpolate(s)
     local dx,dy=motion(s,true,s.controller.slow or 1);s.fx,s.fy=s.fx+dx,s.fy+dy
     b.x,b.y=projectBullet(s.fx,s.fy);b.vx,b.vy=0,0
-    b.w=laserWidth(s);b.alpha=max(0,min(1,(s.alpha or 100)/100));b.colli=s.wscale>=.5 and b.alpha>=1
+    b.w=laserWidth(s);b.alpha=max(0,min(1,(s.alpha or 100)/100));b.colli=not s.controller.effectLayer and s.wscale>=.5 and b.alpha>=1
+    if s.controller.effectLayer then b.group,b.layer=GROUP.GHOST,s.controller.effectLayer end
     if s.Outdispel and (s.fx<118-s.longs or s.fx>844+s.longs or s.fy< -51-s.longs or s.fy>771+s.longs) then clean(b);return end
     return s
 end
@@ -759,6 +769,7 @@ function R.slow(c,duration,mode,t,start)
 end
 function R.clear(c)
     if not c then return end
+    if c.playerStatus and R.sourceStatusClear then R.sourceStatusClear();c.playerStatus=nil end
     releaseControl(c);R.controllers[c]=nil
     for b in pairs(c.bullets) do
         if valid(b) then clean(b) end

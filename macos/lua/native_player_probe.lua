@@ -1,5 +1,6 @@
 -- Called only by the isolated macOS test harness.
 if os.getenv('BOSSRUSH_MAC_TEST_SOURCE_ACTOR')=='1' then return dofile('macos/source_actor_probe.lua') end
+if os.getenv('BOSSRUSH_MAC_TEST_SOURCE_LOGIC')=='1' then return dofile('macos/source_logic_probe.lua') end
 if os.getenv('BOSSRUSH_MAC_TEST_SOURCE_PLAYER')=='1' then return dofile('macos/source_player_probe.lua') end
 if os.getenv('BOSSRUSH_MAC_TEST_SOURCE_SCENE') then return dofile('macos/source_scene_probe.lua') end
 if os.getenv('BOSSRUSH_MAC_TEST_SOURCE_PARITY')=='1' then return dofile('macos/source_parity_probe.lua') end

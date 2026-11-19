@@ -11,10 +11,13 @@ local function copy(s)
     local o={};for k,v in pairs(s) do o[k]=v end
     o.changes={};o.limits={};return o
 end
-function R.player() return valid(player) and player.x+317 or 317,valid(player) and 227-player.y or 407 end
+function R.player(context)
+    local c=context and (context.controller or context);local t=c and c.weaponTarget
+    if t then return t.X+93,t.Y+(-13) end
+    return valid(player) and player.x+317 or 317,valid(player) and 227-player.y or 407 end
 local function angle(x,y,tx,ty) return math.deg(math.atan2(ty-y,tx-x)) end
 local function direction(v,o,x,y,point)
-    if v==-99999 then local px,py=R.player();return angle(x,y,px,py)
+    if v==-99999 then local px,py=R.player(o);return angle(x,y,px,py)
     elseif v==-99998 then return angle(x,y,(o.x or x)-4,(o.y or y)+16)
     elseif v==-100000 and point then return angle(x,y,point[1],point[2]) end
     return v or 0
@@ -39,7 +42,7 @@ function R.change(o,key,value,random,op,mode,duration)
     -- Barrage.type为零基，Batch.type为一基；这里的精灵表统一使用一基。
     if o.is_projectile and key=='type' and op==0 and type(value)=='number' then value=value+1 end
     if value=='自机' then
-        local x,y=R.player()
+        local x,y=R.player(o)
         if key=='fx' then value=x elseif key=='fy' then value=y
         else value=angle(o.fx or o.x,o.fy or o.y,x,y) end
     elseif value=='自身' then value=initial end
@@ -156,7 +159,7 @@ local function projected(b)
     b.a,b.b=max(0,(p[7]+1)*(s.wscale or 1)),max(0,(p[7]+1)*(s.hscale or 1))
     b.rect=false;b.rot=-((s.head or 0)+90)
     b.hscale,b.vscale=s.wscale,s.hscale
-    b._a=max(0,min(255,(s.alpha or 100)*2.55));b._r,b._g,b._b=s.colorR or 255,s.colorG or 255,s.colorB or 255
+    b._a=max(0,min(255,(s.alpha or 100)*2.55*(s.controller.friendlyAlpha or 1)));b._r,b._g,b._b=s.colorR or 255,s.colorG or 255,s.colorB or 255
     b._blend=s.Blend and 'mul+add' or ''
     -- 原作按Layer顺序绘制，每层先普通弹、后高光弹。
     b.layer=(s.controller.effectLayer or LAYER.ENEMY_BULLET)+(s.layerid or 0)*2+(s.Blend and 1 or 0)
@@ -244,6 +247,7 @@ R.classes.projectile=Class(bullet,{
             if s.dis then s.cancelScale=max(0,(s.cancelScale or 1.1)-.05) end
         end
         projected(b)
+        if s.controller.friendly and R.playerWeaponHit then R.playerWeaponHit(b,s) end
         if projectileOutside(s) then clean(b) end
     end,
     render=function(b)
@@ -335,7 +339,7 @@ R.classes.beam=Class(laser,{
         if s.Sonevents then s.Sonevents(s,s.age,R) end;interpolate(s)
         local dx,dy=motion(s,true,s.controller.slow or 1);s.fx,s.fy=s.fx+dx,s.fy+dy
         b.x,b.y,b.rot=s.fx-317,227-s.fy,-s.sonspeedd
-        b.w0,b.l2=max(0,s.wscale*16),max(0,s.longs);b._a=max(0,min(255,(s.alpha or 100)*2.55));b.colli=(s.alpha or 100)>95;laser.frame(b)
+        b.w0,b.l2=max(0,s.wscale*16),max(0,s.longs);b._a=max(0,min(255,(s.alpha or 100)*2.55*(s.controller.friendlyAlpha or 1)));b.colli=(s.alpha or 100)>95;laser.frame(b)
     end,
     render=function(b)
         local s=b.mhj;local p=D.bulletTypes[33+s.type]

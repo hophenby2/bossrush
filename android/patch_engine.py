@@ -537,6 +537,20 @@ replace('frameworks/LSTG/Object/GameObjectManager.h',
         'size_t GetObjectCount()  { return pool.size(); }',
         'size_t GetObjectCount()  { return pool.size(); }\n'
         '        const std::set<GameObject*, less_obj>& androidCollisionGroup(size_t group) const { return colliList[group]; }')
+# 原作自机弹的 kill 回调会立即换组并转成命中特效；迭代链表不能跨越该回调。
+replace(manager, '''			for (auto&& pA : colliList[groupA])
+			{
+				for(auto&& pB: colliList[groupB])
+				{
+					if (::CollisionCheck(pA, pB))
+						callBack(L, pA, pB, LGOBJ_CC_COLLI, ot_idx);
+				}
+			}''', '''            const vector<GameObject*> lhs(colliList[groupA].begin(), colliList[groupA].end());
+            const vector<GameObject*> rhs(colliList[groupB].begin(), colliList[groupB].end());
+            for (auto* pA : lhs)
+                for (auto* pB : rhs)
+                    if (::CollisionCheck(pA,pB))
+                        callBack(L,pA,pB,LGOBJ_CC_COLLI,ot_idx);''')
 replace(manager, '''void GameObjectManager::CollisionCheck(size_t groupA, size_t groupB)
 {
 \tif (!checkGroupID(groupA) || !checkGroupID(groupB))

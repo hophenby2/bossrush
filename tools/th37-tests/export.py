@@ -29,7 +29,7 @@ def atom(s):
  except ValueError:return s
 
 def main():
- ap=argparse.ArgumentParser(description=__doc__);ap.add_argument('--source',type=Path,required=True);args=ap.parse_args()
+ ap=argparse.ArgumentParser(description=__doc__);ap.add_argument('--source',type=Path,required=True);ap.add_argument('--player-only',action='store_true');args=ap.parse_args()
  source=args.source.resolve();content=source/'src/THMHJ/bin/x86/Debug/net461/Content';data=content/'Data';dst=ROOT/'mod/GAME/th37';art=ROOT/'Resources/th37';art.mkdir(exist_ok=True)
  hashes={};stats=collections.Counter();unsupported=[]
  for name in ('Game','StageManager','Code','CrazyStorm','Batch','Barrage','Lase','Cover','Rebound','Force','Time','Center','Execution','BExecution','CExecution','Enemy','EnemyEvent','Boss','BossCard','CSManager'):
@@ -126,6 +126,12 @@ def main():
   (dst/'patterns').mkdir(exist_ok=True);(dst/'patterns'/(name+'.lua')).write_text(code)
   tex=data/(source_name+'.dat')
   if tex.exists():(art/('b'+name+'.png')).write_bytes(decrypt(tex,0))
+ if args.player_only:
+  for n in range(1,36):
+   name='e'+str(n)
+   if (data/(name+'.xna')).exists():pattern(name,name)
+  (dst/'player_effect_sources.json').write_text(json.dumps({'sha256':hashes,'statistics':dict(stats)},ensure_ascii=False,indent=2)+'\n')
+  print('已导出自机效果',len(patterns));return
  def time(s):
   m,s,f=map(int,s.split(':'));return m*3600+s*60+f
  def commands(t):
