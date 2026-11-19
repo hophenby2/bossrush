@@ -55,6 +55,7 @@ local function object(level,s)
         local pool=GetResourceStatus();SetResourceStatus('global')
         if level==39 or level==41 then h=dofile('THlib/UI/native/eis.lua')(level)
         else h=dofile('THlib/UI/native/sprites.lua')(level) end
+        if level==35 or level==37 then h.field=NativePlayers.adapters[level].drawSystem end
         SetResourceStatus(pool)
         h.state=s;scene.nativeHud=h
     end

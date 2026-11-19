@@ -12,6 +12,7 @@ function M.bind(p) B.bind(p);S.bind(p) end
 function M.frame(p,s) B.frame(p,s);S.frame(p,s) end
 function M.shoot(p) B.shoot(p) end
 function M.beforeRender(p) B.render(p) end
+function M.drawSystem(x,y) S.renderHUD(x,y) end
 function M.speeds(p) return B.speeds(p) end
 function M.bomb(p,s)
     if S.breakShield(true) then return false end

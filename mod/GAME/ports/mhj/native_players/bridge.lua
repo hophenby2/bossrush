@@ -37,7 +37,8 @@ local makeSprite=CS.Sprite
 CS.Sprite=function(...)
     local s=makeSprite(...)
     s.depth,s.label=0,0
-    s.Draw=function(o)
+    s.Draw=function(o,batch)
+        if batch and batch.Sprite then return batch:Sprite(o) end
         if o.animation then
             local x,y=o.animation:GetXIndex(),o.animation:GetYIndex()
             if x>=0 then
@@ -305,6 +306,7 @@ do
         local profile=night and R.weaponProfile(s) or (s.type<=228 and R.data.bulletTypes[s.type] or s.pattern.types[s.type-228])
         if not profile then return end
         local x,y=s.fx+math.floor(profile[3]/2)-profile[5],s.fy+math.floor(profile[4]/2)-profile[6]
+        x,y=x+(s.controller.positionx or 0),y+(s.controller.positiony or 0)
         local function contains(px,py)
             local dx,dy=px-x,py-y
             local a=90-(s.head or 0)
@@ -386,6 +388,11 @@ function game:PlayEffect(add,id,p)
     function fx:UnderActor() c.effectLayer=LAYER.PLAYER-1 end
     function fx:SetOPos(v) self.opos=CS.copy(v) end
     function fx:SetPos(v,all)
+        if all and not night then
+            -- 原作 ppos 平移整份效果的显示/命中，不改中心与弹体事件坐标。
+            R.setEffectOffset(c,v.X-self.opos.X,v.Y-self.opos.Y)
+            return
+        end
         local x,y=v.X,v.Y
         if all then x,y=x-self.opos.X+p.X,y-self.opos.Y+p.Y end
         anchor.x,anchor.y=(x-(night and 336 or 317))*scale,((night and 360 or 227)-y)*scale

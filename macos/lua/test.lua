@@ -4,6 +4,7 @@ function T.install()
     local mode=os.getenv('BOSSRUSH_MAC_TEST')
     if not mode then return end
     if mode=='practice-options' then return dofile('macos/practice_options_test.lua').install() end
+    if mode=='practice-systems' then return dofile('macos/practice_systems_test.lua').install() end
     local fixedSeed=tonumber(os.getenv('BOSSRUSH_MAC_TEST_SEED') or '')
     local sequenceKey=os.getenv('BOSSRUSH_MAC_TEST_SEQUENCE')
     if sequenceKey=='' then sequenceKey=nil end

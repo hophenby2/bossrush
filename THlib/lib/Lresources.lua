@@ -32,11 +32,23 @@ end
 local number = "number"
 local type = type
 
-local ImageParam = {}
-local ImageSize = {}
+-- 引擎按 stage/global 查找同名图片；脚本侧的 UV、尺寸与颜色缓存也必须跟随资源池。
+-- 否则祈华梦的 star_big2 退出后会留下已释放图集的 UV，覆盖宿主的全局星形。
+local function imageCache()
+    local pools={global={},stage={}}
+    return setmetatable({}, {
+        __index=function(_,name)
+            local pool=lstg.CheckRes(2,name)
+            return pool and pools[pool][name]
+        end,
+        __newindex=function(_,name,value) pools[GetResourceStatus()][name]=value end,
+    })
+end
+local ImageParam = imageCache()
+local ImageSize = imageCache()
 
 local FontColor = {}
-local ImageColor = {}
+local ImageColor = imageCache()
 local AniColor = {}
 
 do

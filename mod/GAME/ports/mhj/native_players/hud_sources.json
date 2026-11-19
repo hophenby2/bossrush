@@ -1,0 +1,14 @@
+{
+  "UI/grazebox.xna": {
+    "sha256": "415412eb1d754df7cfbdffe52b1afe7ddcfc53614a03b14613c01212f18a8e39",
+    "png_sha256": "ce8b45a0d53a4b8d8e55eb92ccfd4dd80c6fe8f8900ddbb34ad79dab866bef3b",
+    "width": 120,
+    "height": 240
+  },
+  "List/spscore.xna": {
+    "sha256": "d88aae4ec6cecfff8f77d2315c7ed9bad500070bba819b20b4c1b4b42569d0be",
+    "png_sha256": "05c68ef01fe16334a2cf73022dd99baab9c619e6b443ab62e75b2f2e66032372",
+    "width": 82,
+    "height": 16
+  }
+}

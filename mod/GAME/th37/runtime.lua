@@ -187,7 +187,7 @@ function R.loadPattern(id)
 end
 local function projected(b)
     local s=b.mhj
-    b.x,b.y=s.fx-317,227-s.fy;b.vx,b.vy=0,0
+    b.x,b.y=s.fx+(s.controller.positionx or 0)-317,227-s.fy-(s.controller.positiony or 0);b.vx,b.vy=0,0
     local img,p=texture(s.pattern,s.type);b.img=img
     b.a,b.b=max(0,(p[7]+1)*(s.wscale or 1)),max(0,(p[7]+1)*(s.hscale or 1))
     b.rect=false;b.rot=-((s.head or 0)+90)
@@ -313,7 +313,7 @@ R.classes.projectile=Class(bullet,{
         end
         if s.Afterimage then
             for _,shadow in ipairs(s.shadows) do
-                drawSprite(b,b.img,shadow.x-317,227-shadow.y,-(shadow.head+90),b.hscale,b.vscale,shadow.alpha*255)
+                drawSprite(b,b.img,shadow.x+(s.controller.positionx or 0)-317,227-shadow.y-(s.controller.positiony or 0),-(shadow.head+90),b.hscale,b.vscale,shadow.alpha*255)
             end
         end
         if s.dis and s.type<=228 and profile[3]<48 and profile[8]>=0 then
@@ -371,7 +371,7 @@ function R.finishCollisions()
 end
 R.classes.beam=Class(laser,{
     init=function(b,s)
-        laser.init(b,({2,4,6,10,12,14,16,8})[(s.type-1)%8+1],s.fx-317,227-s.fy,-s.sonspeedd,0,max(1,s.longs),0,max(1,s.wscale*16),0,0)
+        laser.init(b,({2,4,6,10,12,14,16,8})[(s.type-1)%8+1],s.fx+(s.controller.positionx or 0)-317,227-s.fy-(s.controller.positiony or 0),-s.sonspeedd,0,max(1,s.longs),0,max(1,s.wscale*16),0,0)
         s.is_projectile=true;b.mhj=s;b.bound=false;b.vx,b.vy=0,0;s.age=0;s.changes={};s.limits=s.limits or {};s.object=nil;R.objects[b]=true;s.controller.bullets[b]=s
         laser._TurnOn(b,15,false,false)
     end,
@@ -380,7 +380,7 @@ R.classes.beam=Class(laser,{
         if s.age>s.life then clean(b);return end
         if s.Sonevents then s.Sonevents(s,s.age,R) end;interpolate(s)
         local dx,dy=motion(s,true,s.controller.slow or 1);s.fx,s.fy=s.fx+dx,s.fy+dy
-        b.x,b.y,b.rot=s.fx-317,227-s.fy,-s.sonspeedd
+        b.x,b.y,b.rot=s.fx+(s.controller.positionx or 0)-317,227-s.fy-(s.controller.positiony or 0),-s.sonspeedd
         b.w0,b.l2=max(0,s.wscale*16),max(0,s.longs);b._a=max(0,min(255,(s.alpha or 100)*2.55*(s.controller.friendlyAlpha or 1)));b.colli=(s.alpha or 100)>95;laser.frame(b)
     end,
     render=function(b)
@@ -533,6 +533,12 @@ function R.controller(host,id,road)
     local p=R.loadPattern(id)
     local c={host=host,pattern=p,road=road,time=0,offsetx=0,offsety=0,bullets=setmetatable({},{__mode='k'}),jumps={},eventLimits={}}
     reset(c);return c
+end
+function R.setEffectOffset(c,x,y)
+    c.positionx,c.positiony=x,y
+    for b,s in pairs(c.bullets) do if valid(b) then
+        b.x,b.y=s.fx+x-317,227-s.fy-y
+    end end
 end
 function R.tick(c)
     if c.closed then return end

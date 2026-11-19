@@ -7,10 +7,12 @@ local model=dofile('mod/GAME/th40/native_players/source.lua')(CS)
 local atlas=dofile('mod/GAME/th40/native_players/atlas.lua')
 local textures={}
 local function image(name)
-    if textures[name] then return textures[name] end
+    if textures[name] and CheckRes('img',textures[name]) then return textures[name] end
     local d=assert(atlas[name],name);local tex='summer_source_'..d[1];local id='summer_source_'..name
+    local pool=GetResourceStatus();SetResourceStatus('global')
     if not CheckRes('tex',tex) then LoadTexture(tex,'Resources/th40/MyPlane/'..d[1]..'.png') end
-    LoadImage(id,tex,d[2],d[3],d[4],d[5]);SetImageCenter(id,d[4]/2+d[6],d[5]/2+d[7]);textures[name]=id;return id
+    LoadImage(id,tex,d[2],d[3],d[4],d[5]);SetImageCenter(id,d[4]/2+d[6],d[5]/2+d[7]);SetResourceStatus(pool)
+    textures[name]=id;return id
 end
 local current
 local function proxy(o,direction)

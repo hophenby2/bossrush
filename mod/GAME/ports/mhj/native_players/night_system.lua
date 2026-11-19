@@ -2,6 +2,7 @@
 local B,R=...
 local CS,E=B.CS,B.CS.env
 local S={}
+local drawHUD=dofile('mod/GAME/ports/mhj/native_players/system_hud.lua')(B)
 E.Difficulty={EASY=1,NORMAL=2,HARD=3,LUNATIC=4,EXTRA=5,EXULTIMATE=6,ULTRA=7}
 E.BreakSource={None=0,Barrage=1,Enemy=2,Familiar=3,Boss=4,Petrify=5,Jue=6,Control=7,Dialog=8}
 E.CharacterCard={Bomb=0,JueBomb=1,Special=2}
@@ -100,6 +101,7 @@ function S.bind(p)
     local raw=dofile('mod/GAME/ports/mhj/native_players/night_settings.lua');local settings=CS.List()
     for _,row in ipairs(raw) do local a=CS.List();for _,v in ipairs(row) do a:Add(v) end;settings:Add(a) end
     S.system=CS.new('SpecialSystem','39_spscore',settings);S.system:Reset(false)
+    if lstg.var.is_practice then S.system.Energy=2 end
     B.lantern=S.system
     local c=B.character
     local defaults={};character.defaults(defaults)
@@ -213,4 +215,5 @@ function game:SmallItem(first,second)
 end
 S.view=view
 function S.render() S.system:DrawTeammate(nil,CS.Vector2()) end
+function S.renderHUD(x,y) drawHUD(S.system,x,y) end
 return S

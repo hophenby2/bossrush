@@ -12,6 +12,7 @@ function M.bind(p) B.bind(p);S.bind(p) end
 function M.frame(p,s) B.frame(p,s);S.frame(p,s) end
 function M.shoot(p) B.shoot(p) end
 function M.beforeRender(p) B.render(p);S.render() end
+function M.drawSystem(x,y) S.renderHUD(x,y) end
 function M.bomb(p,s)
     if p._playersys.keyState.special or B.bomb or p.nextspell>0 then return false end
     if S.onBomb(p) then return false end

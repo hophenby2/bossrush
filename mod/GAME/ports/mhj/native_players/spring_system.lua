@@ -2,6 +2,7 @@
 local B,R=...
 local CS,E=B.CS,B.CS.env
 local S={}
+local drawHUD=dofile('mod/GAME/ports/mhj/native_players/system_hud.lua')(B)
 E.SakuraStatus={CLOSED=0,OPENING=1,CLOSING=2}
 E.Main.rand={__static=true,NextDouble=function() return ran:Float(0,1) end}
 local source=dofile('mod/GAME/ports/mhj/native_players/spring_special.lua')(CS)
@@ -30,7 +31,7 @@ function game:SmallItem(v) return green(v.X-224,240-v.Y,false) end
 function S.bind(p)
     local difficulty=stage.current_stage.group.difficulty or 4
     E.Main.Level=difficulty
-    S.system=CS.new('SpecialSystem',CS.Sprite(),nil,nil)
+    S.system=CS.new('SpecialSystem',CS.Sprite('37_grazebox'),'37_spscore','37_bosslist')
     S.system:Reset()
     p.mhj_source.sakura=S.system
     p._playersys:addFrameEvent('frame.itemCollect',95,function(o)
@@ -58,6 +59,7 @@ function S.frame(p,s)
     if c.SWudi then p.protect=math.max(p.protect,2) end
     s.sakuraPower,s.sakuraMax,s.sakuraStatus=S.system.Power,S.system.hipower,S.system.Status
 end
+function S.renderHUD(x,y) drawHUD(S.system,x,y) end
 function S.breakShield(motivated)
     if S.system and S.system.Status==1 then
         S.system:Break(B.character,motivated)

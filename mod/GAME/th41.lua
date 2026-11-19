@@ -268,6 +268,15 @@ effects:AddSprite('item_small','theis_item_tex',128,952,64,64)
 effects:AddTexture('theis_point_tex','res/item/bullet_killed_eff.png',false)
 effects:AddSprite('sabi_item','theis_point_tex',0,0,40,40)
 effects:AddSprite('wabi_item','theis_point_tex',40,0,40,40)
+-- 自机可在 Boss 的练习入场任务之前射击；缓存的自机类也会跨关卡复用。
+-- 这些资源随自机绑定同步加载到全局池，不能依赖延迟执行的 start()。
+function W.loadPlayerResources()
+    local pool=GetResourceStatus()
+    SetResourceStatus('global')
+    sounds:Load()
+    effects:Load()
+    SetResourceStatus(pool)
+end
 env.player_board_ch=Class(object,{
     init=function(o,r,g,b,duration)
         o.img='theis_board_color'

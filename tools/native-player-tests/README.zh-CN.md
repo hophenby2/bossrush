@@ -1,5 +1,23 @@
 # 六作原作自机校准
 
+## 2026-11-19：跨作品练习与特殊系统 HUD
+
+复现路径为永夜抄符卡练习 → 返回标题 → 祈华梦符卡练习并立即射击。旧代码在自机 `shoot` 中访问尚未加载的 `THEIS_plst00`，调用栈与反馈截图一致：音效要等 Boss 入场任务执行，而自机可能先射击。现在自机绑定时同步加载原作音效和相关效果到全局资源池，不依赖 Boss 的启动时机。
+
+同时修复两处往返练习的资源失效：夏夜祭自机图集缓存保留了已释放的关卡图片；祈华梦同名 `star_big2` 的关卡 UV 覆盖宿主全局图片参数，返回其他作品后指向已释放的纹理。自机图集改用全局资源，图片 UV、尺寸、颜色缓存分别按引擎的 global/stage 池查找。
+
+春雪的 `CrazyStorm.SetPos(pos,true)` 原意是 `ppos=pos-opos`，在绘制和命中时平移整份效果。旧适配只移动发射器，已有的环形粒子没有移动。现在保持原事件坐标，统一平移现存粒子、拖影、激光和命中位置；固定的 e30 屏幕效果保持原坐标。
+
+春雪与永夜接入原始 `SpecialSystem.Draw`，使用原始切片、数值、动画和数字，补上樱花条与灯笼能量 HUD。永夜练习初始能量按原作设为 2。两种练习入口均显示这些系统；竖屏也显示祈华梦的四色计数、染色连锁及栖霞园 Rank 状态。新增春雪 HUD 素材经解码前后 RGBA 对照，来源记录于 `hud_sources.json`。
+
+真实 Mac 引擎回归使用临时存档，在同一进程保留资源池和机体缓存：11 作分别切换到祈华梦，共 22 次练习；六作关卡/符卡练习各一次，横屏和竖屏各 12 项。检查实际射击音效、HUD 绘制、宿主图集恢复、粉色环现存粒子的跟随位置与 e30 固定效果，并保存截图。竖屏走 Android HUD 的同一 Lua 渲染路径；此项不代表 Android 设备或 Windows 引擎实测。
+
+```sh
+python3 tools/native-player-tests/native_practice_systems.py --suite cross --out /tmp/practice-cross
+python3 tools/native-player-tests/native_practice_systems.py --out /tmp/practice-hud-landscape
+python3 tools/native-player-tests/native_practice_systems.py --portrait --out /tmp/practice-hud-portrait
+```
+
 ## 26.11.19-player-fidelity：本次反馈的修复范围
 
 此前的发弹数量和 Bomb 检查没有覆盖以下行为，不能据此认定整体对齐。本次针对反馈修正：

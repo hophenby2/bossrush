@@ -98,7 +98,9 @@ function C.lower(x,y)
         k=clamp(k)
         if k>0 then slice(tex,x+2,y,129*k,12,fg[1],fg[2],fg[3]*k,fg[4]) end
     end
-    if level==36 then
+    if level==35 or level==37 then
+        NativePlayers.adapters[level].drawSystem(x,y)
+    elseif level==36 then
         bar(texture('Resources/th38/presentation/beilvtiao.png'),{4,62,133,24},{9,54,124,12},s.barrier/299999)
     elseif level==38 then
         local c=({red='B',blue='A',green='C'})[s.enchantment or s.lastStarColor or 'green']
@@ -111,6 +113,9 @@ function C.lower(x,y)
         part('1',1);part('2',clamp(s.star/3000));part('0',1)
     elseif level==39 then
         local tex=texture('Resources/ports/theis/res/ui/ui_item_16_9_1.png')
+        local items=lstg.tmpvar._system_items or {}
+        label(('红 %d  蓝 %d  绿 %d  夜 %d'):format(items.red or 0,items.blue or 0,items.green or 0,items.night or 0),x,y+74,'left')
+        label(('染色 %d / %s    累计 %d'):format(s.stageChain or 0,s.dyeTarget or '—',s.dyeChain or 0),x,y+50,'left')
         bar(tex,{1024,528,564,22},{1030,556,552,9},s.lifeChip/100)
         y=y+16
         bar(tex,{1024,572,564,22},{1030,600,552,9},s.bombChip/100)
@@ -125,6 +130,7 @@ function C.lower(x,y)
         end
     elseif level==41 then
         local tex=texture('Resources/th43/ui/ui_game_3.png')
+        label(('Rank %d    碎片 %d / 6'):format(s.rank or 0,s.rankChips or 0),x,y+28,'left')
         bar(tex,{316,760,436,16},{322,777,424,10},s.rankValue/5000)
         local p=TH43.runtime.env.system.PowerRank
         if p.isInHyper() then
