@@ -3,6 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 import hashlib
 import io
 import json
+import shutil
 import struct
 import zlib
 from image_policy import noncore_category
@@ -62,8 +63,22 @@ def optimize_images(sources, cache, game_root=None, lossy_noncore=False, transpa
             version = f'images-v6-webp-alpha-{allow_lossy}-{__version__}'
         if source in png_only:
             version += '-png-only'
+        legacy_version=version
+        if allow_lossy:
+            version += '-rgb-step6'
         key = hashlib.sha256(str(source).encode() + raw + version.encode()).hexdigest()
         metadata = cache/(key+'.json')
+        if allow_lossy and not metadata.exists():
+            legacy_key=hashlib.sha256(str(source).encode()+raw+legacy_version.encode()).hexdigest()
+            legacy_metadata=cache/(legacy_key+'.json')
+            if legacy_metadata.exists():
+                previous=json.loads(legacy_metadata.read_text())
+                previous_target=cache/(legacy_key+'.'+previous['format'])
+                # WebP 与无损候选的质量不变；仅重算旧的 PNG RGB 量化结果。
+                if not previous['codec'].startswith('png-rgb') and (not previous['converted'] or previous_target.exists()):
+                    if previous['converted']:
+                        shutil.copyfile(previous_target,cache/(key+'.'+previous['format']))
+                    metadata.write_text(json.dumps(previous,ensure_ascii=False)+'\n')
         if metadata.exists():
             record = json.loads(metadata.read_text())
             target = cache/(key+'.'+record['format'])
@@ -98,9 +113,9 @@ def optimize_images(sources, cache, game_root=None, lossy_noncore=False, transpa
                             record.update(format=suffix,codec=codec)
                     if allow_lossy and not opaque:
                         # PNG继续提供低误差候选，透明WebP由修正后的原生解码路径处理。
-                        # 非核心仅将RGB四舍五入到5bit阶梯，逐通道误差<=4，Alpha不动。
+                        # RGB 按步长 6 四舍五入，CPU 误差<=3，为 GLES 混合舍入留出一级余量。
                         values = np.asarray(rgba).copy()
-                        values[:,:,:3] = np.minimum((values[:,:,:3].astype('uint16')+4)//8*8,255).astype('uint8')
+                        values[:,:,:3] = np.minimum((values[:,:,:3].astype('uint16')+3)//6*6,255).astype('uint8')
                         quantized = Image.fromarray(values)
                         result = recompress_png(quantized,raw)
                         packed = zip_size(result)
@@ -109,10 +124,10 @@ def optimize_images(sources, cache, game_root=None, lossy_noncore=False, transpa
                                 values = np.asarray(decoded.convert('RGBA')).astype('int16')
                             reference = np.asarray(rgba).astype('int16')
                             assert np.array_equal(reference[:,:,3],values[:,:,3]),source
-                            assert int(np.max(np.abs(reference[:,:,:3]-values[:,:,:3])))<=4,source
+                            assert int(np.max(np.abs(reference[:,:,:3]-values[:,:,:3])))<=3,source
                             changed = not np.array_equal(reference,values)
                             selected,cost = result,packed
-                            record.update(format='png',codec='png-rgb5' if changed else 'png-lossless',max_rgb_error=4,lossy=changed)
+                            record.update(format='png',codec='png-rgb-step6' if changed else 'png-lossless',max_rgb_error=3,gpu_max_rgb_error=4,lossy=changed)
                     if allow_lossy and source not in png_only and (opaque or transparent_webp):
                         reference = np.asarray(rgba).astype('float32')
                         for quality in (85,90,95):

@@ -1,10 +1,31 @@
 """非核心图片白名单；未明确识别的图片一律按核心资源处理。"""
 from pathlib import PurePosixPath
+from pathlib import Path
+import json
 import re
 
+DECORATIVE_IMAGES=json.loads(Path(__file__).with_name('decorative_images.json').read_text(encoding='utf-8'))
+# 这些透明背景的 RGB 量化在 GLES 混合后误差会放大一档，保留无损。
+GPU_EXACT_IMAGES={
+    'Resources/th39/scene/bg2-32.png',
+    'Resources/th39/scene/2-19.png',
+    'Resources/th39/scene/4bgs-01.png',
+}
 
 def noncore_category(path):
     path = str(path).replace('\\', '/')
+    if path in GPU_EXACT_IMAGES:
+        return None
+    if path in DECORATIVE_IMAGES:
+        return DECORATIVE_IMAGES[path]
+    if path=='Resources/ports/theis/res/ui/ui_stage_bg_16_9_1.png':
+        return '祈华梦场外界面背景'
+    if path.startswith('Resources/th43/performer/'):
+        return '栖霞园开符立绘与界面演出'
+    if path.startswith('Resources/th43/boss/Sonia/red_moon/'):
+        return '栖霞园旧月亮背景序列'
+    if path.startswith('Resources/th39/5bg-'):
+        return '永夜篇五面场景纹理'
     if path in {'THlib/UI/ui_bg.png', 'THlib/UI/ui_bg2.png', 'THlib/UI/menu_bg.png',
                 'THlib/UI/menu_bg2.png', 'THlib/UI/menu_bg_sub.png', 'THlib/UI/loading.png'}:
         return '菜单与界面背景'
@@ -22,7 +43,7 @@ def noncore_category(path):
         'Resources/th37/scene/', 'Resources/th37/media/',
         'Resources/th38/background/', 'Resources/th38/media/',
         'Resources/th39/scene/', 'Resources/th39/media/',
-        'Resources/th40/Background/', 'Resources/th43/background/',
+        'Resources/th40/Background/', 'Resources/th40/scene/', 'Resources/th43/background/',
         'Resources/ports/theis/res/background/',
         'Resources/ports/dreamer/res/likedreamer/optimized/background/',
     )):

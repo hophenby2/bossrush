@@ -482,7 +482,7 @@ def main():
     parser.add_argument('--engine-archive')
     parser.add_argument('--assets-only', action='store_true')
     parser.add_argument('--optimize-assets', action='store_true', help='图片无损重压缩和相同文件去重，核心透明图保留PNG')
-    parser.add_argument('--lossy-images', action='store_true', help='核心无损；背景不透明图Q85/Q90/Q95、透明PNG的RGB误差最多4级；隐含--optimize-assets')
+    parser.add_argument('--lossy-images', action='store_true', help='核心无损；背景WebP要求PSNR至少36dB，透明PNG的RGB误差最多3级；隐含--optimize-assets')
     parser.add_argument('--compress-audio', action='store_true', help='压缩WAV和祈华梦高码率音乐，保留采样率、声道与帧数')
     parser.add_argument('--optimize-fonts',action='store_true',help='保留全部Unicode和像素，去掉安卓未使用的布局替代字形')
     parser.add_argument('--transparent-webp',action='store_true',help='透明图片使用WebP，需要完整构建以启用对应的原生Alpha解码修复')

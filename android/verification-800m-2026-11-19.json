@@ -1,0 +1,109 @@
+{
+  "apk": "BossRushHD-android-arm64-26.11.19-player-fidelity.apk",
+  "bytes": 795269532,
+  "MB": 795.269532,
+  "MiB": 758.4281272888184,
+  "sha256": "a5a8909807c3e18260ba8b89b872cc78b0ef988c1eaf077addb88711eb66e26a",
+  "under_800000000": true,
+  "first_candidate_bytes": 855160475,
+  "additional_saved_bytes": 59890943,
+  "categories": [
+    {
+      "category": "图片",
+      "files": 4962,
+      "stored_bytes": 452257003,
+      "decoded_file_bytes": 453272188,
+      "MB": 452.26,
+      "percent": 56.87
+    },
+    {
+      "category": "音乐与音效",
+      "files": 740,
+      "stored_bytes": 282117822,
+      "decoded_file_bytes": 283284071,
+      "MB": 282.12,
+      "percent": 35.47
+    },
+    {
+      "category": "字体",
+      "files": 7,
+      "stored_bytes": 28110472,
+      "decoded_file_bytes": 28110472,
+      "MB": 28.11,
+      "percent": 3.53
+    },
+    {
+      "category": "原生库",
+      "files": 3,
+      "stored_bytes": 16048044,
+      "decoded_file_bytes": 47995032,
+      "MB": 16.05,
+      "percent": 2.02
+    },
+    {
+      "category": "脚本与其他",
+      "files": 3801,
+      "stored_bytes": 14989607,
+      "decoded_file_bytes": 114808917,
+      "MB": 14.99,
+      "percent": 1.88
+    },
+    {
+      "category": "ZIP目录与签名",
+      "files": 0,
+      "stored_bytes": 1746584,
+      "decoded_file_bytes": 1746584,
+      "MB": 1.75,
+      "percent": 0.22
+    }
+  ],
+  "source_game_files": 9454,
+  "source_lua_files": 3111,
+  "image_check": {
+    "core_exact": 3809,
+    "noncore_exact": 247,
+    "noncore_lossy_opaque": 271,
+    "noncore_lossy_transparent": 1181
+  },
+  "gpu_check": {
+    "images": 40,
+    "core_exact": 21,
+    "blend_modes": [
+      "普通",
+      "加色"
+    ],
+    "passed": true
+  },
+  "music_check": {
+    "package": "BossRushHD-android-arm64-26.11.19-player-fidelity.apk",
+    "lua_files": 3111,
+    "original_tracks": 67,
+    "native_tracks": 122,
+    "full_ogg_decode": true,
+    "loop_frames_unchanged": true,
+    "source_bytes_match": false,
+    "source_scripts_match": true,
+    "original_music_bytes_match": false
+  },
+  "decoded_music_archive_sha256": "16656dabf0f26b3106aae43c62986a08b82d612094314dfa652346b8f7227ff6",
+  "final_same_audio_as_decoded_archive": true,
+  "audio_payload_sha256": "c60f6362d0e6b48c4289eb5934a51ed4532153fc1b7cbdedf07964ed03e5a0ec",
+  "package_check": {
+    "apk": "BossRushHD-android-arm64-26.11.19-player-fidelity.apk",
+    "sha256": "a5a8909807c3e18260ba8b89b872cc78b0ef988c1eaf077addb88711eb66e26a",
+    "bytes": 795269532,
+    "under_800000000": true,
+    "physical_assets_match_prepared_files": 9504,
+    "arm64_libraries": 3,
+    "user_data_excluded": true,
+    "crc": true,
+    "audio_files": 740,
+    "audio_digest": "c60f6362d0e6b48c4289eb5934a51ed4532153fc1b7cbdedf07964ed03e5a0ec",
+    "same_audio_as_fully_decoded_archive": true
+  },
+  "notes": [
+    "背景和开符演出图允许有损，核心图无损；源PNG和音频不修改。",
+    "保持原图尺寸/Alpha、音乐帧数/采样率/声道/循环点，不删减关卡。",
+    "仅在Android ARM64模拟器验证，不代表已在所有真机逐关验收。"
+  ]
+}

@@ -1,3 +1,21 @@
+26.11.19-player-fidelity 安卓800 MB包（2026-11-19）
+最新代码使用原有压缩配置的首轮APK为855.16 MB；本轮降为795.27 MB（758.43 MiB），严格低于800,000,000字节。
+补充场景/演出图分类：从雪莲华原始背景、开符立绘元数据生成64张显式白名单，并排除Boss行走图及Animator帧；
+另覆盖夏夜祭场景、栖霞园开符演出/旧月亮图、永夜篇五面场景与祈华梦场外背景。源PNG不修改。
+核心3809张图RGBA逐像素一致，全部5508张图片保留尺寸与Alpha；背景/开符演出图允许有损，WebP可见RGB PSNR至少36dB。
+透明PNG量化步长收紧为6，CPU RGB误差至多3级，为GPU混合舍入留出一级余量；三张边界背景另保留无损。
+GPU实测40张、普通和加色两种混合；其中21张核心图逐像素一致，其余按对应误差预算通过。图片回退仍保留在后续GPU样本中。
+189首BGM完整解码、采样率/声道/帧数/循环点检查通过；最终APK的740个音频文件内容摘要与已完整解码的版本一致。
+全部9504个物理assets与实际构建输入一致，CRC、签名及ARM64库检查通过，存档和录像未入包。
+包体占比（实际ZIP存储字节）：图片56.87%，音频35.47%，字体3.53%，原生库2.02%，脚本/其他及签名目录2.10%。
+完整构建：python3 android/build.py --lossy-images --compress-audio --optimize-fonts --transparent-webp --compact-music
+只更新资源时可复用已启用透明WebP解码的原生库并添加--package-only。
+分类检查：python3 android/tests/check_scene_image_policy.py
+包内图片检查：python3 tools/check_android_image_package.py <APK> --transparent-webp
+音乐检查：python3 tools/check_sequence_package.py <APK> --decode --compact-music
+GPU检查：python3 tools/run_android_image_probe.py --serial <模拟器序号> --apk <APK> --output <报告目录>
+详细包体分析和校验报告位于android/dist/包体分析-26.11.19.{txt,json}和verification-*-26.11.19-800m.json。
+
 26.11.18-750m-assets 安卓本地候选包（2026-11-18）
 完整APK为714.48 MB（681.38 MiB），低于750,000,000字节。
 --transparent-webp启用透明图片编码，同时需要完整构建以更新原生解码器；PNG与WebP统一使用LuaSTG的未预乘Alpha。

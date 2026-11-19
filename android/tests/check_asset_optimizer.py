@@ -30,7 +30,8 @@ with tempfile.TemporaryDirectory() as temp:
     photo.putalpha(Image.linear_gradient('L').resize((256,256)))
     photo.save(background);photo.save(core)
     lossy,report=m.optimize_images([background,core],root/'mixed-cache',root,True)
-    assert report[background]['codec']=='png-rgb5' and report[background]['lossy']
+    assert report[background]['codec']=='png-rgb-step6' and report[background]['lossy']
+    assert report[background]['max_rgb_error']==3 and report[background]['gpu_max_rgb_error']==4
     assert report[background]['format']=='png','非核心透明图也保持原生PNG混合路径'
     assert report[core]['core'] and not report[core]['codec'].startswith('webp-q')
     with Image.open(lossy[background]) as packed:assert packed.getchannel('A').tobytes()==photo.getchannel('A').tobytes()
