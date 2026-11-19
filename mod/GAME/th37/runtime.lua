@@ -344,19 +344,24 @@ function R.beginCollisions()
     local p=valid(player) and player
     local px,py=R.player()
     for b in pairs(R.objects) do
-        local s=b.mhj
-        if valid(b) and s and s.kind=='projectile' and b.colli then
-            count=count+1;collisionObjects[count]=b
-            if p and p.colli~=false then
-                if R.sweptHit(s,px,py) then
-                    p.class.colli(p,b)
-                elseif valid(p.grazer) and not b._graze and s.life>2 and (not s.Invincible or s.age>=20) then
-                    local dx,dy=(s.previousX or s.fx)-px,(s.previousY or s.fy)-py
-                    if dx*dx+dy*dy<=4900 then p.grazer.class.colli(p.grazer,b) end
+        -- 对象池回收与弱表的垃圾回收不同步，失效引用不能再读取任何对象字段。
+        if valid(b) then
+            local s=b.mhj
+            if s and s.kind=='projectile' and b.colli then
+                count=count+1;collisionObjects[count]=b
+                if valid(p) and p.colli~=false then
+                    if R.sweptHit(s,px,py) then
+                        p.class.colli(p,b)
+                    elseif valid(p.grazer) and not b._graze and s.life>2 and (not s.Invincible or s.age>=20) then
+                        local dx,dy=(s.previousX or s.fx)-px,(s.previousY or s.fy)-py
+                        if dx*dx+dy*dy<=4900 then p.grazer.class.colli(p.grazer,b) end
+                    end
                 end
+                -- 自机碰撞由上述原作算法处理；随后恢复，使Bomb仍使用原生分组。
+                if valid(b) then b.colli=false end
             end
-            -- 自机碰撞由上述原作算法处理；随后恢复，使Bomb仍使用原生分组。
-            if valid(b) then b.colli=false end
+        else
+            R.objects[b]=nil
         end
     end
     R.collisionCount=count
@@ -364,7 +369,12 @@ end
 function R.finishCollisions()
     for i=1,R.collisionCount or 0 do
         local b=collisionObjects[i]
-        if valid(b) and not b.mhj.dis then b.colli=true end
+        if valid(b) then
+            local s=b.mhj
+            if s and not s.dis then b.colli=true end
+        elseif b then
+            R.objects[b]=nil
+        end
         collisionObjects[i]=nil
     end
     R.collisionCount=0
@@ -600,10 +610,18 @@ end
 function R.clear(c)
     if not c then return end
     c.closed=true
-    for b in pairs(c.bullets) do if valid(b) then clean(b) end end
+    for b in pairs(c.bullets) do
+        if valid(b) then clean(b)
+        else R.objects[b]=nil;c.bullets[b]=nil end
+    end
 end
 function R.clearAll()
-    for b in pairs(R.objects) do if valid(b) then clean(b) end end
+    for b in pairs(R.objects) do
+        if valid(b) then clean(b) else R.objects[b]=nil end
+    end
+    -- 切关后碰撞恢复阶段不能再持有上一局的对象。
+    for i=#collisionObjects,1,-1 do collisionObjects[i]=nil end
+    R.collisionCount=0
 end
 function R.stopEmitter(c)
     if c then c.closed=true;c.emitters={} end
@@ -622,16 +640,24 @@ local DeathEffect=Class(object,{
 function R.playerDeathEffect(p) New(DeathEffect,p) end
 function R.deathClear(x,y,r)
     for b in pairs(R.objects) do
-        local s=b.mhj
-        if valid(b) and s and s.is_projectile and not s.Invincible and not s.controller.effectLayer
-            and Dist(x,y,b.x,b.y)<r and not s.dis then Del(b) end
+        if valid(b) then
+            local s=b.mhj
+            if s and s.is_projectile and not s.Invincible and not s.controller.effectLayer
+                and Dist(x,y,b.x,b.y)<r and not s.dis then Del(b) end
+        else
+            R.objects[b]=nil
+        end
     end
 end
 function R.deathDamage(x,y,r,damage)
     for b in pairs(R.objects) do
-        local s=b.mhj
-        if valid(b) and s and not s.is_projectile and not b.protect and b.colli and Dist(x,y,b.x,b.y)<r then
-            b.hp=b.hp-damage
+        if valid(b) then
+            local s=b.mhj
+            if s and not s.is_projectile and not b.protect and b.colli and Dist(x,y,b.x,b.y)<r then
+                b.hp=b.hp-damage
+            end
+        else
+            R.objects[b]=nil
         end
     end
 end

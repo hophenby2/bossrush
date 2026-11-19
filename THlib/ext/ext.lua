@@ -179,6 +179,7 @@ local function DoFrame()
         --切关时清空资源和回收对象
         if stage.current_stage then
             stage.current_stage:del()
+            if TH37 then TH37.runtime.clearAll() end
             if TH39 then TH39.runtime.clearAll() end
             task.Clear(stage.current_stage)
             if stage.preserve_res then
