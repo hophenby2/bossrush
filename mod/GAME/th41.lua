@@ -14,6 +14,9 @@ local objects
 local empty=function() end
 local function new(class,...)
     local o=New(assert(class,'祈华梦对象类缺失'),...)
+    if o.group==GROUP.ENEMY or o.group==GROUP.NONTJT then
+        (NativeActorCollision or dofile('THlib/native_actor_collision.lua')).preserve(o)
+    end
     if objects then objects[#objects+1]=o end
     return o
 end

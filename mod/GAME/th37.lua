@@ -43,6 +43,8 @@ local function setupCard(meta,group)
         self.mhj_controller=R.controller(self,meta.pattern,false)
         self.mhj_portrait=nil
         Actor.bind(self,group.actor)
+        self.native_actor_collision.noContact=endurance
+        self.native_actor_collision.noDamage=endurance
         self.mhj_opening=opening
     end
     function card:frame()

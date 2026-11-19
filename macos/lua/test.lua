@@ -10,6 +10,8 @@ function T.install()
     local nativeProbe=nativeMachine and
         mode~='native-port-practice' and mode~='native-port-sequence' and mode~='th38-sequence'
         and dofile('macos/native_player_probe.lua')
+    -- 原生专项直接驱动按键；关闭调试热键，避免加载时的实体键触发空 player。
+    if nativeProbe then ext.Debugging=function() end end
     local battleCard=tonumber(os.getenv('BOSSRUSH_MAC_TEST_CARD') or '') or 3638
     local fixedFocus=os.getenv('BOSSRUSH_MAC_TEST_FOCUS')=='1'
     local battleShoot=os.getenv('BOSSRUSH_MAC_TEST_SHOOT')~='0'

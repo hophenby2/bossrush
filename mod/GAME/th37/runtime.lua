@@ -545,8 +545,9 @@ R.classes.fairy=Class(enemy,{
         o.bound=false;o.vx,o.vy=0,0;o.group=GROUP.ENEMY;o.layer=LAYER.ENEMY;o.colli=true
         o.x,o.y=spec.x-224,240-spec.y;o.a,o.b=8,8;o.maxhp=spec.hp
         o.img='img_void'
-        -- LuaSTG refreshes the collision dimensions when img changes.
-        if NativePlayers and NativePlayers.enabled(nil,35) then o.a,o.b=8,8 end
+        local p=D.enemyTypes[spec.type]
+        local collision=NativeActorCollision or dofile('THlib/native_actor_collision.lua')
+        collision.bind(o,p[9]/2,p[10]/2,'box',p[9]/7,p[10]/7,'box',true)
         o.mhj.controller=spec.pattern and R.controller(o,spec.pattern,true) or nil
         state.enemies[#state.enemies+1]=o;R.objects[o]=true
     end,

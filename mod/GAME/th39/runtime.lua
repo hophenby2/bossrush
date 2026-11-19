@@ -417,7 +417,8 @@ R.classes.familiar=Class(enemy,{
         s.age=0;R.objects[b]=true;s.controller.bullets[b]=s;s.controller.familiars[slot]=b
         b.x,b.y=projectBullet(s.fx,s.fy);b.colli=false
         local p=D.enemyTypes[config[1]]
-        b.a,b.b=p[14]/2*SCALE,p[15]/2*SCALE
+        local collision=NativeActorCollision or dofile('THlib/native_actor_collision.lua')
+        collision.bind(b,p[14]/2*SCALE,p[15]/2*SCALE,'box',p[14]/7*SCALE,p[15]/7*SCALE,'ellipse',true).noContact=true
     end,
     frame=function(b)
         local s=b.mhj
@@ -432,7 +433,8 @@ R.classes.familiar=Class(enemy,{
             interpolate(s)
         end
         b.x,b.y=projectBullet(s.fx,s.fy);b.vx,b.vy=0,0
-        b.colli=t>0 and (s.alpha or 100)>99
+        b.colli=s.age>=20 and t>0 and (s.alpha or 100)>99
+        b.native_actor_collision.noContact=s.age<=60
         SetAttr(b,'colli',b.colli)
     end,
     render=function(b) fairySprite(b,D.enemyTypes[b.mhj.familiarConfig[1]],b.mhj.age) end,
@@ -866,7 +868,8 @@ R.classes.fairy=Class(enemy,{
         o.bound=false;o.vx,o.vy=0,0;o.group=GROUP.ENEMY;o.layer=LAYER.ENEMY;o.colli=false
         o.x,o.y=R.project(s.x,s.y);o.maxhp=spec.hp
         local p=D.enemyTypes[s.type]
-        o.a,o.b=p[14]/2*SCALE,p[15]/2*SCALE
+        local collision=NativeActorCollision or dofile('THlib/native_actor_collision.lua')
+        collision.bind(o,p[14]/2*SCALE,p[15]/2*SCALE,'box',p[14]/7*SCALE,p[15]/7*SCALE,'ellipse',true)
         s.controller=s.pattern and R.controller(o,s.pattern,true,state.familiars) or nil
         state.enemies[spec.id]=o;R.objects[o]=true
     end,

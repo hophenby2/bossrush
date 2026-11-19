@@ -1,69 +1,14 @@
 -- 祈华梦的高速/低速双机体，射击和道具使用 LuaSTG 对象。
 local P=NativePlayers
 local M={}
-local art={
-    reimu={'reimu','yukari',140,120,138,138,.8,{'reimu_main',96,0,96,76},{'yukari_main',0,0,96,40}},
-    marisa={'marisa','yuyuko',116,130,120,120,.8,{'marisa_missle',0,0,240,240},{'yuyuko_main',0,0,512,256}},
-    mokou={'mokou','keine',90,120,96,120,1,{'mokou_main',162,0,162,44},{'mokou_main',0,0,162,44}},
-}
-function M.images(p,m)
-    local row=art[m.id]
-    local prefix='theis_player_'..m.id
-    local path='Resources/ports/theis/res/player/'..m.id..'/'
-    local images={}
-    for slot=1,2 do
-        local id=prefix..'_'..slot..'_'
-        if not CheckRes('tex',id) then
-            LoadTexture(id,path..row[slot]..'_player.png')
-            LoadImageGroup(id,id,0,0,row[slot*2+1],row[slot*2+2],8,3)
-            local bullet=row[7+slot]
-            LoadTexture(id..'shot',path..bullet[1]..'.png')
-            LoadImage(id..'shot',id..'shot',unpack(bullet,2,5))
-        end
-        local frames={}
-        for i=1,24 do frames[i]=id..i end
-        images[slot]=frames
-    end
-    p.theisImages=images
-    -- 自机由宿主行走图系统绘制；原作世界视图另乘 0.5 的全局贴图比例。
-    p.hscale,p.vscale=row[7]*.5,row[7]*.5
-    p.theisShot=prefix
-    return images[1]
-end
-function M.frame(p)
-    p.imgs=p.theisImages[p.slow==1 and 2 or 1]
-end
-function M.shoot(p,t)
-    local slow=p.slow==1
-    local id=p.machine.id
-    local img=p.theisShot..(slow and '_2_shot' or '_1_shot')
-    local function fire(x,y,speed,angle,damage,scale,homing)
-        local o=P.emit(p,img,x,y,speed,angle,damage,4,scale,homing,true)
-        o.rot=angle
-    end
-    if t%6==0 then
-        PlaySound('plst00',.08)
-        if id=='reimu' then
-            if slow then
-                for i=-5,5,2 do fire(4*i,12-3*math.abs(i),12,90,1.2,.6) end
-            else
-                for _,x in ipairs({-8,8}) do fire(x,0,10,90,5,.6) end
-                for i=-3,3,2 do fire(12*i,-15,10,90+i*3,1.5,.3,3) end
-            end
-        elseif id=='marisa' then
-            if not slow then fire(0,0,16,90,8,.22)
-            else for _,x in ipairs({-10,10}) do fire(x,0,12,90,2,.11) end end
-        else
-            for _,x in ipairs({-8,8}) do fire(x,0,10,90,slow and 2 or 1,.5) end
-        end
-    elseif id=='marisa' and slow and t%6==3 then
-        fire(-10,0,12,95,2,.11)
-        fire(10,0,12,85,2,.11)
-    elseif id=='mokou' and not slow and t%9==0 then
-        fire(-26,18,8,105,3,.35,4)
-        fire(26,18,8,75,3,.35,4)
-    end
-end
+local Original=dofile('mod/GAME/ports/theis/native_players/bridge.lua')
+-- bind() 中由原作构造器安装行走图。
+function M.images() return {'img_void'} end
+function M.bind(p) Original.bind(p) end
+function M.init(p) p.grazeRadius=32 end
+function M.beforeRender(p) Original.render(p) end
+function M.frame(p) Original.frame(p) end
+function M.shoot(p) return Original.shoot(p) end
 local bombTimes={reimu={270,400},marisa={300,180},mokou={180,420}}
 function M.bomb(p,s)
     if s.bombs<=0 then return false end

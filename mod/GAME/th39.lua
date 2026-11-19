@@ -3,6 +3,8 @@ local R=dofile('mod/GAME/th39/runtime.lua')
 local D=R.data
 local Media=dofile('mod/GAME/th39/media.lua')
 local BG=dofile('mod/GAME/th39/background.lua')
+local Collision=NativeActorCollision or dofile('THlib/native_actor_collision.lua')
+local function collider(o,p) Collision.bind(o,35*2/3,50*2/3,'box',p.size[1]/3,p.size[2]/3,'box',true) end
 local LEVEL=37
 local C={runtime=R,data=D,level=LEVEL,chapters={},cards={},rows={}}
 TH39=C
@@ -83,10 +85,10 @@ end
 local actorBase=Class(enemy,{take_damage=function(o,dmg) if valid(o.owner) then boss.take_damage(o.owner,dmg) end end})
 R.classes.actor=Class(actorBase,{
     init=function(o,b,actor,x,y)
-        enemybase.init(o,1e9,true)
+        enemybase.init(o,1e9,false)
         o.owner,o.actor=b,actor;o.x,o.y=x,y
         local p=D.bossTypes[actor]
-        o.a,o.b=p.size[1]/3,p.size[2]/3
+        collider(o,p)
         o.bound=false;o.layer=LAYER.ENEMY
     end,
     frame=function(o)
@@ -148,6 +150,10 @@ local function setupCard(meta,group,chapter)
             local layer=LAYER.ENEMY+(meta.order==1 and i or -i)*.01
             actor.layer=layer
             actor.mhj3_spell=meta.kind~=0
+            if actor.native_actor_collision then
+                actor.native_actor_collision.noContact=endurance
+                actor.native_actor_collision.noDamage=endurance
+            end
             if i==1 then
                 if self.mhj3_group~=group then self.x,self.y=ox,oy end
                 self.mhj3_group=group
@@ -290,7 +296,7 @@ for _,chapter in ipairs(D.chapters) do
                 init(b,...)
                 local p=D.bossTypes[lead.actor]
                 b.no_hp_render=true -- 原作HUD已有血条。
-                b.a,b.b=p.size[1]/3,p.size[2]/3
+                collider(b,p)
                 if b._bosssys.aura then b._bosssys.aura.hide=true end
             end
             for _,meta in ipairs(group.cards) do

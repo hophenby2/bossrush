@@ -71,6 +71,7 @@ function Card.createFullCardBoss(editor,res,diff,paths,hidden)
         o._a,o._r,o._g,o._b=255,255,255,255
         o.aura_alpha_d,o.aura_alpha=1,255
         if res.bossInitial then res.bossInitial(o) end
+        (NativeActorCollision or dofile('THlib/native_actor_collision.lua')).preserve(o)
         o.scOpenEffect=o.scOpenEffect or E.boss.defaultScOpenEffect
     end
     class.frame=function(o)

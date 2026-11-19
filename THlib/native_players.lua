@@ -143,6 +143,7 @@ function P.barriers(s)
 end
 local ResourceItem=Class(item)
 local SourceVisual=dofile('THlib/native_player_visual.lua')
+local ActorCollision=NativeActorCollision or dofile('THlib/native_actor_collision.lua')
 local SourceDeath=dofile('THlib/native_player_death.lua')
 P.visual,P.death=SourceVisual,SourceDeath
 function ResourceItem:init(x,y,kind,amount)
@@ -712,6 +713,7 @@ function Player:init()
     end)
 end
 function Player:colli(other)
+    if not ActorCollision.contact(self,other) then return end
     if self.hit or SourceDeath.locked(self) or self.death~=0 or self.dialog or self.lock or cheat or self.protect>0
         or other.IsBoss and not other.is_combat then return end
     local s=P.state()
@@ -735,9 +737,10 @@ end
 
 function Player:render()
     if self.realrealreal_lock or self.hide or self.native_body_hidden or self.death>=50 and not self.native_death_clock then return end
+    local adapter=P.adapters[self.native_level]
+    if adapter and adapter.beforeRender then adapter.beforeRender(self,P.state()) end
     player_class.render(self)
     if self.native_level==36 then TH38.visual.player(self) end
-    local adapter=P.adapters[self.native_level]
     if adapter and adapter.render then adapter.render(self,P.state()) end
     for _,beam in ipairs(self.beams) do
         if not SourceVisual.beam(self,beam) then

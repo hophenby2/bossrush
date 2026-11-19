@@ -253,6 +253,7 @@ local function DoFrame()
         local ck = CollisionCheck
         local GROUP = GROUP
         if OriginalCollision then OriginalCollision.begin() end
+        if NativeActorCollision then NativeActorCollision.begin() end
         if TH37 then TH37.runtime.beginCollisions() end
         ck(GROUP.PLAYER, GROUP.ENEMY_BULLET)
         ck(GROUP.PLAYER, GROUP.ENEMY_BULLET2)
@@ -262,6 +263,7 @@ local function DoFrame()
         ck(GROUP.PLAYER, GROUP.LASER)
         if TH37 then TH37.runtime.finishCollisions() end
         if OriginalCollision then OriginalCollision.shots() end
+        if NativeActorCollision then NativeActorCollision.shots() end
         ck(GROUP.ENEMY, GROUP.PLAYER_BULLET)
         ck(GROUP.NONTJT, GROUP.PLAYER_BULLET)
         if OriginalCollision then OriginalCollision.secondary() end
@@ -273,6 +275,7 @@ local function DoFrame()
         ck(GROUP.SPELL, GROUP.ENEMY_BULLET2)
         ck(GROUP.SPELL, GROUP.INDES)
         ck(GROUP.SPELL, GROUP.LASER)
+        if NativeActorCollision then NativeActorCollision.finish() end
         if OriginalCollision then OriginalCollision.finish() end
     end
     -- 使用本帧正常移动和碰撞后的自机位置接取，掉落不冻结关卡或额外移动自机。

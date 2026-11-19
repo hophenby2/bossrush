@@ -73,7 +73,9 @@ local function sync(b,s)
         return
     end
     if s.kind=='enemy' then
-        b.colli=s.collision and s.age>=s.immune;b.a,b.b=s.hit*48,s.hit*48
+        b.colli=s.collision and s.age>=s.immune
+        local collision=NativeActorCollision or dofile('THlib/native_actor_collision.lua')
+        collision.bind(b,s.hit*48,s.hit*48,'ellipse',(s.contact or s.hit)*48,(s.contact or s.hit)*48,'ellipse')
         b.protect=s.age<s.immune;SetAttr(b,'colli',b.colli)
         return
     end
@@ -327,7 +329,7 @@ local function spawn(e,x,y,direction,speed)
         exit=e.a6_10,delayExit=e.a6_14,outTime=0,mist=e.a6_11,invincible=e.a6_12,dispel=e.a6_13,blend=e.a9_4,
         collision=e.a5_2==0,events=e.sonEvents,limits={},changes={},vars={0,0,0,0},kind=e.a47==1 and 'enemy' or e.a47==3 and (e.a54_1>=2 and 'curve' or 'beam') or 'bullet',
         enemyType=e.a48_1,enemyStyle=1+(e.a48_1*2+e.a48_2)%9,laserStyle=e.a54_4 or 0,
-        tailTicks=max(5,floor((e.a54_2 or 5)/5)*5),hit=e.a48_5*.01,immune=e.a48_6,followSpeed=e.a8_9==1,length=e.a54_2 and e.a54_2*.01 or 1,width=e.a54_3 or 1}
+        tailTicks=max(5,floor((e.a54_2 or 5)/5)*5),contact=e.a48_4*.01,hit=e.a48_5*.01,immune=e.a48_6,followSpeed=e.a8_9==1,length=e.a54_2 and e.a54_2*.01 or 1,width=e.a54_3 or 1}
     if e.a47==4 then return end -- Unity蓄力/爆炸/震屏只演出，不制造有判定的替代弹。
     local cls=s.kind=='enemy' and R.classes.fairy or s.kind=='curve' and R.classes.curve or s.kind=='beam' and R.classes.beam or R.classes.projectile
     if s.kind=='enemy' then s.vars=c.vars end
@@ -487,6 +489,9 @@ function R.controller(host,key,first)
         s.main=bossIndex==1
         if not s.main then New(R.classes.partner,s) end
         if R.actor then R.actor.bind(s.main and host or s.native,key,bossIndex) end
+        local target=s.main and host or s.native
+        local collision=NativeActorCollision or dofile('THlib/native_actor_collision.lua')
+        if target then collision.bind(target,e.a51_2*.48,e.a51_2*.48,'ellipse',e.a51_1*.48,e.a51_1*.48,'ellipse') end
         c.entities[#c.entities+1]=s;attach(e,s);e.skip=true
     end
     return c

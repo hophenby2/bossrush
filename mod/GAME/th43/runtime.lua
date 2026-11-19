@@ -91,6 +91,9 @@ function E.New(class,...)
     if not class then error(debug.traceback('栖霞园对象类为空',2),2) end
     compile(class)
     local o=New(class,...)
+    if o.group==GROUP.ENEMY or o.group==GROUP.NONTJT then
+        (NativeActorCollision or dofile('THlib/native_actor_collision.lua')).preserve(o)
+    end
     if class.take_damage then o._th43_take_damage=class.take_damage end
     if o.group==GROUP.ENEMY_BULLET or o.group==GROUP.INDES then o.th43_bullet=true end
     if o.native_pickup then return o end

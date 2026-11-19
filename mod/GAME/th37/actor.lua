@@ -81,6 +81,8 @@ local function render(b)
 end
 function A.bind(b,id)
     load()
+    local collision=NativeActorCollision or dofile('THlib/native_actor_collision.lua')
+    local p=types[id];collision.bind(b,35,50,'box',p[9]/2,p[10]/2,'box',true)
     b.no_hp_render=true -- 原作HUD已有血条，撤下宿主的额外白弧红圈。
     if b.mhj_actor then return end
     b.mhj_actor={x=b.x,age=0,id=id,nx=0,ny=0,rotation=0};play(b.mhj_actor,'Idle')

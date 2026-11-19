@@ -2,6 +2,7 @@
 -- 差异1：原Direct3D曲线网格由LuaSTG原生laser/bent_laser代理，沿用采样数、长度与宽度参数。
 -- 差异2：3D蓄力/放能特效以无判定原图粒子代理；不增加原作没有的攻击。
 local N={patterns={},images={},regions={},loaded=false,runs=setmetatable({},{__mode='k'})}
+N.actorHit=dofile('mod/GAME/th40/collision.lua')
 local paths=dofile('mod/GAME/th40/patterns.lua')
 local Class,New,IsValid=Class,New,IsValid
 local object,bullet,enemy,laser,bent_laser=object,bullet,enemy,laser,bent_laser
@@ -62,6 +63,13 @@ end
 local function sync(o)
     o.x,o.y=o.cx-320,240-o.cy;o.rot=-(o.follow and o.direction+o.angle-90 or o.angle-90)
     o.hscale,o.vscale=o.width,o.height;o.vx,o.vy=0,0
+    if o.mode=='enemy' and not o.emitter then
+        local radius=(o.region or 4)*max(o.width,o.height)
+        local collision=NativeActorCollision or dofile('THlib/native_actor_collision.lua')
+        collision.bind(o,radius,radius,'ellipse').contactTest=N.actorHit
+        o.colli=o.age>=9
+        SetAttr(o,'colli',o.age>=9)
+    end
     if o.emitter and o.mode=='cover' then o.follow=o.round end
 end
 local function motion(o)
@@ -128,10 +136,12 @@ local Ghost=Class(object,{init=function(o,run,data) o.run=run;for k,v in pairs(d
 local Enemy=Class(enemy,{init=function(o,run,data)
     enemy.init(o,1,data.hp or 1,false,false,false)
     o.run=run;for k,v in pairs(data) do o[k]=v end;defaults(o);o.group=GROUP.ENEMY;o.colli=true
-    local name=o.enemy or '';local radius=name:find('MaoYu',1,true) and 6 or name:find('YYY',1,true) and 8 or ({EnemyA8=true,EnemyB1=true,EnemyC2=true,EnemyC3=true})[name] and 10 or 3
+    local name=o.enemy or '';local radius=name:find('MaoYu',1,true) and 6 or name:find('YYY',1,true) and 8 or ({EnemyA8=true,EnemyB1=true,EnemyC2=true,EnemyC3=true})[name] and 10 or 4
     if data.region and data.region~=0 then radius=data.region end
-    o.a,o.b=radius*o.width,radius*o.height;sync(o)
-end,frame=function() end,render=draw,kill=function(o)
+    o.region=radius;o.a,o.b=radius*o.width,radius*o.height;sync(o)
+end,frame=function() end,render=draw,colli=function(o,other)
+    if N.actorHit(o,other) then enemy.colli(o,other) end
+end,kill=function(o)
     if N.enemyDeath then N.enemyDeath(o) end
     if NativePlayers and NativePlayers.enabled(nil,38) then
         for _,kind in ipairs({'red','blue','green'}) do

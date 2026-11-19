@@ -4,13 +4,13 @@ import argparse,json,os,subprocess,time
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]
 ap=argparse.ArgumentParser(description=__doc__)
-ap.add_argument('--out',type=Path,required=True);ap.add_argument('--levels',default='35,36,37,38,39,41')
+ap.add_argument('--machine');ap.add_argument('--out',type=Path,required=True);ap.add_argument('--levels',default='35,36,37,38,39,41')
 args=ap.parse_args();args.out=args.out.resolve();args.out.mkdir(parents=True,exist_ok=True)
 cases={35:('thmhj2_lunatic','reimu'),36:('thasl_lunatic','reimu'),37:('thmhj3_lunatic','reimu'),
     38:('thsss_lunatic','A'),39:('theis_lunatic','reimu'),41:('thbdb_lunatic','reimu')}
 binary=ROOT/'macos/dist/Boss Rush HD.app/Contents/MacOS/BossRushHD';rows=[]
 for level in map(int,args.levels.split(',')):
-    sequence,machine=cases[level];data=args.out/str(level);data.mkdir(exist_ok=True)
+    sequence,machine=cases[level];machine=args.machine or machine;data=args.out/str(level);data.mkdir(exist_ok=True)
     env=dict(os.environ,BOSSRUSH_MAC_DATA=str(data),BOSSRUSH_MAC_TEST='battle',BOSSRUSH_MAC_TEST_SEQUENCE=sequence,
         BOSSRUSH_MAC_TEST_MACHINE=machine,BOSSRUSH_MAC_TEST_SOURCE_PARITY='1',BOSSRUSH_MAC_TEST_CARD='0',
         BOSSRUSH_MAC_TEST_LOGIC_FRAMES='300',BOSSRUSH_MAC_TEST_FRAMES='300',BOSSRUSH_MAC_TEST_SHOOT='0')

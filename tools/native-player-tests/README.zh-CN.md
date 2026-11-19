@@ -63,3 +63,30 @@ python3 tools/native-player-tests/native_enemy_death.py --out /tmp/source-enemie
 ```
 
 原生测试使用隔离存档，保存截图和日志；击破测试实际调用敌机Kill或原作击破类，检查演出被创建、没有碰撞及到期回收。背景测试验证真实Metal网格提交，LuaJIT测试覆盖八条春雪路线、七条雪莲华路线、永夜篇道中及62套符卡/8套Last Word背景，另检查七个夏夜祭场景的转换和对象回收。
+
+## 自机与敌机判定修正（26.11.19-player-collision）
+
+祈华梦三组机体改为执行原始 `reimu.lua`、`marisa.lua`、`mokou.lua`，资源名称加前缀隔离。灵梦/紫恢复八帧行走、六帧切换、原子机阵型和跟随、诱导锁定、主炮/副武器及命中特效；原作构造器决定缩放、中心点和自机弹判定。`export_theis_players.py --source <原作 code/data>` 同步脚本和 PNG，`native_players/sources.json` 记录原始输入 SHA-256。桥接层只替换资源装载和宿主自机基类；主动 Bomb、残机和录像仍由现有宿主管理。
+
+`THlib/native_actor_collision.lua` 分别在体术和自机弹命中阶段设置判定，恢复后保留精灵旋转。判定不再依赖贴图自带的零尺寸。LuaSTG-x 的 `rect=false` 是圆形，非等比椭圆显式选择 `ellipse`；Windows Sub 继续使用原布尔接口。
+
+春雪篇和永夜篇原作将自机弹半径同时加到受弹矩形的横纵边界；碰撞阶段临时使用轴对齐弹框，保留矩形角落的命中，结算后恢复自机弹的绘制旋转和形状。耐久卡同时关闭体术与受弹，Boss 不吸收自机弹。
+
+| 作品 | 原始依据与修正 |
+| --- | --- |
+| 春雪篇 | `Enemy.JudgeBody` 使用自机中心与 `judgeSize/7` 矩形；受弹使用 `judgeSize/2` 矩形。Boss 受弹半框 35×50，体术使用各 Boss 的 judgeSize/2；耐久卡关闭体术。 |
+| 永夜篇 | 按原场地 2/3 比例恢复敌机受弹矩形与体术椭圆；Boss 受弹半框为 35×50 再乘 2/3。副 Boss 恢复体术组。使魔出现 20 帧后受弹，60 帧后开放体术；耐久卡关闭 Boss 体术。 |
+| 雪莲华 | 分别读取 `a48_4/pdbj` 与 `a48_5/sdbj`，不再共用受弹半径；Boss/副 Boss 分别读取 `a51_1` 和 `a51_2`。 |
+| 夏夜祭 | 普通敌机默认 Region 从 3 改回 4，特殊类型保留各自原值，随每帧缩放更新。保留 `BaseObject.HitCheck` 的非等比缩放分支、目标半径加减方向与出生前九帧无判定。 |
+| 祈华梦、栖霞园 | 保留原始构造器及脚本设置的判定尺寸、旋转；避免行走图切换清零。栖霞园 Boss 的受弹框和独立体术代理继续分开。 |
+
+```sh
+luajit tools/native-player-tests/check_actor_collision.lua
+python3 tools/native-player-tests/native_actor_collision.py --out /tmp/actor-boundaries
+python3 tools/native-player-tests/native_theis_player.py --out /tmp/theis-player-render
+python3 tools/native-player-tests/native_source_parity.py --out /tmp/source-parity
+python3 tools/native-player-tests/native_source_parity.py --levels 39 --machine marisa --out /tmp/theis-marisa
+python3 tools/native-player-tests/native_source_parity.py --levels 39 --machine mokou --out /tmp/theis-mokou
+```
+
+边界专项通过真实引擎的 `CollisionCheck` 检查矩形四角、横纵边界、椭圆角落以及贴图覆写；自机专项实际计数灵梦/紫本体及子机绘制，并覆盖高速/低速切换。以上是本轮修正和验证范围，不表示前文仍列出的近似实现已全部完成。
