@@ -206,7 +206,9 @@ R.classes.beam=Class(laser,{
     render=function(b)
         local s=b.asl;local v=NativePlayers and NativePlayers.visual
         local keys=v and v.data.unity.beams and v.data.unity.beams[s.laserStyle or 0]
-        local img,scale=keys and v.sprite(keys[s.color+1])
+        local img,scale
+        -- and 表达式只保留第一个返回值；必须直接接收原图及其缩放。
+        if keys then img,scale=v.sprite(keys[s.color+1]) end
         if img then
             SetImageState(img,s.blend==1 and 'mul+add' or '',s.alpha*2.55,s.red*2.55,s.green*2.55,s.blue*2.55)
             Render(img,b.x,b.y,s.direction-90,s.width*scale,math.min(s.length,s.age*abs(s.speed)*.0025)*scale)
