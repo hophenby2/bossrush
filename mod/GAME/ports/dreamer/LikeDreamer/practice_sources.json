@@ -1,0 +1,33 @@
+{
+  "method": "Nightmare；正式状态机沿超时路线记录攻击开放前一帧，直接恢复存活节点及引用，不预滚先前攻击。",
+  "entries": 61,
+  "input_sha256": {
+    "mod/GAME/ports/dreamer/LikeDreamer/core.lua": "52362b23519984daa8b954e2977a0ea911f122d871345e12f2c47fe4c8e016d3",
+    "mod/GAME/ports/dreamer/LikeDreamer/boss_recovered.lua": "fe7ea7783d70935d1a199c30ec45e9a51bf15dcd40f8f0b6970540f80139a076",
+    "mod/GAME/ports/dreamer/LikeDreamer/boss_early.lua": "6dba4f5a4c900eacf883d6197b9262202e207d342c00feca83f63c1dfff02dd3",
+    "mod/GAME/ports/dreamer/LikeDreamer/boss_middle.lua": "36bbc4db591fc097370dbbff47d3174b097228eca8951c95802e40e92fcd9f83",
+    "mod/GAME/ports/dreamer/LikeDreamer/boss_late.lua": "dd4e8719ab063f9cbe5c6681c73cc49e0cb88c30486b5cd707f9ae3031daa9f2",
+    "mod/GAME/ports/dreamer/LikeDreamer/recovered/defaults.lua": "7c6aea1448012c55be3b0da472ba80beb074ff5051f235aa984ef0dfcb65dd5e",
+    "mod/GAME/ports/dreamer/LikeDreamer/recovered/early.lua": "0acc722448a0b53dd5dd01ed05617eb1e1f818987fd9e82772064e2c1c65cceb",
+    "mod/GAME/ports/dreamer/LikeDreamer/recovered/boss07.lua": "e57b0f8b74f649818368b3062da3b04aafaa2424dfccec222f069fc9a745e63c",
+    "mod/GAME/ports/dreamer/LikeDreamer/recovered/boss08.lua": "7e36fec07b286c3c56f8beba0e4f3f8c2fd911efdb9e9f31c893805ee146eb91",
+    "mod/GAME/ports/dreamer/LikeDreamer/recovered/boss09.lua": "2659e698fdb97baf216c06ac61a8f1bdf79f1e1c00dfa7e837ce72272583788a",
+    "mod/GAME/ports/dreamer/LikeDreamer/recovered/late.lua": "81307c98a26be57c4445a4df69191e05834b26b9f6cc095b6c2389d63d70c28d",
+    "mod/GAME/ports/dreamer/LikeDreamer/recovered/boss10_aux.lua": "2b0fd0f6369d9395c2d388117dd7c3f81e85167d78e25af9eade2828e196c3dc",
+    "mod/GAME/ports/dreamer/LikeDreamer/recovered/guard.lua": "8e6f58b3b7576fbd7a53ad49433e30a53f4501d289f9c47078a9218722efd44b",
+    "tools/likedreamer_parity/boss_fixture.lua": "db1a771021d0f3235c2504388770e97ddaea6a280ca4b362665df9e3bb2f01d0",
+    "tools/generate_likedreamer_practice.lua": "57c91a3ea6496bce939989906c521863c5d72f93ba71c0ab6ddfb1d2797f8b5b",
+    "tools/generate_likedreamer_practice.py": "097eb9b258e68f84a94d4db5e46e45c43b7abc8e9422c96d6e6d2a3c1d7c540a"
+  },
+  "output_sha256": "a555b6cc8616693c2112f10ad0522593c3078a4720f3d2b414ee3d6d21179461",
+  "reference_sha256": {
+    "stage_runtime.cpp": "693a4efe911d9f4204bd331b309feb385da13411f95811a74cd3ced5a7a622bb",
+    "stage_runtime_scene10.cpp": "e3c7ee9f7ed3044ba9e2ab1cfb8bbc064d2b905cab7951f3e2fdff3307722b8a",
+    "stage_runtime_boss07.cpp": "9a56c7fa3b6e258d98925c31e2b73a63493cfebfcd3111eaa9c61b484d21f20b",
+    "stage_runtime_boss08.cpp": "4027b02be1ee128e10bbd509d6690d66b57ff9655274a0d3c914ea2934f6a693",
+    "stage_runtime_boss09.cpp": "8ed1aa116bee07f50c158a0ab69e52ec621b242fb068cf6c99779d1bfa53c510",
+    "stage_runtime_late.cpp": "eb30023cbe8c35680e965420a66d8f36ea823e1e5283bd404dc0e8a35bb9966f",
+    "stage_runtime_boss10_aux.cpp": "ed1f934d6a9756cfae009da0b34256b51aaed533998da7bbd857feb6c1ec86f8"
+  },
+  "reference_note": "来源指纹；入口快照从正式 Lua 状态机生成，不等同于另一次 C++ 逐帧对照。"
+}

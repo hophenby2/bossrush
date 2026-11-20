@@ -22,9 +22,9 @@ for _,o in ipairs(shots) do
     assert(o.x==x and o.y==y,'雾化15帧内不能提前运动')
     o.class.frame(o)
     local distance=((o.x-x)^2+(o.y-y)^2)^.5
-    assert(math.abs(distance-3.5)<1e-6,'首个有效帧位移应为3.5，实际'..distance)
+    assert(math.abs(distance-3.5)<1e-4,'首个有效帧位移应为3.5（单精度），实际'..distance)
     for _=1,9 do o.class.frame(o) end
-    assert(math.abs(((o.x-x)^2+(o.y-y)^2)^.5-35)<1e-6,'十帧位移应为35')
+    assert(math.abs(((o.x-x)^2+(o.y-y)^2)^.5-35)<1e-4,'十帧位移应为35（单精度）')
     -- b198第190帧把Barrage.type设为零基23，即公共弹图表第24项。
     local source=dofile('mod/GAME/th37/patterns/198.lua')
     source.emitters[2].Sonevents(o.mhj,190,R);o.class.frame(o)

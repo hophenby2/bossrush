@@ -71,12 +71,13 @@ end
 local function render(b)
     local s=b.mhj_actor
     local size=1.5+.2*math.sin(s.age/math.pi/7)
-    SetImageState('mhj2_boss_aura','mul+add',255,255,255,255)
+    local alpha=(s.alpha or 1)*255
+    SetImageState('mhj2_boss_aura','mul+add',alpha,255,255,255)
     Render('mhj2_boss_aura',b.x,b.y,-s.age*7,size,size)
     local at=s.id==8 and clips[s.clip][2][s.frame] or {s.nx,s.ny}
     local p=types[s.id]
     local image='mhj2_actor_'..s.id..'_'..at[1]..'_'..at[2]
-    SetImageState(image,'',255,255,255,255)
+    SetImageState(image,'',alpha,255,255,255)
     Render(image,b.x,b.y,-s.rotation,p[11],p[11])
 end
 function A.bind(b,id)
@@ -85,7 +86,7 @@ function A.bind(b,id)
     local p=types[id];collision.bind(b,35,50,'box',p[9]/2,p[10]/2,'box',true)
     b.no_hp_render=true -- 原作HUD已有血条，撤下宿主的额外白弧红圈。
     if b.mhj_actor then return end
-    b.mhj_actor={x=b.x,age=0,id=id,nx=0,ny=0,rotation=0};play(b.mhj_actor,'Idle')
+    b.mhj_actor={x=b.x,age=0,id=id,nx=0,ny=0,rotation=0,alpha=1};play(b.mhj_actor,'Idle')
     b._wisys.frame=function() frame(b) end
     b._wisys.render=function() render(b) end
     if b._bosssys.aura then b._bosssys.aura.hide=true end

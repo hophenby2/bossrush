@@ -42,10 +42,11 @@ local function direction(v,o,x,y,point)
     elseif v==-100000 and point then return angle(x,y,point[1],point[2]) end
     return v or 0
 end
-local intFields={t=true,tiao=true,r=true,life=true,type=true,sonlife=true}
+local intFields={t=true,tiao=true,range=true,life=true,sonlife=true}
+local function integer(o,key) return intFields[key] or key=='type' and o.is_projectile end
 local boolFields={Mist=true,Dispel=true,Blend=true,Afterimage=true,Outdispel=true,Invincible=true}
 local function set(o,key,v)
-    if intFields[key] then v=trunc(v) end
+    if integer(o,key) then v=trunc(v) end
     if key=='type' and v~=o.type then o.typeChanged=o.age end
     if boolFields[key] then v=v~=0 end
     o[key]=v
@@ -176,9 +177,15 @@ local function interpolate(o)
                 local delta=c.op==0 and c.value-c.initial or c.op==1 and c.value or -c.value
                 local phase=(c.duration-c.left+(c.mode=='无缝正弦' and 1 or 0))/c.duration
                 v=c.initial+delta*sin(360*phase)
-            elseif c.mode=='固定' then v=c.op==0 and c.value or old+(c.op==1 and c.value or -c.value)
+            elseif c.mode=='固定' then
+                local value=integer(o,c.key) and trunc(c.value) or c.value
+                v=c.op==0 and c.value or old+(c.op==1 and value or -value)
             elseif c.op==0 then v=(old*(c.left-1)+c.value)/c.left
-            else v=old+(c.op==1 and c.value or -c.value)/c.duration end
+            else
+                local delta=c.value/c.duration
+                if integer(o,c.key) then delta=trunc(delta) end
+                v=old+(c.op==1 and delta or -delta)
+            end
             set(o,c.key,v)
         end
         c.left=c.left-1
@@ -298,9 +305,8 @@ local function updateParticle(s)
         s.fx,s.fy=s.fx+dx,s.fy+dy
         if s.Sonevents then s.Sonevents(s,t,R) end
         if s.covers then
-            for field,events in pairs(s.covers) do
-                if field.active then events(s,t,R) else s.covers[field]=nil end
-            end
+            -- 原作复制到 Barrage.Events 的覆盖事件在 Cover 停止更新后继续生效。
+            for _,events in pairs(s.covers) do events(s,s.controller.time,R) end
         end
         s.maskEntered=0
         interpolate(s)
@@ -433,15 +439,12 @@ R.classes.familiar=Class(enemy,{
     frame=function(b)
         local s=b.mhj
         if b.hp<=0 then object.Kill(b);return end
-        s.age=s.age+1
-        local t=s.age-(s.Mist and 15 or 0)
-        if t>s.life then R.enemyDeathEffect(b,s.familiarConfig[1],s.familiarConfig[3]);clean(b);return end
-        if t>0 then
-            local dx,dy=motion(s,true,s.controller.slow or 1)
-            s.fx,s.fy=s.fx+dx,s.fy+dy
-            if s.Sonevents then s.Sonevents(s,t,R) end
-            interpolate(s)
+        -- 使魔的底层仍是 Barrage，覆盖事件、状态帧与普通弹共用同一更新顺序。
+        if not updateParticle(s) then
+            -- 原作寿命耗尽写 NeedDeleteType.Dead，Familiar.Die 同样触发 BossCard 的使魔换段条件。
+            s.killed=true;R.enemyDeathEffect(b,s.familiarConfig[1],s.familiarConfig[3]);clean(b);return
         end
+        local t=s.age-(s.Mist and 15 or 0)
         b.x,b.y=projectBullet(s.fx,s.fy);b.vx,b.vy=0,0
         local collidable=s.age>=20 and t>0 and (s.alpha or 100)>99
         b.colli=collidable
@@ -468,13 +471,15 @@ local function emit(o,bound)
     local accelRandom=rnd(rr.sonaspeedd or 0,o)
     local ws,hs=rnd(rr.wscale or 0,o),rnd(rr.hscale or 0,o)
     local jx,jy=trunc(rnd(rr.fx or 0,o)),trunc(rnd(rr.fy or 0,o))
-    local slot=o.type-147
+    local shotType=trunc(o.type)
+    local slot=shotType-147
     local config=c.configs[slot]
     local bucket=o.bucket
     for i=0,n-1 do
         local fan=(i-(n-1)/2)*spread/n
         if not c.visual and R.bulletCount>=10000 then R.overflow=R.overflow+1;return end
         local s=copy(o)
+        s.type=shotType
         s.changes,s.limits={},{}
         s.controller,s.pattern,s.bucket=c,p,bucket
         s.parentid,s.layerid=o.id,o.parentid
@@ -647,7 +652,7 @@ function R.tick(c)
         local bucket=layer and layer[o.bindid]
         if not bucket then return out end
         for b,s in pairs(bucket) do
-            if live(c,b) and (not s.Mist or s.age>15) then
+            if live(c,b) and s.kind~='laser' and (not s.Mist or s.age>15) then
                 out[#out+1]={b,s}
             end
         end
@@ -775,6 +780,15 @@ function R.clear(c)
     for b in pairs(c.bullets) do
         if valid(b) then clean(b) end
     end
+end
+function R.replace(c,host,id,road,configs)
+    -- 同一符卡内的时间/血量/使魔阈值只替换弹幕，不解除自机控制或石化。
+    -- BossCard 在整张卡结束时才调用 FreeControl / ClearNegativeStatus。
+    local status,control=c and c.playerStatus,c and c.control
+    if c then c.playerStatus,c.control=nil,nil;R.clear(c) end
+    local next=R.controller(host,id,road,configs)
+    next.playerStatus,next.control=status,control
+    return next
 end
 function R.stopEmitter(c)
     if c then releaseControl(c);c.closed=true;c.emitters={};R.controllers[c]=nil end

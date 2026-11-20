@@ -50,6 +50,7 @@ for _,module in ipairs({
     'boss_middle','boss_late','boss_hud','side_hud','presentation','enemy','enemy_late','background','stages/schedules',
 }) do load('LikeDreamer/'..module..'.lua') end
 L.PlayerClass=load('LikeDreamer/player.lua')
+load('LikeDreamer/practice.lua')(load('LikeDreamer/practice_entries.lua'))
 env.player=nil
 local P=NativePlayers
 if P then
@@ -151,25 +152,18 @@ end
 local function playRange(number, first, last, practice)
     local rt,guard=start(number,first)
     local finalBossPractice=number==10 and first==18000
-    if finalBossPractice then
+    if finalBossPractice and not practice then
         rt:spawn(0x141,100000,360,320,'原作最终 Boss 练习入口')
     end
     local target
+    local entered=false
+    if practice then target=L.Practice.start(rt,practice) end
     while not rt.complete and (not last or rt.frame<last) do
         if practice then
             local actor=rt.boss
             if actor and IsValid(actor) and actor.spawnType==practice.type and actor.portPhase then
-                if actor.portPhase<practice.phase then
-                    -- 走原有超时分支，保留相位转换与部件创建。
-                    -- 原版状态机先判断时限、再递减；置零才能在本帧走超时换段。
-                    if L.Recovered.handles(actor.spawnType) then
-                        L.Recovered.seekPracticePhase(actor,practice.phase)
-                    else actor.countdown=0 end
-                elseif actor.portPhase==practice.phase then
-                    target=actor
-                else
-                    break
-                end
+                if actor.portPhase==practice.phase and L.Practice.inCombat(actor) then entered=true
+                elseif entered then break end
             end
             if target and (not IsValid(target) or not target.active) then break end
         end
@@ -180,7 +174,7 @@ local function playRange(number, first, last, practice)
         end
         local seq=lstg.var.sequence_run
         if seq and OriginalSequence.enabled() then seq.road_time=rt.frame end
-        if not finalBossPractice then L.Schedules.run(number,rt,rt.frame) end
+        if not finalBossPractice and not practice then L.Schedules.run(number,rt,rt.frame) end
         rt.frame=rt.frame+1
         task.Wait()
         local state=P and P.state()

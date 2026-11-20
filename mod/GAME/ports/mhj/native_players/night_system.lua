@@ -107,6 +107,9 @@ function S.bind(p)
     local defaults={};character.defaults(defaults)
     for k,v in pairs(defaults) do if c[k]==nil then c[k]=v end end
     c.equip=B.equipment;setmetatable(c,character)
+    -- 此桥接不调用 Character 完整构造；补上构造器由 Game.ScreenRange(48,24,576,672) 设置的范围。
+    -- 保留 defaults 的零向量会在首次操作灯笼时把它钳到原点，随后无法移动。
+    c.rangex,c.rangey=CS.Vector2(63,609),CS.Vector2(39,686)
     c.SelectChaseTarget=nil
     c.SelfDisplaySizeType,c.SelfPowerDisplayType=2,2
     c.IsPositionInLight=character.IsPositionInLight

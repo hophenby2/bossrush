@@ -440,6 +440,22 @@ end
 E.Character={SpawnPoint=CS.Vector2(cx,night and 560 or 420),SelfPowerAlpha=1,
     __new=function(s) return {body=s} end}
 local names={reimu=1,marisa=2,sanae=3,youmu=4,mokou=4}
+local EquipmentPass=Class(object,{
+    init=function(o,p,source,method,layer)
+        o.owner,o.source,o.method=p,source,method
+        o.group,o.layer,o.colli,o.bound=GROUP.GHOST,layer,false,false
+    end,
+    frame=function(o)
+        if not valid(o.owner) or o.owner.mhj_source~=o.source then object.RawDel(o) end
+    end,
+    render=function(o)
+        if valid(o.owner) and o.owner.mhj_source==o.source then
+            SetViewMode('world')
+            local equipment=o.source.equipment
+            equipment[o.method](equipment,nil,CS.Vector2(),.8,1)
+        end
+    end,
+})
 function B.bind(p)
     key,previous={},{};B.inputTimer=-1;B.bomb=nil
     B.equipment=nil
@@ -456,6 +472,12 @@ function B.bind(p)
     o:ctor(night and CS.List({[0]='39_selfbarrage1',[1]='39_selfbarrage2',[2]='39_selfbarrage3',[3]='39_selfbarrage4',[4]='39_selfbarrage5'}) or '37_selfbarrage')
     if night then o:Reinit() else o:Init() end
     p.mhj_source={equipment=o,type=names[p.machine.art],model=model,character=B.character,equipType=p.machine.id:find('_b') and 1 or 0};B.equipment=o
+    if night then
+        -- 原作按深度分四次绘制装备。控制时灯笼 depth=-1，不能只调用 depth=0 的 Draw。
+        New(EquipmentPass,p,p.mhj_source,'DrawUnderneath',LAYER.BG+1)
+        New(EquipmentPass,p,p.mhj_source,'DrawUnderActor',LAYER.PLAYER-.1)
+        New(EquipmentPass,p,p.mhj_source,'DrawOverTop',LAYER.TOP-1)
+    end
     B.character.type,B.character.Equip,B.character.equip=p.mhj_source.type,o,o
     B.character.SelectChaseTarget=function(_,_,_,affect,position)
         local boss=bosses:GetNearestTarget(position);if boss then return CS.copy(boss.Position) end

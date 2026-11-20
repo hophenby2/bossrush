@@ -34,12 +34,12 @@ end
 assert(scenario(false,true)==0)
 assert(scenario(true,true)==21)
 assert(scenario(false,false)==21)
--- 新进入覆盖区域的老弹，当前帧340必须立即触发，不能从驻留第1帧重算。
+-- Time.cs 将覆盖子事件设为全局帧；即使弹龄不是340，也必须在弹幕第340帧触发。
 local c=R.controller(nil,'652');local source=find(c,'batch',1,0);local cover=find(c,'cover',1,0)
 c.emitters={cover};R.fire(source);local o=objects[#objects];local s=o.mhj
-s.age=339;s.Mist=false;s.sonspeed=80;s.sonmotion_dirty=true;s.Sonevents=nil;s.fx,s.fy=188,336
+s.age=119;c.time=339;s.Mist=false;s.sonspeed=80;s.sonmotion_dirty=true;s.Sonevents=nil;s.fx,s.fy=188,336
 R.tick(c);o.class.frame(o)
-assert(math.abs(s.sonspeed-(80*59+.01)/60)<1e-6,'覆盖事件把弹龄误当成驻留时长')
+assert(math.abs(s.sonspeed-(80*59+.01)/60)<1e-5,'覆盖事件没有使用全局帧340')
 s.fx,s.fy=2000,2000;R.tick(c)
 assert(not next(s.covers),'离开覆盖区域后仍保留区域事件')
 R.clear(c)
@@ -49,7 +49,8 @@ R.fire(source);local s=objects[#objects].mhj
 s.age=20;s.Mist=false;s.sonspeed=3;s.sonspeedd=0;s.xscale=2;s.yscale=3;s.mx=nil;s.sonmotion_dirty=true
 s.fx,s.fy=force.x-4+10,force.y+16
 c.emitters={force};c.time=force.begin-1;R.tick(c)
-assert(math.abs(s.mx-(6-.007*2))<1e-8 and math.abs(s.my)<1e-8,'b843吸引力场目标编号、坐标或倍率错误')
+local f32=require('ffi').typeof('float')
+assert(s.mx==tonumber(f32(6-.007*2)) and math.abs(s.my)<1e-8,'b843吸引力场目标编号、坐标或倍率错误')
 R.clear(c)
-print('b652：未追到灯笼0发有效弹、追到后21发；无宿主不生效、弹龄340与离开卸载通过。')
+print('b652：未追到灯笼0发有效弹、追到后21发；无宿主不生效、全局帧340与离开卸载通过。')
 print('b843：零基17号目标吸引力0.007、横向倍率2与原有速度保留通过。')

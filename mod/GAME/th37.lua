@@ -51,6 +51,10 @@ local function setupCard(meta,group)
     function card:frame()
         if not self.mhj_clock then return end
         self.mhj_clock=self.mhj_clock+1
+        -- BossCard.Update 在 120 帧后逐帧调用 Hide；TIMENOTHIDE 仍显示本体。
+        local actor=self.mhj_actor
+        local target=meta.flag=='TIME' and self.mhj_clock>120 and 0 or 1
+        actor.alpha=(actor.alpha or 1)+(target-(actor.alpha or 1))/20
         if self.mhj_clock==90 and meta.spell then
             BG.spell(meta.stage,group.source[2])
             self.mhj_portrait=R.controller(nil,'e'..group.source[#group.source])

@@ -36,11 +36,13 @@ local function direction(v,o,x,y,point)
     elseif v==-100000 and point then return angle(x,y,point[1],point[2]) end
     return v or 0
 end
-local intFields={t=true,tiao=true,r=true,life=true,type=true,sonlife=true}
+-- Batch.r 与 Batch.type 是 float，Barrage.type 才是 int；不能共用一组截断规则。
+local intFields={t=true,tiao=true,range=true,life=true,sonlife=true}
+local function integer(o,key) return intFields[key] or key=='type' and o.is_projectile end
 local boolFields={Mist=true,Dispel=true,Blend=true,Afterimage=true,Outdispel=true,Invincible=true}
 local function set(o,key,v)
-    if intFields[key] then v=trunc(v) end
-    if o.is_projectile and type(v)=='number' and not intFields[key] then v=f32(v) end
+    if integer(o,key) then v=trunc(v) end
+    if type(v)=='number' and not integer(o,key) and (o.is_projectile or key=='r') then v=f32(v) end
     if boolFields[key] then v=v~=0 end
     o[key]=v
     if key=='speed' or key=='speedd' or key=='xscale' or key=='yscale' then o.motion_dirty=true end
@@ -111,10 +113,10 @@ local function interpolate(o)
             else
                 local delta=c.value/c.duration
                 -- Execution/BExecution先将整数属性的增量截断，再加减原值。
-                if intFields[c.key] then delta=trunc(delta) end
+                if integer(o,c.key) then delta=trunc(delta) end
                 v=old+(c.op==1 and delta or -delta)
             end
-            if c.mode=='固定' and c.op~=0 and intFields[c.key] then
+            if c.mode=='固定' and c.op~=0 and integer(o,c.key) then
                 v=old+(c.op==1 and trunc(c.value) or -trunc(c.value))
             end
             set(o,c.key,v)
@@ -269,11 +271,11 @@ R.classes.projectile=Class(bullet,{
             end
             updateShadows(s)
             if s.Sonevents then s.Sonevents(s,t,R) end
-            -- 覆盖区域向弹体附加事件；“当前帧”仍是弹龄，离开区域后卸载。
+            -- Time.cs 将 Cover 子事件标记为全局时钟；区域停更后副本仍保留，只有有效区域检测到离开才卸载。
             local order=s.coverOrder or {};local j=1
             for i=1,#order do
                 local region=order[i];local events=s.covers[region]
-                if events and region.active and region.owner.active then events(s,t,R);order[j]=region;j=j+1
+                if events then events(s,s.controller.time,R);order[j]=region;j=j+1
                 else s.covers[region]=nil end
             end
             for i=#order,j,-1 do order[i]=nil end
@@ -423,6 +425,7 @@ local function emit(o,bound)
     for i=0,n-1 do
         local fan=(i-(n-1)/2)*spread/n
         local s=copy(o);s.limits=o.limits;s.controller=c;s.pattern=p;s.emitter=o;s.parentid=o.id;s.layerid=o.parentid
+        s.type=trunc(o.type)
         s.fx,s.fy=fx+r*cos(radial+fan)+jx+ox,fy+r*sin(radial+fan)+jy+oy
         -- 发射器的积分缓存不能传给弹体；否则静止发射器会把子弹的3.5速度覆盖成0。
         s.mx,s.my,s.ax,s.ay=nil,nil,nil,nil
@@ -439,7 +442,7 @@ local function fire(o,bound)
     -- Batch.Shoot的额外发射与周期发射都必须找到已出生的绑定宿主。
     local targets={}
     for b,s in pairs(o.controller.bullets) do
-        if valid(b) and s.parentid==o.bindid and s.layerid==o.parentid and (not s.Mist or s.age>15) then
+        if valid(b) and s.kind~='laser' and s.parentid==o.bindid and s.layerid==o.parentid and (not s.Mist or s.age>15) then
             targets[#targets+1]=s
         end
     end
@@ -580,7 +583,7 @@ function R.tick(c)
         if o.Deepbind and o.bindid and o.bindid>=0 and (o.kind=='cover' or o.bindid~=o.id) then
             for _,child in pairs(o.children) do child.active=false end
             local targets={}
-            for b,s in pairs(c.bullets) do if valid(b) and s.parentid==o.bindid and s.layerid==o.parentid and (not s.Mist or s.age>15) then targets[#targets+1]={b,s} end end
+            for b,s in pairs(c.bullets) do if valid(b) and s.kind~='laser' and s.parentid==o.bindid and s.layerid==o.parentid and (not s.Mist or s.age>15) then targets[#targets+1]={b,s} end end
             for _,pair in ipairs(targets) do
                 local child=o.children[pair[1]]
                 if not child then child=emitter(o,c);child.bindid=-1;child.Deepbind=false;child.limits={};o.children[pair[1]]=child end

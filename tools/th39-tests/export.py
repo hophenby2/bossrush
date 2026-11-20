@@ -145,6 +145,7 @@ class Export:
         return None
 
     def events(self, groups, kind):
+        # cover-son 的当前帧对应 ConditionMode.GlobalTime，由运行时传入整张弹幕时钟。
         code = []
         for group in filter(None, groups.split('&')):
             if kind == 'rebound':

@@ -185,7 +185,8 @@ local function setupCard(meta,group,chapter)
                 local slot=following and following.familiar or active.familiar
                 local dead=a.controller and slot>0 and a.phaseClock>=30 and (a.controller.deadFamiliars[slot] or 0)>0
                 if following and (dead or following.time>0 and remaining<=following.time or following.hp>0 and self.hp<=following.hp) then
-                    R.clear(a.controller);a.controller=nil;a.index=a.index+1;a.phaseClock=0
+                    a.index=a.index+1;a.phaseClock=0
+                    a.controller=R.replace(a.controller,o,following.pattern,false,ctx.configs)
                     active=following
                 elseif not following and dead and feast then
                     self.hp=0

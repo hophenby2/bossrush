@@ -93,6 +93,7 @@ def main():
    for k,v in zip(['bindid','Deepbind'],raw[23:]):o[k]=atom(v)
   out=lua(o)[:-1]
   for k in ('Parentevents','Sonevents'):
+   # cover-son 的 t 由运行时传入 Times.now；Batch 子事件使用弹龄，不能在共用入口混用。
    if k in fields:out+=','+k+'='+events(raw[fields.index(k)],kind if k=='Parentevents' else kind+'-son')
   return out+'}'
  patterns={}
