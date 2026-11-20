@@ -443,9 +443,10 @@ R.classes.familiar=Class(enemy,{
             interpolate(s)
         end
         b.x,b.y=projectBullet(s.fx,s.fy);b.vx,b.vy=0,0
-        b.colli=s.age>=20 and t>0 and (s.alpha or 100)>99
+        local collidable=s.age>=20 and t>0 and (s.alpha or 100)>99
+        b.colli=collidable
         b.native_actor_collision.noContact=s.age<=60
-        SetAttr(b,'colli',b.colli)
+        SetAttr(b,'colli',collidable)
     end,
     render=function(b) fairySprite(b,D.enemyTypes[b.mhj.familiarConfig[1]],b.mhj.age) end,
     del=clean,kill=function(b)

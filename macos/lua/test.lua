@@ -168,7 +168,9 @@ function T.install()
     function FrameFunc()
         if mode=='battle' then AndroidFocus=function() end end
         if player and IsValid(player) then
-            player.protect=120
+            if not (os.getenv('BOSSRUSH_MAC_TEST_LOGIC_VARIANT')=='feedback' and player.native_level==35) then
+                player.protect=120
+            end
             if mode=='battle' or mode=='input' or portShoot then
                 AndroidInput.keys[setting.keys.shoot]=true
             end
@@ -361,7 +363,7 @@ function T.install()
                 end
                 OriginalSequence.start(os.getenv('BOSSRUSH_MAC_TEST_SEQUENCE') or 'thsss_lunatic',
                     nativeMachine or os.getenv('BOSSRUSH_MAC_TEST_ROUTE'),portLoadout)
-            elseif mode=='native-port-practice' or (mode=='battle' or mode=='input') and battleCard>=68000 and battleCard<69000 then
+            elseif mode=='native-port-practice' or (mode=='battle' or mode=='input') and battleCard>=68000 and battleCard<71000 then
                 AndroidFocus=function() end
                 local index
                 local level=battleCard>=81000 and 41 or battleCard>=71100 and 40 or battleCard>=70100 and 39 or 38

@@ -117,9 +117,11 @@ end
 local wrappers=setmetatable({}, {__mode='k'})
 local function damage(o,amount,limited)
     if night and o.IsBoss and limited and B.lantern then
-        if o.native_mhj_damage_frame~=B.player.timer then o.native_mhj_damage_frame=B.player.timer;o.native_mhj_damage=0 end
-        amount=math.min(amount,math.max(0,B.lantern.BossDamageLimit-o.native_mhj_damage))
-        o.native_mhj_damage=o.native_mhj_damage+amount
+        -- 原 BossStage.DamageRecord 由同一张卡的多个本体共用。
+        local receiver=o.owner and o.owner.mhj3_card and o.owner or o
+        if receiver.native_mhj_damage_frame~=B.player.timer then receiver.native_mhj_damage_frame=B.player.timer;receiver.native_mhj_damage=0 end
+        amount=math.min(amount,math.max(0,B.lantern.BossDamageLimit-receiver.native_mhj_damage))
+        receiver.native_mhj_damage=receiver.native_mhj_damage+amount
     end
     if amount>0 then Damage(o,amount) end
 end
@@ -521,7 +523,7 @@ function B.frame(p,s)
     end
     for _,fx in ipairs(effects) do if fx.auto and not fx:IsClosing() then fx:Update() end end
     for i=shots.Count-1,0,-1 do if shots[i].needDelete then shots:RemoveAt(i) end end
-    if B.character.BWudi then p.protect=math.max(p.protect,2) end
+    if night and B.character.BWudi then p.protect=math.max(p.protect,2) end
 end
 function B.shoot(p)
     input(p);character(p)
@@ -542,10 +544,11 @@ function B.spell(p,special)
     B.bombBornFrame=p.timer
     local duration=B.bomb.cs.time.total+(night and 120 or 40)
     p.bombTime,p.nextspell,p.cancelOnlyBomb=duration,duration,true
-    p.protect=math.max(p.protect,duration)
+    if night then p.protect=math.max(p.protect,duration) end
 end
 function B.speeds(p) local v=B.character.speedadd;return scale+(p.hspeed-scale)*v.Y,p.lspeed*v.X end
 function bosses:OpenSideTeammate(id) B.sideTeammate={id=id,time=0} end
 B.CS,B.model,B.game,B.input=CS,model,game,input
+function B.pressed(action) return key[action] and not previous[action] end
 B.bosses,B.enemies= bosses,em
 return B

@@ -9,10 +9,18 @@ local object,bullet,enemy,laser,bent_laser=object,bullet,enemy,laser,bent_laser
 local sin,cos,atan2,sqrt,pi=math.sin,math.cos,math.atan2,math.sqrt,math.pi
 local min,max,floor,abs=math.min,math.max,math.floor,math.abs
 local R=pi/180
+local animatedTypes={[181]='bullet66_',[185]='bullet66_',[182]='bullet64_',[183]='bullet65_',[184]='bullet18-'}
 local function clamp(x,a,b) return max(a,min(b,x)) end
 local function copy(t) local o={};for k,v in pairs(t or {}) do o[k]=v end;return o end
 local function valid(o) return o and not o.th38_removed and (o.th38_host and IsValid(o.owner) or not o.th38_host and IsValid(o)) end
-local function erase(o) if o and not o.th38_removed then o.th38_removed=true;object.RawDel(o) end end
+local function erase(o)
+    if o and not o.th38_removed then
+        -- 原 BindingObj 被移出列表后仍保留最终坐标；子发射器下一帧仍会跟到那里。
+        -- 引擎对象销毁后不能再读属性，因此在删除前保存绑定所需的数值。
+        o.th38_binding_final={cx=o.cx,cy=o.cy,angle=o.angle or 0,direction=o.direction or 0,follow=o.follow}
+        o.th38_removed=true;object.RawDel(o)
+    end
+end
 -- System.Random的56槽减法发生器，对齐原MyRandom；不使用math.random的全局流。
 function N.random(seed)
     local s={};local k=161803398-abs(seed%2147483647);s[55]=k;local n=1
@@ -55,7 +63,10 @@ local function updateTweens(o)
         elseif e.key=='alpha' then value=clamp(value,0,255)
         elseif e.key=='width' or e.key=='height' then value=clamp(value,.0001,e.target[e.key=='width' and 'max_width' or 'max_height'] or 100)
         elseif e.key=='cycle' or e.key=='ways' or e.key=='life' or e.key=='type' then value=value<0 and math.ceil(value) or floor(value) end
-        e.target[e.key]=value;if e.key=='out' and value==false then e.target.outside=200 end;e.left=e.left-1
+        e.target[e.key]=value
+        if e.key=='out' and value==false then e.target.outside=200 end
+        if e.key=='type' then e.target.type_dirty=true end
+        e.left=e.left-1
         if e.left~=(e.curve==2 and -1 or 0) then write=write+1;o.tweens[write]=e end
     end
     for i=write+1,count do o.tweens[i]=nil end
@@ -79,8 +90,9 @@ local function motion(o)
         else o.drag=0;o.speed=0 end
     end
     o.cx=o.cx+o.speed*cos(o.direction*R)*o.scale_x;o.cy=o.cy+o.speed*sin(o.direction*R)*o.scale_y
-    local parent=o.parent
-    if valid(parent) then
+    local reference=o.parent
+    local parent=reference and (reference.th38_binding_final or valid(reference) and reference)
+    if parent then
         local last=o.parent_last or {parent.cx,parent.cy,parent.angle,parent.direction}
         local dx,dy=o.cx-last[1],o.cy-last[2];local angle=((parent.angle or 0)-last[3])+((parent.follow and parent.direction or 0)-(parent.follow and last[4] or 0))
         o.cx=parent.cx+dx*cos(angle*R)-dy*sin(angle*R);o.cy=parent.cy+dx*sin(angle*R)+dy*cos(angle*R);o.direction=o.direction+angle
@@ -97,7 +109,8 @@ local function motion(o)
 end
 local function cull(o)
     if o.life and o.life~=0 and o.age>o.life then erase(o);return true end
-    if o.mode=='ray' then return false end
+    -- BaseEmitter_CS 始终使用 BaseEnemyPlane 的边界，不能继承所发激光的回收规则。
+    if not o.emitter and o.mode=='ray' then return false end
     if (o.reflect or 0)>0 then
         if o.cx<128 then o.reflect=o.reflect-1;o.direction=180-o.direction;o.cx=256-o.cx
         elseif o.cx>=512 then o.reflect=o.reflect-1;o.direction=180-o.direction;o.cx=1024-o.cx end
@@ -105,7 +118,9 @@ local function cull(o)
         sync(o);return false
     end
     if o.age<100 then return false end
-    local m=(o.mode=='laser' or o.mode=='bend') and 10 or max(20,floor((o.out==false and 200 or o.outside or 3)*o.height*2))
+    local m=not o.emitter and o.mode=='laser' and max(10,o.region or 1)
+        or not o.emitter and o.mode=='bend' and max(20,(o.outside or 1)*2)
+        or max(20,floor((o.outside or 0)*o.height*2))
     local outside=o.cx<=128-m or o.cx>=512+m or o.cy<=16-m or o.cy>=464+m
     if outside and o.history and #o.history>0 then
         local p=o.history[#o.history];outside=p[1]<=-192-m or p[1]>=192+m or p[2]<=-224-m or p[2]>=224+m
@@ -121,7 +136,13 @@ local function image(o)
         elseif name:find('YYY',1,true) then name=name..'_1'
         elseif name:find('Ghost',1,true) then name=name..'_'..(floor(o.age/4)%8)
         else name=name..'_'..(floor(o.age/6)%4) end
-    elseif o.mode=='bullet' then name=name or N.bullet_names[o.type or 0];if not name then return 'img_void' end end
+    elseif o.mode=='bullet' then
+        name=name or N.bullet_names[o.type or 0]
+        -- BaseBullet_CS.Ctrl：四帧循环，每一帧持续四个逻辑帧。
+        local animated=animatedTypes[o.type]
+        if animated then name=animated..floor(o.age%16/4) end
+        if not name then return 'img_void' end
+    end
     return N.images[name] or 'ball_mid1'
 end
 local function draw(o)
@@ -181,18 +202,36 @@ Curve.render=function(o)
 end
 N.classes={point=Point,emitter=Ghost,enemy=Enemy,ghost=Ghost,line=Line,curve=Curve}
 local function bulletRegion(o)
-    if o.mode=='laser' or o.mode=='bend' or o.mode=='ray' then o.region=o.mode=='ray' and 3 or 1;o.colli=o.age>=(o.mode=='ray' and 60 or 9);return end
-    local name=N.bullet_names[o.type or 0] or '';local kind=tonumber(name:match('bullet(%d+)'))
-    o.outside=3;o.region=({[0]=1,[1]=1,[2]=2,[3]=2,[4]=1,[5]=1,[6]=1,[7]=1,[8]=1,[9]=1,[10]=2,[11]=2,[12]=1,[13]=3,[15]=1,[20]=6,[21]=6,[22]=3,[23]=3,[24]=3,[26]=16,[40]=6,[46]=1,[50]=12,[61]=2})[kind] or 3
-    if kind==26 then o.spin=10;o.outside=32 elseif kind==40 then o.outside=32 elseif kind==50 then o.outside=64 end
-    if o.mode=='bullet' and not N.bullet_names[o.type or 0] and not o.texture then o.region=-100 end
-    if o.region_override and o.region_override~=0 then o.region=o.region_override end
+    if o.emitter or o.mode=='enemy' or o.mode=='effect' then
+        o.outside=o.outside or o.region or (o.emitter and 4 or 0)
+        return
+    end
+    if o.mode=='laser' or o.mode=='bend' or o.mode=='ray' then
+        o.region=o.mode=='ray' and 3 or 1;o.outside=o.outside or o.region
+        o.colli=o.age>=(o.mode=='ray' and 60 or 9);return
+    end
+    if not o.region_initialized or o.region_type~=o.type or o.type_dirty then
+        local first=not o.region_initialized
+        local name=o.texture or N.bullet_names[o.type or 0] or ''
+        local kind=tonumber(name:match('bullet(%d+)'))
+        o.region=({[0]=1,[1]=1,[2]=2,[3]=2,[4]=1,[5]=1,[6]=1,[7]=1,[8]=1,[9]=1,[10]=2,[11]=2,[12]=1,[13]=3,[15]=1,[20]=6,[21]=6,[22]=3,[23]=3,[24]=3,[26]=16,[40]=6,[46]=1,[50]=12,[61]=2,[62]=3,[64]=3,[65]=3,[66]=3,[67]=3})[kind] or 2
+        if name=='' then o.region=-100 end
+        o.outside=o.region
+        if kind==26 then o.spin=10;o.outside=32 elseif kind==40 then o.outside=32 elseif kind==50 then o.outside=64 end
+        -- OutBound=false 只在赋值时扩大边界；之后设置 Type/Region 会重设边界。
+        if first then
+            if o.out==false then o.outside=200 end
+            if o.region_override and o.region_override~=0 then o.region=o.region_override;o.outside=o.region end
+        end
+        o.region_type,o.type_dirty,o.region_initialized=o.type,false,true
+    end
     o.a,o.b=abs(o.region*o.width),abs(o.region*o.height);o.colli=o.region>=0 and o.age>=9
     if o.invincible then o.group=GROUP.INDES end
 end
 local function spawn(run,data,emitter)
     local d=copy(data);d.p=copy(data.p);d.emitter=emitter
     if emitter and d.life==nil then d.life=0 end
+    if emitter then d.region,d.outside=0,0 end
     local cls=emitter and Ghost or d.mode=='enemy' and Enemy or (d.mode=='effect' and Ghost or d.mode=='bend' and Curve or (d.mode=='laser' or d.mode=='ray') and Line or Point)
     local o=New(cls,run,d);o.p.events=data.p and data.p.events;o.origin=data;o.controller=data.controller
     if emitter and d.mode=='cover' then o.cover_events=o.p.events;o.p=o;o.angle=90;o.coverloops={};o.coveronce={} end
@@ -246,12 +285,14 @@ function N.emit(o)
             local data=copy(o.p);data.p={};data.cx,data.cy=x,y;data.mode=o.mode;data.id,data.layer=o.id,o.layer;data.speed=speed-j*(o.delta_v or 0);data.direction=direction;data.accel,data.accel_angle=acceleration,acc_angle;data.controller=o.controller
             if o.mode=='enemy' then data.life=0 end
             data.angle=(data.angle or 0)+((o.mode=='bullet' or o.mode=='effect') and r(o,'p.angle') or 0)
-            local b=spawn(run,data,false);b.events=o.p.events;b.region_override=o.p.region
+            data.region_override=o.p.region
+            local b=spawn(run,data,false);b.events=o.p.events
             if o.motion then bind(b,o) end
             if o.mode=='bullet' or o.mode=='enemy' then
                 for _,child in ipairs(o.controller.data.emitters) do
                     if child.bind==o.id then
                         local e=spawn(run,child,true);e.controller=o.controller;e.cx,e.cy=x,y;e.life=o.p.life;e.direction=direction;e.out=o.p.out
+                        if e.out==false then e.outside=200 end
                         b.invincible=true;b.group=GROUP.INDES
                         if e.with_direction and o.mode=='bullet' then e.emit_angle=e.emit_angle+direction end
                         bind(e,b)

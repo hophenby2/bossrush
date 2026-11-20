@@ -56,7 +56,6 @@ function S.frame(p,s)
             end
         end
     end
-    if c.SWudi then p.protect=math.max(p.protect,2) end
     s.sakuraPower,s.sakuraMax,s.sakuraStatus=S.system.Power,S.system.hipower,S.system.Status
 end
 function S.renderHUD(x,y) drawHUD(S.system,x,y) end

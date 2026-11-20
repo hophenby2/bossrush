@@ -22,6 +22,7 @@ local function new(class,...)
         local x,y=...;return P.pickup(x,y,class.theis_pickup,1)
     end
     local o=New(assert(class,'祈华梦对象类缺失'),...)
+    o.theis_port_object=true
     if o.group==GROUP.ENEMY or o.group==GROUP.NONTJT then
         (NativeActorCollision or dofile('THlib/native_actor_collision.lua')).preserve(o)
     end

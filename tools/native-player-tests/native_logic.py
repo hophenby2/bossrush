@@ -8,6 +8,7 @@ ap.add_argument('--variant',default='high');ap.add_argument('--machine');ap.add_
 ap.add_argument('--card',type=int,help='改为实际符卡练习，覆盖存在 Boss 的自机更新')
 ap.add_argument('--chapter',help='从关卡练习进入指定章节，只运行这一面')
 ap.add_argument('--frames',type=int,help='指定逻辑帧数')
+ap.add_argument('--timeout',type=int,help='原生运行超时秒数；长时间生命周期检查需包含加载时间')
 args=ap.parse_args();args.out=args.out.resolve();args.out.mkdir(parents=True,exist_ok=True)
 cases={35:('thmhj2_lunatic','reimu'),36:('thasl_lunatic','reimu'),37:('thmhj3_lunatic','reimu'),
     38:('thsss_lunatic','A'),39:('theis_lunatic','reimu'),41:('thbdb_lunatic','reimu')}
@@ -29,7 +30,7 @@ for level in map(int,args.levels.split(',')):
     if args.chapter:env['BOSSRUSH_MAC_TEST_PRACTICE_CHAPTER']=args.chapter
     with (data/'stdout.log').open('w') as log:
         p=subprocess.Popen([str(binary)],cwd=data,env=env,stdout=log,stderr=subprocess.STDOUT)
-        limit=100 if args.variant=='mechanics' else 55
+        limit=args.timeout or (100 if args.variant=='mechanics' else 55)
         deadline=time.monotonic()+limit;error=None
         while p.poll() is None and time.monotonic()<deadline:
             trace=data/'lstg_log.txt'

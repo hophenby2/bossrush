@@ -6,6 +6,16 @@ function B.load(name)
     local source=assert(_editor_class.TH41.source)
     local env=setmetatable({}, {__index=source});local api=setmetatable({}, {__index=source.lstg})
     env.lstg=api
+    -- 原作索敌只枚举本作对象；宿主的顺序/练习载体不能覆盖光背的优先级。
+    env.ObjList=function(group)
+        local iter,state,first=ObjList(group)
+        return function(_,last)
+            local index,o=iter(state,last)
+            while o and not o.theis_port_object do index,o=iter(state,index) end
+            return index,o
+        end,state,first
+    end
+    api.ObjList=env.ObjList
     env.player_class={init=function(p)
         p.attack_speed,p.speed_rate,p.fire_buff,p.laser_rate=1,1,1,1
         p.supportx,p.supporty=p.x,p.y;p.support_follow=.5

@@ -1,5 +1,25 @@
 # 六作原作自机校准
 
+## 2026-11-20：结界、绑定发射器与多受击目标
+
+春雪以原 `Character.Update` 的按下沿、正在执行的雷和 `SWudi` 条件处理 X。爆结界后继续按住 X 不会再放雷；结界与雷分别使用 `SWudi`、`BWudi`，不再把两者写成宿主估算的保护倒计时。早苗高速雷第 300 帧结束无敌而演出仍继续的边界也单独验证。
+
+夏夜祭“八百里的烈焰”的持续降帧根因是绑定对象的删除顺序：父弹在弹体更新阶段出屏删除，发射器下一帧因父弹无效而停止跟随，冻结在边界内的旧坐标并继续发弹。原作 `BindingObj` 即使移出列表仍保留最终坐标。现在删除前保存绑定数值，发射器继续跟到最终位置并出屏回收；发射器统一使用 `BaseEnemyPlane` 边界，不再误用它所发射线的“仅按寿命回收”规则。另恢复各弹型 Region/OutsideRegion、换弹型重置边界、OutBound 的赋值副作用，以及 181–185 弹型每四帧换图的动画。初次短窗口和孤立边界测试没有覆盖这一累积链条，故新增整张符卡的原生计数及 7200 帧逻辑检查。
+
+永夜副 Boss 既缺少 Boss 索敌标记，又把 Lua `_colli` 写入后读回的旧引擎 `colli` 再设回去，导致受击开关一直关闭；使魔的同类读回错误一并修正。双 Boss 普通武器共用原 `BossStage.DamageRecord` 的逐帧上限和卡片血量。祈华梦原机体的索敌列表只枚举本作对象，避免宿主练习/顺序载体覆盖六面光背的优先级。
+
+以下检查均对应本次反馈。Mac 原生测试使用隔离存档，实际长按 X、调用碰撞入口、射击双 Boss 两侧、绘制弹体四帧动画，并检查光背锁定和伤害转移。长时间回收测试记录该符卡的存活对象、冻结发射器和实际帧率；LuaJIT 压力检查用于补充更长窗口，不代替原生帧率测量。
+
+`verification-2026-11-20-summer-recycling.json` 保存原生前后对照。在相同第 3300 帧，修复前冻结发射器为 714、帧率约 12.5，修复后为 0、约 60.4；修复后继续到 3600 帧通过。7200 帧逻辑压力窗口的管理表峰值为 1613，后期数量保持周期变化，没有线性累积。修复前原生观察关闭累积断言以记录降帧，150 秒时仍未跑到 3600 帧而超时，不计为通过；恢复断言后旧绑定逻辑在 600 帧即被检出。
+
+```sh
+python3 tools/native-player-tests/native_logic.py --variant feedback --levels 35 --machine sanae --frames 550 --out /tmp/feedback-spring
+python3 tools/native-player-tests/native_logic.py --variant feedback --levels 37 --card 39050 --frames 700 --out /tmp/feedback-night
+python3 tools/native-player-tests/native_logic.py --variant feedback --levels 38 --card 68041 --frames 3600 --timeout 100 --out /tmp/feedback-summer
+python3 tools/native-player-tests/native_logic.py --variant feedback --levels 39 --card 70604 --frames 700 --out /tmp/feedback-theis
+luajit tools/th40-tests/recycling.lua 7200
+```
+
 ## 2026-11-19：跨作品练习与特殊系统 HUD
 
 复现路径为永夜抄符卡练习 → 返回标题 → 祈华梦符卡练习并立即射击。旧代码在自机 `shoot` 中访问尚未加载的 `THEIS_plst00`，调用栈与反馈截图一致：音效要等 Boss 入场任务执行，而自机可能先射击。现在自机绑定时同步加载原作音效和相关效果到全局资源池，不依赖 Boss 的启动时机。

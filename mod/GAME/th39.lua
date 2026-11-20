@@ -88,6 +88,7 @@ R.classes.actor=Class(actorBase,{
     init=function(o,b,actor,x,y)
         enemybase.init(o,1e9,false)
         o.owner,o.actor=b,actor;o.x,o.y=x,y
+        o.IsBoss,o.is_combat=true,b.is_combat
         local p=D.bossTypes[actor]
         collider(o,p)
         o.bound=false;o.layer=LAYER.ENEMY
@@ -95,8 +96,11 @@ R.classes.actor=Class(actorBase,{
     frame=function(o)
         if not valid(o.owner) then object.Del(o);return end
         local b=o.owner
-        o.colli=b.colli and not o.mhj3_hidden
-        SetAttr(o,'colli',o.colli)
+        o.is_combat=b.is_combat
+        -- enemybase 将 colli 赋值截获到 _colli；直接读回会拿到上一帧的引擎值。
+        local collidable=b.colli and not o.mhj3_hidden
+        o.colli=collidable
+        SetAttr(o,'colli',collidable)
         animate(o,o.actor)
     end,
     render=function(o) drawBoss(o,o.actor) end,

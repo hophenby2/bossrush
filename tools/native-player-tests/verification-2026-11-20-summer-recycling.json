@@ -1,0 +1,251 @@
+{
+  "date": "2026-11-20",
+  "platform": "macOS arm64 Metal",
+  "card": 68041,
+  "title": "焰符「八百里的烈焰」",
+  "before_binding_fix": {
+    "note": "保留本轮 Region/动画修正，只回退绑定最终位置及发射器回收修正；关闭累积断言以观测降帧。150秒时在3300帧后超时。",
+    "samples": [
+      {
+        "emitters": 120,
+        "bullets": 775,
+        "frame": 600,
+        "engine": 916,
+        "fps": 60.292624320744,
+        "orphans": 39,
+        "tracked_objects": 1476
+      },
+      {
+        "emitters": 199,
+        "bullets": 1323,
+        "frame": 900,
+        "engine": 1528,
+        "fps": 56.190824039028,
+        "orphans": 106,
+        "tracked_objects": 2624
+      },
+      {
+        "emitters": 275,
+        "bullets": 1774,
+        "frame": 1200,
+        "engine": 2040,
+        "fps": 56.361996293103,
+        "orphans": 182,
+        "tracked_objects": 3699
+      },
+      {
+        "emitters": 351,
+        "bullets": 2201,
+        "frame": 1500,
+        "engine": 2526,
+        "fps": 13.04716884735,
+        "orphans": 258,
+        "tracked_objects": 4727
+      },
+      {
+        "emitters": 427,
+        "bullets": 2645,
+        "frame": 1800,
+        "engine": 3030,
+        "fps": 25.632555505,
+        "orphans": 334,
+        "tracked_objects": 5724
+      },
+      {
+        "emitters": 503,
+        "bullets": 3075,
+        "frame": 2100,
+        "engine": 3520,
+        "fps": 24.46698071011,
+        "orphans": 410,
+        "tracked_objects": 6754
+      },
+      {
+        "emitters": 579,
+        "bullets": 3505,
+        "frame": 2400,
+        "engine": 4011,
+        "fps": 17.659220450773,
+        "orphans": 486,
+        "tracked_objects": 7772
+      },
+      {
+        "emitters": 655,
+        "bullets": 3936,
+        "frame": 2700,
+        "engine": 4502,
+        "fps": 17.601997555192,
+        "orphans": 562,
+        "tracked_objects": 8791
+      },
+      {
+        "emitters": 731,
+        "bullets": 4370,
+        "frame": 3000,
+        "engine": 4995,
+        "fps": 13.285808629547,
+        "orphans": 638,
+        "tracked_objects": 9817
+      },
+      {
+        "emitters": 807,
+        "bullets": 4808,
+        "frame": 3300,
+        "engine": 5492,
+        "fps": 12.467932537416,
+        "orphans": 714,
+        "tracked_objects": 10836
+      }
+    ],
+    "count_note": "tracked_objects 为每60逻辑帧压缩一次的管理表条目；engine 为引擎内全部对象数。orphans 只计父弹已删除、保护期已过但仍存活的绑定发射器。"
+  },
+  "after_binding_fix": {
+    "frames": 3600,
+    "passed": true,
+    "samples": [
+      {
+        "engine": 691,
+        "fps": 60.528555731571,
+        "emitters": 81,
+        "bullets": 588,
+        "orphans": 0,
+        "frame": 600,
+        "tracked_objects": 1067
+      },
+      {
+        "engine": 862,
+        "fps": 60.156498097231,
+        "emitters": 93,
+        "bullets": 751,
+        "orphans": 0,
+        "frame": 900,
+        "tracked_objects": 1315
+      },
+      {
+        "engine": 878,
+        "fps": 60.359878418459,
+        "emitters": 93,
+        "bullets": 768,
+        "orphans": 0,
+        "frame": 1200,
+        "tracked_objects": 1377
+      },
+      {
+        "engine": 880,
+        "fps": 60.340687480489,
+        "emitters": 93,
+        "bullets": 770,
+        "orphans": 0,
+        "frame": 1500,
+        "tracked_objects": 1361
+      },
+      {
+        "engine": 882,
+        "fps": 60.404262962952,
+        "emitters": 93,
+        "bullets": 770,
+        "orphans": 0,
+        "frame": 1800,
+        "tracked_objects": 1370
+      },
+      {
+        "engine": 881,
+        "fps": 59.986113220781,
+        "emitters": 93,
+        "bullets": 769,
+        "orphans": 0,
+        "frame": 2100,
+        "tracked_objects": 1362
+      },
+      {
+        "engine": 883,
+        "fps": 60.565482994723,
+        "emitters": 93,
+        "bullets": 774,
+        "orphans": 0,
+        "frame": 2400,
+        "tracked_objects": 1363
+      },
+      {
+        "engine": 879,
+        "fps": 60.310544926437,
+        "emitters": 93,
+        "bullets": 770,
+        "orphans": 0,
+        "frame": 2700,
+        "tracked_objects": 1357
+      },
+      {
+        "engine": 877,
+        "fps": 60.403101561531,
+        "emitters": 93,
+        "bullets": 766,
+        "orphans": 0,
+        "frame": 3000,
+        "tracked_objects": 1359
+      },
+      {
+        "engine": 877,
+        "fps": 60.36471915623,
+        "emitters": 93,
+        "bullets": 769,
+        "orphans": 0,
+        "frame": 3300,
+        "tracked_objects": 1363
+      },
+      {
+        "engine": 873,
+        "fps": 60.358942764383,
+        "emitters": 93,
+        "bullets": 762,
+        "orphans": 0,
+        "frame": 3600,
+        "tracked_objects": 1357
+      }
+    ],
+    "count_note": "tracked_objects 为每60逻辑帧压缩一次的管理表条目；engine 为引擎内全部对象数。orphans 只计父弹已删除、保护期已过但仍存活的绑定发射器。"
+  },
+  "logic_stress": {
+    "frames": 7200,
+    "peak_live_objects": 1613,
+    "passed": true
+  },
+  "negative_control": {
+    "passed": false,
+    "expected_failure": "出屏弹体的绑定发射器冻结在边界内继续发弹",
+    "frame": 600
+  },
+  "before_native_sha256": "ad55741fb2a0037eaa4f3cdcb7eb213f6da739af09d52b15ed97201ae4481d2f",
+  "related_checks": [
+    {
+      "name": "春雪 X 与两种无敌",
+      "level": 35,
+      "frames": 550,
+      "passed": true
+    },
+    {
+      "name": "永夜双 Boss 与使魔受弹",
+      "level": 37,
+      "frames": 550,
+      "passed": true
+    },
+    {
+      "name": "祈华梦六面光背锁定与伤害",
+      "level": 39,
+      "frames": 700,
+      "passed": true
+    },
+    {
+      "name": "春雪充能与主动破裂",
+      "level": 35,
+      "frames": 220,
+      "passed": true
+    },
+    {
+      "name": "永夜命中顺序和伤害上限",
+      "level": 37,
+      "frames": 220,
+      "passed": true
+    }
+  ]
+}
