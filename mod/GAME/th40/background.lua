@@ -73,7 +73,8 @@ local B=Class(background,{
         RenderClearViewMode(Color(255,10,18,38))
         if setting.displayBG==false or not o.chapter then return end
         if o.tenseiAge then drawTensei(o.tenseiAge);return end
-        Scene.render(o.scene)
+        -- 只在实际不透明原图完全覆盖当前视口时省略场景提交，场景时间仍由 frame 推进。
+        if not Visual.coversBackground(o.originalParts,o.mediaAlpha or 0) then Scene.render(o.scene) end
         if o.originalParts then Visual.drawBackground(o.originalParts,o.mediaAlpha or 0) end
     end,
 })

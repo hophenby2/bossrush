@@ -51,6 +51,7 @@ local function set(o,key,v)
     if integer(o,key) then v=trunc(v) end
     if key=='type' and v~=o.type then o.typeChanged=o.age end
     if boolFields[key] then v=v~=0 end
+    if o.controller and o.controller.visual and (key=='Blend' or key=='layerid') and o[key]~=v then o.controller.drawDirty=true end
     o[key]=v
     if key=='speed' or key=='speedd' then o.motion_dirty=true end
     if key=='xscale' or key=='yscale' then o.motion_dirty,o.sonmotion_dirty,o.accel_dirty,o.sonaccel_dirty=true,true,true,true end
@@ -524,6 +525,7 @@ local function emit(o,bound)
             s.is_projectile,s.alive=true,true
             c.bullets[s]=s
             c.particles[#c.particles+1]=s
+            c.drawDirty=true
         elseif o.kind=='laser' then b=New(s.Ray=='Curve' and R.classes.curve or R.classes.beam,s)
         elseif config then b=New(R.classes.familiar,s,slot,config)
         else b=New(R.classes.projectile,s) end
@@ -712,8 +714,12 @@ function R.tickBackground(c)
     for i=1,#list do
         local s=list[i]
         if updateParticle(s) and not outOfBounds(s) then
+            if s.drawLayer~=s.layerid or s.drawBlend~=s.Blend then
+                c.drawDirty=true;s.drawLayer,s.drawBlend=s.layerid,s.Blend
+            end
             n=n+1;list[n]=s
         else
+            c.drawDirty=true
             s.alive=false
             c.bullets[s]=nil
             Bindings.remove(s.bucket,s)
@@ -747,41 +753,66 @@ local function visualOrder(a,b)
     if a.pattern.order==1 then return a.serial>b.serial end
     return a.serial<b.serial
 end
+local backgroundWhite={255,255,255,1}
+local function backgroundVisible(p,x,y,rot,hs,vs,w,scale)
+    local ca,sa=cos(rot),sin(rot)
+    hs,vs=hs*scale,vs*scale
+    local ox,oy=(p[3]/2-p[5])*hs,(p[6]-p[4]/2)*vs
+    local cx,cy=x+ox*ca-oy*sa,y+ox*sa+oy*ca
+    local hx,hy=(abs(ca*hs)*p[3]+abs(sa*vs)*p[4])/2,(abs(sa*hs)*p[3]+abs(ca*vs)*p[4])/2
+    return cx+hx>=w.l-.01 and cx-hx<=w.r+.01 and cy+hy>=w.b-.01 and cy-hy<=w.t+.01
+end
 function R.drawBackground(c,opacity,dx,dy)
     local list=c.drawList
-    for i,s in ipairs(c.particles) do list[i]=s end
-    for i=#list,#c.particles+1,-1 do list[i]=nil end
-    table.sort(list,visualOrder)
+    -- 运动与透明度不改变这里的排序键，只在成员或排序键变化时重排。
+    if c.drawDirty~=false or c.drawOrder~=c.pattern.order then
+        for i,s in ipairs(c.particles) do list[i]=s end
+        for i=#list,#c.particles+1,-1 do list[i]=nil end
+        table.sort(list,visualOrder);c.drawDirty=false;c.drawOrder=c.pattern.order
+    end
     local function project(x,y)
         local px,py=projectBullet(x,y)
         return px+(dx or 0),py+(dy or 0)
     end
     local masks=Mask.layers(c,project)
+    local world=lstg.world
+    local offset=lstg.worldoffset
+    if offset then
+        local hx,hy=abs((world.r-world.l)/offset.hscale/2),abs((world.t-world.b)/offset.vscale/2)
+        local x,y=offset.centerx-offset.dx/offset.hscale,offset.centery-offset.dy/offset.vscale
+        world={l=x-hx,r=x+hx,b=y-hy,t=y+hy}
+    end
+    local imageScale=GetImageScale and GetImageScale() or 1
+    local rgb=c.color or backgroundWhite
     for _,s in ipairs(list) do
         local alpha=(s.alpha or 100)*.01*opacity*(s.Mist and min(1,s.age/15) or 1)
         if alpha>0 and s.type>0 then
-            local img,tex,u,v,profile=texture(s)
-            local rgb=c.color or {255,255,255,1}
+            local p=profile(s.pattern,s.type)
             local light=rgb[4] or 1
             local a,r,g,b=min(255,alpha*255),s.colorR or 255,s.colorG or 255,s.colorB or 255
             r,g,b=min(255,r*rgb[1]*light/255),min(255,g*rgb[2]*light/255),min(255,b*rgb[3]*light/255)
             local x,y=project(s.fx,s.fy)
             local rot=-((s.Withspeedd and math.deg(math.atan2(s.my or 0,s.mx or 0)) or s.head or 0)+90)
             local hs,vs=s.wscale*SCALE,s.hscale*SCALE
-            local blend=s.Blend and 'mul+add' or ''
             local layerMasks=masks[s.layerid]
-            if tex and layerMasks and #layerMasks>0 then
-                local color=Color(a,r,g,b)
-                local ca,sa=cos(rot),sin(rot)
-                local w,h=profile[3],profile[4]
-                local function vertex(px,py)
-                    local dx,dy=(px-profile[5])*hs,(profile[6]-py)*vs
-                    return {x+dx*ca-dy*sa,y+dx*sa+dy*ca,.5,u+px,v+py,color}
+            local scale=layerMasks and #layerMasks>0 and 1 or imageScale
+            -- 只裁去整个图像都在视口外的提交，保留对象更新和遮罩事件。
+            if not p or backgroundVisible(p,x,y,rot,hs,vs,world,scale) then
+                local img,tex,u,v,profile=texture(s)
+                local blend=s.Blend and 'mul+add' or ''
+                if tex and layerMasks and #layerMasks>0 then
+                    local color=Color(a,r,g,b)
+                    local ca,sa=cos(rot),sin(rot)
+                    local w,h=profile[3],profile[4]
+                    local function vertex(px,py)
+                        local dx,dy=(px-profile[5])*hs,(profile[6]-py)*vs
+                        return {x+dx*ca-dy*sa,y+dx*sa+dy*ca,.5,u+px,v+py,color}
+                    end
+                    Mask.draw(layerMasks,tex,blend,{vertex(0,0),vertex(w,0),vertex(w,h),vertex(0,h)})
+                else
+                    SetImageState(img,blend,a,r,g,b)
+                    Render(img,x,y,rot,hs,vs)
                 end
-                Mask.draw(layerMasks,tex,blend,{vertex(0,0),vertex(w,0),vertex(w,h),vertex(0,h)})
-            else
-                SetImageState(img,blend,a,r,g,b)
-                Render(img,x,y,rot,hs,vs)
             end
         end
     end

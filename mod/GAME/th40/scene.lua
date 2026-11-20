@@ -1,5 +1,7 @@
 -- Original Direct3D scene, 404x468 viewport clipped by the 384x448 playfield.
 local M={State=dofile('mod/GAME/th40/scene_state.lua')}
+local Source=dofile('mod/GAME/ports/source_mesh.lua')
+local zero,noUV={0,0,0},{1,1,0,0}
 local data=dofile('mod/GAME/th40/scene_data.lua')
 local models={}
 local function texture(file)
@@ -33,7 +35,9 @@ local function model(name,floor)
     local result={}
     for _,p in ipairs(parts) do
         local id=texture(p.file);local w,h=GetTextureSize(id)
-        result[#result+1]={id=id,vertices=p.vertices,w=w,h=h,native=lstg.AndroidCreateModelMesh and lstg.AndroidCreateModelMesh(FindResTexture(id),p.vertices)}
+        result[#result+1]={id=id,vertices=p.vertices,w=w,h=h,bounds=Source.bounds(p.vertices),
+            gpu=Source.available() and lstg.CreateSourceModelMesh(id,p.vertices),
+            native=not Source.available() and lstg.AndroidCreateModelMesh and lstg.AndroidCreateModelMesh(FindResTexture(id),p.vertices)}
     end
     models[name]=result;return result
 end
@@ -52,19 +56,22 @@ local function transform(o,s)
     m[10],m[11],m[12]=x,y,v;return m
 end
 local corners={{},{},{}}
-local function draw(o,s)
+local function draw(o,s,batch,planes,fog,depth)
     if o.alpha<1 then return end
     local m=transform(o,s);local c=Color(math.floor(o.alpha),unpack(o.rgb));local blend=o.active and 'mul+add' or ''
     for _,p in ipairs(model(o.name,o.floor)) do
-        if p.native then lstg.AndroidRenderModelMesh(p.native,blend,c,m,{1,1,0,0})
-        else
-            for i=1,#p.vertices,15 do
-                for j=1,3 do
-                    local k=i+(j-1)*5;local x,y,z=p.vertices[k],p.vertices[k+1],p.vertices[k+2];local v=corners[j]
-                    v[1],v[2],v[3]=m[1]*x+m[4]*y+m[7]*z+m[10],m[2]*x+m[5]*y+m[8]*z+m[11],m[3]*x+m[6]*y+m[9]*z+m[12]
-                    v[4],v[5],v[6]=p.vertices[k+3]*p.w,p.vertices[k+4]*p.h,c
+        if Source.visible(p.bounds,m,planes) then
+            if p.gpu then Source.queue(batch,p.gpu,m,c,noUV,o.active and 4 or 3,depth,false,0,fog)
+            elseif p.native then lstg.AndroidRenderModelMesh(p.native,blend,c,m,noUV)
+            else
+                for i=1,#p.vertices,15 do
+                    for j=1,3 do
+                        local k=i+(j-1)*5;local x,y,z=p.vertices[k],p.vertices[k+1],p.vertices[k+2];local v=corners[j]
+                        v[1],v[2],v[3]=m[1]*x+m[4]*y+m[7]*z+m[10],m[2]*x+m[5]*y+m[8]*z+m[11],m[3]*x+m[6]*y+m[9]*z+m[12]
+                        v[4],v[5],v[6]=p.vertices[k+3]*p.w,p.vertices[k+4]*p.h,c
+                    end
+                    RenderTexture(p.id,blend,corners[1],corners[2],corners[3],corners[3])
                 end
-                RenderTexture(p.id,blend,corners[1],corners[2],corners[3],corners[3])
             end
         end
     end
@@ -93,14 +100,21 @@ function M.render(s)
     Set3D('fog',s.fogStart,s.fogEnd,Color(255,unpack(s.fogColor)));SetViewMode('3d')
     SetPerspective(eye[1],eye[2],eye[3],at[1],at[2],at[3],up[1],up[2],up[3],fov,(384/404)/(448/468),1,far)
     -- 使用数字状态，兼容 Sub 与 LuaSTG-x 的深度缓冲接口。
-    ClearZBuffer();SetZBufferEnable((s.chapter=='5' or s.chapter=='6' and s.story<800) and 1 or 0)
-    for _,o in ipairs(s.objects) do draw(o,s) end
+    local depth=(s.chapter=='5' or s.chapter=='6' and s.story<800) and 2 or 0
+    ClearZBuffer();SetZBufferEnable(depth>0 and 1 or 0)
+    s.meshBatch=s.meshBatch or Source.newBatch()
+    local planes=Source.frustum(eye,at,up,zero,fov,(384/404)/(448/468),1,far)
+    local fog={s.fogStart,s.fogEnd,s.fogColor[1]/255,s.fogColor[2]/255,s.fogColor[3]/255,eye[1],eye[2],eye[3]}
+    for _,o in ipairs(s.objects) do draw(o,s,s.meshBatch,planes,fog,depth) end
+    Source.flush(s.meshBatch)
     SetZBufferEnable(0)
     -- BaseParticle3D uses a second camera with a 234-pixel focal length.
     if #s.particles>0 then
         Set3D('eye',0,0,234);Set3D('at',0,0,0);Set3D('up',0,-1,0);Set3D('fovy',2*math.atan(224/234));Set3D('z',1,1000);Set3D('fog',0,0,Color(255,0,0,0));SetViewMode('3d')
         table.sort(s.particles,function(a,b) return a.z<b.z end)
-        for _,o in ipairs(s.particles) do local x,y=o.x,o.y;o.x,o.y=x-192,y-224;draw(o,s);o.x,o.y=x,y end
+        planes=Source.frustum({0,0,234},{0,0,0},{0,-1,0},zero,2*math.atan(224/234),(w.r-w.l)/(w.t-w.b),1,1000)
+        for _,o in ipairs(s.particles) do local x,y=o.x,o.y;o.x,o.y=x-192,y-224;draw(o,s,s.meshBatch,planes,nil,0);o.x,o.y=x,y end
+        Source.flush(s.meshBatch)
     end
     lstg.view3d=previous;SetViewMode('world')
     local fade=M.State.fade(s)

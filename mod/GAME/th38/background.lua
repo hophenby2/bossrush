@@ -1,5 +1,6 @@
 -- 雪莲华 Unity 场景的背景节点。原作的 FixedUpdate 为 120 Hz。
 local B={}
+local Source=dofile('mod/GAME/ports/source_mesh.lua')
 local path='mod/GAME/th38/scenes/'
 local assets='Resources/th38/background/unity/'
 local scenes={}
@@ -113,6 +114,7 @@ local function sceneData(key)
         for i,d in ipairs(raw.nodes) do
             names[d.name]=names[d.name] or i
             d.scripts=d.scripts or noScripts
+            if next(d.scripts)==nil then d.staticMatrix=matrix(d.pos,d.rot,d.scale) end
             local rotationTrack=d.scripts.Camara_rotate
             if rotationTrack then
                 local m=matrix({0,0,0},d.rot,{1,1,1})
@@ -263,7 +265,7 @@ local function transforms(o)
             local lock=nodes[o.data.names.Camera_3D_back].scripts.STEX_came_lock
             if lock then tr={tr[1],o.extraY-2+2*cos((t-o.extraWave)%lock.shangxiazhouqi/lock.shangxiazhouqi*math.pi*2),tr[3]} end
         end
-        local m=matrix(tr,q,d.scale)
+        local m=tr==d.pos and q==d.rot and d.staticMatrix or matrix(tr,q,d.scale)
         if parent then m=compose(parent.m,m) end
         local floating=scripts.ST5_piece_flot
         if floating then
@@ -338,6 +340,7 @@ local function vertex(camera,node,x,y,z,u,v,c)
     return {x,y,z,u,v,c}
 end
 local function drawSprite(o,cam,n)
+    Source.flush(o.meshBatch)
     local d=n.data.sprite
     local a=unit(n.alpha)
     if a<=0 then return end
@@ -406,6 +409,29 @@ local function sizeAt(keys,time)
     end
     return first[2]
 end
+local function gpuQuad(o,tex)
+    o.quadMeshes=o.quadMeshes or {}
+    if not o.quadMeshes[tex] then
+        o.quadMeshes[tex]=lstg.CreateSourceModelMesh(tex,{-1,1,0,0,0,1,1,0,1,0,1,-1,0,1,1,-1,1,0,0,0,1,-1,0,1,1,-1,-1,0,0,1})
+    end
+    return o.quadMeshes[tex]
+end
+local function particleParameters(ps,i)
+    local seed=(i*6151+ps.seed*197)%2147483646+1
+    local function rand() seed=seed*16807%2147483647;return seed/2147483647 end
+    local function between(range) return range[1]+(range[2]-range[1])*rand() end
+    local p={life=between(ps.life)}
+    local x,y,z
+    if ps.shape==10 then
+        local angle=rand()*math.pi*2;local radius=ps.radius*math.sqrt(1-rand()*ps.thickness)
+        x,y,z=radius*cos(angle),radius*sin(angle),0
+    else x,y,z=rand()-.5,rand()-.5,ps.shape==18 and 0 or rand()-.5 end
+    p.x,p.y,p.z=point(ps.shapeMatrix,x,y,z)
+    p.vx,p.vy,p.vz=vector(ps.forward,0,0,between(ps.speed))
+    p.dx,p.dy,p.dz=between(ps.drift[1]),between(ps.drift[2]),between(ps.drift[3])
+    p.size=between(ps.size);p.mix=rand();p.angle=between(ps.angle);p.spin=between(ps.rotating)
+    return p
+end
 local function drawParticles(o,cam,n)
     local ps=n.data.particles
     local time=(o.clock-n.start)/120*ps.simulation-ps.delay
@@ -415,41 +441,37 @@ local function drawParticles(o,cam,n)
     local latest=floor((ps.loop==1 and time or min(time,ps.length))*ps.rate)
     local earliest=max(1,latest-ps.maxCount+1,floor((time-max(unpack(ps.life)))*ps.rate)+1)
     local follow=n.data.scripts.Tongyong_gensui_gameobj
+    local cache=n.particleCache
+    if not cache or latest<cache.last then cache={first=earliest,last=latest,values={}};n.particleCache=cache end
+    for i=cache.first,min(cache.last,earliest-1) do cache.values[i]=nil end
+    cache.first,cache.last=earliest,latest
+    local followsCamera=ps.localSpace==0 and follow and follow.if_camera==1
+    local now=followsCamera and cameraPos(o.data,'Camera_3D',o.clock)
+    local blend=tex and Source.available() and Source.blend(ps.blend)
+    local quad=blend and gpuQuad(o,tex)
+    local transform={}
+    if not blend then Source.flush(o.meshBatch) end
     for i=earliest,latest do
-        local seed=(i*6151+ps.seed*197)%2147483646+1
-        local function rand()
-            seed=seed*16807%2147483647
-            return seed/2147483647
-        end
-        local function between(range) return range[1]+(range[2]-range[1])*rand() end
+        local p=cache.values[i]
+        if not p then p=particleParameters(ps,i);cache.values[i]=p end
         local age=time-i/ps.rate
-        local life=between(ps.life)
+        local life=p.life
         if age<life and age>=0 then
-            local px,py,pz
-            if ps.shape==10 then
-                local angle=rand()*math.pi*2
-                local radius=ps.radius*math.sqrt(1-rand()*ps.thickness)
-                px,py,pz=radius*cos(angle),radius*sin(angle),0
-            else
-                px,py,pz=rand()-.5,rand()-.5,ps.shape==18 and 0 or rand()-.5
-            end
-            px,py,pz=point(ps.shapeMatrix,px,py,pz)
-            local speed=between(ps.speed)
-            local vx,vy,vz=vector(ps.forward,0,0,speed)
-            px,py,pz=px+vx*age,py+vy*age,pz+vz*age
+            local px,py,pz=p.x+p.vx*age,p.y+p.vy*age,p.z+p.vz*age
             local x,y,z=point(n.m,px,py,pz)
-            x,y,z=x+between(ps.drift[1])*age,y+between(ps.drift[2])*age-.5*9.81*ps.gravity*age*age,z+between(ps.drift[3])*age
-            if ps.localSpace==0 and follow and follow.if_camera==1 then
-                local now=cameraPos(o.data,'Camera_3D',o.clock)
-                local born=cameraPos(o.data,'Camera_3D',o.clock-age*120/ps.simulation)
+            x,y,z=x+p.dx*age,y+p.dy*age-.5*9.81*ps.gravity*age*age,z+p.dz*age
+            if followsCamera then
+                local clock=o.clock-age*120/ps.simulation
+                if p.bornClock~=clock then p.bornClock=clock;p.born=cameraPos(o.data,'Camera_3D',clock) end
+                local born=p.born
                 x,y,z=x+born[1]-now[1],y+born[2]-now[2],z+born[3]-now[3]
             end
             x,y,z=viewPoint(cam,x,y,z)
             local ratio=age/max(.0001,life)
-            local r=min(between(ps.size)*sizeAt(ps.sizeCurve,ratio)*.5,z*cam.halfHeight*ps.maxSize)
+            local r=min(p.size*sizeAt(ps.sizeCurve,ratio)*.5,z*cam.halfHeight*ps.maxSize)
             if r>0 and z>=cam.near and z<=cam.far and math.abs(x)<z*cam.halfWidth+r
                     and math.abs(y)<z*cam.halfHeight+r then
-                local mix=rand()
+                local mix=p.mix
                 local tint,alpha=ps.tint,channel(ps.alpha,ratio,2,1)
                 local color,low=ps.color,ps.colorMin or ps.color
                 alpha=alpha*(low[4]+(color[4]-low[4])*mix)*tint[4]
@@ -458,10 +480,17 @@ local function drawParticles(o,cam,n)
                         unit(tint[1]*(low[1]+(color[1]-low[1])*mix)*channel(ps.rgb,ratio,2,1))*255,
                         unit(tint[2]*(low[2]+(color[2]-low[2])*mix)*channel(ps.rgb,ratio,3,1))*255,
                         unit(tint[3]*(low[3]+(color[3]-low[3])*mix)*channel(ps.rgb,ratio,4,1))*255)
-                    local a=between(ps.angle)+between(ps.rotating)*age
+                    local a=p.angle+p.spin*age
                     local rx,ry=r*cos(a),r*sin(a)
-                    RenderTexture(tex,ps.blend,{x-rx-ry,y+rx-ry,z,0,0,c},
+                    if quad then
+                        transform[1],transform[2],transform[3]=rx,ry,0
+                        transform[4],transform[5],transform[6]=-ry,rx,0
+                        transform[7],transform[8],transform[9]=0,0,1
+                        transform[10],transform[11],transform[12]=x,y,z
+                        Source.queue(o.meshBatch,quad,transform,c,noUV,blend,0,false,0)
+                    else RenderTexture(tex,ps.blend,{x-rx-ry,y+rx-ry,z,0,0,c},
                         {x+rx-ry,y+rx+ry,z,w,0,c},{x+rx+ry,y-rx+ry,z,w,h,c},{x-rx+ry,y-rx-ry,z,0,h,c})
+                    end
                 end
             end
         end
@@ -477,6 +506,33 @@ local function nativeMesh(d,part,tex)
     end
     return byTexture[tex]
 end
+local function gpuMesh(o,d,part,tex)
+    o.gpuMeshes=o.gpuMeshes or {}
+    local byPart=o.gpuMeshes[d]
+    if not byPart then byPart={};o.gpuMeshes[d]=byPart end
+    local byTexture=byPart[part]
+    if not byTexture then byTexture={};byPart[part]=byTexture end
+    local key=tex or false
+    if not byTexture[key] then
+        local vertices={}
+        for _,index in ipairs(part) do for j=1,5 do vertices[#vertices+1]=d.verts[index][j] end end
+        byTexture[key]=lstg.CreateSourceModelMesh(tex,vertices)
+    end
+    return byTexture[key]
+end
+local function viewTransform(o,cam,n)
+    if n.viewFrame~=o.renderRevision or n.viewCamera~=cam then
+        local transform=n.viewMatrix or {};n.viewMatrix=transform
+        local x,y,z=viewPoint(cam,point(n.m,0,0,0))
+        for i=1,3 do
+            local a,b,c=viewPoint(cam,point(n.m,i==1 and 1 or 0,i==2 and 1 or 0,i==3 and 1 or 0))
+            transform[(i-1)*3+1],transform[(i-1)*3+2],transform[(i-1)*3+3]=a-x,b-y,c-z
+        end
+        transform[10],transform[11],transform[12]=x,y,z
+        n.viewFrame,n.viewCamera=o.renderRevision,cam
+    end
+    return n.viewMatrix
+end
 local function drawMesh(o,cam,n,d,part,mat)
     local tex,w,h=texture(o,mat.tex)
     local rgb=mat.color or {1,1,1,1}
@@ -489,9 +545,20 @@ local function drawMesh(o,cam,n,d,part,mat)
             opacity=(pulse.min+pulse.max+(pulse.max-pulse.min)*sin(time*2*math.pi/max(1,pulse.zhouqi)))*.5
         elseif pulse.first_base==1 then opacity=(pulse.min+pulse.max)*.5 end
     end
-    local c=Color(unit(opacity)*255,rgb[1]*255,rgb[2]*255,rgb[3]*255)
+    -- 无纹理分支沿用白图 Render4V 的颜色口径。
+    local c=Color(tex and unit(opacity)*255 or rgb[4]*255,rgb[1]*255,rgb[2]*255,rgb[3]*255)
     local uv=mat.uv or noUV
     local offset=mat.water and o.clock/120*.01 or 0
+    local blend=Source.available() and Source.blend(mat.blend)
+    if blend then
+        local m=n.m
+        local det=m[1]*(m[5]*m[9]-m[6]*m[8])-m[2]*(m[4]*m[9]-m[5]*m[6])+m[3]*(m[4]*m[8]-m[5]*m[7])
+        Source.queue(o.meshBatch,gpuMesh(o,d,part,tex),viewTransform(o,cam,n),c,
+            {uv[1],-uv[2],uv[3],1-uv[4]+offset},blend,mat.opaque==1 and 2 or 0,false,
+            mat.cull==1 and (det<0 and 2 or 1) or 0)
+        return
+    end
+    Source.flush(o.meshBatch)
     if tex and lstg.AndroidCreateModelMesh then
         local native=nativeMesh(d,part,tex)
         local x,y,z=viewPoint(cam,point(n.m,0,0,0))
@@ -601,6 +668,7 @@ local function drawCamera(o,cam,nodes)
         elseif draw.particles then drawParticles(o,cam,draw.node)
         else drawSprite(o,cam,draw.node) end
     end
+    Source.flush(o.meshBatch)
 end
 local function fill(r,g,b,a)
     local w=lstg.world
@@ -617,8 +685,9 @@ local Scene=Class(background,{
         o.data=sceneData(chapter..variant)
         o.clock,o.story=start,start
         o.transforms,o.resources,o.sizes={},{},{}
+        o.meshBatch=Source.newBatch()
         if ready and ready.key==chapter..variant then
-            o.resources,o.sizes=ready.resources,ready.sizes;ready=nil
+            o.resources,o.sizes,o.gpuMeshes,o.quadMeshes=ready.resources,ready.sizes,ready.gpuMeshes,ready.quadMeshes;ready=nil
         end
         stageChanges(o)
     end,
@@ -632,6 +701,7 @@ local Scene=Class(background,{
         meshes=meshes or dofile(path..'meshes.lua')
         local previous=lstg.view3d
         lstg.view3d={}
+        o.renderRevision=(o.renderRevision or 0)+1
         local list=transforms(o)
         local clear=o.data.cameras[1].clear
         local tint=o.data.colorTrack
@@ -653,6 +723,7 @@ local Scene=Class(background,{
     del=function(o)
         if RogueEncounter and RogueEncounter.stopping then return end
         for _,mesh in pairs(meshes or {}) do mesh.native=nil end
+        o.gpuMeshes,o.quadMeshes,o.meshBatch=nil,nil,nil
         for key,pool in pairs(o.resources) do lstg.RemoveResource(pool,1,key) end
     end,
 },true)
@@ -667,13 +738,17 @@ function B.prepare(chapter,variant)
     local o={key=chapter..variant,resources={},sizes={}}
     for _,node in ipairs(data.nodes) do
         if node.sprite then texture(o,node.sprite.tex) end
-        if node.particles then texture(o,node.particles.tex) end
+        if node.particles then
+            local tex=texture(o,node.particles.tex)
+            if tex and Source.available() and Source.blend(node.particles.blend) then gpuQuad(o,tex) end
+        end
         if node.mesh then
             local mesh=meshes[node.mesh.key]
             for j,part in ipairs(mesh.parts) do
                 local mat=node.mesh.materials[j] or node.mesh.materials[#node.mesh.materials]
                 local tex=texture(o,mat.tex)
-                if tex and lstg.AndroidCreateModelMesh then nativeMesh(mesh,part,tex) end
+                if Source.available() and Source.blend(mat.blend) then gpuMesh(o,mesh,part,tex)
+                elseif tex and lstg.AndroidCreateModelMesh then nativeMesh(mesh,part,tex) end
                 if RogueEncounter then RogueEncounter.checkpoint() end
             end
         end

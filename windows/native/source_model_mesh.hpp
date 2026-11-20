@@ -1,4 +1,4 @@
-// 春雪原作网格：复用 Sub 的 GPU Mesh，逐次绘制只更新矩阵、UV 和材质参数。
+// 原作背景网格：复用 Sub 的 GPU Mesh，按顺序批量更新实例矩阵、UV 和材质参数。
 #pragma once
 #include <win32/base.hpp>
 #include <d3d11.h>
@@ -22,26 +22,41 @@ static void check(HRESULT hr,char const* message) {
 }
 static constexpr char shader[]=R"(
 cbuffer Camera : register(b0) { float4x4 view_proj; };
-cbuffer Model : register(b1) {
+struct Parameters {
     float4x4 world;
     float4 uv_transform;
     float4 tint;
     float4 options;
+    float4 fog;
+    float4 fog_color;
 };
+cbuffer Model : register(b1) { Parameters models[128]; };
 Texture2D image : register(t0);
 SamplerState image_sampler : register(s0);
-struct Input { float3 position:POSITION0; float2 uv:TEXCOORD0; float4 color:COLOR0; };
-struct Output { float4 position:SV_POSITION; float2 uv:TEXCOORD0; float4 color:COLOR0; };
+struct Input { float3 position:POSITION0; float2 uv:TEXCOORD0; float4 color:COLOR0; uint instance:SV_InstanceID; };
+struct Output { float4 position:SV_POSITION; float2 uv:TEXCOORD0; float4 color:COLOR0;
+    float3 world_position:TEXCOORD1; nointerpolation uint instance:TEXCOORD2; };
 Output vs_main(Input v) {
+    Parameters p=models[v.instance];
     Output o;
-    o.position=mul(view_proj,mul(world,float4(v.position,1)));
-    o.uv=v.uv*uv_transform.xy+uv_transform.zw;
-    o.color=v.color*tint;
+    float4 point=mul(p.world,float4(v.position,1));
+    o.position=mul(view_proj,point);o.world_position=point.xyz;o.instance=v.instance;
+    o.uv=v.uv*p.uv_transform.xy+p.uv_transform.zw;
+    o.color=v.color*p.tint;
     return o;
 }
 float4 ps_main(Output v):SV_TARGET {
-    float4 color=image.Sample(image_sampler,v.uv)*v.color;
-    if (options.x>0) clip(color.a-options.x);
+    Parameters p=models[v.instance];
+    float4 sample_color=p.options.w>=2 ? float4(1,1,1,1):image.Sample(image_sampler,v.uv);
+    if (p.options.z>=1 && p.options.w==1) sample_color.rgb=sample_color.a>0 ? sample_color.rgb/sample_color.a:0;
+    float4 color=sample_color*v.color;
+    if (p.options.x>0) clip(color.a-p.options.x);
+    if (p.options.y>0) {
+        float d=distance(float3(p.fog.zw,p.fog_color.w),v.world_position);
+        float k=saturate((d-p.fog.x)/(p.fog.y-p.fog.x));
+        color=lerp(color,float4(p.fog_color.rgb,color.a),k);
+    }
+    if (p.options.z>=1) color.rgb*=color.a;
     return color;
 }
 )";
@@ -50,7 +65,7 @@ struct Pipeline final : core::IGraphicsDeviceEventListener {
     ComPtr<ID3D11VertexShader> vs;
     ComPtr<ID3D11PixelShader> ps;
     ComPtr<ID3D11Buffer> constants;
-    ComPtr<ID3D11BlendState> blends[2];
+    ComPtr<ID3D11BlendState> blends[4];
     ComPtr<ID3D11DepthStencilState> depths[3];
     ComPtr<ID3D11RasterizerState> rasters[3];
     bool ready=false;
@@ -79,13 +94,15 @@ struct Pipeline final : core::IGraphicsDeviceEventListener {
         compile("vs_main","vs_4_0",vertex);compile("ps_main","ps_4_0",pixel);
         check(d->CreateVertexShader(vertex->GetBufferPointer(),vertex->GetBufferSize(),nullptr,vs.GetAddressOf()),"创建原作网格顶点着色器失败");
         check(d->CreatePixelShader(pixel->GetBufferPointer(),pixel->GetBufferSize(),nullptr,ps.GetAddressOf()),"创建原作网格像素着色器失败");
-        D3D11_BUFFER_DESC cb{};cb.ByteWidth=112;cb.Usage=D3D11_USAGE_DYNAMIC;
+        D3D11_BUFFER_DESC cb{};cb.ByteWidth=144*128;cb.Usage=D3D11_USAGE_DYNAMIC;
         cb.BindFlags=D3D11_BIND_CONSTANT_BUFFER;cb.CPUAccessFlags=D3D11_CPU_ACCESS_WRITE;
         check(d->CreateBuffer(&cb,nullptr,constants.GetAddressOf()),"创建原作网格参数缓冲区失败");
-        for (int i=0;i<2;++i) {
+        for (int i=0;i<4;++i) {
             D3D11_BLEND_DESC b{};auto& rt=b.RenderTarget[0];rt.BlendEnable=TRUE;
-            rt.SrcBlend=rt.SrcBlendAlpha=i ? D3D11_BLEND_SRC_ALPHA:D3D11_BLEND_ONE;
-            rt.DestBlend=rt.DestBlendAlpha=i ? D3D11_BLEND_ONE:D3D11_BLEND_INV_SRC_ALPHA;
+            rt.SrcBlend=i==1 ? D3D11_BLEND_SRC_ALPHA:D3D11_BLEND_ONE;
+            rt.DestBlend=(i==1 || i==3) ? D3D11_BLEND_ONE:D3D11_BLEND_INV_SRC_ALPHA;
+            rt.SrcBlendAlpha=i==1 ? D3D11_BLEND_SRC_ALPHA:D3D11_BLEND_ONE;
+            rt.DestBlendAlpha=i==1 ? D3D11_BLEND_ONE:D3D11_BLEND_INV_SRC_ALPHA;
             rt.BlendOp=rt.BlendOpAlpha=D3D11_BLEND_OP_ADD;rt.RenderTargetWriteMask=D3D11_COLOR_WRITE_ENABLE_ALL;
             check(d->CreateBlendState(&b,blends[i].GetAddressOf()),"创建原作网格混合状态失败");
         }
@@ -150,7 +167,7 @@ static float number(lua_State* L,int table,size_t i) {
     const auto n=static_cast<float>(lua_tonumber(L,-1));lua_pop(L,1);return n;
 }
 static int create(lua_State* L) {
-    const char* texture=luaL_checkstring(L,1);luaL_checktype(L,2,LUA_TTABLE);
+    const char* texture=lua_isnoneornil(L,1) ? nullptr:luaL_checkstring(L,1);luaL_checktype(L,2,LUA_TTABLE);
     const size_t count=lua_objlen(L,2);
     if (!count || count%15 || count/5>UINT32_MAX) return luaL_error(L,"原作网格顶点表不完整或过大");
     auto* out=new(lua_newuserdata(L,sizeof(Mesh))) Mesh();
@@ -160,9 +177,11 @@ static int create(lua_State* L) {
     }
     lua_setmetatable(L,-2);
     try {
-        auto resource=LAPP.GetResourceMgr().FindTexture(texture);
-        if (!resource) throw std::runtime_error("原作网格纹理缺失");
-        out->texture=resource->GetTexture();
+        if (texture) {
+            auto resource=LAPP.GetResourceMgr().FindTexture(texture);
+            if (!resource) throw std::runtime_error("原作网格纹理缺失");
+            out->texture=resource->GetTexture();
+        }
         auto* device=LAPP.getGraphicsDevice();
         static std::weak_ptr<Pipeline> cached;
         out->pipeline=cached.lock();
@@ -193,42 +212,91 @@ static int create(lua_State* L) {
     } catch (std::exception const& e) { return luaL_error(L,"%s",e.what()); }
     return 1;
 }
-static int draw(lua_State* L) {
-    auto* mesh=static_cast<Mesh*>(luaL_checkudata(L,1,type_name));
-    luaL_checktype(L,2,LUA_TTABLE);auto const color=*binding::Color::Cast(L,3);
-    luaL_checktype(L,4,LUA_TTABLE);
-    const auto blend=luaL_checkinteger(L,5),depth=luaL_checkinteger(L,6),cull=luaL_checkinteger(L,8);
-    const bool cutout=lua_toboolean(L,7)!=0;
-    if (blend<1 || blend>2 || depth<0 || depth>2 || cull<0 || cull>2) return luaL_error(L,"原作网格材质状态无效");
+struct Command {
+    Mesh* mesh{};
+    std::array<float,36> constants{};
+    uint32_t blend{},depth{},cull{};
+};
+static void readCommand(lua_State* L,int base,Command& out) {
+    out={};out.mesh=static_cast<Mesh*>(luaL_checkudata(L,base+1,type_name));
+    luaL_checktype(L,base+2,LUA_TTABLE);auto const color=*binding::Color::Cast(L,base+3);
+    luaL_checktype(L,base+4,LUA_TTABLE);
+    const auto blend=luaL_checkinteger(L,base+5),depth=luaL_checkinteger(L,base+6),cull=luaL_checkinteger(L,base+8);
+    if (blend<1 || blend>4 || depth<0 || depth>2 || cull<0 || cull>2) throw std::runtime_error("原作网格材质状态无效");
+    out.blend=static_cast<uint32_t>(blend-1);out.depth=static_cast<uint32_t>(depth);out.cull=static_cast<uint32_t>(cull);
+    auto& a=out.constants;
+    for (int col=0;col<3;++col) for (int row=0;row<3;++row) a[col*4+row]=number(L,base+2,col*3+row+1);
+    for (int row=0;row<3;++row) a[12+row]=number(L,base+2,10+row);
+    a[15]=1;
+    for (int i=0;i<4;++i) a[16+i]=number(L,base+4,i+1);
+    a[20]=color.r/255.f;a[21]=color.g/255.f;a[22]=color.b/255.f;a[23]=color.a/255.f;
+    a[24]=lua_toboolean(L,base+7) ? 200.f/255.f:0;
+    // 1/2 保留 XNA 混合；3/4 对齐 Sub 的纹理反预乘、着色、雾与最终预乘。
+    a[26]=blend>=3 ? 1.f:0.f;
+    a[27]=!out.mesh->texture ? 2.f:out.mesh->texture->isPremultipliedAlpha() ? 1.f:0.f;
+    if (lua_istable(L,base+9)) {
+        a[28]=number(L,base+9,1);a[29]=number(L,base+9,2);
+        a[25]=a[28]!=a[29] ? 1.f:0.f;
+        for (int i=0;i<3;++i) a[32+i]=number(L,base+9,3+i);
+        a[30]=number(L,base+9,6);a[31]=number(L,base+9,7);a[35]=number(L,base+9,8);
+    }
+}
+static bool sameMaterial(Command const& a,Command const& b) {
+    return a.mesh==b.mesh && a.blend==b.blend && a.depth==b.depth && a.cull==b.cull;
+}
+static void submit(Command const* commands,size_t count) {
+    if (!count) return;
     auto* renderer=LAPP.getRenderer2D();
-    if (!renderer->isBatchScope()) return luaL_error(L,"原作网格绘制必须在 BeginScene 内");
-    try {
-        // 12 项为三列线性变换和位移；按 Sub 着色器现有的矩阵布局上传。
-        std::array<float,28> constants{};
-        for (int col=0;col<3;++col) for (int row=0;row<3;++row) constants[col*4+row]=number(L,2,col*3+row+1);
-        for (int row=0;row<3;++row) constants[12+row]=number(L,2,10+row);
-        constants[15]=1;
-        for (int i=0;i<4;++i) constants[16+i]=number(L,4,i+1);
-        constants[20]=color.r/255.f;constants[21]=color.g/255.f;constants[22]=color.b/255.f;constants[23]=color.a/255.f;
-        constants[24]=cutout ? 200.f/255.f:0;
-        auto& p=*mesh->pipeline;p.ensure();
-        if (!renderer->flush()) throw std::runtime_error("提交原作网格前刷新批次失败");
-        auto* cmd=p.device->getCommandbuffer();auto* ctx=static_cast<ID3D11DeviceContext*>(cmd->getNativeHandle());
-        SavedState saved(ctx);
+    if (!renderer->isBatchScope()) throw std::runtime_error("原作网格绘制必须在 BeginScene 内");
+    auto& p=*commands[0].mesh->pipeline;p.ensure();
+    if (!renderer->flush()) throw std::runtime_error("提交原作网格前刷新批次失败");
+    auto* cmd=p.device->getCommandbuffer();auto* ctx=static_cast<ID3D11DeviceContext*>(cmd->getNativeHandle());
+    SavedState saved(ctx);
+    // 只合并相邻的同网格、同状态实例，保持所有透明表面的提交顺序。
+    for (size_t first=0;first<count;) {
+        size_t end=first+1;
+        while (end<count && end-first<128 && sameMaterial(commands[first],commands[end])) ++end;
+        auto const& draw=commands[first];auto* mesh=draw.mesh;
+        if (mesh->pipeline.get()!=&p) throw std::runtime_error("同批网格来自不同图形设备");
         D3D11_MAPPED_SUBRESOURCE mapped{};
         check(ctx->Map(p.constants.Get(),0,D3D11_MAP_WRITE_DISCARD,0,&mapped),"更新原作网格参数失败");
-        std::memcpy(mapped.pData,constants.data(),sizeof(constants));ctx->Unmap(p.constants.Get(),0);
+        auto* dst=static_cast<uint8_t*>(mapped.pData);
+        for (size_t i=first;i<end;++i) std::memcpy(dst+(i-first)*144,commands[i].constants.data(),144);
+        ctx->Unmap(p.constants.Get(),0);
         auto* native=static_cast<core::Graphics::Direct3D11::Mesh*>(mesh->data.get());
         native->applyNative(ctx,false);
         ctx->VSSetShader(p.vs.Get(),nullptr,0);ctx->PSSetShader(p.ps.Get(),nullptr,0);
         auto* cb=p.constants.Get();ctx->VSSetConstantBuffers(1,1,&cb);ctx->PSSetConstantBuffers(1,1,&cb);
         cmd->bindPixelShaderTexture2D(0,mesh->texture.get());
-        auto* sampler=mesh->texture->getSamplerState();
+        auto* sampler=mesh->texture ? mesh->texture->getSamplerState():nullptr;
         if (!sampler) sampler=renderer->getKnownSamplerState(core::Graphics::IRenderer::SamplerState::LinearWrap);
         cmd->bindPixelShaderSampler(0,sampler);
-        ctx->OMSetBlendState(p.blends[blend-1].Get(),nullptr,0xffffffff);
-        ctx->OMSetDepthStencilState(p.depths[depth].Get(),0);ctx->RSSetState(p.rasters[cull].Get());
-        native->drawNative(ctx);
+        ctx->OMSetBlendState(p.blends[draw.blend].Get(),nullptr,0xffffffff);
+        ctx->OMSetDepthStencilState(p.depths[draw.depth].Get(),0);ctx->RSSetState(p.rasters[draw.cull].Get());
+        cmd->drawIndexedInstanced(mesh->data->getIndexCount(),static_cast<uint32_t>(end-first),0,0,0);
+        first=end;
+    }
+}
+static int draw(lua_State* L) {
+    try {
+        Command command;readCommand(L,0,command);submit(&command,1);
+    } catch (std::exception const& e) { return luaL_error(L,"%s",e.what()); }
+    return 0;
+}
+static int drawBatch(lua_State* L) {
+    luaL_checktype(L,1,LUA_TTABLE);
+    const size_t count=lua_objlen(L,1);
+    static thread_local std::vector<Command> commands;
+    try {
+        commands.resize(count);
+        // 全部 Lua 参数先解析，进入绘制阶段后只执行 C++，异常由 SavedState 还原。
+        for (size_t i=0;i<count;++i) {
+            lua_rawgeti(L,1,static_cast<int>(i+1));const int row=lua_gettop(L);
+            luaL_checktype(L,row,LUA_TTABLE);
+            for (int j=1;j<=9;++j) lua_rawgeti(L,row,j);
+            readCommand(L,row,commands[i]);lua_settop(L,row-1);
+        }
+        submit(commands.data(),commands.size());
     } catch (std::exception const& e) { return luaL_error(L,"%s",e.what()); }
     return 0;
 }

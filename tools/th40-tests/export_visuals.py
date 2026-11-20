@@ -86,4 +86,6 @@ for n in ['FullPic2','FullPic3','BaseBossTouhou','BackgroundMove2','BackgroundRo
  read(source/(n+'.cs'))
 (ROOT/'mod/GAME/th40/visuals.lua').write_text('-- 原作构造函数离线参数，背景不拉伸、不虚构滚动速度。\nreturn '+lua(dict(configs=configs,assets=assets,centers=centers))+'\n')
 (ROOT/'mod/GAME/th40/visual_sources.json').write_text(json.dumps(dict(configs=len(configs),portraits=len(assets),sha256=hashes),ensure_ascii=False,indent=2)+'\n')
+from export_background_coverage import export as export_background_coverage
+export_background_coverage(ROOT)
 print(len(configs),'spell configurations,',len(assets),'portrait resources')

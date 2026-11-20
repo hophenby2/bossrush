@@ -40,6 +40,7 @@ def main():
     source=source.replace(register,
         '\t\t{ "CreateSourceModelMesh", &source_mesh::create },\n'
         '\t\t{ "RenderSourceModelMesh", &source_mesh::draw },\n'+register,1)
+    source=source.replace(register,'\t\t{ "RenderSourceModelMeshes", &source_mesh::drawBatch },\n'+register,1)
     patched=output/'LW_Renderer.cpp'
     patched.write_text(source,encoding='utf-8')
 

@@ -2,6 +2,9 @@
 local N=...
 local V={data=dofile('mod/GAME/th40/visuals.lua')}
 local D=V.data
+local coverage=dofile('mod/GAME/th40/background_coverage.lua').regions
+local tiles={{0,0},{1,0},{1,1},{0,1}}
+local blendOrder={false,true}
 local function image(name)
     local id=N.images[name]
     if not id and D.assets[name] then
@@ -30,10 +33,17 @@ function V.backgrounds(meta)
         local scale=f.Scale or (move and 1 or p.kind=='BackgroundRotate' and 2.5 or 1)
         local length=f.Length or 896
         if move then scale=length/h end
+        local region,proof=N.regions[p.name],coverage[p.name]
+        local opaque=proof and proof[6] and region and w==proof[4] and h==proof[5]
+        if opaque then
+            for i=1,5 do if proof[i]~=region[i+1] then opaque=false;break end end
+        end
+        local center=D.centers[p.name]
         parts[#parts+1]={id=id,x=move and 224 or 192,y=224,width=w*scale,height=h*scale,scale=scale,
             move=move,speed=f.Velocity or (move and 2 or 0),direction=f.DirectionDegree or (move and 225 or p.kind=='BackgroundSC' and 90 or 0),
             angle=f.AngleDegree or 0,follow=f.AngleWithDirection~=false,omega=f.AngularVelocityDegree or (p.kind=='BackgroundRotate' and .5 or 0),
-            alpha=f.TransparentValueF or 255,initial=f.TransparentValueF or 255,add=f.Active or false,event=p.alphaEvent,age=0}
+            alpha=f.TransparentValueF or 255,initial=f.TransparentValueF or 255,add=f.Active or false,event=p.alphaEvent,age=0,
+            opaque=opaque,seamOpaque=opaque and proof[7],w=w,h=h,cx=center and center[1] or w/2,cy=center and center[2] or h/2}
     end
     return parts
 end
@@ -57,15 +67,49 @@ function V.tickBackground(parts)
         end
     end
 end
+function V.coversBackground(parts,alpha)
+    local w=lstg.world;local l,r,b,t=w.l,w.r,w.b,w.t
+    local offset=lstg.worldoffset
+    if offset then
+        local hx,hy=math.abs((r-l)/offset.hscale/2),math.abs((t-b)/offset.vscale/2)
+        local x,y=offset.centerx-offset.dx/offset.hscale,offset.centery-offset.dy/offset.vscale
+        l,r,b,t=x-hx,x+hx,y-hy,y+hy
+    end
+    local imageScale=GetImageScale()
+    for _,p in ipairs(parts or {}) do
+        if p.opaque and not p.add and p.alpha*alpha==255 then
+            local rot=90-p.angle-(p.follow and p.direction or 0)
+            local ca,sa=cos(rot),sin(rot);local scale=p.scale*imageScale
+            if scale~=0 then
+                local function inside(x,y,ox,oy)
+                    local dx,dy=x-(p.x+ox-192),y-(224-p.y-oy)
+                    local u,v=(dx*ca+dy*sa)/scale+p.cx,p.cy-(-dx*sa+dy*ca)/scale
+                    -- 留出半个像素，避免图集边缘的线性采样透出下层场景。
+                    return u>=.501 and u<=p.w-.501 and v>=.501 and v<=p.h-.501
+                end
+                for i=1,p.move and 4 or 1 do
+                    local tile=tiles[i];local x,y=tile[1]*p.width,tile[2]*p.height
+                    if inside(l,b,x,y) and inside(l,t,x,y) and inside(r,b,x,y) and inside(r,t,x,y) then return true end
+                end
+                if p.move and p.seamOpaque and imageScale==1 and scale>0 and rot%360==0 then
+                    local left,top=p.x-192-p.cx*scale,224-p.y+p.cy*scale
+                    local edge=.501*scale
+                    if l>=left+edge and r<=left+2*p.width-edge and t<=top-edge and b>=top-2*p.height+edge then return true end
+                end
+            end
+        end
+    end
+    return false
+end
 function V.drawBackground(parts,alpha)
-    for _,add in ipairs({false,true}) do
+    for _,add in ipairs(blendOrder) do
         for _,p in ipairs(parts or {}) do
             if p.add==add then
                 SetImageState(p.id,add and 'mul+add' or '',p.alpha*alpha,255,255,255)
                 local rot=90-p.angle-(p.follow and p.direction or 0)
                 if p.move then
-                    for _,at in ipairs({{0,0},{p.width,0},{p.width,p.height},{0,p.height}}) do
-                        Render(p.id,p.x+at[1]-192,224-p.y-at[2],rot,p.scale,p.scale)
+                    for _,at in ipairs(tiles) do
+                        Render(p.id,p.x+at[1]*p.width-192,224-p.y-at[2]*p.height,rot,p.scale,p.scale)
                     end
                 else Render(p.id,p.x-192,224-p.y,rot,p.scale,p.scale) end
             end

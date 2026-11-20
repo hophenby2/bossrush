@@ -144,6 +144,8 @@ for folder in ['Bullet','Boss','Enemy','Effect','Background']:
   if image.stem not in known:
    width,height=struct.unpack('>II',image.read_bytes()[16:24]);atlas.append([image.stem,str(target.relative_to(ROOT)),0,0,width,height]);known.add(image.stem)
 (OUT/'atlas.lua').write_text('-- 原作图集切片参数。\nreturn '+lua(atlas)+'\n')
+from export_background_coverage import export as export_background_coverage
+export_background_coverage(ROOT)
 bullet_source=(a.source/'BaseBullet_CS.cs').read_text()
 names=re.search(r'string\[\] BulletName = new string\[\d+\]\s*\{([^}]+)\}',bullet_source)[1]
 entries=re.findall(r'null|"[^"\n]*"',names);assert len(entries)==229

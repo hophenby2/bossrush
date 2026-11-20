@@ -37,6 +37,7 @@ end
 local corners={{},{},{}}
 local transform,uvTransform={},{1,1,0,0}
 local viewPlanes
+local meshBatch=Mesh.newBatch()
 local function draw(m,frame,particle)
     if m.alpha<=0 or m.prepare or m.separate and not particle then return end
     local data=prepare(m.name)
@@ -49,7 +50,7 @@ local function draw(m,frame,particle)
     if data.sourceMeshes then
         Mesh.transform(pos,scale,rotation,transform);uvTransform[3],uvTransform[4]=u,v
         local depth=m.label=='1003' and 0 or m.depth and 1 or 2
-        Mesh.draw(data.sourceMeshes,transform,tint,uvTransform,m.blend,depth,m.cutout,m.cutout and 0 or 1,viewPlanes)
+        Mesh.draw(data.sourceMeshes,transform,tint,uvTransform,m.blend,depth,m.cutout,m.cutout and 0 or 1,viewPlanes,meshBatch)
         return
     end
     -- Sub 的深度状态要求数字；第二参保留给 LuaSTG-x 的深度写入开关。
@@ -118,6 +119,7 @@ local Scene=Class(background,{
         for _,m in ipairs(s.models) do if m.label~='1003' then draw(m,s.frame) end end
         for _,p in ipairs(s.particles) do draw(p.model,0,p) end
         local overlay=State.find(s,1003);if overlay then draw(overlay,s.frame) end
+        Mesh.flush(meshBatch)
         SetZBufferEnable(0);lstg.view3d=previous;SetViewMode('world')
         if s.fade>0 then SetImageState('white','',255*s.fade,0,0,0);RenderRect('white',w.l,w.r,w.b,w.t);SetImageState('white','',255,255,255,255) end
     end,
