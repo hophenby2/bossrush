@@ -4,6 +4,7 @@ local path='mod/GAME/th38/scenes/'
 local assets='Resources/th38/background/unity/'
 local scenes={}
 local meshes
+local ready
 local floor,min,max=math.floor,math.min,math.max
 local sin,cos,rad=math.sin,math.cos,math.rad
 local identity={0,0,0,1}
@@ -466,6 +467,16 @@ local function drawParticles(o,cam,n)
         end
     end
 end
+local function nativeMesh(d,part,tex)
+    d.native=d.native or setmetatable({},{__mode='k'})
+    local byTexture=d.native[part] or {};d.native[part]=byTexture
+    if not byTexture[tex] then
+        local vertices={}
+        for _,index in ipairs(part) do for j=1,5 do vertices[#vertices+1]=d.verts[index][j] end end
+        byTexture[tex]=lstg.AndroidCreateModelMesh(FindResTexture(tex),vertices)
+    end
+    return byTexture[tex]
+end
 local function drawMesh(o,cam,n,d,part,mat)
     local tex,w,h=texture(o,mat.tex)
     local rgb=mat.color or {1,1,1,1}
@@ -482,17 +493,7 @@ local function drawMesh(o,cam,n,d,part,mat)
     local uv=mat.uv or noUV
     local offset=mat.water and o.clock/120*.01 or 0
     if tex and lstg.AndroidCreateModelMesh then
-        d.native=d.native or setmetatable({},{__mode='k'})
-        local byTexture=d.native[part] or {};d.native[part]=byTexture
-        local native=byTexture[tex]
-        if not native then
-            local vertices={}
-            for _,index in ipairs(part) do
-                local v=d.verts[index]
-                for j=1,5 do vertices[#vertices+1]=v[j] end
-            end
-            native=lstg.AndroidCreateModelMesh(FindResTexture(tex),vertices);byTexture[tex]=native
-        end
+        local native=nativeMesh(d,part,tex)
         local x,y,z=viewPoint(cam,point(n.m,0,0,0))
         local transform={}
         for i=1,3 do
@@ -616,6 +617,9 @@ local Scene=Class(background,{
         o.data=sceneData(chapter..variant)
         o.clock,o.story=start,start
         o.transforms,o.resources,o.sizes={},{},{}
+        if ready and ready.key==chapter..variant then
+            o.resources,o.sizes=ready.resources,ready.sizes;ready=nil
+        end
         stageChanges(o)
     end,
     frame=function(o)
@@ -647,6 +651,7 @@ local Scene=Class(background,{
         end
     end,
     del=function(o)
+        if RogueEncounter and RogueEncounter.stopping then return end
         for _,mesh in pairs(meshes or {}) do mesh.native=nil end
         for key,pool in pairs(o.resources) do lstg.RemoveResource(pool,1,key) end
     end,
@@ -654,6 +659,31 @@ local Scene=Class(background,{
 local function current()
     local o=lstg.tmpvar.bg
     if IsValid(o) and o.class==Scene then return o end
+end
+function B.prepare(chapter,variant)
+    if not setting or not setting.displayBG then return end
+    meshes=meshes or dofile(path..'meshes.lua')
+    local data=sceneData(chapter..variant)
+    local o={key=chapter..variant,resources={},sizes={}}
+    for _,node in ipairs(data.nodes) do
+        if node.sprite then texture(o,node.sprite.tex) end
+        if node.particles then texture(o,node.particles.tex) end
+        if node.mesh then
+            local mesh=meshes[node.mesh.key]
+            for j,part in ipairs(mesh.parts) do
+                local mat=node.mesh.materials[j] or node.mesh.materials[#node.mesh.materials]
+                local tex=texture(o,mat.tex)
+                if tex and lstg.AndroidCreateModelMesh then nativeMesh(mesh,part,tex) end
+                if RogueEncounter then RogueEncounter.checkpoint() end
+            end
+        end
+        if RogueEncounter then RogueEncounter.checkpoint() end
+    end
+    ready=o
+end
+function B.clearPrepared() ready=nil end
+function B.releaseMeshes()
+    for _,mesh in pairs(meshes or {}) do mesh.native=nil end
 end
 function B.show(chapter,variant,start,sequence)
     if not setting or not setting.displayBG then return end

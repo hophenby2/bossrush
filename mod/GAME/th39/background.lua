@@ -2,10 +2,12 @@
 local B={}
 local D=dofile('mod/GAME/th39/scenes/index.lua')
 local R
+local snapshot,ready
+local applyCard,applyEnd
 local shake={{-1,0},{0,1},{0,-1},{1,0},{-1,1},{1,-1},{-1,-1},{1,1},{0,0}}
 local function track(scene,id,x,y,order,number)
     scene.serial=scene.serial+1
-    local c=R.backgroundEffect(id,x,y,scene.serial,D.textureHeights,scene.resources)
+    local c=R.backgroundEffect(id,x,y,scene.serial,D.textureHeights,scene.resources,scene.seekPlayer)
     c.order,c.number=order,number
     c.onQuake=function(duration,strength)
         if not scene.quake then scene.quake={time=0,duration=duration,strength=strength*2/3} end
@@ -86,34 +88,59 @@ local Pass=Class(object,{
     end,
     frame=function(o) if not IsValid(o.scene) then Del(o) end end,
     render=function(o)
-        if not IsValid(o.scene) then return end
+        if not IsValid(o.scene) or not o.scene.state then return end
         if o.order=='portrait' then
-            for _,c in ipairs(o.scene.portrait or {}) do R.drawBackground(c,1,0,0) end
-        else draw(o.scene,o.order) end
+            for _,c in ipairs(o.scene.state.portrait or {}) do R.drawBackground(c,1,0,0) end
+        else draw(o.scene.state,o.order) end
     end,
 })
+local function preview(o,point)
+    o.seekPlayer=point
+    for _,list in ipairs({o.effects,o.spell and o.spell.effects or {},o.portrait or {}}) do
+        for _,c in ipairs(list) do c.previewPlayer=point end
+    end
+end
 local Scene=Class(background,{
     init=function(o,chapter,start)
         background.DelBG()
         lstg.tmpvar.bg=o
-        o.chapter,o.script=chapter,D.stages[chapter.script]
+        o.chapter=chapter
+        o.pending={}
         o.group,o.layer,o.colli,o.bound=GROUP.GHOST,LAYER.BG-.1,false,false
-        o.effects,o.serial,o.fade={},0,0
-        o.resources={tex={},img={}}
-        local t=0
-        while t<start do
-            apply(o,t)
-            update(o)
-            local jump=o.script.jumps[tostring(t)]
-            t=jump and jump>t and jump or t+1
+        local px,py=R.player()
+        local prepared=ready and ready.chapter==chapter and ready.start==start and ready
+        ready=nil
+        if prepared and prepared.px==px and prepared.py==py then o.state=prepared.state
+        else
+            -- 玩家可能在45帧入场期间移动。不能使用瞄准旧位置的快照，也不能在 New 回调内挂起。
+            local point={px,py}
+            local function finish()
+                if not IsValid(o) then return end
+                local state=B.seek(chapter,start,point,prepared and prepared.state.resources)
+                for _,event in ipairs(o.pending) do
+                    preview(state,event[3])
+                    if event[1]=='frame' then update(state)
+                    elseif event[1]=='card' then applyCard(state,unpack(event[2]))
+                    elseif event[1]=='end' then applyEnd(state,unpack(event[2]))
+                    else apply(state,event[2]);state.stageTick=event[2] end
+                    preview(state,nil)
+                end
+                state.seekPlayer=nil;o.pending={};o.state=state
+            end
+            if not (RogueEncounter and RogueEncounter.deferBackground and RogueEncounter.deferBackground(finish)) then finish() end
         end
         New(Pass,o,1,LAYER.PLAYER_BULLET+.01)
         New(Pass,o,2,LAYER.ENEMY_BULLET-.01)
         New(Pass,o,0,LAYER.ENEMY_BULLET+.1)
         New(Pass,o,'portrait',LAYER.TOP-10)
     end,
-    frame=update,
+    frame=function(o)
+        if o.state then update(o.state)
+        else local x,y=R.player();o.pending[#o.pending+1]={'frame',nil,{x,y}} end
+    end,
     render=function(o)
+        o=o.state
+        if not o then return end
         if not setting or not setting.displayBG then return end
         SetViewMode('world')
         local w=lstg.world
@@ -132,6 +159,9 @@ local Scene=Class(background,{
         end
     end,
     del=function(o)
+        if RogueEncounter and RogueEncounter.stopping then return end
+        o=o.state
+        if not o then return end
         for name,pool in pairs(o.resources.img) do lstg.RemoveResource(pool,2,name) end
         for name,pool in pairs(o.resources.tex) do lstg.RemoveResource(pool,1,name) end
     end,
@@ -140,6 +170,42 @@ local function current()
     local o=lstg.tmpvar.bg
     if IsValid(o) and o.class==Scene then return o end
 end
+function B.seek(chapter,start,point,resources)
+    local o={chapter=chapter,script=D.stages[chapter.script],effects={},serial=0,fade=0,seekPlayer=point,resources=resources or {tex={},img={}}}
+    local t=0
+    while t<start do
+        apply(o,t);update(o)
+        local jump=o.script.jumps[tostring(t)]
+        t=jump and jump>t and jump or t+1
+        if RogueEncounter then RogueEncounter.checkpoint() end
+    end
+    o.seekPlayer=nil
+    for _,c in ipairs(o.effects) do c.previewPlayer=nil end
+    return o
+end
+function B.prepare(runtime,chapter,start,group,meta)
+    R=runtime
+    if not setting or not setting.displayBG then return end
+    local px,py=R.player()
+    if not snapshot or snapshot.chapter~=chapter or snapshot.start~=start or snapshot.px~=px or snapshot.py~=py then
+        snapshot={chapter=chapter,start=start,px=px,py=py,state=B.seek(chapter,start,{px,py})}
+    end
+    local state=RogueEncounter.copyPrepared(snapshot.state)
+    for _,c in ipairs(state.effects) do
+        c.onQuake=function(duration,strength)
+            if not state.quake then state.quake={time=0,duration=duration,strength=strength*2/3} end
+        end
+        R.prepareBackground(c)
+    end
+    local config=state.script.groups[group.index]
+    local card=config.cards[tostring(meta.number)]
+    local ids={}
+    if card.portrait then ids[#ids+1]=card.portrait end
+    for _,effect in ipairs(meta.kind~=0 and D.spells[tostring(chapter.stage)][tostring(card.variant or config.variant)] or {}) do ids[#ids+1]=effect[1] end
+    for _,id in ipairs(ids) do R.prepareBackground(R.backgroundEffect(id,0,0,7919,D.textureHeights,state.resources)) end
+    ready={chapter=chapter,start=start,px=px,py=py,state=state}
+end
+function B.clearPrepared() snapshot,ready=nil,nil end
 function B.show(runtime,chapter,start)
     R=runtime
     if not setting or not setting.displayBG then return end
@@ -149,14 +215,20 @@ function B.show(runtime,chapter,start)
 end
 function B.tick(t)
     local o=current()
+    if o and not o.state then
+        if o.pendingStageTick~=t then
+            local x,y=R.player();o.pending[#o.pending+1]={'tick',t,{x,y}};o.pendingStageTick=t
+        end
+        return
+    end
+    o=o and o.state
     if o and o.stageTick~=t then
         apply(o,t)
         o.stageTick=t
     end
 end
-function B.card(chapter,group,meta)
-    local o=B.show(R,chapter,group.time)
-    if not o then return end
+applyCard=function(o,group,meta)
+    local chapter=o.chapter
     local config=o.script.groups[group.index]
     local card=config.cards[tostring(meta.number)]
     local variant=card.variant or config.variant
@@ -175,11 +247,21 @@ function B.card(chapter,group,meta)
         end
     end
 end
-function B.endCard(group,meta)
-    local o=current()
-    if not o then return end
+applyEnd=function(o,group,meta)
     local card=o.script.groups[group.index].cards[tostring(meta.number)]
     o.spell=nil;o.portrait=nil
     if card.replace then change(o,card.replace) end
+end
+function B.card(chapter,group,meta)
+    local o=B.show(R,chapter,group.time)
+    if not o then return end
+    if o.state then applyCard(o.state,group,meta)
+    else local x,y=R.player();o.pending[#o.pending+1]={'card',{group,meta},{x,y}} end
+end
+function B.endCard(group,meta)
+    local o=current()
+    if not o then return end
+    if o.state then applyEnd(o.state,group,meta)
+    else local x,y=R.player();o.pending[#o.pending+1]={'end',{group,meta},{x,y}} end
 end
 return B

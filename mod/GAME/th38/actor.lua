@@ -117,4 +117,21 @@ function A.portrait(key)
     if nodes then return New(Portrait,nodes) end
 end
 A.picture=picture
+function A.prepare(key)
+    local phase=D.phases[key]
+    if not phase then return end
+    local function nodes(list)
+        for _,n in ipairs(list or {}) do
+            picture(n.sprite)
+            local controller=n.controller and D.controllers[n.controller]
+            for _,clip in pairs(controller and controller.states or {}) do
+                for _,track in ipairs(clip.tracks) do if track.path=='' then
+                    for _,frame in ipairs(track.keys) do picture(frame[2]) end
+                end end
+            end
+        end
+    end
+    for _,id in ipairs(phase) do nodes(D.profiles[id].nodes) end
+    nodes(phase.portrait and D.portraits[phase.portrait])
+end
 return A

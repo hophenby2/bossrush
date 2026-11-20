@@ -3,6 +3,8 @@ local T={}
 function T.install()
     ext.Debugging=function() end
     AndroidFocus=function() end
+    GetLastKey,lstg.GetLastKey=function()return KEY.NULL end,function()return KEY.NULL end
+    GetMouseState,lstg.GetMouseState=function()return false end,function()return false end
     local speed=tonumber(os.getenv('BOSSRUSH_MAC_TEST_SPEED') or '8')
     local results,counts,plan,retry={},{},{},{}
     local phase,round,age,entry,measured,hits,shots,scope=0,1,0,nil,false,0,0,nil
@@ -149,7 +151,7 @@ function T.install()
                 combatAge=0
             end
             if entry then
-                age=age+1
+                if not run.preparing then age=age+1 end
                 if round==2 and run.current==2 and age==180 and not restarted then
                     restarted=true;stage.Restart();entry=nil;return quit
                 end
@@ -161,7 +163,7 @@ function T.install()
                         o.rogueTestHP=o.hp
                     end end
                 end
-                local ready=entry.level<35 or entry.kind=='road' or measured
+                local ready=not run.preparing and (entry.level<35 or entry.kind=='road' or measured)
                 if ready then combatAge=combatAge+1 end
                 if os.getenv('BOSSRUSH_MAC_TEST_SOURCE')=='TH42' and round==1 and entry.cardId==71121 and combatAge==899 then
                     bombProbe=New(Circle_Attack,player.x,player.y,1,{255,255,255},1800,0,true,player)
@@ -205,6 +207,8 @@ function T.install()
     end
     local frame=FrameFunc
     function FrameFunc()
+        -- main.lua 在 install 之后注册焦点回调；隔离采集时须在实际帧入口覆盖它。
+        AndroidFocus=function() end
         for i=1,speed do if step(frame) then return true end end
     end
 end

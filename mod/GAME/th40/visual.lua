@@ -107,6 +107,12 @@ local SpellAttack=Class(object,{
         end end
     end,
 })
+function V.prepare(meta)
+    V.backgrounds(meta)
+    local cfg=V.config(meta)
+    for _,portrait in ipairs(cfg and cfg.portraits or {}) do image(portrait.name) end
+    image('SpellCircle06')
+end
 function V.open(meta)
     local cfg=V.config(meta);local objects={}
     if cfg then

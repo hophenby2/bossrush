@@ -3,6 +3,7 @@ local Visual,Data=...
 local directory='Resources/th40/Background/'
 local prefix='TH40_scene_'
 local Scene=dofile('mod/GAME/th40/scene.lua')
+local prepared
 local folder={['1']='St01/',['2']='St02/',['3']='St03/',['4']='St04/',['5']='St05/',['6']='St06/',EX='StEx/'}
 local aliases={
     Card02a='St02/Card02a',Card02b='St02/Card02b',Card02c='St02/Card02c',
@@ -76,17 +77,29 @@ local B=Class(background,{
         if o.originalParts then Visual.drawBackground(o.originalParts,o.mediaAlpha or 0) end
     end,
 })
+local function entryClock(chapter,phase)
+    if phase and not lstg.var.sequence_run then
+        local source=Data.stages[chapter]
+        return phase.role=='boss' and source.clock[3] or phase.role=='mid' and source.clock[1] or phase.part=='b' and source.clock[2] or 0
+    end
+    return 0
+end
+function B.prepare(phase)
+    local chapter=phase.chapter
+    local clock=entryClock(chapter,phase)
+    local state=Scene.State.new(chapter,clock)
+    Scene.prepare(state);Visual.prepare(phase)
+    prepared={chapter=chapter,clock=clock,state=state}
+end
+function B.clearPrepared() prepared=nil end
 function B.enter(chapter,phase)
     local bg=lstg.tmpvar.bg
     if not IsValid(bg) or bg.class~=B then bg=New(B) end
     if bg.chapter~=chapter then
         bg.chapter,bg.mediaLayers,bg.mediaAlpha=chapter,nil,0
-        local clock=0
-        if phase and not lstg.var.sequence_run then
-            local source=Data.stages[chapter]
-            clock=phase.role=='boss' and source.clock[3] or phase.role=='mid' and source.clock[1] or phase.part=='b' and source.clock[2] or 0
-        end
-        bg.scene=Scene.State.new(chapter,clock)
+        local clock=entryClock(chapter,phase)
+        if prepared and prepared.chapter==chapter and prepared.clock==clock then bg.scene=prepared.state;prepared=nil
+        else bg.scene=Scene.State.new(chapter,clock) end
     end
     bg.originalParts,bg.tenseiAge=Visual.backgrounds(phase)
     bg.mediaSpell=bg.originalParts and #bg.originalParts>0 or false

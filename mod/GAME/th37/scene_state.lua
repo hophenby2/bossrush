@@ -156,6 +156,7 @@ function S.new(chapter,clock,musicFrames)
     for frame=1,clock or 0 do
         if musicFrames and musicFrames[frame] and s.mode=='music' then s.mode='boss' end
         S.step(s,false)
+        if RogueEncounter then RogueEncounter.checkpoint() end
     end
     return s
 end

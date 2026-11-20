@@ -602,3 +602,9 @@ replace('frameworks/LSTG/Util/Utility.cpp', '''void lstg::deployThreadTaskAndWai
 replace(manager, 'if (!p->hide/*&&p->isDefaultRender*/)',
         'if (!p->hide && (p->cls->isDefaultRender || p->cm->getBindNode() || p->cm->getLightSource()))')
 print('已应用固定版本 Android 补丁')
+
+# 随机模式预载先在线程解码 Image；只有主线程的 ResTexture::create 使用像素并上传 GPU。
+replace('frameworks/LSTG/Resource/ResTexture.cpp', '#include "ResTexture.h"', '#include "ResTexture.h"\n#include "compat.h"')
+replace('frameworks/LSTG/Resource/ResTexture.cpp',
+        'ResTexture* ResTexture::create(const std::string& name, const std::string& path)\n{',
+        'ResTexture* ResTexture::create(const std::string& name, const std::string& path)\n{\n    if (auto* image=androidTakePreparedTexture(path)) {\n        auto* tex=new Texture2D();tex->autorelease();\n        ResTexture* resource=nullptr;\n        if (tex->initWithImage(image)) {\n            resource=new (std::nothrow) ResTexture(name,tex);\n            if(resource) resource->resPath=path;\n        }\n        delete image;return resource;\n    }')

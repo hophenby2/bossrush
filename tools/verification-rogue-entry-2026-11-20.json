@@ -1,0 +1,5222 @@
+{
+  "date": "2026-11-20",
+  "source_commit": "8683872ea8a9ba1759d251ee4afc8c449c72220e",
+  "scope": "RogueTen 新七作的入场停顿；按作品选择一个 Lunatic 攻击入口，Like Dreamer 使用 Nightmare 的单攻击入口。",
+  "hardware": {
+    "chip": "Apple M4 Max",
+    "cpu_cores": 16,
+    "gpu_cores": 40,
+    "memory_gb": 64,
+    "backend": "原生 macOS / Metal",
+    "framebuffer": [
+      2560,
+      1440
+    ]
+  },
+  "method": {
+    "speed": 1,
+    "vsync": true,
+    "baseline_window_frames": 360,
+    "baseline_samples": 16,
+    "inputs": "屏蔽实体键鼠，不射击，自机保护，观察窗口结束后令当前 Boss 结束以推进路线；沿用真实 RogueTen 入口与资源清理。",
+    "timing": "AndroidClock 墙钟；分别记录 FrameFunc、RenderFunc、相邻显示帧间隔与嵌套资源调用。表中的 CPU 峰值取同一帧逻辑+绘制之和。",
+    "retention_control": "仅在限定同作的诊断进程中跳过 encounter.stop 内的 RemoveResource；对象清理与 Boss 初始化照常进行。此开关不是正式修复。",
+    "cold_definition": "首次指本进程首次进入该作；没有清理操作系统文件缓存。",
+    "sampling": "永夜使用 LuaJIT 10ms 调用栈采样并统计背景更新次数；采样改变了 JIT/计时开销，绝对入场时长采用未开启调用栈采样的跨作基线。",
+    "limits": "每作一个攻击样本，未穷举全部卡片；未测 Android。passed 只表示采集完成。短观察窗口只用于入场，不是长期帧率结论。"
+  },
+  "comparison": [
+    {
+      "source": "TH31",
+      "title": "永夜抄（旧作对照）",
+      "card_id": 3426,
+      "first_max_cpu_ms": 30.7324,
+      "repeat_max_cpu_ms": 9.7588,
+      "first_max_logic_ms": 28.5805,
+      "repeat_max_logic_ms": 7.6762,
+      "first_max_render_ms": 11.0865,
+      "repeat_max_render_ms": 5.2934,
+      "first_texture_calls": 8,
+      "repeat_texture_calls": 0
+    },
+    {
+      "source": "TH37",
+      "title": "幕华祭春雪",
+      "card_id": 37004,
+      "first_max_cpu_ms": 69.9789,
+      "repeat_max_cpu_ms": 41.8667,
+      "first_max_logic_ms": 48.3266,
+      "repeat_max_logic_ms": 39.9634,
+      "first_max_render_ms": 21.6523,
+      "repeat_max_render_ms": 18.1225,
+      "first_texture_calls": 13,
+      "repeat_texture_calls": 0
+    },
+    {
+      "source": "TH38",
+      "title": "雪莲华",
+      "card_id": 38002,
+      "first_max_cpu_ms": 147.3799,
+      "repeat_max_cpu_ms": 50.7961,
+      "first_max_logic_ms": 115.4457,
+      "repeat_max_logic_ms": 3.7523,
+      "first_max_render_ms": 124.6163,
+      "repeat_max_render_ms": 48.2021,
+      "first_texture_calls": 130,
+      "repeat_texture_calls": 6
+    },
+    {
+      "source": "TH39",
+      "title": "幕华祭永夜",
+      "card_id": 39001,
+      "first_max_cpu_ms": 2933.9854,
+      "repeat_max_cpu_ms": 2658.0771,
+      "first_max_logic_ms": 2648.5661,
+      "repeat_max_logic_ms": 2572.8275,
+      "first_max_render_ms": 285.4193,
+      "repeat_max_render_ms": 85.2496,
+      "first_texture_calls": 32,
+      "repeat_texture_calls": 27
+    },
+    {
+      "source": "TH40",
+      "title": "夏夜祭",
+      "card_id": 68002,
+      "first_max_cpu_ms": 50.5141,
+      "repeat_max_cpu_ms": 26.897,
+      "first_max_logic_ms": 20.8578,
+      "repeat_max_logic_ms": 23.2906,
+      "first_max_render_ms": 29.6563,
+      "repeat_max_render_ms": 5.6673,
+      "first_texture_calls": 7,
+      "repeat_texture_calls": 0
+    },
+    {
+      "source": "TH41",
+      "title": "祈华梦",
+      "card_id": 70101,
+      "first_max_cpu_ms": 404.9252,
+      "repeat_max_cpu_ms": 381.5061,
+      "first_max_logic_ms": 402.7133,
+      "repeat_max_logic_ms": 380.2005,
+      "first_max_render_ms": 4.9391,
+      "repeat_max_render_ms": 4.3639,
+      "first_texture_calls": 49,
+      "repeat_texture_calls": 49
+    },
+    {
+      "source": "TH42",
+      "title": "Like Dreamer",
+      "card_id": 71121,
+      "first_max_cpu_ms": 394.1076,
+      "repeat_max_cpu_ms": 390.107,
+      "first_max_logic_ms": 392.9053,
+      "repeat_max_logic_ms": 388.8593,
+      "first_max_render_ms": 5.0956,
+      "repeat_max_render_ms": 4.3501,
+      "first_texture_calls": 43,
+      "repeat_texture_calls": 43
+    },
+    {
+      "source": "TH43",
+      "title": "栖霞园",
+      "card_id": 81402,
+      "first_max_cpu_ms": 110.8611,
+      "repeat_max_cpu_ms": 96.182,
+      "first_max_logic_ms": 109.5707,
+      "repeat_max_logic_ms": 94.4623,
+      "first_max_render_ms": 19.0117,
+      "repeat_max_render_ms": 4.2908,
+      "first_texture_calls": 15,
+      "repeat_texture_calls": 15
+    }
+  ],
+  "findings": [
+    {
+      "cause": "入场同步重建背景时间轴",
+      "evidence": "永夜样本 39001 的 Boss 时刻为 3180。每次重建从 0 预演到该时刻，共调用 tickBackground 6358 次；采样集中在粒子事件插值与更新。未开启采样时重复入场 CPU 峰值为 2658ms。春雪也从 0 推进背景，单独计时约 41–43ms。",
+      "locations": [
+        "mod/GAME/th39/background.lua:104",
+        "mod/GAME/th39/runtime.lua:693",
+        "mod/GAME/th37/scene_state.lua:156"
+      ]
+    },
+    {
+      "cause": "每卡资源作用域将共享素材卸载，下次同步重载",
+      "evidence": "祈华梦每次载入 49 张纹理，重复入场的 372ms 花在 LoadTexture；Like Dreamer 每次 43 张，约 383ms；栖霞园每次 15 张，约 89ms。保持同作资源后，三作重复入场最长逻辑帧分别降至约 4–9ms、3–4ms、5–6ms。",
+      "locations": [
+        "mod/rogue_encounter.lua:50",
+        "mod/GAME/ports/resources.lua:86",
+        "mod/GAME/ports/resources.lua:119",
+        "mod/GAME/th41.lua:446",
+        "mod/GAME/ports/dreamer/LikeDreamer/resources.lua:437"
+      ]
+    },
+    {
+      "cause": "首次绘制与发弹时才装载背景/弹幕资源",
+      "evidence": "雪莲华细分样本中，首次渲染执行 meshes.lua 用时约 74ms；重复入场又同步载入 6 张背景纹理，约 44–47ms。基线在第 107 帧的一次调用还批量载入了 101 张弹幕/自定义纹理，约 113ms，造成另一处入场期停顿。",
+      "locations": [
+        "mod/GAME/th38/background.lua:628",
+        "mod/GAME/th38/background.lua:320",
+        "mod/GAME/th38/runtime.lua:31"
+      ]
+    }
+  ],
+  "recommended_order": [
+    "永夜优先处理背景预演：在过渡期间分帧计算，或保存/复用保持原作时钟、随机状态与粒子状态的入口快照；春雪同类处理。",
+    "将对象生命周期与共享素材生命周期分开：共用素材在局内复用，关卡独占素材按需释放，并保留跨作品命名隔离与内存预算。",
+    "把雪莲华的网格解析、弹幕公共资源以及大型图集的加载移至可控的预载阶段，避免首次 Render 或发弹回调承担整批同步加载。"
+  ],
+  "gameplay_fixes_applied": false,
+  "baseline": {
+    "source": "/tmp/bossrush-entry-all-360/bossrush/User/rogue-entry-profile.json",
+    "retain_resources": false,
+    "cases": [
+      {
+        "source": "TH31",
+        "index": 1,
+        "card_id": 3426,
+        "key": "TH31:3426",
+        "first_frame": 206,
+        "frames": 360,
+        "max_logic_ms": 28.5805,
+        "max_render_ms": 11.0865,
+        "max_wall_ms": 31.7852,
+        "cpu_over_16ms": 2,
+        "operations": {
+          "LoadMusic": {
+            "count": 1,
+            "ms": 0.9622,
+            "self_ms": 0.9622
+          },
+          "LoadTexture": {
+            "count": 8,
+            "ms": 41.4684,
+            "self_ms": 41.4684
+          },
+          "LoadImage": {
+            "count": 23,
+            "ms": 0.6035,
+            "self_ms": 0.6035
+          },
+          "encounter.begin": {
+            "count": 1,
+            "ms": 0.0075,
+            "self_ms": 0.007
+          },
+          "encounter.stop": {
+            "count": 1,
+            "ms": 0.0005,
+            "self_ms": 0.0005
+          }
+        },
+        "top_frames": [
+          {
+            "case": 1,
+            "logic_ms": 28.5805,
+            "render_ms": 2.1518,
+            "age": 1,
+            "wall_ms": 31.7852,
+            "frame": 206
+          },
+          {
+            "case": 1,
+            "logic_ms": 9.7217,
+            "render_ms": 11.0865,
+            "age": 137,
+            "wall_ms": 21.2246,
+            "frame": 342
+          },
+          {
+            "case": 1,
+            "logic_ms": 9.9,
+            "render_ms": 2.8015,
+            "age": 281,
+            "wall_ms": 16.4288,
+            "frame": 486
+          },
+          {
+            "case": 1,
+            "logic_ms": 3.3598,
+            "render_ms": 7.5456,
+            "age": 47,
+            "wall_ms": 16.2043,
+            "frame": 252
+          }
+        ],
+        "top_events": [
+          {
+            "ms": 19.0933,
+            "self_ms": 19.0933,
+            "path": "mod\\BG\\TH08\\TH08_bg_stg6bg2.png",
+            "name": "stg6bg2",
+            "op": "LoadTexture",
+            "frame": 206
+          },
+          {
+            "ms": 6.9199,
+            "self_ms": 6.9199,
+            "path": "mod\\BG\\TH08\\TH08_bg_stg6bg.png",
+            "name": "stg6bg",
+            "op": "LoadTexture",
+            "frame": 206
+          },
+          {
+            "ms": 5.9204,
+            "self_ms": 5.9204,
+            "path": "Resources/Original/8/enemy_0.png",
+            "name": "original/8/enemy/0",
+            "op": "LoadTexture",
+            "frame": 342
+          },
+          {
+            "ms": 2.4982,
+            "self_ms": 2.4982,
+            "path": "Resources/Original/8/eff03_0.png",
+            "name": "original/8/eff03/0",
+            "op": "LoadTexture",
+            "frame": 252
+          },
+          {
+            "ms": 2.3195,
+            "self_ms": 2.3195,
+            "path": "Resources/Original/8/eff03_1.png",
+            "name": "original/8/eff03/1",
+            "op": "LoadTexture",
+            "frame": 252
+          },
+          {
+            "ms": 1.6704,
+            "self_ms": 1.6704,
+            "path": "Resources/Original/8/stg3enm_0.png",
+            "name": "original/8/stg3enm/0",
+            "op": "LoadTexture",
+            "frame": 251
+          },
+          {
+            "ms": 1.5591,
+            "self_ms": 1.5591,
+            "path": "Resources/Original/8/etama_1.png",
+            "name": "original/8/etama/1",
+            "op": "LoadTexture",
+            "frame": 342
+          },
+          {
+            "ms": 1.4876,
+            "self_ms": 1.4876,
+            "path": "Resources/Original/8/etama_0.png",
+            "name": "original/8/etama/0",
+            "op": "LoadTexture",
+            "frame": 381
+          }
+        ]
+      },
+      {
+        "source": "TH31",
+        "index": 2,
+        "card_id": 3426,
+        "key": "TH31:3426",
+        "first_frame": 627,
+        "frames": 360,
+        "max_logic_ms": 7.6762,
+        "max_render_ms": 5.2934,
+        "max_wall_ms": 27.0448,
+        "cpu_over_16ms": 0,
+        "operations": {
+          "encounter.begin": {
+            "count": 1,
+            "ms": 0.0032,
+            "self_ms": 0.003
+          },
+          "encounter.stop": {
+            "count": 2,
+            "ms": 0.0009,
+            "self_ms": 0.0009
+          }
+        },
+        "top_frames": [
+          {
+            "case": 2,
+            "logic_ms": 7.6762,
+            "render_ms": 2.0826,
+            "age": 287,
+            "wall_ms": 16.9116,
+            "frame": 913
+          },
+          {
+            "case": 2,
+            "logic_ms": 6.7316,
+            "render_ms": 2.6341,
+            "age": 323,
+            "wall_ms": 17.6441,
+            "frame": 949
+          },
+          {
+            "case": 2,
+            "logic_ms": 5.6827,
+            "render_ms": 2.2237,
+            "age": 359,
+            "wall_ms": 15.8645,
+            "frame": 985
+          },
+          {
+            "case": 2,
+            "logic_ms": 5.3858,
+            "render_ms": 2.3375,
+            "age": 311,
+            "wall_ms": 15.9075,
+            "frame": 937
+          }
+        ],
+        "top_events": []
+      },
+      {
+        "source": "TH37",
+        "index": 3,
+        "card_id": 37004,
+        "key": "TH37:37004",
+        "first_frame": 1048,
+        "frames": 360,
+        "max_logic_ms": 48.3266,
+        "max_render_ms": 21.6523,
+        "max_wall_ms": 70.4346,
+        "cpu_over_16ms": 3,
+        "operations": {
+          "RemoveResource": {
+            "count": 2,
+            "ms": 0.1228,
+            "self_ms": 0.1228
+          },
+          "LoadMusic": {
+            "count": 1,
+            "ms": 1.4219,
+            "self_ms": 1.4219
+          },
+          "LoadTexture": {
+            "count": 13,
+            "ms": 58.7482,
+            "self_ms": 58.7482
+          },
+          "LoadImage": {
+            "count": 178,
+            "ms": 3.3056,
+            "self_ms": 3.3056
+          },
+          "encounter.begin": {
+            "count": 1,
+            "ms": 0.7156,
+            "self_ms": 0.7155
+          },
+          "encounter.stop": {
+            "count": 2,
+            "ms": 0.0013,
+            "self_ms": 0.0013
+          }
+        },
+        "top_frames": [
+          {
+            "case": 3,
+            "logic_ms": 48.3266,
+            "render_ms": 21.6523,
+            "age": 1,
+            "wall_ms": 70.4346,
+            "frame": 1048
+          },
+          {
+            "case": 3,
+            "logic_ms": 32.5325,
+            "render_ms": 1.9733,
+            "age": 91,
+            "wall_ms": 34.9856,
+            "frame": 1138
+          },
+          {
+            "case": 3,
+            "logic_ms": 17.0655,
+            "render_ms": 1.3847,
+            "age": 2,
+            "wall_ms": 18.7015,
+            "frame": 1049
+          },
+          {
+            "case": 3,
+            "logic_ms": 2.0101,
+            "render_ms": 10.6755,
+            "age": 105,
+            "wall_ms": 16.0405,
+            "frame": 1152
+          }
+        ],
+        "top_events": [
+          {
+            "ms": 12.0885,
+            "self_ms": 12.0885,
+            "path": "Resources/th37/be39.png",
+            "name": "mhj2_be39",
+            "op": "LoadTexture",
+            "frame": 1138
+          },
+          {
+            "ms": 11.4128,
+            "self_ms": 11.4128,
+            "path": "Resources/th37/bosses.png",
+            "name": "mhj2_bosses",
+            "op": "LoadTexture",
+            "frame": 1049
+          },
+          {
+            "ms": 8.4871,
+            "self_ms": 8.4871,
+            "path": "Resources/th37/spell6.png",
+            "name": "mhj2_spell_6",
+            "op": "LoadTexture",
+            "frame": 1138
+          },
+          {
+            "ms": 8.2809,
+            "self_ms": 8.2809,
+            "path": "Resources/th37/scene/8004_0.png",
+            "name": "th37_mesh_8004_0",
+            "op": "LoadTexture",
+            "frame": 1048
+          },
+          {
+            "ms": 7.2427,
+            "self_ms": 7.2427,
+            "path": "Resources/th37/spell5.png",
+            "name": "mhj2_spell_5",
+            "op": "LoadTexture",
+            "frame": 1138
+          },
+          {
+            "ms": 3.0508,
+            "self_ms": 3.0508,
+            "path": "Resources/th37/bosslist.png",
+            "name": "mhj2_bosslist",
+            "op": "LoadTexture",
+            "frame": 1049
+          },
+          {
+            "ms": 2.2629,
+            "self_ms": 2.2629,
+            "path": "Resources/th37/scene/8001_0.png",
+            "name": "th37_mesh_8001_0",
+            "op": "LoadTexture",
+            "frame": 1048
+          },
+          {
+            "ms": 2.2079,
+            "self_ms": 2.2079,
+            "path": "Resources/th37/scene/8003_0.png",
+            "name": "th37_mesh_8003_0",
+            "op": "LoadTexture",
+            "frame": 1048
+          },
+          {
+            "ms": 2.2069,
+            "self_ms": 2.2069,
+            "path": "Chen",
+            "name": "Chen11",
+            "op": "LoadImage",
+            "frame": 1048
+          },
+          {
+            "ms": 1.9627,
+            "self_ms": 1.9627,
+            "path": "Resources/th37/scene/8002_0.png",
+            "name": "th37_mesh_8002_0",
+            "op": "LoadTexture",
+            "frame": 1048
+          },
+          {
+            "ms": 1.4219,
+            "self_ms": 1.4219,
+            "path": "music\\TH37_03.ogg",
+            "name": "TH37_03",
+            "op": "LoadMusic",
+            "frame": 1048
+          }
+        ]
+      },
+      {
+        "source": "TH37",
+        "index": 4,
+        "card_id": 37004,
+        "key": "TH37:37004",
+        "first_frame": 1469,
+        "frames": 360,
+        "max_logic_ms": 39.9634,
+        "max_render_ms": 18.1225,
+        "max_wall_ms": 47.6039,
+        "cpu_over_16ms": 2,
+        "operations": {
+          "RemoveResource": {
+            "count": 43,
+            "ms": 0.5014,
+            "self_ms": 0.5014
+          },
+          "LoadMusic": {
+            "count": 1,
+            "ms": 0.3005,
+            "self_ms": 0.3005
+          },
+          "LoadImage": {
+            "count": 42,
+            "ms": 0.4653,
+            "self_ms": 0.4653
+          },
+          "encounter.begin": {
+            "count": 1,
+            "ms": 0.7835,
+            "self_ms": 0.7833
+          },
+          "encounter.stop": {
+            "count": 2,
+            "ms": 2.1177,
+            "self_ms": 1.6163
+          }
+        },
+        "top_frames": [
+          {
+            "case": 4,
+            "logic_ms": 39.9634,
+            "render_ms": 1.9033,
+            "age": 1,
+            "wall_ms": 42.1368,
+            "frame": 1469
+          },
+          {
+            "case": 4,
+            "logic_ms": 1.9669,
+            "render_ms": 18.1225,
+            "age": 346,
+            "wall_ms": 21.5247,
+            "frame": 1814
+          },
+          {
+            "case": 4,
+            "logic_ms": 4.4142,
+            "render_ms": 2.5365,
+            "age": 185,
+            "wall_ms": 16.4604,
+            "frame": 1653
+          },
+          {
+            "case": 4,
+            "logic_ms": 5.0952,
+            "render_ms": 1.6742,
+            "age": 355,
+            "wall_ms": 16.4665,
+            "frame": 1823
+          }
+        ],
+        "top_events": [
+          {
+            "ms": 2.1175,
+            "self_ms": 1.6161,
+            "name": "<scene>",
+            "op": "encounter.stop",
+            "frame": 1469
+          }
+        ]
+      },
+      {
+        "source": "TH38",
+        "index": 5,
+        "card_id": 38002,
+        "key": "TH38:38002",
+        "first_frame": 1890,
+        "frames": 360,
+        "max_logic_ms": 115.4457,
+        "max_render_ms": 124.6163,
+        "max_wall_ms": 147.5709,
+        "cpu_over_16ms": 3,
+        "operations": {
+          "LoadTexture": {
+            "count": 130,
+            "ms": 201.5236,
+            "self_ms": 201.5236
+          },
+          "LoadImage": {
+            "count": 583,
+            "ms": 4.2755,
+            "self_ms": 4.2755
+          },
+          "RemoveResource": {
+            "count": 43,
+            "ms": 1.8932,
+            "self_ms": 1.8932
+          },
+          "LoadMusic": {
+            "count": 1,
+            "ms": 2.4033,
+            "self_ms": 2.4033
+          },
+          "encounter.begin": {
+            "count": 1,
+            "ms": 0.7668,
+            "self_ms": 0.7666
+          },
+          "encounter.stop": {
+            "count": 2,
+            "ms": 3.295,
+            "self_ms": 1.4018
+          }
+        },
+        "top_frames": [
+          {
+            "case": 5,
+            "logic_ms": 22.7635,
+            "render_ms": 124.6163,
+            "age": 1,
+            "wall_ms": 147.5709,
+            "frame": 1890
+          },
+          {
+            "case": 5,
+            "logic_ms": 115.4457,
+            "render_ms": 5.1518,
+            "age": 107,
+            "wall_ms": 120.778,
+            "frame": 1996
+          },
+          {
+            "case": 5,
+            "logic_ms": 1.5332,
+            "render_ms": 45.1427,
+            "age": 2,
+            "wall_ms": 46.8471,
+            "frame": 1891
+          },
+          {
+            "case": 5,
+            "logic_ms": 8.9708,
+            "render_ms": 6.8641,
+            "age": 203,
+            "wall_ms": 16.2498,
+            "frame": 2092
+          }
+        ],
+        "top_events": [
+          {
+            "ms": 30.1504,
+            "self_ms": 30.1504,
+            "path": "Resources/th38/bullet.png",
+            "name": "asl_bullet",
+            "op": "LoadTexture",
+            "frame": 1996
+          },
+          {
+            "ms": 19.6093,
+            "self_ms": 19.6093,
+            "path": "Resources/th38/background/unity/st1/63493616_p11_master1200.png",
+            "name": "th38_unity_st1/63493616_p11_master1200.png",
+            "op": "LoadTexture",
+            "frame": 1890
+          },
+          {
+            "ms": 10.565,
+            "self_ms": 10.565,
+            "path": "Resources/th38/actors/2c8e8466ebca444b855250f544a3ce90_21300000.png",
+            "name": "asl_actor_2c8e8466ebca444b855250f544a3ce90_21300000",
+            "op": "LoadTexture",
+            "frame": 1891
+          },
+          {
+            "ms": 10.5029,
+            "self_ms": 10.5029,
+            "path": "Resources/th38/actors/c631fe173bc84ff096c09c6233ef5bec_21300000.png",
+            "name": "asl_actor_c631fe173bc84ff096c09c6233ef5bec_21300000",
+            "op": "LoadTexture",
+            "frame": 1891
+          },
+          {
+            "ms": 10.2841,
+            "self_ms": 10.2841,
+            "path": "Resources/th38/actors/81ac036a507240649656384d3b06e0d2_21300000.png",
+            "name": "asl_actor_81ac036a507240649656384d3b06e0d2_21300000",
+            "op": "LoadTexture",
+            "frame": 1891
+          },
+          {
+            "ms": 9.6055,
+            "self_ms": 9.6055,
+            "path": "Resources/th38/custom20.png",
+            "name": "asl_custom20.png",
+            "op": "LoadTexture",
+            "frame": 1996
+          },
+          {
+            "ms": 8.4772,
+            "self_ms": 8.4772,
+            "path": "Resources/th38/custom57.png",
+            "name": "asl_custom57.png",
+            "op": "LoadTexture",
+            "frame": 1996
+          },
+          {
+            "ms": 8.2796,
+            "self_ms": 8.2796,
+            "path": "Resources/th38/background/unity/st1/ice.png",
+            "name": "th38_unity_st1/ice.png",
+            "op": "LoadTexture",
+            "frame": 1890
+          },
+          {
+            "ms": 7.3115,
+            "self_ms": 7.3115,
+            "path": "Resources/th38/background/unity/st1/lake.png",
+            "name": "th38_unity_st1/lake.png",
+            "op": "LoadTexture",
+            "frame": 1890
+          },
+          {
+            "ms": 6.131,
+            "self_ms": 6.131,
+            "path": "Resources/th38/actors/fef61592879e4f22a7a10906148671c6_21300000.png",
+            "name": "asl_actor_fef61592879e4f22a7a10906148671c6_21300000",
+            "op": "LoadTexture",
+            "frame": 1891
+          },
+          {
+            "ms": 3.5777,
+            "self_ms": 3.5777,
+            "path": "Resources/th38/custom2.png",
+            "name": "asl_custom2.png",
+            "op": "LoadTexture",
+            "frame": 1996
+          },
+          {
+            "ms": 3.2948,
+            "self_ms": 1.4016,
+            "name": "<scene>",
+            "op": "encounter.stop",
+            "frame": 1890
+          },
+          {
+            "ms": 3.0871,
+            "self_ms": 3.0871,
+            "path": "Resources/th38/actors/4645302d91c94694964211fe3c2ac9a2_21300000.png",
+            "name": "asl_actor_4645302d91c94694964211fe3c2ac9a2_21300000",
+            "op": "LoadTexture",
+            "frame": 1891
+          },
+          {
+            "ms": 2.7076,
+            "self_ms": 2.7076,
+            "path": "Resources/th38/custom22.png",
+            "name": "asl_custom22.png",
+            "op": "LoadTexture",
+            "frame": 1996
+          }
+        ]
+      },
+      {
+        "source": "TH38",
+        "index": 6,
+        "card_id": 38002,
+        "key": "TH38:38002",
+        "first_frame": 2311,
+        "frames": 360,
+        "max_logic_ms": 3.7523,
+        "max_render_ms": 48.2021,
+        "max_wall_ms": 51.0274,
+        "cpu_over_16ms": 1,
+        "operations": {
+          "RemoveResource": {
+            "count": 19,
+            "ms": 0.2045,
+            "self_ms": 0.2045
+          },
+          "LoadMusic": {
+            "count": 1,
+            "ms": 0.1575,
+            "self_ms": 0.1575
+          },
+          "LoadTexture": {
+            "count": 6,
+            "ms": 44.4607,
+            "self_ms": 44.4607
+          },
+          "LoadImage": {
+            "count": 12,
+            "ms": 0.0677,
+            "self_ms": 0.0677
+          },
+          "encounter.begin": {
+            "count": 1,
+            "ms": 0.1853,
+            "self_ms": 0.1852
+          },
+          "encounter.stop": {
+            "count": 2,
+            "ms": 0.5482,
+            "self_ms": 0.3437
+          }
+        },
+        "top_frames": [
+          {
+            "case": 6,
+            "logic_ms": 2.594,
+            "render_ms": 48.2021,
+            "age": 1,
+            "wall_ms": 51.0274,
+            "frame": 2311
+          },
+          {
+            "case": 6,
+            "logic_ms": 1.0971,
+            "render_ms": 12.092,
+            "age": 288,
+            "wall_ms": 16.6155,
+            "frame": 2598
+          },
+          {
+            "case": 6,
+            "logic_ms": 1.9242,
+            "render_ms": 10.8998,
+            "age": 301,
+            "wall_ms": 16.029,
+            "frame": 2611
+          },
+          {
+            "case": 6,
+            "logic_ms": 1.9582,
+            "render_ms": 9.2094,
+            "age": 302,
+            "wall_ms": 15.8823,
+            "frame": 2612
+          }
+        ],
+        "top_events": [
+          {
+            "ms": 23.891,
+            "self_ms": 23.891,
+            "path": "Resources/th38/background/unity/st1/63493616_p11_master1200.png",
+            "name": "th38_unity_st1/63493616_p11_master1200.png",
+            "op": "LoadTexture",
+            "frame": 2311
+          },
+          {
+            "ms": 8.676,
+            "self_ms": 8.676,
+            "path": "Resources/th38/background/unity/st1/ice.png",
+            "name": "th38_unity_st1/ice.png",
+            "op": "LoadTexture",
+            "frame": 2311
+          },
+          {
+            "ms": 8.0563,
+            "self_ms": 8.0563,
+            "path": "Resources/th38/background/unity/st1/lake.png",
+            "name": "th38_unity_st1/lake.png",
+            "op": "LoadTexture",
+            "frame": 2311
+          },
+          {
+            "ms": 2.4203,
+            "self_ms": 2.4203,
+            "path": "Resources/th38/background/unity/st1/cloud2.png",
+            "name": "th38_unity_st1/cloud2.png",
+            "op": "LoadTexture",
+            "frame": 2311
+          },
+          {
+            "ms": 1.1062,
+            "self_ms": 1.1062,
+            "path": "Resources/th38/background/unity/st1/wu.png",
+            "name": "th38_unity_st1/wu.png",
+            "op": "LoadTexture",
+            "frame": 2311
+          }
+        ]
+      },
+      {
+        "source": "TH39",
+        "index": 7,
+        "card_id": 39001,
+        "key": "TH39:39001",
+        "first_frame": 2732,
+        "frames": 360,
+        "max_logic_ms": 2648.5661,
+        "max_render_ms": 285.4193,
+        "max_wall_ms": 2934.52,
+        "cpu_over_16ms": 5,
+        "operations": {
+          "RemoveResource": {
+            "count": 19,
+            "ms": 0.2346,
+            "self_ms": 0.2346
+          },
+          "LoadMusic": {
+            "count": 1,
+            "ms": 0.6907,
+            "self_ms": 0.6907
+          },
+          "LoadTexture": {
+            "count": 32,
+            "ms": 397.3269,
+            "self_ms": 397.3269
+          },
+          "LoadImage": {
+            "count": 111,
+            "ms": 2.679,
+            "self_ms": 2.679
+          },
+          "encounter.begin": {
+            "count": 1,
+            "ms": 0.0946,
+            "self_ms": 0.0945
+          },
+          "encounter.stop": {
+            "count": 2,
+            "ms": 0.6706,
+            "self_ms": 0.436
+          }
+        },
+        "top_frames": [
+          {
+            "case": 7,
+            "logic_ms": 2648.5661,
+            "render_ms": 285.4193,
+            "age": 1,
+            "wall_ms": 2934.52,
+            "frame": 2732
+          },
+          {
+            "case": 7,
+            "logic_ms": 44.254,
+            "render_ms": 8.4977,
+            "age": 2,
+            "wall_ms": 52.9843,
+            "frame": 2733
+          },
+          {
+            "case": 7,
+            "logic_ms": 2.0943,
+            "render_ms": 47.8083,
+            "age": 41,
+            "wall_ms": 50.0747,
+            "frame": 2772
+          },
+          {
+            "case": 7,
+            "logic_ms": 2.946,
+            "render_ms": 46.0213,
+            "age": 251,
+            "wall_ms": 49.2184,
+            "frame": 2982
+          }
+        ],
+        "top_events": [
+          {
+            "ms": 149.799,
+            "self_ms": 149.799,
+            "path": "Resources/th39/bosses.png",
+            "name": "mhj3_tex_bosses",
+            "op": "LoadTexture",
+            "frame": 2732
+          },
+          {
+            "ms": 43.9683,
+            "self_ms": 43.9683,
+            "path": "Resources/th39/stage1enemys.png",
+            "name": "mhj3_tex_stage1enemys",
+            "op": "LoadTexture",
+            "frame": 2982
+          },
+          {
+            "ms": 35.5393,
+            "self_ms": 35.5393,
+            "path": "Resources/th39/barrages.png",
+            "name": "mhj3_tex_barrages",
+            "op": "LoadTexture",
+            "frame": 2732
+          },
+          {
+            "ms": 26.2414,
+            "self_ms": 26.2414,
+            "path": "Resources/th39/scene/guangdetouying.png",
+            "name": "mhj3_tex_scene/guangdetouying",
+            "op": "LoadTexture",
+            "frame": 2732
+          },
+          {
+            "ms": 17.8615,
+            "self_ms": 17.8615,
+            "path": "Resources/th39/hud/bosslist.png",
+            "name": "mhj3_original_aura",
+            "op": "LoadTexture",
+            "frame": 2732
+          },
+          {
+            "ms": 11.7587,
+            "self_ms": 11.7587,
+            "path": "Resources/th39/1BOSS.png",
+            "name": "mhj3_tex_1BOSS",
+            "op": "LoadTexture",
+            "frame": 2837
+          },
+          {
+            "ms": 9.3615,
+            "self_ms": 9.3615,
+            "path": "Resources/th39/scene/1bossbg1.png",
+            "name": "mhj3_tex_scene/1bossbg1",
+            "op": "LoadTexture",
+            "frame": 2772
+          },
+          {
+            "ms": 7.864,
+            "self_ms": 7.864,
+            "path": "Resources/th39/scene/1SC-03.png",
+            "name": "mhj3_tex_scene/1SC-03",
+            "op": "LoadTexture",
+            "frame": 2773
+          },
+          {
+            "ms": 7.6117,
+            "self_ms": 7.6117,
+            "path": "Resources/th39/scene/1bossbg2.png",
+            "name": "mhj3_tex_scene/1bossbg2",
+            "op": "LoadTexture",
+            "frame": 2772
+          },
+          {
+            "ms": 7.5963,
+            "self_ms": 7.5963,
+            "path": "Resources/th39/scene/L4.png",
+            "name": "mhj3_tex_scene/L4",
+            "op": "LoadTexture",
+            "frame": 2772
+          },
+          {
+            "ms": 7.4909,
+            "self_ms": 7.4909,
+            "path": "Resources/th39/scene/1-18.png",
+            "name": "mhj3_tex_scene/1-18",
+            "op": "LoadTexture",
+            "frame": 2732
+          },
+          {
+            "ms": 7.1943,
+            "self_ms": 7.1943,
+            "path": "Resources/th39/scene/1-15.png",
+            "name": "mhj3_tex_scene/1-15",
+            "op": "LoadTexture",
+            "frame": 2732
+          },
+          {
+            "ms": 6.6443,
+            "self_ms": 6.6443,
+            "path": "Resources/th39/scene/1-19.png",
+            "name": "mhj3_tex_scene/1-19",
+            "op": "LoadTexture",
+            "frame": 2732
+          },
+          {
+            "ms": 6.4244,
+            "self_ms": 6.4244,
+            "path": "Resources/th39/scene/1SC-02.png",
+            "name": "mhj3_tex_scene/1SC-02",
+            "op": "LoadTexture",
+            "frame": 2774
+          }
+        ]
+      },
+      {
+        "source": "TH39",
+        "index": 8,
+        "card_id": 39001,
+        "key": "TH39:39001",
+        "first_frame": 3153,
+        "frames": 360,
+        "max_logic_ms": 2572.8275,
+        "max_render_ms": 85.2496,
+        "max_wall_ms": 2658.5751,
+        "cpu_over_16ms": 2,
+        "operations": {
+          "RemoveResource": {
+            "count": 71,
+            "ms": 1.0788,
+            "self_ms": 1.0788
+          },
+          "LoadMusic": {
+            "count": 1,
+            "ms": 0.1078,
+            "self_ms": 0.1078
+          },
+          "LoadTexture": {
+            "count": 27,
+            "ms": 141.8395,
+            "self_ms": 141.8395
+          },
+          "LoadImage": {
+            "count": 44,
+            "ms": 0.646,
+            "self_ms": 0.646
+          },
+          "encounter.begin": {
+            "count": 1,
+            "ms": 0.1019,
+            "self_ms": 0.1017
+          },
+          "encounter.stop": {
+            "count": 2,
+            "ms": 1.4035,
+            "self_ms": 0.3247
+          }
+        },
+        "top_frames": [
+          {
+            "case": 8,
+            "logic_ms": 2572.8275,
+            "render_ms": 85.2496,
+            "age": 1,
+            "wall_ms": 2658.5751,
+            "frame": 3153
+          },
+          {
+            "case": 8,
+            "logic_ms": 1.1592,
+            "render_ms": 46.5995,
+            "age": 41,
+            "wall_ms": 47.9014,
+            "frame": 3193
+          },
+          {
+            "case": 8,
+            "logic_ms": 2.6358,
+            "render_ms": 13.9454,
+            "age": 4,
+            "wall_ms": 16.8536,
+            "frame": 3156
+          },
+          {
+            "case": 8,
+            "logic_ms": 1.0134,
+            "render_ms": 15.5377,
+            "age": 43,
+            "wall_ms": 16.6972,
+            "frame": 3195
+          }
+        ],
+        "top_events": [
+          {
+            "ms": 28.2177,
+            "self_ms": 28.2177,
+            "path": "Resources/th39/scene/guangdetouying.png",
+            "name": "mhj3_tex_scene/guangdetouying",
+            "op": "LoadTexture",
+            "frame": 3153
+          },
+          {
+            "ms": 9.2168,
+            "self_ms": 9.2168,
+            "path": "Resources/th39/scene/1bossbg1.png",
+            "name": "mhj3_tex_scene/1bossbg1",
+            "op": "LoadTexture",
+            "frame": 3193
+          },
+          {
+            "ms": 8.0864,
+            "self_ms": 8.0864,
+            "path": "Resources/th39/scene/1-18.png",
+            "name": "mhj3_tex_scene/1-18",
+            "op": "LoadTexture",
+            "frame": 3153
+          },
+          {
+            "ms": 7.8714,
+            "self_ms": 7.8714,
+            "path": "Resources/th39/scene/1SC-02.png",
+            "name": "mhj3_tex_scene/1SC-02",
+            "op": "LoadTexture",
+            "frame": 3195
+          },
+          {
+            "ms": 7.6857,
+            "self_ms": 7.6857,
+            "path": "Resources/th39/scene/1SC-03.png",
+            "name": "mhj3_tex_scene/1SC-03",
+            "op": "LoadTexture",
+            "frame": 3194
+          },
+          {
+            "ms": 7.4092,
+            "self_ms": 7.4092,
+            "path": "Resources/th39/scene/1bossbg2.png",
+            "name": "mhj3_tex_scene/1bossbg2",
+            "op": "LoadTexture",
+            "frame": 3193
+          },
+          {
+            "ms": 7.3675,
+            "self_ms": 7.3675,
+            "path": "Resources/th39/scene/L4.png",
+            "name": "mhj3_tex_scene/L4",
+            "op": "LoadTexture",
+            "frame": 3193
+          },
+          {
+            "ms": 7.132,
+            "self_ms": 7.132,
+            "path": "Resources/th39/scene/1-19.png",
+            "name": "mhj3_tex_scene/1-19",
+            "op": "LoadTexture",
+            "frame": 3153
+          },
+          {
+            "ms": 6.9624,
+            "self_ms": 6.9624,
+            "path": "Resources/th39/scene/1-15.png",
+            "name": "mhj3_tex_scene/1-15",
+            "op": "LoadTexture",
+            "frame": 3153
+          },
+          {
+            "ms": 6.048,
+            "self_ms": 6.048,
+            "path": "Resources/th39/scene/1SC-01.png",
+            "name": "mhj3_tex_scene/1SC-01",
+            "op": "LoadTexture",
+            "frame": 3195
+          },
+          {
+            "ms": 5.8801,
+            "self_ms": 5.8801,
+            "path": "Resources/th39/scene/1SC-04.png",
+            "name": "mhj3_tex_scene/1SC-04",
+            "op": "LoadTexture",
+            "frame": 3193
+          },
+          {
+            "ms": 5.0807,
+            "self_ms": 5.0807,
+            "path": "Resources/th39/scene/1SC-06.png",
+            "name": "mhj3_tex_scene/1SC-06",
+            "op": "LoadTexture",
+            "frame": 3193
+          },
+          {
+            "ms": 5.0544,
+            "self_ms": 5.0544,
+            "path": "Resources/th39/scene/L1.png",
+            "name": "mhj3_tex_scene/L1",
+            "op": "LoadTexture",
+            "frame": 3193
+          },
+          {
+            "ms": 4.8695,
+            "self_ms": 4.8695,
+            "path": "Resources/th39/scene/1SC-05.png",
+            "name": "mhj3_tex_scene/1SC-05",
+            "op": "LoadTexture",
+            "frame": 3193
+          }
+        ]
+      },
+      {
+        "source": "TH40",
+        "index": 9,
+        "card_id": 68002,
+        "key": "TH40:68002",
+        "first_frame": 3574,
+        "frames": 360,
+        "max_logic_ms": 20.8578,
+        "max_render_ms": 29.6563,
+        "max_wall_ms": 50.7385,
+        "cpu_over_16ms": 2,
+        "operations": {
+          "RemoveResource": {
+            "count": 71,
+            "ms": 1.3825,
+            "self_ms": 1.3825
+          },
+          "encounter.begin": {
+            "count": 1,
+            "ms": 0.113,
+            "self_ms": 0.1129
+          },
+          "encounter.stop": {
+            "count": 2,
+            "ms": 1.9458,
+            "self_ms": 0.5633
+          },
+          "LoadImage": {
+            "count": 7,
+            "ms": 0.0648,
+            "self_ms": 0.0648
+          },
+          "LoadMusic": {
+            "count": 1,
+            "ms": 0.678,
+            "self_ms": 0.678
+          },
+          "LoadTexture": {
+            "count": 7,
+            "ms": 29.3592,
+            "self_ms": 29.3592
+          }
+        },
+        "top_frames": [
+          {
+            "case": 9,
+            "logic_ms": 20.8578,
+            "render_ms": 29.6563,
+            "age": 62,
+            "wall_ms": 50.7385,
+            "frame": 3635
+          },
+          {
+            "case": 9,
+            "logic_ms": 0.7459,
+            "render_ms": 19.7628,
+            "age": 252,
+            "wall_ms": 20.7488,
+            "frame": 3825
+          },
+          {
+            "case": 9,
+            "logic_ms": 2.3378,
+            "render_ms": 6.1645,
+            "age": 271,
+            "wall_ms": 15.8154,
+            "frame": 3844
+          },
+          {
+            "case": 9,
+            "logic_ms": 3.2737,
+            "render_ms": 4.8326,
+            "age": 281,
+            "wall_ms": 16.0941,
+            "frame": 3854
+          }
+        ],
+        "top_events": [
+          {
+            "ms": 12.8228,
+            "self_ms": 12.8228,
+            "path": "Resources/th40/scene/BG01b.png",
+            "name": "th40_scene3d_BG01b.png",
+            "op": "LoadTexture",
+            "frame": 3635
+          },
+          {
+            "ms": 4.999,
+            "self_ms": 4.999,
+            "path": "Resources/th40/scene/Tree.png",
+            "name": "th40_scene3d_Tree.png",
+            "op": "LoadTexture",
+            "frame": 3635
+          },
+          {
+            "ms": 3.7837,
+            "self_ms": 3.7837,
+            "path": "Resources/th40/scene/BG01a.png",
+            "name": "th40_scene3d_BG01a.png",
+            "op": "LoadTexture",
+            "frame": 3635
+          },
+          {
+            "ms": 3.347,
+            "self_ms": 3.347,
+            "path": "Resources/th40/scene/Cloud01.png",
+            "name": "th40_scene3d_Cloud01.png",
+            "op": "LoadTexture",
+            "frame": 3635
+          },
+          {
+            "ms": 2.6025,
+            "self_ms": 2.6025,
+            "path": "Resources/th40/Face/FaceAmi_ct.png",
+            "name": "th40_visual_FaceAmi_ct",
+            "op": "LoadTexture",
+            "frame": 3635
+          },
+          {
+            "ms": 1.9457,
+            "self_ms": 0.5632,
+            "name": "<scene>",
+            "op": "encounter.stop",
+            "frame": 3574
+          },
+          {
+            "ms": 1.7071,
+            "self_ms": 1.7071,
+            "path": "Resources/th40/scene/Cloud02.png",
+            "name": "th40_scene3d_Cloud02.png",
+            "op": "LoadTexture",
+            "frame": 3635
+          }
+        ]
+      },
+      {
+        "source": "TH40",
+        "index": 10,
+        "card_id": 68002,
+        "key": "TH40:68002",
+        "first_frame": 3995,
+        "frames": 360,
+        "max_logic_ms": 23.2906,
+        "max_render_ms": 5.6673,
+        "max_wall_ms": 27.1234,
+        "cpu_over_16ms": 1,
+        "operations": {
+          "RemoveResource": {
+            "count": 1,
+            "ms": 0.063,
+            "self_ms": 0.063
+          },
+          "encounter.begin": {
+            "count": 1,
+            "ms": 0.2569,
+            "self_ms": 0.2565
+          },
+          "encounter.stop": {
+            "count": 2,
+            "ms": 0.6637,
+            "self_ms": 0.6007
+          },
+          "LoadMusic": {
+            "count": 1,
+            "ms": 0.492,
+            "self_ms": 0.492
+          }
+        },
+        "top_frames": [
+          {
+            "case": 10,
+            "logic_ms": 23.2906,
+            "render_ms": 3.6063,
+            "age": 62,
+            "wall_ms": 27.1234,
+            "frame": 4056
+          },
+          {
+            "case": 10,
+            "logic_ms": 3.7857,
+            "render_ms": 4.4857,
+            "age": 225,
+            "wall_ms": 15.796,
+            "frame": 4219
+          },
+          {
+            "case": 10,
+            "logic_ms": 3.7307,
+            "render_ms": 4.03,
+            "age": 309,
+            "wall_ms": 16.5301,
+            "frame": 4303
+          },
+          {
+            "case": 10,
+            "logic_ms": 4.1693,
+            "render_ms": 3.2081,
+            "age": 351,
+            "wall_ms": 16.0671,
+            "frame": 4345
+          }
+        ],
+        "top_events": []
+      },
+      {
+        "source": "TH41",
+        "index": 11,
+        "card_id": 70101,
+        "key": "TH41:70101",
+        "first_frame": 4416,
+        "frames": 360,
+        "max_logic_ms": 402.7133,
+        "max_render_ms": 4.9391,
+        "max_wall_ms": 405.1591,
+        "cpu_over_16ms": 1,
+        "operations": {
+          "RemoveResource": {
+            "count": 1,
+            "ms": 0.0434,
+            "self_ms": 0.0434
+          },
+          "encounter.begin": {
+            "count": 1,
+            "ms": 0.487,
+            "self_ms": 0.4838
+          },
+          "encounter.stop": {
+            "count": 2,
+            "ms": 0.5715,
+            "self_ms": 0.5282
+          },
+          "LoadMusic": {
+            "count": 1,
+            "ms": 0.6981,
+            "self_ms": 0.6981
+          },
+          "LoadTexture": {
+            "count": 49,
+            "ms": 372.3792,
+            "self_ms": 372.3792
+          },
+          "LoadSound": {
+            "count": 40,
+            "ms": 1.4595,
+            "self_ms": 1.4595
+          },
+          "LoadImage": {
+            "count": 1459,
+            "ms": 10.5657,
+            "self_ms": 10.5657
+          },
+          "THEIS.LoadByTag": {
+            "count": 1,
+            "ms": 393.8933,
+            "self_ms": 15.3816
+          },
+          "LoadAnimation": {
+            "count": 79,
+            "ms": 0.6424,
+            "self_ms": 0.6424
+          }
+        },
+        "top_frames": [
+          {
+            "case": 11,
+            "logic_ms": 402.7133,
+            "render_ms": 2.2119,
+            "age": 2,
+            "wall_ms": 405.1591,
+            "frame": 4417
+          },
+          {
+            "case": 11,
+            "logic_ms": 6.8198,
+            "render_ms": 1.7355,
+            "age": 1,
+            "wall_ms": 16.9798,
+            "frame": 4416
+          },
+          {
+            "case": 11,
+            "logic_ms": 2.1606,
+            "render_ms": 4.9391,
+            "age": 47,
+            "wall_ms": 16.5066,
+            "frame": 4462
+          },
+          {
+            "case": 11,
+            "logic_ms": 2.5674,
+            "render_ms": 3.8946,
+            "age": 309,
+            "wall_ms": 16.462,
+            "frame": 4724
+          }
+        ],
+        "top_events": [
+          {
+            "ms": 393.8933,
+            "self_ms": 15.3816,
+            "path": "global",
+            "name": "false",
+            "op": "THEIS.LoadByTag",
+            "frame": 4417
+          },
+          {
+            "ms": 57.6234,
+            "self_ms": 57.6234,
+            "path": "Resources/ports/theis/res/ui/ui_item_16_9_2.png",
+            "name": "THEIS_hud",
+            "op": "LoadTexture",
+            "frame": 4417
+          },
+          {
+            "ms": 36.0171,
+            "self_ms": 36.0171,
+            "path": "Resources/ports/theis/res/bullet/bullet_2048.png",
+            "name": "_bullet_2048_texture",
+            "op": "LoadTexture",
+            "frame": 4417
+          },
+          {
+            "ms": 26.6625,
+            "self_ms": 26.6625,
+            "path": "Resources/ports/theis/EISlib/boss/boss_ui_dd.png",
+            "name": "_boss_ui_tex",
+            "op": "LoadTexture",
+            "frame": 4417
+          },
+          {
+            "ms": 16.4589,
+            "self_ms": 16.4589,
+            "path": "Resources/ports/theis/res/effect/color_effect.png",
+            "name": "_color_effect_texture",
+            "op": "LoadTexture",
+            "frame": 4417
+          },
+          {
+            "ms": 15.04,
+            "self_ms": 15.04,
+            "path": "Resources/ports/theis/res/bullet/bullet_1024.png",
+            "name": "_bullet_1024_texture",
+            "op": "LoadTexture",
+            "frame": 4417
+          },
+          {
+            "ms": 14.2205,
+            "self_ms": 14.2205,
+            "path": "Resources/ports/theis/res/enemy/fairy_large.png",
+            "name": "_enemy_texture_2",
+            "op": "LoadTexture",
+            "frame": 4417
+          },
+          {
+            "ms": 14.1027,
+            "self_ms": 14.1027,
+            "path": "Resources/ports/theis/res/enemy/fairy_small_mid.png",
+            "name": "_enemy_texture_1",
+            "op": "LoadTexture",
+            "frame": 4417
+          },
+          {
+            "ms": 13.8428,
+            "self_ms": 13.8428,
+            "path": "Resources/ports/theis/res/enemy/fairy_small_mid_2.png",
+            "name": "_enemy_texture_3",
+            "op": "LoadTexture",
+            "frame": 4417
+          },
+          {
+            "ms": 13.5824,
+            "self_ms": 13.5824,
+            "path": "Resources/ports/theis/EISlib/effect/hint_new.png",
+            "name": "_item_hint_new_texture",
+            "op": "LoadTexture",
+            "frame": 4417
+          },
+          {
+            "ms": 13.4955,
+            "self_ms": 13.4955,
+            "path": "Resources/ports/theis/res/enemy/ghost_fire_4.png",
+            "name": "_ghost_fire_4_texture",
+            "op": "LoadTexture",
+            "frame": 4417
+          },
+          {
+            "ms": 13.3467,
+            "self_ms": 13.3467,
+            "path": "Resources/ports/theis/res/enemy/ghost_fire_3.png",
+            "name": "_ghost_fire_3_texture",
+            "op": "LoadTexture",
+            "frame": 4417
+          },
+          {
+            "ms": 13.2011,
+            "self_ms": 13.2011,
+            "path": "Resources/ports/theis/res/enemy/ghost_fire_2.png",
+            "name": "_ghost_fire_2_texture",
+            "op": "LoadTexture",
+            "frame": 4417
+          },
+          {
+            "ms": 13.0684,
+            "self_ms": 13.0684,
+            "path": "Resources/ports/theis/res/effect/dye_effect.png",
+            "name": "_dye_effect_texture",
+            "op": "LoadTexture",
+            "frame": 4417
+          }
+        ]
+      },
+      {
+        "source": "TH41",
+        "index": 12,
+        "card_id": 70101,
+        "key": "TH41:70101",
+        "first_frame": 4837,
+        "frames": 360,
+        "max_logic_ms": 380.2005,
+        "max_render_ms": 4.3639,
+        "max_wall_ms": 381.7899,
+        "cpu_over_16ms": 1,
+        "operations": {
+          "RemoveResource": {
+            "count": 1639,
+            "ms": 5.4635,
+            "self_ms": 5.4635
+          },
+          "encounter.begin": {
+            "count": 1,
+            "ms": 0.2424,
+            "self_ms": 0.2422
+          },
+          "encounter.stop": {
+            "count": 2,
+            "ms": 6.899,
+            "self_ms": 1.4355
+          },
+          "LoadMusic": {
+            "count": 1,
+            "ms": 0.074,
+            "self_ms": 0.074
+          },
+          "LoadTexture": {
+            "count": 49,
+            "ms": 372.4505,
+            "self_ms": 372.4505
+          },
+          "LoadSound": {
+            "count": 40,
+            "ms": 0.3052,
+            "self_ms": 0.3052
+          },
+          "LoadImage": {
+            "count": 1459,
+            "ms": 3.555,
+            "self_ms": 3.555
+          },
+          "THEIS.LoadByTag": {
+            "count": 1,
+            "ms": 373.0114,
+            "self_ms": 1.7757
+          },
+          "LoadAnimation": {
+            "count": 79,
+            "ms": 0.5475,
+            "self_ms": 0.5475
+          }
+        },
+        "top_frames": [
+          {
+            "case": 12,
+            "logic_ms": 380.2005,
+            "render_ms": 1.3057,
+            "age": 2,
+            "wall_ms": 381.7899,
+            "frame": 4838
+          },
+          {
+            "case": 12,
+            "logic_ms": 8.4847,
+            "render_ms": 1.6355,
+            "age": 1,
+            "wall_ms": 16.3216,
+            "frame": 4837
+          },
+          {
+            "case": 12,
+            "logic_ms": 2.3531,
+            "render_ms": 4.1565,
+            "age": 311,
+            "wall_ms": 16.6204,
+            "frame": 5147
+          },
+          {
+            "case": 12,
+            "logic_ms": 2.7147,
+            "render_ms": 3.2512,
+            "age": 306,
+            "wall_ms": 16.4066,
+            "frame": 5142
+          }
+        ],
+        "top_events": [
+          {
+            "ms": 373.0114,
+            "self_ms": 1.7757,
+            "path": "global",
+            "name": "false",
+            "op": "THEIS.LoadByTag",
+            "frame": 4838
+          },
+          {
+            "ms": 55.5229,
+            "self_ms": 55.5229,
+            "path": "Resources/ports/theis/res/ui/ui_item_16_9_2.png",
+            "name": "THEIS_hud",
+            "op": "LoadTexture",
+            "frame": 4838
+          },
+          {
+            "ms": 36.4176,
+            "self_ms": 36.4176,
+            "path": "Resources/ports/theis/res/bullet/bullet_2048.png",
+            "name": "_bullet_2048_texture",
+            "op": "LoadTexture",
+            "frame": 4838
+          },
+          {
+            "ms": 31.3164,
+            "self_ms": 31.3164,
+            "path": "Resources/ports/theis/EISlib/boss/boss_ui_dd.png",
+            "name": "_boss_ui_tex",
+            "op": "LoadTexture",
+            "frame": 4838
+          },
+          {
+            "ms": 15.886,
+            "self_ms": 15.886,
+            "path": "Resources/ports/theis/res/effect/color_effect.png",
+            "name": "_color_effect_texture",
+            "op": "LoadTexture",
+            "frame": 4838
+          },
+          {
+            "ms": 15.5619,
+            "self_ms": 15.5619,
+            "path": "Resources/ports/theis/res/bullet/bullet_1024.png",
+            "name": "_bullet_1024_texture",
+            "op": "LoadTexture",
+            "frame": 4838
+          },
+          {
+            "ms": 14.2433,
+            "self_ms": 14.2433,
+            "path": "Resources/ports/theis/res/enemy/fairy_small_mid.png",
+            "name": "_enemy_texture_1",
+            "op": "LoadTexture",
+            "frame": 4838
+          },
+          {
+            "ms": 13.9903,
+            "self_ms": 13.9903,
+            "path": "Resources/ports/theis/res/enemy/fairy_large.png",
+            "name": "_enemy_texture_2",
+            "op": "LoadTexture",
+            "frame": 4838
+          },
+          {
+            "ms": 13.7902,
+            "self_ms": 13.7902,
+            "path": "Resources/ports/theis/res/enemy/fairy_small_mid_2.png",
+            "name": "_enemy_texture_3",
+            "op": "LoadTexture",
+            "frame": 4838
+          },
+          {
+            "ms": 13.2224,
+            "self_ms": 13.2224,
+            "path": "Resources/ports/theis/EISlib/effect/hint_new.png",
+            "name": "_item_hint_new_texture",
+            "op": "LoadTexture",
+            "frame": 4838
+          },
+          {
+            "ms": 13.0563,
+            "self_ms": 13.0563,
+            "path": "Resources/ports/theis/res/bullet/bullet_1024_2.png",
+            "name": "_bullet_1024_2_texture",
+            "op": "LoadTexture",
+            "frame": 4838
+          },
+          {
+            "ms": 13.0434,
+            "self_ms": 13.0434,
+            "path": "Resources/ports/theis/res/enemy/ghost_fire_4.png",
+            "name": "_ghost_fire_4_texture",
+            "op": "LoadTexture",
+            "frame": 4838
+          },
+          {
+            "ms": 12.9814,
+            "self_ms": 12.9814,
+            "path": "Resources/ports/theis/res/enemy/ghost_fire_3.png",
+            "name": "_ghost_fire_3_texture",
+            "op": "LoadTexture",
+            "frame": 4838
+          },
+          {
+            "ms": 12.9535,
+            "self_ms": 12.9535,
+            "path": "Resources/ports/theis/res/enemy/ghost_fire_2.png",
+            "name": "_ghost_fire_2_texture",
+            "op": "LoadTexture",
+            "frame": 4838
+          }
+        ]
+      },
+      {
+        "source": "TH42",
+        "index": 13,
+        "card_id": 71121,
+        "key": "TH42:71121",
+        "first_frame": 5258,
+        "frames": 360,
+        "max_logic_ms": 392.9053,
+        "max_render_ms": 5.0956,
+        "max_wall_ms": 394.2822,
+        "cpu_over_16ms": 1,
+        "operations": {
+          "RemoveResource": {
+            "count": 1639,
+            "ms": 5.6847,
+            "self_ms": 5.6847
+          },
+          "encounter.begin": {
+            "count": 1,
+            "ms": 0.2199,
+            "self_ms": 0.2197
+          },
+          "encounter.stop": {
+            "count": 2,
+            "ms": 7.4878,
+            "self_ms": 1.8032
+          },
+          "LoadMusic": {
+            "count": 2,
+            "ms": 0.5325,
+            "self_ms": 0.5325
+          },
+          "LoadTexture": {
+            "count": 43,
+            "ms": 385.4443,
+            "self_ms": 385.4443
+          },
+          "LoadSound": {
+            "count": 31,
+            "ms": 1.1416,
+            "self_ms": 1.1416
+          },
+          "LoadImage": {
+            "count": 961,
+            "ms": 2.8128,
+            "self_ms": 2.8128
+          },
+          "Dreamer.Resources.load": {
+            "count": 1,
+            "ms": 391.2615,
+            "self_ms": 1.3303
+          }
+        },
+        "top_frames": [
+          {
+            "case": 13,
+            "logic_ms": 392.9053,
+            "render_ms": 1.2023,
+            "age": 2,
+            "wall_ms": 394.2822,
+            "frame": 5259
+          },
+          {
+            "case": 13,
+            "logic_ms": 8.842,
+            "render_ms": 1.4345,
+            "age": 1,
+            "wall_ms": 16.1893,
+            "frame": 5258
+          },
+          {
+            "case": 13,
+            "logic_ms": 2.029,
+            "render_ms": 4.9676,
+            "age": 356,
+            "wall_ms": 15.9559,
+            "frame": 5613
+          },
+          {
+            "case": 13,
+            "logic_ms": 1.3445,
+            "render_ms": 5.0956,
+            "age": 183,
+            "wall_ms": 16.343,
+            "frame": 5440
+          }
+        ],
+        "top_events": [
+          {
+            "ms": 391.2615,
+            "self_ms": 1.3303,
+            "name": "1",
+            "op": "Dreamer.Resources.load",
+            "frame": 5259
+          },
+          {
+            "ms": 83.4343,
+            "self_ms": 83.4343,
+            "path": "Resources/ports/dreamer/res/likedreamer/effect/Effect_l.png",
+            "name": "ld_player_fx_l_tex",
+            "op": "LoadTexture",
+            "frame": 5259
+          },
+          {
+            "ms": 61.745,
+            "self_ms": 61.745,
+            "path": "Resources/ports/dreamer/res/likedreamer/stage/Boss.png",
+            "name": "ld_tex_boss",
+            "op": "LoadTexture",
+            "frame": 5259
+          },
+          {
+            "ms": 49.6025,
+            "self_ms": 49.6025,
+            "path": "Resources/ports/dreamer/res/likedreamer/optimized/gameplay/enemy_m_140.png",
+            "name": "ld_tex_enemy_m",
+            "op": "LoadTexture",
+            "frame": 5259
+          },
+          {
+            "ms": 38.3972,
+            "self_ms": 38.3972,
+            "path": "Resources/ports/dreamer/res/likedreamer/player/PlayerFrame.png",
+            "name": "ld_tex_player_frame",
+            "op": "LoadTexture",
+            "frame": 5259
+          },
+          {
+            "ms": 21.4408,
+            "self_ms": 21.4408,
+            "path": "Resources/ports/dreamer/res/likedreamer/optimized/background/back1_04.png",
+            "name": "ld_stageback1_5",
+            "op": "LoadTexture",
+            "frame": 5259
+          },
+          {
+            "ms": 17.082,
+            "self_ms": 17.082,
+            "path": "Resources/ports/dreamer/res/likedreamer/stage/Enemy_s.png",
+            "name": "ld_tex_enemy_s",
+            "op": "LoadTexture",
+            "frame": 5259
+          },
+          {
+            "ms": 16.3463,
+            "self_ms": 16.3463,
+            "path": "Resources/ports/dreamer/res/likedreamer/optimized/background/back1_05.png",
+            "name": "ld_stageback1_6",
+            "op": "LoadTexture",
+            "frame": 5259
+          },
+          {
+            "ms": 15.4518,
+            "self_ms": 15.4518,
+            "path": "Resources/ports/dreamer/res/likedreamer/optimized/background/back1_03.png",
+            "name": "ld_stageback1_4",
+            "op": "LoadTexture",
+            "frame": 5259
+          },
+          {
+            "ms": 11.9212,
+            "self_ms": 11.9212,
+            "path": "Resources/ports/dreamer/res/likedreamer/optimized/background/back1_02.png",
+            "name": "ld_stageback1_3",
+            "op": "LoadTexture",
+            "frame": 5259
+          },
+          {
+            "ms": 11.3229,
+            "self_ms": 11.3229,
+            "path": "Resources/ports/dreamer/res/likedreamer/effect/Effect_m.png",
+            "name": "ld_player_fx_m_tex",
+            "op": "LoadTexture",
+            "frame": 5259
+          },
+          {
+            "ms": 10.8651,
+            "self_ms": 10.8651,
+            "path": "Resources/ports/dreamer/res/likedreamer/player/Player.png",
+            "name": "ld_tex_player",
+            "op": "LoadTexture",
+            "frame": 5259
+          },
+          {
+            "ms": 7.4876,
+            "self_ms": 1.803,
+            "name": "<scene>",
+            "op": "encounter.stop",
+            "frame": 5258
+          },
+          {
+            "ms": 3.5872,
+            "self_ms": 3.5872,
+            "path": "Resources/ports/dreamer/res/likedreamer/system/WhiteBack.png",
+            "name": "ld_white_back",
+            "op": "LoadTexture",
+            "frame": 5259
+          }
+        ]
+      },
+      {
+        "source": "TH42",
+        "index": 14,
+        "card_id": 71121,
+        "key": "TH42:71121",
+        "first_frame": 6062,
+        "frames": 360,
+        "max_logic_ms": 388.8593,
+        "max_render_ms": 4.3501,
+        "max_wall_ms": 390.3003,
+        "cpu_over_16ms": 2,
+        "operations": {
+          "RemoveResource": {
+            "count": 1037,
+            "ms": 11.1127,
+            "self_ms": 11.1127
+          },
+          "encounter.begin": {
+            "count": 1,
+            "ms": 0.5052,
+            "self_ms": 0.5047
+          },
+          "encounter.stop": {
+            "count": 2,
+            "ms": 12.8883,
+            "self_ms": 1.7756
+          },
+          "LoadMusic": {
+            "count": 2,
+            "ms": 0.155,
+            "self_ms": 0.155
+          },
+          "LoadTexture": {
+            "count": 43,
+            "ms": 382.8262,
+            "self_ms": 382.8262
+          },
+          "LoadSound": {
+            "count": 31,
+            "ms": 0.2537,
+            "self_ms": 0.2537
+          },
+          "LoadImage": {
+            "count": 961,
+            "ms": 2.8987,
+            "self_ms": 2.8987
+          },
+          "Dreamer.Resources.load": {
+            "count": 1,
+            "ms": 387.2754,
+            "self_ms": 1.1418
+          }
+        },
+        "top_frames": [
+          {
+            "case": 14,
+            "logic_ms": 388.8593,
+            "render_ms": 1.2477,
+            "age": 2,
+            "wall_ms": 390.3003,
+            "frame": 6063
+          },
+          {
+            "case": 14,
+            "logic_ms": 16.0608,
+            "render_ms": 1.5987,
+            "age": 1,
+            "wall_ms": 18.0403,
+            "frame": 6062
+          },
+          {
+            "case": 14,
+            "logic_ms": 2.3013,
+            "render_ms": 4.3501,
+            "age": 181,
+            "wall_ms": 16.6965,
+            "frame": 6242
+          },
+          {
+            "case": 14,
+            "logic_ms": 1.6804,
+            "render_ms": 4.2885,
+            "age": 190,
+            "wall_ms": 16.2308,
+            "frame": 6251
+          }
+        ],
+        "top_events": [
+          {
+            "ms": 387.2754,
+            "self_ms": 1.1418,
+            "name": "1",
+            "op": "Dreamer.Resources.load",
+            "frame": 6063
+          },
+          {
+            "ms": 87.1455,
+            "self_ms": 87.1455,
+            "path": "Resources/ports/dreamer/res/likedreamer/effect/Effect_l.png",
+            "name": "ld_player_fx_l_tex",
+            "op": "LoadTexture",
+            "frame": 6063
+          },
+          {
+            "ms": 59.1267,
+            "self_ms": 59.1267,
+            "path": "Resources/ports/dreamer/res/likedreamer/stage/Boss.png",
+            "name": "ld_tex_boss",
+            "op": "LoadTexture",
+            "frame": 6063
+          },
+          {
+            "ms": 47.8197,
+            "self_ms": 47.8197,
+            "path": "Resources/ports/dreamer/res/likedreamer/optimized/gameplay/enemy_m_140.png",
+            "name": "ld_tex_enemy_m",
+            "op": "LoadTexture",
+            "frame": 6063
+          },
+          {
+            "ms": 39.9059,
+            "self_ms": 39.9059,
+            "path": "Resources/ports/dreamer/res/likedreamer/player/PlayerFrame.png",
+            "name": "ld_tex_player_frame",
+            "op": "LoadTexture",
+            "frame": 6063
+          },
+          {
+            "ms": 20.8465,
+            "self_ms": 20.8465,
+            "path": "Resources/ports/dreamer/res/likedreamer/optimized/background/back1_04.png",
+            "name": "ld_stageback1_5",
+            "op": "LoadTexture",
+            "frame": 6063
+          },
+          {
+            "ms": 15.8694,
+            "self_ms": 15.8694,
+            "path": "Resources/ports/dreamer/res/likedreamer/optimized/background/back1_05.png",
+            "name": "ld_stageback1_6",
+            "op": "LoadTexture",
+            "frame": 6063
+          },
+          {
+            "ms": 15.3048,
+            "self_ms": 15.3048,
+            "path": "Resources/ports/dreamer/res/likedreamer/stage/Enemy_s.png",
+            "name": "ld_tex_enemy_s",
+            "op": "LoadTexture",
+            "frame": 6063
+          },
+          {
+            "ms": 15.0205,
+            "self_ms": 15.0205,
+            "path": "Resources/ports/dreamer/res/likedreamer/optimized/background/back1_03.png",
+            "name": "ld_stageback1_4",
+            "op": "LoadTexture",
+            "frame": 6063
+          },
+          {
+            "ms": 12.8878,
+            "self_ms": 1.7752,
+            "name": "<scene>",
+            "op": "encounter.stop",
+            "frame": 6062
+          },
+          {
+            "ms": 12.8667,
+            "self_ms": 12.8667,
+            "path": "Resources/ports/dreamer/res/likedreamer/player/Player.png",
+            "name": "ld_tex_player",
+            "op": "LoadTexture",
+            "frame": 6063
+          },
+          {
+            "ms": 11.678,
+            "self_ms": 11.678,
+            "path": "Resources/ports/dreamer/res/likedreamer/optimized/background/back1_02.png",
+            "name": "ld_stageback1_3",
+            "op": "LoadTexture",
+            "frame": 6063
+          },
+          {
+            "ms": 11.4973,
+            "self_ms": 11.4973,
+            "path": "Resources/ports/dreamer/res/likedreamer/effect/Effect_m.png",
+            "name": "ld_player_fx_m_tex",
+            "op": "LoadTexture",
+            "frame": 6063
+          },
+          {
+            "ms": 3.9552,
+            "self_ms": 3.9552,
+            "path": "Resources/ports/dreamer/res/likedreamer/system/WhiteBack.png",
+            "name": "ld_white_back",
+            "op": "LoadTexture",
+            "frame": 6063
+          }
+        ]
+      },
+      {
+        "source": "TH43",
+        "index": 15,
+        "card_id": 81402,
+        "key": "TH43:81402",
+        "first_frame": 6866,
+        "frames": 360,
+        "max_logic_ms": 109.5707,
+        "max_render_ms": 19.0117,
+        "max_wall_ms": 111.0279,
+        "cpu_over_16ms": 2,
+        "operations": {
+          "RemoveResource": {
+            "count": 1037,
+            "ms": 14.0613,
+            "self_ms": 14.0613
+          },
+          "LoadMusic": {
+            "count": 1,
+            "ms": 0.85,
+            "self_ms": 0.85
+          },
+          "LoadTexture": {
+            "count": 15,
+            "ms": 88.2868,
+            "self_ms": 88.2868
+          },
+          "LoadImage": {
+            "count": 40,
+            "ms": 0.3035,
+            "self_ms": 0.3035
+          },
+          "encounter.begin": {
+            "count": 1,
+            "ms": 0.3748,
+            "self_ms": 0.3746
+          },
+          "encounter.stop": {
+            "count": 2,
+            "ms": 16.2333,
+            "self_ms": 2.172
+          }
+        },
+        "top_frames": [
+          {
+            "case": 15,
+            "logic_ms": 109.5707,
+            "render_ms": 1.2904,
+            "age": 1,
+            "wall_ms": 111.0279,
+            "frame": 6866
+          },
+          {
+            "case": 15,
+            "logic_ms": 1.8062,
+            "render_ms": 19.0117,
+            "age": 340,
+            "wall_ms": 21.1692,
+            "frame": 7205
+          },
+          {
+            "case": 15,
+            "logic_ms": 3.1601,
+            "render_ms": 3.0325,
+            "age": 325,
+            "wall_ms": 16.4808,
+            "frame": 7190
+          },
+          {
+            "case": 15,
+            "logic_ms": 2.3257,
+            "render_ms": 3.7979,
+            "age": 307,
+            "wall_ms": 16.3437,
+            "frame": 7172
+          }
+        ],
+        "top_events": [
+          {
+            "ms": 17.7158,
+            "self_ms": 17.7158,
+            "path": "Resources/th43/boss/Cirno/scbg1.png",
+            "name": "th43/Cirno_scbg1",
+            "op": "LoadTexture",
+            "frame": 6866
+          },
+          {
+            "ms": 16.2332,
+            "self_ms": 2.1718,
+            "name": "<scene>",
+            "op": "encounter.stop",
+            "frame": 6866
+          },
+          {
+            "ms": 8.1044,
+            "self_ms": 8.1044,
+            "path": "Resources/th43/boss/Cirno/BossWalkImage.png",
+            "name": "th43/Cirno_BossWalkImage",
+            "op": "LoadTexture",
+            "frame": 6866
+          },
+          {
+            "ms": 7.2317,
+            "self_ms": 7.2317,
+            "path": "Resources/th43/background/stage1/far_red_1.png",
+            "name": "th43/s1_far_red_1",
+            "op": "LoadTexture",
+            "frame": 6866
+          },
+          {
+            "ms": 6.7665,
+            "self_ms": 6.7665,
+            "path": "Resources/th43/boss/Cirno/scbg2.png",
+            "name": "th43/Cirno_scbg2",
+            "op": "LoadTexture",
+            "frame": 6866
+          },
+          {
+            "ms": 6.4686,
+            "self_ms": 6.4686,
+            "path": "Resources/th43/background/stage1/far_red_2.png",
+            "name": "th43/s1_far_red_2",
+            "op": "LoadTexture",
+            "frame": 6866
+          },
+          {
+            "ms": 6.3733,
+            "self_ms": 6.3733,
+            "path": "Resources/th43/performer/Cirno/normal.png",
+            "name": "th43/Cirnopic_show",
+            "op": "LoadTexture",
+            "frame": 6866
+          },
+          {
+            "ms": 6.2627,
+            "self_ms": 6.2627,
+            "path": "Resources/th43/background/stage1/far_blue_1.png",
+            "name": "th43/s1_far_blue_1",
+            "op": "LoadTexture",
+            "frame": 6866
+          },
+          {
+            "ms": 5.5017,
+            "self_ms": 5.5017,
+            "path": "Resources/th43/background/stage1/water_red_2.png",
+            "name": "th43/s1_water_red_2",
+            "op": "LoadTexture",
+            "frame": 6866
+          },
+          {
+            "ms": 5.187,
+            "self_ms": 5.187,
+            "path": "Resources/th43/background/stage1/far_blue_2.png",
+            "name": "th43/s1_far_blue_2",
+            "op": "LoadTexture",
+            "frame": 6866
+          },
+          {
+            "ms": 5.0825,
+            "self_ms": 5.0825,
+            "path": "Resources/th43/background/stage1/water_blue_2.png",
+            "name": "th43/s1_water_blue_2",
+            "op": "LoadTexture",
+            "frame": 6866
+          },
+          {
+            "ms": 5.0458,
+            "self_ms": 5.0458,
+            "path": "Resources/th43/background/stage1/water_red_1.png",
+            "name": "th43/s1_water_red_1",
+            "op": "LoadTexture",
+            "frame": 6866
+          },
+          {
+            "ms": 4.3575,
+            "self_ms": 4.3575,
+            "path": "Resources/th43/background/stage1/water_blue_1.png",
+            "name": "th43/s1_water_blue_1",
+            "op": "LoadTexture",
+            "frame": 6866
+          },
+          {
+            "ms": 3.8111,
+            "self_ms": 3.8111,
+            "path": "Resources/th43/background/stage1/board.png",
+            "name": "th43/s1_board",
+            "op": "LoadTexture",
+            "frame": 6866
+          }
+        ]
+      },
+      {
+        "source": "TH43",
+        "index": 16,
+        "card_id": 81402,
+        "key": "TH43:81402",
+        "first_frame": 7287,
+        "frames": 360,
+        "max_logic_ms": 94.4623,
+        "max_render_ms": 4.2908,
+        "max_wall_ms": 96.3661,
+        "cpu_over_16ms": 1,
+        "operations": {
+          "RemoveResource": {
+            "count": 56,
+            "ms": 1.0171,
+            "self_ms": 1.0171
+          },
+          "LoadMusic": {
+            "count": 1,
+            "ms": 0.145,
+            "self_ms": 0.145
+          },
+          "LoadTexture": {
+            "count": 15,
+            "ms": 89.0219,
+            "self_ms": 89.0219
+          },
+          "LoadImage": {
+            "count": 40,
+            "ms": 0.2942,
+            "self_ms": 0.2942
+          },
+          "encounter.begin": {
+            "count": 1,
+            "ms": 0.1205,
+            "self_ms": 0.1202
+          },
+          "encounter.stop": {
+            "count": 2,
+            "ms": 1.8284,
+            "self_ms": 0.8113
+          }
+        },
+        "top_frames": [
+          {
+            "case": 16,
+            "logic_ms": 94.4623,
+            "render_ms": 1.7197,
+            "age": 1,
+            "wall_ms": 96.3661,
+            "frame": 7287
+          },
+          {
+            "case": 16,
+            "logic_ms": 3.7765,
+            "render_ms": 2.6099,
+            "age": 331,
+            "wall_ms": 16.6818,
+            "frame": 7617
+          },
+          {
+            "case": 16,
+            "logic_ms": 1.8035,
+            "render_ms": 4.2908,
+            "age": 24,
+            "wall_ms": 16.687,
+            "frame": 7310
+          },
+          {
+            "case": 16,
+            "logic_ms": 2.8784,
+            "render_ms": 3.2128,
+            "age": 326,
+            "wall_ms": 16.6308,
+            "frame": 7612
+          }
+        ],
+        "top_events": [
+          {
+            "ms": 17.6052,
+            "self_ms": 17.6052,
+            "path": "Resources/th43/boss/Cirno/scbg1.png",
+            "name": "th43/Cirno_scbg1",
+            "op": "LoadTexture",
+            "frame": 7287
+          },
+          {
+            "ms": 7.9332,
+            "self_ms": 7.9332,
+            "path": "Resources/th43/boss/Cirno/BossWalkImage.png",
+            "name": "th43/Cirno_BossWalkImage",
+            "op": "LoadTexture",
+            "frame": 7287
+          },
+          {
+            "ms": 7.5695,
+            "self_ms": 7.5695,
+            "path": "Resources/th43/background/stage1/far_red_1.png",
+            "name": "th43/s1_far_red_1",
+            "op": "LoadTexture",
+            "frame": 7287
+          },
+          {
+            "ms": 6.8213,
+            "self_ms": 6.8213,
+            "path": "Resources/th43/background/stage1/far_red_2.png",
+            "name": "th43/s1_far_red_2",
+            "op": "LoadTexture",
+            "frame": 7287
+          },
+          {
+            "ms": 6.6938,
+            "self_ms": 6.6938,
+            "path": "Resources/th43/boss/Cirno/scbg2.png",
+            "name": "th43/Cirno_scbg2",
+            "op": "LoadTexture",
+            "frame": 7287
+          },
+          {
+            "ms": 6.3934,
+            "self_ms": 6.3934,
+            "path": "Resources/th43/performer/Cirno/normal.png",
+            "name": "th43/Cirnopic_show",
+            "op": "LoadTexture",
+            "frame": 7287
+          },
+          {
+            "ms": 6.2766,
+            "self_ms": 6.2766,
+            "path": "Resources/th43/background/stage1/far_blue_1.png",
+            "name": "th43/s1_far_blue_1",
+            "op": "LoadTexture",
+            "frame": 7287
+          },
+          {
+            "ms": 5.6064,
+            "self_ms": 5.6064,
+            "path": "Resources/th43/background/stage1/water_red_2.png",
+            "name": "th43/s1_water_red_2",
+            "op": "LoadTexture",
+            "frame": 7287
+          },
+          {
+            "ms": 5.5099,
+            "self_ms": 5.5099,
+            "path": "Resources/th43/background/stage1/water_red_1.png",
+            "name": "th43/s1_water_red_1",
+            "op": "LoadTexture",
+            "frame": 7287
+          },
+          {
+            "ms": 5.2718,
+            "self_ms": 5.2718,
+            "path": "Resources/th43/background/stage1/far_blue_2.png",
+            "name": "th43/s1_far_blue_2",
+            "op": "LoadTexture",
+            "frame": 7287
+          },
+          {
+            "ms": 5.1119,
+            "self_ms": 5.1119,
+            "path": "Resources/th43/background/stage1/water_blue_2.png",
+            "name": "th43/s1_water_blue_2",
+            "op": "LoadTexture",
+            "frame": 7287
+          },
+          {
+            "ms": 4.6068,
+            "self_ms": 4.6068,
+            "path": "Resources/th43/background/stage1/water_blue_1.png",
+            "name": "th43/s1_water_blue_1",
+            "op": "LoadTexture",
+            "frame": 7287
+          },
+          {
+            "ms": 3.3133,
+            "self_ms": 3.3133,
+            "path": "Resources/th43/background/stage1/board.png",
+            "name": "th43/s1_board",
+            "op": "LoadTexture",
+            "frame": 7287
+          },
+          {
+            "ms": 1.8281,
+            "self_ms": 0.811,
+            "name": "<scene>",
+            "op": "encounter.stop",
+            "frame": 7287
+          }
+        ]
+      }
+    ]
+  },
+  "diagnostic_runs": {
+    "theis_keep_resources": {
+      "data": "/private/tmp/bossrush-entry-theis-retain/bossrush/User/rogue-entry-profile.json",
+      "retain_resources": true,
+      "speed": 1,
+      "window_frames": 240,
+      "cases": [
+        {
+          "card_id": 70101,
+          "first_frame": 205,
+          "source": "TH41",
+          "key": "TH41:70101",
+          "index": 1,
+          "frames": 240,
+          "max_logic_ms": 401.2509,
+          "max_render_ms": 5.2887,
+          "max_wall_ms": 403.4119,
+          "cpu_over_16ms": 1,
+          "operations": {
+            "encounter.stop": {
+              "count": 1,
+              "ms": 0.0012,
+              "self_ms": 0.0012
+            },
+            "encounter.begin": {
+              "count": 1,
+              "ms": 1.0909,
+              "self_ms": 1.0897
+            },
+            "LoadTexture": {
+              "count": 49,
+              "ms": 381.3033,
+              "self_ms": 381.3033
+            },
+            "LoadAnimation": {
+              "count": 79,
+              "ms": 0.4258,
+              "self_ms": 0.4258
+            },
+            "LoadImage": {
+              "count": 1459,
+              "ms": 3.8017,
+              "self_ms": 3.8017
+            },
+            "LoadSound": {
+              "count": 40,
+              "ms": 1.5776,
+              "self_ms": 1.5776
+            },
+            "THEIS.LoadByTag": {
+              "count": 1,
+              "ms": 393.6082,
+              "self_ms": 12.1942
+            },
+            "LoadMusic": {
+              "count": 1,
+              "ms": 0.6499,
+              "self_ms": 0.6499
+            }
+          },
+          "top_frames": [
+            {
+              "frame": 251,
+              "wall_ms": 403.4119,
+              "case": 1,
+              "age": 47,
+              "render_ms": 1.6567,
+              "logic_ms": 401.2509
+            },
+            {
+              "frame": 382,
+              "wall_ms": 15.8134,
+              "case": 1,
+              "age": 178,
+              "render_ms": 4.4024,
+              "logic_ms": 2.9892
+            },
+            {
+              "frame": 283,
+              "wall_ms": 16.7817,
+              "case": 1,
+              "age": 79,
+              "render_ms": 5.2887,
+              "logic_ms": 1.3683
+            },
+            {
+              "frame": 404,
+              "wall_ms": 17.9793,
+              "case": 1,
+              "age": 200,
+              "render_ms": 3.7244,
+              "logic_ms": 2.5596
+            }
+          ],
+          "top_events": [
+            {
+              "frame": 251,
+              "ms": 393.6082,
+              "self_ms": 12.1942,
+              "path": "global",
+              "name": "false",
+              "op": "THEIS.LoadByTag"
+            },
+            {
+              "frame": 251,
+              "ms": 73.813,
+              "self_ms": 73.813,
+              "path": "Resources/ports/theis/res/ui/ui_item_16_9_2.png",
+              "name": "THEIS_hud",
+              "op": "LoadTexture"
+            },
+            {
+              "frame": 251,
+              "ms": 35.7503,
+              "self_ms": 35.7503,
+              "path": "Resources/ports/theis/res/bullet/bullet_2048.png",
+              "name": "_bullet_2048_texture",
+              "op": "LoadTexture"
+            },
+            {
+              "frame": 251,
+              "ms": 24.3985,
+              "self_ms": 24.3985,
+              "path": "Resources/ports/theis/EISlib/boss/boss_ui_dd.png",
+              "name": "_boss_ui_tex",
+              "op": "LoadTexture"
+            },
+            {
+              "frame": 251,
+              "ms": 20.5069,
+              "self_ms": 20.5069,
+              "path": "Resources/ports/theis/res/item/item.png",
+              "name": "theis_item_tex",
+              "op": "LoadTexture"
+            },
+            {
+              "frame": 251,
+              "ms": 16.0184,
+              "self_ms": 16.0184,
+              "path": "Resources/ports/theis/res/effect/color_effect.png",
+              "name": "_color_effect_texture",
+              "op": "LoadTexture"
+            },
+            {
+              "frame": 251,
+              "ms": 14.5565,
+              "self_ms": 14.5565,
+              "path": "Resources/ports/theis/res/enemy/fairy_small_mid.png",
+              "name": "_enemy_texture_1",
+              "op": "LoadTexture"
+            },
+            {
+              "frame": 251,
+              "ms": 14.0609,
+              "self_ms": 14.0609,
+              "path": "Resources/ports/theis/res/enemy/fairy_large.png",
+              "name": "_enemy_texture_2",
+              "op": "LoadTexture"
+            },
+            {
+              "frame": 251,
+              "ms": 13.7244,
+              "self_ms": 13.7244,
+              "path": "Resources/ports/theis/EISlib/effect/hint_new.png",
+              "name": "_item_hint_new_texture",
+              "op": "LoadTexture"
+            },
+            {
+              "frame": 251,
+              "ms": 13.6755,
+              "self_ms": 13.6755,
+              "path": "Resources/ports/theis/res/enemy/fairy_small_mid_2.png",
+              "name": "_enemy_texture_3",
+              "op": "LoadTexture"
+            },
+            {
+              "frame": 251,
+              "ms": 13.1252,
+              "self_ms": 13.1252,
+              "path": "Resources/ports/theis/res/enemy/ghost_fire_1.png",
+              "name": "_ghost_fire_1_texture",
+              "op": "LoadTexture"
+            },
+            {
+              "frame": 251,
+              "ms": 12.8329,
+              "self_ms": 12.8329,
+              "path": "Resources/ports/theis/res/enemy/ghost_fire_3.png",
+              "name": "_ghost_fire_3_texture",
+              "op": "LoadTexture"
+            },
+            {
+              "frame": 251,
+              "ms": 12.8201,
+              "self_ms": 12.8201,
+              "path": "Resources/ports/theis/res/enemy/ghost_fire_4.png",
+              "name": "_ghost_fire_4_texture",
+              "op": "LoadTexture"
+            },
+            {
+              "frame": 251,
+              "ms": 12.7875,
+              "self_ms": 12.7875,
+              "path": "Resources/ports/theis/res/effect/dye_effect.png",
+              "name": "_dye_effect_texture",
+              "op": "LoadTexture"
+            }
+          ]
+        },
+        {
+          "card_id": 70101,
+          "first_frame": 506,
+          "source": "TH41",
+          "key": "TH41:70101",
+          "index": 2,
+          "frames": 240,
+          "max_logic_ms": 9.181,
+          "max_render_ms": 15.1916,
+          "max_wall_ms": 23.9369,
+          "cpu_over_16ms": 1,
+          "operations": {
+            "encounter.stop": {
+              "count": 2,
+              "ms": 1.5662,
+              "self_ms": 1.5662
+            },
+            "encounter.begin": {
+              "count": 1,
+              "ms": 0.4154,
+              "self_ms": 0.4144
+            },
+            "THEIS.LoadByTag": {
+              "count": 1,
+              "ms": 6.8255,
+              "self_ms": 5.4987
+            },
+            "LoadTexture": {
+              "count": 9,
+              "ms": 0.271,
+              "self_ms": 0.271
+            },
+            "LoadAnimation": {
+              "count": 54,
+              "ms": 0.0283,
+              "self_ms": 0.0283
+            },
+            "LoadImage": {
+              "count": 1255,
+              "ms": 1.0645,
+              "self_ms": 1.0645
+            }
+          },
+          "top_frames": [
+            {
+              "frame": 680,
+              "wall_ms": 17.5946,
+              "case": 2,
+              "age": 175,
+              "render_ms": 15.1916,
+              "logic_ms": 1.8251
+            },
+            {
+              "frame": 507,
+              "wall_ms": 15.9407,
+              "case": 2,
+              "age": 2,
+              "render_ms": 3.1012,
+              "logic_ms": 9.181
+            },
+            {
+              "frame": 728,
+              "wall_ms": 17.4447,
+              "case": 2,
+              "age": 223,
+              "render_ms": 2.4688,
+              "logic_ms": 4.3725
+            },
+            {
+              "frame": 525,
+              "wall_ms": 16.598,
+              "case": 2,
+              "age": 20,
+              "render_ms": 4.8329,
+              "logic_ms": 1.6415
+            }
+          ],
+          "top_events": [
+            {
+              "frame": 507,
+              "ms": 6.8255,
+              "self_ms": 5.4987,
+              "path": "global",
+              "name": "false",
+              "op": "THEIS.LoadByTag"
+            },
+            {
+              "frame": 506,
+              "ms": 1.5652,
+              "self_ms": 1.5652,
+              "name": "<scene>",
+              "op": "encounter.stop"
+            }
+          ]
+        },
+        {
+          "card_id": 70101,
+          "first_frame": 807,
+          "source": "TH41",
+          "key": "TH41:70101",
+          "index": 3,
+          "frames": 240,
+          "max_logic_ms": 3.9742,
+          "max_render_ms": 4.225,
+          "max_wall_ms": 18.3549,
+          "cpu_over_16ms": 0,
+          "operations": {
+            "encounter.stop": {
+              "count": 2,
+              "ms": 1.6423,
+              "self_ms": 1.6423
+            },
+            "encounter.begin": {
+              "count": 1,
+              "ms": 0.5718,
+              "self_ms": 0.5716
+            },
+            "THEIS.LoadByTag": {
+              "count": 1,
+              "ms": 2.5766,
+              "self_ms": 2.1143
+            },
+            "LoadTexture": {
+              "count": 9,
+              "ms": 0.1452,
+              "self_ms": 0.1452
+            },
+            "LoadAnimation": {
+              "count": 54,
+              "ms": 0.0377,
+              "self_ms": 0.0377
+            },
+            "LoadImage": {
+              "count": 1255,
+              "ms": 0.301,
+              "self_ms": 0.301
+            }
+          },
+          "top_frames": [
+            {
+              "frame": 944,
+              "wall_ms": 17.1805,
+              "case": 3,
+              "age": 138,
+              "render_ms": 4.1056,
+              "logic_ms": 2.485
+            },
+            {
+              "frame": 820,
+              "wall_ms": 16.9575,
+              "case": 3,
+              "age": 14,
+              "render_ms": 4.225,
+              "logic_ms": 1.7123
+            },
+            {
+              "frame": 830,
+              "wall_ms": 17.7373,
+              "case": 3,
+              "age": 24,
+              "render_ms": 3.1373,
+              "logic_ms": 2.7712
+            },
+            {
+              "frame": 952,
+              "wall_ms": 17.4118,
+              "case": 3,
+              "age": 146,
+              "render_ms": 2.0304,
+              "logic_ms": 3.7868
+            }
+          ],
+          "top_events": [
+            {
+              "frame": 808,
+              "ms": 2.5766,
+              "self_ms": 2.1143,
+              "path": "global",
+              "name": "false",
+              "op": "THEIS.LoadByTag"
+            },
+            {
+              "frame": 807,
+              "ms": 1.6422,
+              "self_ms": 1.6422,
+              "name": "<scene>",
+              "op": "encounter.stop"
+            }
+          ]
+        }
+      ]
+    },
+    "dreamer_keep_resources": {
+      "data": "/private/tmp/bossrush-entry-dreamer-retain/bossrush/User/rogue-entry-profile.json",
+      "retain_resources": true,
+      "speed": 1,
+      "window_frames": 240,
+      "cases": [
+        {
+          "index": 1,
+          "source": "TH42",
+          "first_frame": 205,
+          "key": "TH42:71121",
+          "card_id": 71121,
+          "frames": 240,
+          "max_logic_ms": 400.6919,
+          "max_render_ms": 4.3148,
+          "max_wall_ms": 401.6182,
+          "cpu_over_16ms": 1,
+          "operations": {
+            "encounter.begin": {
+              "count": 1,
+              "ms": 0.4053,
+              "self_ms": 0.4045
+            },
+            "encounter.stop": {
+              "count": 1,
+              "ms": 0.0008,
+              "self_ms": 0.0008
+            },
+            "Dreamer.Resources.load": {
+              "count": 1,
+              "ms": 398.6839,
+              "self_ms": 1.4889
+            },
+            "LoadTexture": {
+              "count": 43,
+              "ms": 392.3325,
+              "self_ms": 392.3325
+            },
+            "LoadMusic": {
+              "count": 2,
+              "ms": 0.6036,
+              "self_ms": 0.6036
+            },
+            "LoadImage": {
+              "count": 961,
+              "ms": 3.2443,
+              "self_ms": 3.2443
+            },
+            "LoadSound": {
+              "count": 31,
+              "ms": 1.0147,
+              "self_ms": 1.0147
+            }
+          },
+          "top_frames": [
+            {
+              "wall_ms": 401.6182,
+              "logic_ms": 400.6919,
+              "frame": 251,
+              "case": 1,
+              "age": 47,
+              "render_ms": 0.7552
+            },
+            {
+              "wall_ms": 17.4986,
+              "logic_ms": 3.0561,
+              "frame": 335,
+              "case": 1,
+              "age": 131,
+              "render_ms": 3.3964
+            },
+            {
+              "wall_ms": 17.4896,
+              "logic_ms": 3.3362,
+              "frame": 311,
+              "case": 1,
+              "age": 107,
+              "render_ms": 2.9821
+            },
+            {
+              "wall_ms": 17.8074,
+              "logic_ms": 1.1528,
+              "frame": 428,
+              "case": 1,
+              "age": 224,
+              "render_ms": 4.3148
+            }
+          ],
+          "top_events": [
+            {
+              "ms": 398.6839,
+              "self_ms": 1.4889,
+              "frame": 251,
+              "name": "1",
+              "op": "Dreamer.Resources.load"
+            },
+            {
+              "ms": 85.9561,
+              "self_ms": 85.9561,
+              "frame": 251,
+              "name": "ld_player_fx_l_tex",
+              "op": "LoadTexture",
+              "path": "Resources/ports/dreamer/res/likedreamer/effect/Effect_l.png"
+            },
+            {
+              "ms": 59.3977,
+              "self_ms": 59.3977,
+              "frame": 251,
+              "name": "ld_tex_boss",
+              "op": "LoadTexture",
+              "path": "Resources/ports/dreamer/res/likedreamer/stage/Boss.png"
+            },
+            {
+              "ms": 47.2595,
+              "self_ms": 47.2595,
+              "frame": 251,
+              "name": "ld_tex_enemy_m",
+              "op": "LoadTexture",
+              "path": "Resources/ports/dreamer/res/likedreamer/optimized/gameplay/enemy_m_140.png"
+            },
+            {
+              "ms": 43.9813,
+              "self_ms": 43.9813,
+              "frame": 251,
+              "name": "ld_tex_player_frame",
+              "op": "LoadTexture",
+              "path": "Resources/ports/dreamer/res/likedreamer/player/PlayerFrame.png"
+            },
+            {
+              "ms": 20.7801,
+              "self_ms": 20.7801,
+              "frame": 251,
+              "name": "ld_stageback1_5",
+              "op": "LoadTexture",
+              "path": "Resources/ports/dreamer/res/likedreamer/optimized/background/back1_04.png"
+            },
+            {
+              "ms": 16.7187,
+              "self_ms": 16.7187,
+              "frame": 251,
+              "name": "ld_tex_player",
+              "op": "LoadTexture",
+              "path": "Resources/ports/dreamer/res/likedreamer/player/Player.png"
+            },
+            {
+              "ms": 15.8669,
+              "self_ms": 15.8669,
+              "frame": 251,
+              "name": "ld_stageback1_6",
+              "op": "LoadTexture",
+              "path": "Resources/ports/dreamer/res/likedreamer/optimized/background/back1_05.png"
+            },
+            {
+              "ms": 15.1134,
+              "self_ms": 15.1134,
+              "frame": 251,
+              "name": "ld_tex_enemy_s",
+              "op": "LoadTexture",
+              "path": "Resources/ports/dreamer/res/likedreamer/stage/Enemy_s.png"
+            },
+            {
+              "ms": 14.9691,
+              "self_ms": 14.9691,
+              "frame": 251,
+              "name": "ld_stageback1_4",
+              "op": "LoadTexture",
+              "path": "Resources/ports/dreamer/res/likedreamer/optimized/background/back1_03.png"
+            },
+            {
+              "ms": 11.8963,
+              "self_ms": 11.8963,
+              "frame": 251,
+              "name": "ld_player_fx_m_tex",
+              "op": "LoadTexture",
+              "path": "Resources/ports/dreamer/res/likedreamer/effect/Effect_m.png"
+            },
+            {
+              "ms": 11.4401,
+              "self_ms": 11.4401,
+              "frame": 251,
+              "name": "ld_stageback1_3",
+              "op": "LoadTexture",
+              "path": "Resources/ports/dreamer/res/likedreamer/optimized/background/back1_02.png"
+            },
+            {
+              "ms": 4.886,
+              "self_ms": 4.886,
+              "frame": 251,
+              "name": "ld_white_back",
+              "op": "LoadTexture",
+              "path": "Resources/ports/dreamer/res/likedreamer/system/WhiteBack.png"
+            },
+            {
+              "ms": 3.201,
+              "self_ms": 3.201,
+              "frame": 251,
+              "name": "ld_tex_boss_approach_1_ch2",
+              "op": "LoadTexture",
+              "path": "Resources/ports/dreamer/res/likedreamer/stage/BossApproach1_ch2.png"
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "source": "TH42",
+          "first_frame": 996,
+          "key": "TH42:71121",
+          "card_id": 71121,
+          "frames": 240,
+          "max_logic_ms": 4.1818,
+          "max_render_ms": 4.3224,
+          "max_wall_ms": 18.6545,
+          "cpu_over_16ms": 0,
+          "operations": {
+            "encounter.begin": {
+              "count": 1,
+              "ms": 0.2289,
+              "self_ms": 0.2287
+            },
+            "encounter.stop": {
+              "count": 2,
+              "ms": 0.541,
+              "self_ms": 0.541
+            },
+            "Dreamer.Resources.load": {
+              "count": 1,
+              "ms": 1.9055,
+              "self_ms": 1.9055
+            }
+          },
+          "top_frames": [
+            {
+              "wall_ms": 16.9918,
+              "logic_ms": 4.1818,
+              "frame": 1024,
+              "case": 2,
+              "age": 29,
+              "render_ms": 3.2641
+            },
+            {
+              "wall_ms": 17.5951,
+              "logic_ms": 3.632,
+              "frame": 1174,
+              "case": 2,
+              "age": 179,
+              "render_ms": 2.9982
+            },
+            {
+              "wall_ms": 17.6895,
+              "logic_ms": 3.3618,
+              "frame": 997,
+              "case": 2,
+              "age": 2,
+              "render_ms": 3.1676
+            },
+            {
+              "wall_ms": 16.3421,
+              "logic_ms": 2.7568,
+              "frame": 1103,
+              "case": 2,
+              "age": 108,
+              "render_ms": 3.7511
+            }
+          ],
+          "top_events": [
+            {
+              "ms": 1.9055,
+              "self_ms": 1.9055,
+              "frame": 997,
+              "name": "1",
+              "op": "Dreamer.Resources.load"
+            }
+          ]
+        },
+        {
+          "index": 3,
+          "source": "TH42",
+          "first_frame": 1742,
+          "key": "TH42:71121",
+          "card_id": 71121,
+          "frames": 240,
+          "max_logic_ms": 3.3235,
+          "max_render_ms": 4.9431,
+          "max_wall_ms": 18.1203,
+          "cpu_over_16ms": 0,
+          "operations": {
+            "encounter.begin": {
+              "count": 1,
+              "ms": 0.606,
+              "self_ms": 0.6058
+            },
+            "encounter.stop": {
+              "count": 2,
+              "ms": 1.0713,
+              "self_ms": 1.0713
+            },
+            "Dreamer.Resources.load": {
+              "count": 1,
+              "ms": 0.822,
+              "self_ms": 0.822
+            }
+          },
+          "top_frames": [
+            {
+              "wall_ms": 16.1107,
+              "logic_ms": 2.5848,
+              "frame": 1954,
+              "case": 3,
+              "age": 213,
+              "render_ms": 3.5783
+            },
+            {
+              "wall_ms": 17.5842,
+              "logic_ms": 1.535,
+              "frame": 1834,
+              "case": 3,
+              "age": 93,
+              "render_ms": 4.5129
+            },
+            {
+              "wall_ms": 17.1628,
+              "logic_ms": 1.6572,
+              "frame": 1815,
+              "case": 3,
+              "age": 74,
+              "render_ms": 4.3704
+            },
+            {
+              "wall_ms": 17.7092,
+              "logic_ms": 1.2839,
+              "frame": 1910,
+              "case": 3,
+              "age": 169,
+              "render_ms": 4.6275
+            }
+          ],
+          "top_events": [
+            {
+              "ms": 1.071,
+              "self_ms": 1.071,
+              "frame": 1742,
+              "name": "<scene>",
+              "op": "encounter.stop"
+            }
+          ]
+        }
+      ]
+    },
+    "bdb_keep_resources": {
+      "data": "/private/tmp/bossrush-entry-bdb-retain/bossrush/User/rogue-entry-profile.json",
+      "retain_resources": true,
+      "speed": 1,
+      "window_frames": 240,
+      "cases": [
+        {
+          "card_id": 81402,
+          "index": 1,
+          "first_frame": 206,
+          "key": "TH43:81402",
+          "source": "TH43",
+          "frames": 240,
+          "max_logic_ms": 102.6524,
+          "max_render_ms": 4.6646,
+          "max_wall_ms": 104.2045,
+          "cpu_over_16ms": 1,
+          "operations": {
+            "encounter.stop": {
+              "count": 1,
+              "ms": 0.0013,
+              "self_ms": 0.0013
+            },
+            "encounter.begin": {
+              "count": 1,
+              "ms": 0.41,
+              "self_ms": 0.4087
+            },
+            "LoadTexture": {
+              "count": 15,
+              "ms": 95.9427,
+              "self_ms": 95.9427
+            },
+            "LoadMusic": {
+              "count": 1,
+              "ms": 1.877,
+              "self_ms": 1.877
+            },
+            "LoadImage": {
+              "count": 40,
+              "ms": 1.559,
+              "self_ms": 1.559
+            }
+          },
+          "top_frames": [
+            {
+              "wall_ms": 104.2045,
+              "render_ms": 1.1477,
+              "case": 1,
+              "age": 46,
+              "logic_ms": 102.6524,
+              "frame": 251
+            },
+            {
+              "wall_ms": 17.6617,
+              "render_ms": 3.9356,
+              "case": 1,
+              "age": 160,
+              "logic_ms": 2.8166,
+              "frame": 365
+            },
+            {
+              "wall_ms": 17.7205,
+              "render_ms": 3.6373,
+              "case": 1,
+              "age": 113,
+              "logic_ms": 2.6198,
+              "frame": 318
+            },
+            {
+              "wall_ms": 17.6792,
+              "render_ms": 4.3137,
+              "case": 1,
+              "age": 108,
+              "logic_ms": 1.5933,
+              "frame": 313
+            }
+          ],
+          "top_events": [
+            {
+              "name": "th43/Cirno_scbg1",
+              "ms": 22.8708,
+              "self_ms": 22.8708,
+              "path": "Resources/th43/boss/Cirno/scbg1.png",
+              "op": "LoadTexture",
+              "frame": 251
+            },
+            {
+              "name": "th43/Cirno_BossWalkImage",
+              "ms": 9.0764,
+              "self_ms": 9.0764,
+              "path": "Resources/th43/boss/Cirno/BossWalkImage.png",
+              "op": "LoadTexture",
+              "frame": 251
+            },
+            {
+              "name": "th43/Cirno_scbg2",
+              "ms": 7.7688,
+              "self_ms": 7.7688,
+              "path": "Resources/th43/boss/Cirno/scbg2.png",
+              "op": "LoadTexture",
+              "frame": 251
+            },
+            {
+              "name": "th43/s1_far_red_1",
+              "ms": 7.2812,
+              "self_ms": 7.2812,
+              "path": "Resources/th43/background/stage1/far_red_1.png",
+              "op": "LoadTexture",
+              "frame": 251
+            },
+            {
+              "name": "th43/Cirnopic_show",
+              "ms": 6.7732,
+              "self_ms": 6.7732,
+              "path": "Resources/th43/performer/Cirno/normal.png",
+              "op": "LoadTexture",
+              "frame": 251
+            },
+            {
+              "name": "th43/s1_far_red_2",
+              "ms": 6.5891,
+              "self_ms": 6.5891,
+              "path": "Resources/th43/background/stage1/far_red_2.png",
+              "op": "LoadTexture",
+              "frame": 251
+            },
+            {
+              "name": "th43/s1_far_blue_1",
+              "ms": 6.3558,
+              "self_ms": 6.3558,
+              "path": "Resources/th43/background/stage1/far_blue_1.png",
+              "op": "LoadTexture",
+              "frame": 251
+            },
+            {
+              "name": "th43/s1_water_red_2",
+              "ms": 5.5802,
+              "self_ms": 5.5802,
+              "path": "Resources/th43/background/stage1/water_red_2.png",
+              "op": "LoadTexture",
+              "frame": 251
+            },
+            {
+              "name": "th43/s1_water_blue_2",
+              "ms": 5.3177,
+              "self_ms": 5.3177,
+              "path": "Resources/th43/background/stage1/water_blue_2.png",
+              "op": "LoadTexture",
+              "frame": 251
+            },
+            {
+              "name": "th43/s1_far_blue_2",
+              "ms": 5.158,
+              "self_ms": 5.158,
+              "path": "Resources/th43/background/stage1/far_blue_2.png",
+              "op": "LoadTexture",
+              "frame": 251
+            },
+            {
+              "name": "th43/s1_water_red_1",
+              "ms": 5.0392,
+              "self_ms": 5.0392,
+              "path": "Resources/th43/background/stage1/water_red_1.png",
+              "op": "LoadTexture",
+              "frame": 251
+            },
+            {
+              "name": "th43/s1_water_blue_1",
+              "ms": 4.5574,
+              "self_ms": 4.5574,
+              "path": "Resources/th43/background/stage1/water_blue_1.png",
+              "op": "LoadTexture",
+              "frame": 251
+            },
+            {
+              "name": "th43/s1_board",
+              "ms": 3.1377,
+              "self_ms": 3.1377,
+              "path": "Resources/th43/background/stage1/board.png",
+              "op": "LoadTexture",
+              "frame": 251
+            },
+            {
+              "name": "th43/s1",
+              "ms": 1.877,
+              "self_ms": 1.877,
+              "path": "Resources/th43/music/bgm_s1.ogg",
+              "op": "LoadMusic",
+              "frame": 251
+            }
+          ]
+        },
+        {
+          "card_id": 81402,
+          "index": 2,
+          "first_frame": 507,
+          "key": "TH43:81402",
+          "source": "TH43",
+          "frames": 240,
+          "max_logic_ms": 5.0029,
+          "max_render_ms": 11.1337,
+          "max_wall_ms": 17.7987,
+          "cpu_over_16ms": 0,
+          "operations": {
+            "encounter.stop": {
+              "count": 2,
+              "ms": 0.5017,
+              "self_ms": 0.5017
+            },
+            "LoadImage": {
+              "count": 12,
+              "ms": 0.0379,
+              "self_ms": 0.0379
+            },
+            "encounter.begin": {
+              "count": 1,
+              "ms": 0.2044,
+              "self_ms": 0.2022
+            }
+          },
+          "top_frames": [
+            {
+              "wall_ms": 16.3795,
+              "render_ms": 11.1337,
+              "case": 2,
+              "age": 55,
+              "logic_ms": 1.4303,
+              "frame": 561
+            },
+            {
+              "wall_ms": 17.3247,
+              "render_ms": 5.8319,
+              "case": 2,
+              "age": 75,
+              "logic_ms": 2.9795,
+              "frame": 581
+            },
+            {
+              "wall_ms": 17.6352,
+              "render_ms": 5.0025,
+              "case": 2,
+              "age": 88,
+              "logic_ms": 2.6219,
+              "frame": 594
+            },
+            {
+              "wall_ms": 17.5905,
+              "render_ms": 5.4454,
+              "case": 2,
+              "age": 91,
+              "logic_ms": 2.14,
+              "frame": 597
+            }
+          ],
+          "top_events": []
+        },
+        {
+          "card_id": 81402,
+          "index": 3,
+          "first_frame": 808,
+          "key": "TH43:81402",
+          "source": "TH43",
+          "frames": 240,
+          "max_logic_ms": 5.8766,
+          "max_render_ms": 4.4773,
+          "max_wall_ms": 17.8107,
+          "cpu_over_16ms": 0,
+          "operations": {
+            "encounter.stop": {
+              "count": 2,
+              "ms": 0.8412,
+              "self_ms": 0.8412
+            },
+            "LoadImage": {
+              "count": 12,
+              "ms": 0.1941,
+              "self_ms": 0.1941
+            },
+            "encounter.begin": {
+              "count": 1,
+              "ms": 0.1985,
+              "self_ms": 0.1981
+            }
+          },
+          "top_frames": [
+            {
+              "wall_ms": 17.3491,
+              "render_ms": 2.5986,
+              "case": 3,
+              "age": 1,
+              "logic_ms": 5.8766,
+              "frame": 808
+            },
+            {
+              "wall_ms": 17.6562,
+              "render_ms": 3.5393,
+              "case": 3,
+              "age": 2,
+              "logic_ms": 3.314,
+              "frame": 809
+            },
+            {
+              "wall_ms": 17.6655,
+              "render_ms": 3.972,
+              "case": 3,
+              "age": 137,
+              "logic_ms": 2.2475,
+              "frame": 944
+            },
+            {
+              "wall_ms": 17.6612,
+              "render_ms": 3.6242,
+              "case": 3,
+              "age": 113,
+              "logic_ms": 2.3896,
+              "frame": 920
+            }
+          ],
+          "top_events": []
+        }
+      ]
+    },
+    "spring_background_seek": {
+      "data": "/private/tmp/bossrush-entry-spring-seek/bossrush/User/rogue-entry-profile.json",
+      "retain_resources": false,
+      "speed": 1,
+      "window_frames": 120,
+      "cases": [
+        {
+          "first_frame": 205,
+          "index": 1,
+          "source": "TH37",
+          "key": "TH37:37004",
+          "card_id": 37004,
+          "frames": 120,
+          "max_logic_ms": 48.3048,
+          "max_render_ms": 23.758,
+          "max_wall_ms": 72.5277,
+          "cpu_over_16ms": 2,
+          "operations": {
+            "LoadMusic": {
+              "count": 1,
+              "ms": 2.9057,
+              "self_ms": 2.9057
+            },
+            "encounter.begin": {
+              "count": 1,
+              "ms": 1.0941,
+              "self_ms": 1.092
+            },
+            "encounter.stop": {
+              "count": 1,
+              "ms": 0.0021,
+              "self_ms": 0.0021
+            },
+            "Spring.Background.seek": {
+              "count": 1,
+              "ms": 41.9291,
+              "self_ms": 41.9291
+            },
+            "LoadImage": {
+              "count": 148,
+              "ms": 4.9365,
+              "self_ms": 4.9365
+            },
+            "LoadTexture": {
+              "count": 8,
+              "ms": 31.8086,
+              "self_ms": 31.8086
+            }
+          },
+          "top_frames": [
+            {
+              "wall_ms": 72.5277,
+              "case": 1,
+              "logic_ms": 48.3048,
+              "render_ms": 23.758,
+              "frame": 250,
+              "age": 46
+            },
+            {
+              "wall_ms": 18.9009,
+              "case": 1,
+              "logic_ms": 17.5445,
+              "render_ms": 1.1063,
+              "frame": 251,
+              "age": 47
+            },
+            {
+              "wall_ms": 17.1778,
+              "case": 1,
+              "logic_ms": 5.7585,
+              "render_ms": 2.3555,
+              "frame": 205,
+              "age": 1
+            },
+            {
+              "wall_ms": 17.6124,
+              "case": 1,
+              "logic_ms": 1.5325,
+              "render_ms": 4.7145,
+              "frame": 310,
+              "age": 106
+            }
+          ],
+          "top_events": [
+            {
+              "name": "1",
+              "op": "Spring.Background.seek",
+              "ms": 41.9291,
+              "self_ms": 41.9291,
+              "frame": 250
+            },
+            {
+              "name": "mhj2_bosses",
+              "op": "LoadTexture",
+              "path": "Resources/th37/bosses.png",
+              "ms": 11.9465,
+              "self_ms": 11.9465,
+              "frame": 251
+            },
+            {
+              "name": "th37_mesh_8004_0",
+              "op": "LoadTexture",
+              "path": "Resources/th37/scene/8004_0.png",
+              "ms": 9.2156,
+              "self_ms": 9.2156,
+              "frame": 250
+            },
+            {
+              "name": "Chen11",
+              "op": "LoadImage",
+              "path": "Chen",
+              "ms": 3.9106,
+              "self_ms": 3.9106,
+              "frame": 250
+            },
+            {
+              "name": "mhj2_bosslist",
+              "op": "LoadTexture",
+              "path": "Resources/th37/bosslist.png",
+              "ms": 2.984,
+              "self_ms": 2.984,
+              "frame": 251
+            },
+            {
+              "name": "TH37_03",
+              "op": "LoadMusic",
+              "path": "music\\TH37_03.ogg",
+              "ms": 2.9057,
+              "self_ms": 2.9057,
+              "frame": 205
+            },
+            {
+              "name": "th37_mesh_8001_0",
+              "op": "LoadTexture",
+              "path": "Resources/th37/scene/8001_0.png",
+              "ms": 2.4958,
+              "self_ms": 2.4958,
+              "frame": 250
+            },
+            {
+              "name": "th37_mesh_8003_0",
+              "op": "LoadTexture",
+              "path": "Resources/th37/scene/8003_0.png",
+              "ms": 2.3848,
+              "self_ms": 2.3848,
+              "frame": 250
+            },
+            {
+              "name": "th37_mesh_8002_0",
+              "op": "LoadTexture",
+              "path": "Resources/th37/scene/8002_0.png",
+              "ms": 2.0771,
+              "self_ms": 2.0771,
+              "frame": 250
+            },
+            {
+              "name": "<scene>",
+              "op": "encounter.begin",
+              "ms": 1.0941,
+              "self_ms": 1.092,
+              "frame": 205
+            }
+          ]
+        },
+        {
+          "first_frame": 386,
+          "index": 2,
+          "source": "TH37",
+          "key": "TH37:37004",
+          "card_id": 37004,
+          "frames": 120,
+          "max_logic_ms": 45.0547,
+          "max_render_ms": 5.4794,
+          "max_wall_ms": 47.3418,
+          "cpu_over_16ms": 2,
+          "operations": {
+            "RemoveResource": {
+              "count": 43,
+              "ms": 0.8637,
+              "self_ms": 0.8637
+            },
+            "encounter.stop": {
+              "count": 2,
+              "ms": 1.5883,
+              "self_ms": 0.7245
+            },
+            "LoadMusic": {
+              "count": 1,
+              "ms": 0.3007,
+              "self_ms": 0.3007
+            },
+            "LoadImage": {
+              "count": 69,
+              "ms": 0.4245,
+              "self_ms": 0.4245
+            },
+            "Spring.Background.seek": {
+              "count": 1,
+              "ms": 40.8183,
+              "self_ms": 40.8183
+            },
+            "encounter.begin": {
+              "count": 1,
+              "ms": 0.3078,
+              "self_ms": 0.3075
+            },
+            "LoadTexture": {
+              "count": 5,
+              "ms": 16.4193,
+              "self_ms": 16.4193
+            }
+          },
+          "top_frames": [
+            {
+              "wall_ms": 47.3418,
+              "case": 2,
+              "logic_ms": 45.0547,
+              "render_ms": 2.0157,
+              "frame": 386,
+              "age": 1
+            },
+            {
+              "wall_ms": 20.8762,
+              "case": 2,
+              "logic_ms": 19.1594,
+              "render_ms": 1.5078,
+              "frame": 476,
+              "age": 91
+            },
+            {
+              "wall_ms": 17.7094,
+              "case": 2,
+              "logic_ms": 6.3389,
+              "render_ms": 1.4463,
+              "frame": 472,
+              "age": 87
+            },
+            {
+              "wall_ms": 17.3468,
+              "case": 2,
+              "logic_ms": 2.1493,
+              "render_ms": 5.4794,
+              "frame": 433,
+              "age": 48
+            }
+          ],
+          "top_events": [
+            {
+              "name": "1",
+              "op": "Spring.Background.seek",
+              "ms": 40.8183,
+              "self_ms": 40.8183,
+              "frame": 386
+            },
+            {
+              "name": "mhj2_be39",
+              "op": "LoadTexture",
+              "path": "Resources/th37/be39.png",
+              "ms": 7.0554,
+              "self_ms": 7.0554,
+              "frame": 476
+            },
+            {
+              "name": "mhj2_spell_5",
+              "op": "LoadTexture",
+              "path": "Resources/th37/spell5.png",
+              "ms": 4.6088,
+              "self_ms": 4.6088,
+              "frame": 476
+            },
+            {
+              "name": "mhj2_spell_6",
+              "op": "LoadTexture",
+              "path": "Resources/th37/spell6.png",
+              "ms": 4.1577,
+              "self_ms": 4.1577,
+              "frame": 476
+            },
+            {
+              "name": "<scene>",
+              "op": "encounter.stop",
+              "ms": 1.5879,
+              "self_ms": 0.7242,
+              "frame": 386
+            }
+          ]
+        },
+        {
+          "first_frame": 567,
+          "index": 3,
+          "source": "TH37",
+          "key": "TH37:37004",
+          "card_id": 37004,
+          "frames": 120,
+          "max_logic_ms": 47.3237,
+          "max_render_ms": 4.293,
+          "max_wall_ms": 49.4812,
+          "cpu_over_16ms": 1,
+          "operations": {
+            "RemoveResource": {
+              "count": 43,
+              "ms": 0.2276,
+              "self_ms": 0.2276
+            },
+            "encounter.stop": {
+              "count": 2,
+              "ms": 0.8353,
+              "self_ms": 0.6077
+            },
+            "LoadMusic": {
+              "count": 1,
+              "ms": 0.1607,
+              "self_ms": 0.1607
+            },
+            "LoadImage": {
+              "count": 42,
+              "ms": 0.2971,
+              "self_ms": 0.2971
+            },
+            "Spring.Background.seek": {
+              "count": 1,
+              "ms": 43.0445,
+              "self_ms": 43.0445
+            },
+            "encounter.begin": {
+              "count": 1,
+              "ms": 0.1704,
+              "self_ms": 0.1702
+            }
+          },
+          "top_frames": [
+            {
+              "wall_ms": 49.4812,
+              "case": 3,
+              "logic_ms": 47.3237,
+              "render_ms": 1.8758,
+              "frame": 567,
+              "age": 1
+            },
+            {
+              "wall_ms": 17.38,
+              "case": 3,
+              "logic_ms": 2.5011,
+              "render_ms": 3.436,
+              "frame": 649,
+              "age": 83
+            },
+            {
+              "wall_ms": 17.5642,
+              "case": 3,
+              "logic_ms": 1.7817,
+              "render_ms": 4.1289,
+              "frame": 603,
+              "age": 37
+            },
+            {
+              "wall_ms": 17.2347,
+              "case": 3,
+              "logic_ms": 2.9563,
+              "render_ms": 2.8945,
+              "frame": 668,
+              "age": 102
+            }
+          ],
+          "top_events": [
+            {
+              "name": "1",
+              "op": "Spring.Background.seek",
+              "ms": 43.0445,
+              "self_ms": 43.0445,
+              "frame": 567
+            }
+          ]
+        }
+      ]
+    },
+    "night_keep_resources_and_sampling": {
+      "data": "/private/tmp/bossrush-entry-night-seek/bossrush/User/rogue-entry-profile.json",
+      "retain_resources": true,
+      "speed": 1,
+      "window_frames": 240,
+      "cases": [
+        {
+          "index": 1,
+          "source": "TH39",
+          "first_frame": 205,
+          "card_id": 39001,
+          "key": "TH39:39001",
+          "frames": 240,
+          "max_logic_ms": 3219.8192,
+          "max_render_ms": 313.5532,
+          "max_wall_ms": 3533.8302,
+          "cpu_over_16ms": 2,
+          "operations": {
+            "LoadMusic": {
+              "count": 1,
+              "ms": 2.4562,
+              "self_ms": 2.4562
+            },
+            "encounter.begin": {
+              "count": 1,
+              "ms": 0.5097,
+              "self_ms": 0.5085
+            },
+            "encounter.stop": {
+              "count": 1,
+              "ms": 0.0012,
+              "self_ms": 0.0012
+            },
+            "Night.Background.seek": {
+              "count": 2,
+              "ms": 3213.869,
+              "self_ms": 3213.869
+            },
+            "LoadImage": {
+              "count": 85,
+              "ms": 8.3962,
+              "self_ms": 8.3962
+            },
+            "LoadTexture": {
+              "count": 31,
+              "ms": 351.5783,
+              "self_ms": 351.5783
+            }
+          },
+          "top_frames": [
+            {
+              "age": 46,
+              "case": 1,
+              "logic_ms": 3219.8192,
+              "render_ms": 313.5532,
+              "wall_ms": 3533.8302,
+              "frame": 250
+            },
+            {
+              "age": 86,
+              "case": 1,
+              "logic_ms": 2.1331,
+              "render_ms": 46.8646,
+              "wall_ms": 49.1467,
+              "frame": 290
+            },
+            {
+              "age": 151,
+              "case": 1,
+              "logic_ms": 2.0328,
+              "render_ms": 12.8222,
+              "wall_ms": 15.8195,
+              "frame": 355
+            },
+            {
+              "age": 88,
+              "case": 1,
+              "logic_ms": 0.9228,
+              "render_ms": 13.1365,
+              "wall_ms": 15.9796,
+              "frame": 292
+            }
+          ],
+          "top_events": [
+            {
+              "name": "<scene>",
+              "op": "Night.Background.seek",
+              "frame": 250,
+              "ms": 3213.8683,
+              "self_ms": 3213.8683
+            },
+            {
+              "name": "mhj3_tex_bosses",
+              "op": "LoadTexture",
+              "frame": 250,
+              "path": "Resources/th39/bosses.png",
+              "ms": 148.1883,
+              "self_ms": 148.1883
+            },
+            {
+              "name": "mhj3_tex_barrages",
+              "op": "LoadTexture",
+              "frame": 250,
+              "path": "Resources/th39/barrages.png",
+              "ms": 35.1044,
+              "self_ms": 35.1044
+            },
+            {
+              "name": "mhj3_tex_scene/guangdetouying",
+              "op": "LoadTexture",
+              "frame": 250,
+              "path": "Resources/th39/scene/guangdetouying.png",
+              "ms": 26.0897,
+              "self_ms": 26.0897
+            },
+            {
+              "name": "mhj3_original_aura",
+              "op": "LoadTexture",
+              "frame": 250,
+              "path": "Resources/th39/hud/bosslist.png",
+              "ms": 18.1604,
+              "self_ms": 18.1604
+            },
+            {
+              "name": "mhj3_tex_1BOSS",
+              "op": "LoadTexture",
+              "frame": 355,
+              "path": "Resources/th39/1BOSS.png",
+              "ms": 10.2154,
+              "self_ms": 10.2154
+            },
+            {
+              "name": "mhj3_tex_scene/1bossbg1",
+              "op": "LoadTexture",
+              "frame": 290,
+              "path": "Resources/th39/scene/1bossbg1.png",
+              "ms": 9.2468,
+              "self_ms": 9.2468
+            },
+            {
+              "name": "mhj3_tex_scene/1-18",
+              "op": "LoadTexture",
+              "frame": 250,
+              "path": "Resources/th39/scene/1-18.png",
+              "ms": 8.034,
+              "self_ms": 8.034
+            },
+            {
+              "name": "mhj3_tex_scene/1SC-03",
+              "op": "LoadTexture",
+              "frame": 291,
+              "path": "Resources/th39/scene/1SC-03.png",
+              "ms": 7.9613,
+              "self_ms": 7.9613
+            },
+            {
+              "name": "mhj3_tex_scene/L4",
+              "op": "LoadTexture",
+              "frame": 290,
+              "path": "Resources/th39/scene/L4.png",
+              "ms": 7.7293,
+              "self_ms": 7.7293
+            },
+            {
+              "name": "mhj3_tex_scene/1bossbg2",
+              "op": "LoadTexture",
+              "frame": 290,
+              "path": "Resources/th39/scene/1bossbg2.png",
+              "ms": 7.5393,
+              "self_ms": 7.5393
+            },
+            {
+              "name": "mhj3_tex_scene/1-15",
+              "op": "LoadTexture",
+              "frame": 250,
+              "path": "Resources/th39/scene/1-15.png",
+              "ms": 7.1093,
+              "self_ms": 7.1093
+            },
+            {
+              "name": "mhj3_tex_scene/1-19",
+              "op": "LoadTexture",
+              "frame": 250,
+              "path": "Resources/th39/scene/1-19.png",
+              "ms": 6.7391,
+              "self_ms": 6.7391
+            },
+            {
+              "name": "mhj3_tex_scene/1SC-02",
+              "op": "LoadTexture",
+              "frame": 292,
+              "path": "Resources/th39/scene/1SC-02.png",
+              "ms": 6.3472,
+              "self_ms": 6.3472
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "source": "TH39",
+          "first_frame": 506,
+          "card_id": 39001,
+          "key": "TH39:39001",
+          "frames": 240,
+          "max_logic_ms": 3201.5289,
+          "max_render_ms": 6.6864,
+          "max_wall_ms": 3206.9143,
+          "cpu_over_16ms": 1,
+          "operations": {
+            "Night.Background.seek": {
+              "count": 2,
+              "ms": 3199.369,
+              "self_ms": 3199.369
+            },
+            "encounter.begin": {
+              "count": 1,
+              "ms": 0.0897,
+              "self_ms": 0.0896
+            },
+            "encounter.stop": {
+              "count": 2,
+              "ms": 0.2607,
+              "self_ms": 0.2607
+            },
+            "LoadImage": {
+              "count": 12,
+              "ms": 0.0111,
+              "self_ms": 0.0111
+            }
+          },
+          "top_frames": [
+            {
+              "age": 1,
+              "case": 2,
+              "logic_ms": 3201.5289,
+              "render_ms": 5.0364,
+              "wall_ms": 3206.9143,
+              "frame": 506
+            },
+            {
+              "age": 24,
+              "case": 2,
+              "logic_ms": 2.4365,
+              "render_ms": 6.4444,
+              "wall_ms": 17.2743,
+              "frame": 529
+            },
+            {
+              "age": 20,
+              "case": 2,
+              "logic_ms": 2.8774,
+              "render_ms": 5.7347,
+              "wall_ms": 17.4375,
+              "frame": 525
+            },
+            {
+              "age": 29,
+              "case": 2,
+              "logic_ms": 1.6383,
+              "render_ms": 6.6864,
+              "wall_ms": 17.4495,
+              "frame": 534
+            }
+          ],
+          "top_events": [
+            {
+              "name": "<scene>",
+              "op": "Night.Background.seek",
+              "frame": 506,
+              "ms": 3199.3682,
+              "self_ms": 3199.3682
+            }
+          ]
+        },
+        {
+          "index": 3,
+          "source": "TH39",
+          "first_frame": 807,
+          "card_id": 39001,
+          "key": "TH39:39001",
+          "frames": 240,
+          "max_logic_ms": 3135.6319,
+          "max_render_ms": 6.4512,
+          "max_wall_ms": 3141.0091,
+          "cpu_over_16ms": 1,
+          "operations": {
+            "Night.Background.seek": {
+              "count": 2,
+              "ms": 3133.2567,
+              "self_ms": 3133.2567
+            },
+            "encounter.begin": {
+              "count": 1,
+              "ms": 0.1239,
+              "self_ms": 0.1238
+            },
+            "encounter.stop": {
+              "count": 2,
+              "ms": 0.2969,
+              "self_ms": 0.2969
+            },
+            "LoadImage": {
+              "count": 12,
+              "ms": 0.006,
+              "self_ms": 0.006
+            }
+          },
+          "top_frames": [
+            {
+              "age": 1,
+              "case": 3,
+              "logic_ms": 3135.6319,
+              "render_ms": 5.0636,
+              "wall_ms": 3141.0091,
+              "frame": 807
+            },
+            {
+              "age": 19,
+              "case": 3,
+              "logic_ms": 3.6818,
+              "render_ms": 6.3337,
+              "wall_ms": 17.0804,
+              "frame": 825
+            },
+            {
+              "age": 31,
+              "case": 3,
+              "logic_ms": 2.567,
+              "render_ms": 6.3867,
+              "wall_ms": 17.3382,
+              "frame": 837
+            },
+            {
+              "age": 36,
+              "case": 3,
+              "logic_ms": 2.9075,
+              "render_ms": 5.8698,
+              "wall_ms": 17.3089,
+              "frame": 842
+            }
+          ],
+          "top_events": [
+            {
+              "name": "<scene>",
+              "op": "Night.Background.seek",
+              "frame": 807,
+              "ms": 3133.2558,
+              "self_ms": 3133.2558
+            }
+          ]
+        }
+      ]
+    },
+    "snow_script_and_texture_detail": {
+      "data": "/private/tmp/bossrush-entry-snow-detail/bossrush/User/rogue-entry-profile.json",
+      "retain_resources": false,
+      "speed": 1,
+      "window_frames": 150,
+      "cases": [
+        {
+          "card_id": 38002,
+          "index": 1,
+          "key": "TH38:38002",
+          "source": "TH38",
+          "first_frame": 205,
+          "frames": 150,
+          "max_logic_ms": 5.9086,
+          "max_render_ms": 118.8397,
+          "max_wall_ms": 124.9823,
+          "cpu_over_16ms": 2,
+          "operations": {
+            "encounter.begin": {
+              "count": 1,
+              "ms": 0.39,
+              "self_ms": 0.3892
+            },
+            "encounter.stop": {
+              "count": 1,
+              "ms": 0.0008,
+              "self_ms": 0.0008
+            },
+            "LoadMusic": {
+              "count": 1,
+              "ms": 1.3893,
+              "self_ms": 1.3893
+            },
+            "DoFile": {
+              "count": 3,
+              "ms": 75.7423,
+              "self_ms": 75.7423
+            },
+            "LoadTexture": {
+              "count": 16,
+              "ms": 81.5638,
+              "self_ms": 81.5638
+            },
+            "LoadImage": {
+              "count": 22,
+              "ms": 2.9272,
+              "self_ms": 2.9272
+            }
+          },
+          "top_frames": [
+            {
+              "render_ms": 118.8397,
+              "wall_ms": 124.9823,
+              "frame": 250,
+              "age": 46,
+              "case": 1,
+              "logic_ms": 5.9086
+            },
+            {
+              "render_ms": 43.3903,
+              "wall_ms": 44.9367,
+              "frame": 251,
+              "age": 47,
+              "case": 1,
+              "logic_ms": 1.3512
+            },
+            {
+              "render_ms": 8.7757,
+              "wall_ms": 17.1222,
+              "frame": 347,
+              "age": 143,
+              "case": 1,
+              "logic_ms": 0.3545
+            },
+            {
+              "render_ms": 8.4117,
+              "wall_ms": 17.2492,
+              "frame": 317,
+              "age": 113,
+              "case": 1,
+              "logic_ms": 0.4992
+            }
+          ],
+          "top_events": [
+            {
+              "op": "DoFile",
+              "name": "mod/GAME/th38/scenes/meshes.lua",
+              "frame": 250,
+              "ms": 74.2435,
+              "self_ms": 74.2435
+            },
+            {
+              "op": "LoadTexture",
+              "name": "th38_unity_st1/63493616_p11_master1200.png",
+              "frame": 250,
+              "ms": 20.9087,
+              "self_ms": 20.9087,
+              "path": "Resources/th38/background/unity/st1/63493616_p11_master1200.png"
+            },
+            {
+              "op": "LoadTexture",
+              "name": "asl_actor_c631fe173bc84ff096c09c6233ef5bec_21300000",
+              "frame": 251,
+              "ms": 10.2201,
+              "self_ms": 10.2201,
+              "path": "Resources/th38/actors/c631fe173bc84ff096c09c6233ef5bec_21300000.png"
+            },
+            {
+              "op": "LoadTexture",
+              "name": "asl_actor_2c8e8466ebca444b855250f544a3ce90_21300000",
+              "frame": 251,
+              "ms": 10.1074,
+              "self_ms": 10.1074,
+              "path": "Resources/th38/actors/2c8e8466ebca444b855250f544a3ce90_21300000.png"
+            },
+            {
+              "op": "LoadTexture",
+              "name": "asl_actor_81ac036a507240649656384d3b06e0d2_21300000",
+              "frame": 251,
+              "ms": 10.0992,
+              "self_ms": 10.0992,
+              "path": "Resources/th38/actors/81ac036a507240649656384d3b06e0d2_21300000.png"
+            },
+            {
+              "op": "LoadTexture",
+              "name": "th38_unity_st1/ice.png",
+              "frame": 250,
+              "ms": 8.0586,
+              "self_ms": 8.0586,
+              "path": "Resources/th38/background/unity/st1/ice.png"
+            },
+            {
+              "op": "LoadTexture",
+              "name": "th38_unity_st1/lake.png",
+              "frame": 250,
+              "ms": 7.1498,
+              "self_ms": 7.1498,
+              "path": "Resources/th38/background/unity/st1/lake.png"
+            },
+            {
+              "op": "LoadTexture",
+              "name": "asl_actor_fef61592879e4f22a7a10906148671c6_21300000",
+              "frame": 251,
+              "ms": 5.8454,
+              "self_ms": 5.8454,
+              "path": "Resources/th38/actors/fef61592879e4f22a7a10906148671c6_21300000.png"
+            },
+            {
+              "op": "LoadTexture",
+              "name": "asl_actor_4645302d91c94694964211fe3c2ac9a2_21300000",
+              "frame": 251,
+              "ms": 3.016,
+              "self_ms": 3.016,
+              "path": "Resources/th38/actors/4645302d91c94694964211fe3c2ac9a2_21300000.png"
+            },
+            {
+              "op": "LoadImage",
+              "name": "Yukari11",
+              "frame": 250,
+              "ms": 2.6852,
+              "self_ms": 2.6852,
+              "path": "Yukari"
+            },
+            {
+              "op": "LoadTexture",
+              "name": "th38_unity_st1/cloud2.png",
+              "frame": 250,
+              "ms": 2.2144,
+              "self_ms": 2.2144,
+              "path": "Resources/th38/background/unity/st1/cloud2.png"
+            },
+            {
+              "op": "LoadMusic",
+              "name": "TH38_02",
+              "frame": 205,
+              "ms": 1.3893,
+              "self_ms": 1.3893,
+              "path": "music\\TH38_02.ogg"
+            },
+            {
+              "op": "DoFile",
+              "name": "mod/GAME/th38/scenes/1_spell.lua",
+              "frame": 250,
+              "ms": 1.1871,
+              "self_ms": 1.1871
+            },
+            {
+              "op": "LoadTexture",
+              "name": "th38_unity_st1/wu.png",
+              "frame": 250,
+              "ms": 1.0363,
+              "self_ms": 1.0363,
+              "path": "Resources/th38/background/unity/st1/wu.png"
+            }
+          ]
+        },
+        {
+          "card_id": 38002,
+          "index": 2,
+          "key": "TH38:38002",
+          "source": "TH38",
+          "first_frame": 416,
+          "frames": 150,
+          "max_logic_ms": 115.8333,
+          "max_render_ms": 51.1968,
+          "max_wall_ms": 121.1228,
+          "cpu_over_16ms": 2,
+          "operations": {
+            "LoadImage": {
+              "count": 564,
+              "ms": 1.8601,
+              "self_ms": 1.8601
+            },
+            "LoadTexture": {
+              "count": 111,
+              "ms": 162.6047,
+              "self_ms": 162.6047
+            },
+            "encounter.begin": {
+              "count": 1,
+              "ms": 0.3258,
+              "self_ms": 0.3257
+            },
+            "encounter.stop": {
+              "count": 2,
+              "ms": 0.7613,
+              "self_ms": 0.5277
+            },
+            "RemoveResource": {
+              "count": 19,
+              "ms": 0.2335,
+              "self_ms": 0.2335
+            },
+            "LoadMusic": {
+              "count": 1,
+              "ms": 0.1599,
+              "self_ms": 0.1599
+            }
+          },
+          "top_frames": [
+            {
+              "render_ms": 5.0593,
+              "wall_ms": 121.1228,
+              "frame": 522,
+              "age": 107,
+              "case": 2,
+              "logic_ms": 115.8333
+            },
+            {
+              "render_ms": 51.1968,
+              "wall_ms": 55.5545,
+              "frame": 416,
+              "age": 1,
+              "case": 2,
+              "logic_ms": 4.183
+            },
+            {
+              "render_ms": 6.7725,
+              "wall_ms": 17.4293,
+              "frame": 553,
+              "age": 138,
+              "case": 2,
+              "logic_ms": 1.7326
+            },
+            {
+              "render_ms": 7.7345,
+              "wall_ms": 17.535,
+              "frame": 432,
+              "age": 17,
+              "case": 2,
+              "logic_ms": 0.4848
+            }
+          ],
+          "top_events": [
+            {
+              "op": "LoadTexture",
+              "name": "asl_bullet",
+              "frame": 522,
+              "ms": 30.8762,
+              "self_ms": 30.8762,
+              "path": "Resources/th38/bullet.png"
+            },
+            {
+              "op": "LoadTexture",
+              "name": "th38_unity_st1/63493616_p11_master1200.png",
+              "frame": 416,
+              "ms": 25.7458,
+              "self_ms": 25.7458,
+              "path": "Resources/th38/background/unity/st1/63493616_p11_master1200.png"
+            },
+            {
+              "op": "LoadTexture",
+              "name": "th38_unity_st1/ice.png",
+              "frame": 416,
+              "ms": 8.98,
+              "self_ms": 8.98,
+              "path": "Resources/th38/background/unity/st1/ice.png"
+            },
+            {
+              "op": "LoadTexture",
+              "name": "asl_custom20.png",
+              "frame": 522,
+              "ms": 8.33,
+              "self_ms": 8.33,
+              "path": "Resources/th38/custom20.png"
+            },
+            {
+              "op": "LoadTexture",
+              "name": "th38_unity_st1/lake.png",
+              "frame": 416,
+              "ms": 8.2819,
+              "self_ms": 8.2819,
+              "path": "Resources/th38/background/unity/st1/lake.png"
+            },
+            {
+              "op": "LoadTexture",
+              "name": "asl_custom57.png",
+              "frame": 522,
+              "ms": 8.247,
+              "self_ms": 8.247,
+              "path": "Resources/th38/custom57.png"
+            },
+            {
+              "op": "LoadTexture",
+              "name": "asl_custom2.png",
+              "frame": 522,
+              "ms": 3.7733,
+              "self_ms": 3.7733,
+              "path": "Resources/th38/custom2.png"
+            },
+            {
+              "op": "LoadTexture",
+              "name": "asl_custom83.png",
+              "frame": 522,
+              "ms": 3.1005,
+              "self_ms": 3.1005,
+              "path": "Resources/th38/custom83.png"
+            },
+            {
+              "op": "LoadTexture",
+              "name": "asl_custom86.png",
+              "frame": 522,
+              "ms": 2.7665,
+              "self_ms": 2.7665,
+              "path": "Resources/th38/custom86.png"
+            },
+            {
+              "op": "LoadTexture",
+              "name": "asl_custom84.png",
+              "frame": 522,
+              "ms": 2.6869,
+              "self_ms": 2.6869,
+              "path": "Resources/th38/custom84.png"
+            },
+            {
+              "op": "LoadTexture",
+              "name": "asl_custom32.png",
+              "frame": 522,
+              "ms": 2.6067,
+              "self_ms": 2.6067,
+              "path": "Resources/th38/custom32.png"
+            },
+            {
+              "op": "LoadTexture",
+              "name": "asl_custom3.png",
+              "frame": 522,
+              "ms": 2.5013,
+              "self_ms": 2.5013,
+              "path": "Resources/th38/custom3.png"
+            },
+            {
+              "op": "LoadTexture",
+              "name": "asl_custom27.png",
+              "frame": 522,
+              "ms": 2.4946,
+              "self_ms": 2.4946,
+              "path": "Resources/th38/custom27.png"
+            },
+            {
+              "op": "LoadTexture",
+              "name": "asl_custom22.png",
+              "frame": 522,
+              "ms": 2.4747,
+              "self_ms": 2.4747,
+              "path": "Resources/th38/custom22.png"
+            }
+          ]
+        },
+        {
+          "card_id": 38002,
+          "index": 3,
+          "key": "TH38:38002",
+          "source": "TH38",
+          "first_frame": 627,
+          "frames": 150,
+          "max_logic_ms": 3.0206,
+          "max_render_ms": 49.7609,
+          "max_wall_ms": 52.978,
+          "cpu_over_16ms": 1,
+          "operations": {
+            "encounter.begin": {
+              "count": 1,
+              "ms": 0.2355,
+              "self_ms": 0.2354
+            },
+            "encounter.stop": {
+              "count": 2,
+              "ms": 0.5603,
+              "self_ms": 0.3212
+            },
+            "RemoveResource": {
+              "count": 19,
+              "ms": 0.2391,
+              "self_ms": 0.2391
+            },
+            "LoadTexture": {
+              "count": 6,
+              "ms": 45.979,
+              "self_ms": 45.979
+            },
+            "LoadMusic": {
+              "count": 1,
+              "ms": 0.2614,
+              "self_ms": 0.2614
+            },
+            "LoadImage": {
+              "count": 12,
+              "ms": 0.0807,
+              "self_ms": 0.0807
+            }
+          },
+          "top_frames": [
+            {
+              "render_ms": 49.7609,
+              "wall_ms": 52.978,
+              "frame": 627,
+              "age": 1,
+              "case": 3,
+              "logic_ms": 3.0206
+            },
+            {
+              "render_ms": 9.3012,
+              "wall_ms": 16.8976,
+              "frame": 648,
+              "age": 22,
+              "case": 3,
+              "logic_ms": 1.4106
+            },
+            {
+              "render_ms": 9.9163,
+              "wall_ms": 16.9555,
+              "frame": 754,
+              "age": 128,
+              "case": 3,
+              "logic_ms": 0.5539
+            },
+            {
+              "render_ms": 9.0154,
+              "wall_ms": 16.9875,
+              "frame": 772,
+              "age": 146,
+              "case": 3,
+              "logic_ms": 1.3785
+            }
+          ],
+          "top_events": [
+            {
+              "op": "LoadTexture",
+              "name": "th38_unity_st1/63493616_p11_master1200.png",
+              "frame": 627,
+              "ms": 24.852,
+              "self_ms": 24.852,
+              "path": "Resources/th38/background/unity/st1/63493616_p11_master1200.png"
+            },
+            {
+              "op": "LoadTexture",
+              "name": "th38_unity_st1/ice.png",
+              "frame": 627,
+              "ms": 9.0122,
+              "self_ms": 9.0122,
+              "path": "Resources/th38/background/unity/st1/ice.png"
+            },
+            {
+              "op": "LoadTexture",
+              "name": "th38_unity_st1/lake.png",
+              "frame": 627,
+              "ms": 8.2816,
+              "self_ms": 8.2816,
+              "path": "Resources/th38/background/unity/st1/lake.png"
+            },
+            {
+              "op": "LoadTexture",
+              "name": "th38_unity_st1/cloud2.png",
+              "frame": 627,
+              "ms": 2.3466,
+              "self_ms": 2.3466,
+              "path": "Resources/th38/background/unity/st1/cloud2.png"
+            },
+            {
+              "op": "LoadTexture",
+              "name": "th38_unity_st1/wu.png",
+              "frame": 627,
+              "ms": 1.1835,
+              "self_ms": 1.1835,
+              "path": "Resources/th38/background/unity/st1/wu.png"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "night_background_seeks": [
+    {
+      "background_ticks": 6358,
+      "start": 3180,
+      "ms": 3213.8838,
+      "frame": 250,
+      "top_stacks": [
+        {
+          "stack": "J mod/GAME/th39/runtime.lua:697;mod/GAME/th39/background.lua:49;mod/GAME/th39/background.lua:57;mod/GAME/th39/background.lua:106;@0x010441792c;THlib/rogue_hp.lua:153;THlib/rank.lua:105;",
+          "samples": 56
+        },
+        {
+          "stack": "J mod/GAME/th39/runtime.lua:178;mod/GAME/th39/runtime.lua:306;mod/GAME/th39/runtime.lua:698;mod/GAME/th39/background.lua:49;mod/GAME/th39/background.lua:57;mod/GAME/th39/background.lua:106;@0x010441792c;",
+          "samples": 44
+        },
+        {
+          "stack": "J mod/GAME/th39/runtime.lua:164;mod/GAME/th39/runtime.lua:306;mod/GAME/th39/runtime.lua:698;mod/GAME/th39/background.lua:49;mod/GAME/th39/background.lua:57;mod/GAME/th39/background.lua:106;@0x010441792c;",
+          "samples": 41
+        },
+        {
+          "stack": "J mod/GAME/th39/runtime.lua:677;mod/GAME/th39/runtime.lua:694;mod/GAME/th39/background.lua:49;mod/GAME/th39/background.lua:57;mod/GAME/th39/background.lua:106;@0x010441792c;THlib/rogue_hp.lua:153;",
+          "samples": 19
+        },
+        {
+          "stack": "J mod/GAME/th39/runtime.lua:302;mod/GAME/th39/runtime.lua:698;mod/GAME/th39/background.lua:49;mod/GAME/th39/background.lua:57;mod/GAME/th39/background.lua:106;@0x010441792c;THlib/rogue_hp.lua:153;",
+          "samples": 17
+        },
+        {
+          "stack": "J mod/GAME/th39/runtime.lua:571;mod/GAME/th39/runtime.lua:674;mod/GAME/th39/runtime.lua:690;mod/GAME/th39/runtime.lua:694;mod/GAME/th39/background.lua:49;mod/GAME/th39/background.lua:57;mod/GAME/th39/background.lua:106;",
+          "samples": 13
+        },
+        {
+          "stack": "J mod/GAME/th39/runtime.lua:29;mod/GAME/th39/runtime.lua:477;mod/GAME/th39/runtime.lua:672;mod/GAME/th39/runtime.lua:690;mod/GAME/th39/runtime.lua:694;mod/GAME/th39/background.lua:49;mod/GAME/th39/background.lua:57;",
+          "samples": 12
+        },
+        {
+          "stack": "J mod/GAME/th39/runtime.lua:300;mod/GAME/th39/runtime.lua:698;mod/GAME/th39/background.lua:49;mod/GAME/th39/background.lua:57;mod/GAME/th39/background.lua:106;@0x010441792c;THlib/rogue_hp.lua:153;",
+          "samples": 9
+        },
+        {
+          "stack": "J mod/GAME/th39/runtime.lua:164;mod/GAME/th39/runtime.lua:666;mod/GAME/th39/runtime.lua:690;mod/GAME/th39/runtime.lua:694;mod/GAME/th39/background.lua:49;mod/GAME/th39/background.lua:57;mod/GAME/th39/background.lua:106;",
+          "samples": 7
+        },
+        {
+          "stack": "N mod/GAME/th39/runtime.lua:164;mod/GAME/th39/runtime.lua:306;mod/GAME/th39/runtime.lua:698;mod/GAME/th39/background.lua:49;mod/GAME/th39/background.lua:57;mod/GAME/th39/background.lua:106;@0x010441792c;",
+          "samples": 6
+        },
+        {
+          "stack": "N mod/GAME/th39/runtime.lua:299;mod/GAME/th39/runtime.lua:698;mod/GAME/th39/background.lua:49;mod/GAME/th39/background.lua:57;mod/GAME/th39/background.lua:106;@0x010441792c;THlib/rogue_hp.lua:153;",
+          "samples": 5
+        },
+        {
+          "stack": "J mod/GAME/th39/runtime.lua:698;mod/GAME/th39/background.lua:49;mod/GAME/th39/background.lua:57;mod/GAME/th39/background.lua:106;@0x010441792c;THlib/rogue_hp.lua:153;THlib/rank.lua:105;",
+          "samples": 5
+        }
+      ]
+    },
+    {
+      "background_ticks": 6358,
+      "start": 3180,
+      "ms": 3199.3773,
+      "frame": 506,
+      "top_stacks": [
+        {
+          "stack": "J mod/GAME/th39/runtime.lua:697;mod/GAME/th39/background.lua:49;mod/GAME/th39/background.lua:57;mod/GAME/th39/background.lua:106;@0x010441792c;THlib/rogue_hp.lua:153;THlib/rank.lua:105;",
+          "samples": 48
+        },
+        {
+          "stack": "J mod/GAME/th39/runtime.lua:178;mod/GAME/th39/runtime.lua:306;mod/GAME/th39/runtime.lua:698;mod/GAME/th39/background.lua:49;mod/GAME/th39/background.lua:57;mod/GAME/th39/background.lua:106;@0x010441792c;",
+          "samples": 43
+        },
+        {
+          "stack": "J mod/GAME/th39/runtime.lua:164;mod/GAME/th39/runtime.lua:306;mod/GAME/th39/runtime.lua:698;mod/GAME/th39/background.lua:49;mod/GAME/th39/background.lua:57;mod/GAME/th39/background.lua:106;@0x010441792c;",
+          "samples": 35
+        },
+        {
+          "stack": "J mod/GAME/th39/runtime.lua:302;mod/GAME/th39/runtime.lua:698;mod/GAME/th39/background.lua:49;mod/GAME/th39/background.lua:57;mod/GAME/th39/background.lua:106;@0x010441792c;THlib/rogue_hp.lua:153;",
+          "samples": 17
+        },
+        {
+          "stack": "J mod/GAME/th39/runtime.lua:29;mod/GAME/th39/runtime.lua:477;mod/GAME/th39/runtime.lua:672;mod/GAME/th39/runtime.lua:690;mod/GAME/th39/runtime.lua:694;mod/GAME/th39/background.lua:49;mod/GAME/th39/background.lua:57;",
+          "samples": 15
+        },
+        {
+          "stack": "J mod/GAME/th39/runtime.lua:677;mod/GAME/th39/runtime.lua:694;mod/GAME/th39/background.lua:49;mod/GAME/th39/background.lua:57;mod/GAME/th39/background.lua:106;@0x010441792c;THlib/rogue_hp.lua:153;",
+          "samples": 15
+        },
+        {
+          "stack": "J mod/GAME/th39/runtime.lua:164;mod/GAME/th39/runtime.lua:666;mod/GAME/th39/runtime.lua:690;mod/GAME/th39/runtime.lua:694;mod/GAME/th39/background.lua:49;mod/GAME/th39/background.lua:57;mod/GAME/th39/background.lua:106;",
+          "samples": 11
+        },
+        {
+          "stack": "J mod/GAME/th39/runtime.lua:194;mod/GAME/th39/runtime.lua:297;mod/GAME/th39/runtime.lua:698;mod/GAME/th39/background.lua:49;mod/GAME/th39/background.lua:57;mod/GAME/th39/background.lua:106;@0x010441792c;",
+          "samples": 9
+        },
+        {
+          "stack": "J mod/GAME/th39/runtime.lua:571;mod/GAME/th39/runtime.lua:674;mod/GAME/th39/runtime.lua:690;mod/GAME/th39/runtime.lua:694;mod/GAME/th39/background.lua:49;mod/GAME/th39/background.lua:57;mod/GAME/th39/background.lua:106;",
+          "samples": 7
+        },
+        {
+          "stack": "C mod/GAME/th39/runtime.lua:697;mod/GAME/th39/background.lua:49;mod/GAME/th39/background.lua:57;mod/GAME/th39/background.lua:106;@0x010441792c;THlib/rogue_hp.lua:153;THlib/rank.lua:105;",
+          "samples": 6
+        },
+        {
+          "stack": "J mod/GAME/th39/runtime.lua:698;mod/GAME/th39/background.lua:49;mod/GAME/th39/background.lua:57;mod/GAME/th39/background.lua:106;@0x010441792c;THlib/rogue_hp.lua:153;THlib/rank.lua:105;",
+          "samples": 6
+        },
+        {
+          "stack": "N mod/GAME/th39/runtime.lua:697;mod/GAME/th39/background.lua:49;mod/GAME/th39/background.lua:57;mod/GAME/th39/background.lua:106;@0x010441792c;THlib/rogue_hp.lua:153;THlib/rank.lua:105;",
+          "samples": 5
+        }
+      ]
+    },
+    {
+      "background_ticks": 6358,
+      "start": 3180,
+      "ms": 3133.2662,
+      "frame": 807,
+      "top_stacks": [
+        {
+          "stack": "J mod/GAME/th39/runtime.lua:697;mod/GAME/th39/background.lua:49;mod/GAME/th39/background.lua:57;mod/GAME/th39/background.lua:106;@0x010441792c;THlib/rogue_hp.lua:153;THlib/rank.lua:105;",
+          "samples": 56
+        },
+        {
+          "stack": "J mod/GAME/th39/runtime.lua:164;mod/GAME/th39/runtime.lua:306;mod/GAME/th39/runtime.lua:698;mod/GAME/th39/background.lua:49;mod/GAME/th39/background.lua:57;mod/GAME/th39/background.lua:106;@0x010441792c;",
+          "samples": 39
+        },
+        {
+          "stack": "J mod/GAME/th39/runtime.lua:178;mod/GAME/th39/runtime.lua:306;mod/GAME/th39/runtime.lua:698;mod/GAME/th39/background.lua:49;mod/GAME/th39/background.lua:57;mod/GAME/th39/background.lua:106;@0x010441792c;",
+          "samples": 27
+        },
+        {
+          "stack": "J mod/GAME/th39/runtime.lua:302;mod/GAME/th39/runtime.lua:698;mod/GAME/th39/background.lua:49;mod/GAME/th39/background.lua:57;mod/GAME/th39/background.lua:106;@0x010441792c;THlib/rogue_hp.lua:153;",
+          "samples": 18
+        },
+        {
+          "stack": "J mod/GAME/th39/runtime.lua:677;mod/GAME/th39/runtime.lua:694;mod/GAME/th39/background.lua:49;mod/GAME/th39/background.lua:57;mod/GAME/th39/background.lua:106;@0x010441792c;THlib/rogue_hp.lua:153;",
+          "samples": 17
+        },
+        {
+          "stack": "J mod/GAME/th39/runtime.lua:29;mod/GAME/th39/runtime.lua:477;mod/GAME/th39/runtime.lua:672;mod/GAME/th39/runtime.lua:690;mod/GAME/th39/runtime.lua:694;mod/GAME/th39/background.lua:49;mod/GAME/th39/background.lua:57;",
+          "samples": 16
+        },
+        {
+          "stack": "J mod/GAME/th39/runtime.lua:164;mod/GAME/th39/runtime.lua:666;mod/GAME/th39/runtime.lua:690;mod/GAME/th39/runtime.lua:694;mod/GAME/th39/background.lua:49;mod/GAME/th39/background.lua:57;mod/GAME/th39/background.lua:106;",
+          "samples": 9
+        },
+        {
+          "stack": "J mod/GAME/th39/runtime.lua:571;mod/GAME/th39/runtime.lua:674;mod/GAME/th39/runtime.lua:690;mod/GAME/th39/runtime.lua:694;mod/GAME/th39/background.lua:49;mod/GAME/th39/background.lua:57;mod/GAME/th39/background.lua:106;",
+          "samples": 8
+        },
+        {
+          "stack": "N mod/GAME/th39/runtime.lua:164;mod/GAME/th39/runtime.lua:306;mod/GAME/th39/runtime.lua:698;mod/GAME/th39/background.lua:49;mod/GAME/th39/background.lua:57;mod/GAME/th39/background.lua:106;@0x010441792c;",
+          "samples": 7
+        },
+        {
+          "stack": "J mod/GAME/th39/runtime.lua:698;mod/GAME/th39/background.lua:49;mod/GAME/th39/background.lua:57;mod/GAME/th39/background.lua:106;@0x010441792c;THlib/rogue_hp.lua:153;THlib/rank.lua:105;",
+          "samples": 7
+        },
+        {
+          "stack": "J mod/GAME/th39/runtime.lua:305;mod/GAME/th39/runtime.lua:698;mod/GAME/th39/background.lua:49;mod/GAME/th39/background.lua:57;mod/GAME/th39/background.lua:106;@0x010441792c;THlib/rogue_hp.lua:153;",
+          "samples": 7
+        },
+        {
+          "stack": "J mod/GAME/th39/runtime.lua:194;mod/GAME/th39/runtime.lua:297;mod/GAME/th39/runtime.lua:698;mod/GAME/th39/background.lua:49;mod/GAME/th39/background.lua:57;mod/GAME/th39/background.lua:106;@0x010441792c;",
+          "samples": 6
+        }
+      ]
+    }
+  ],
+  "gameplay_file_sha256": {
+    "mod/roguelike.lua": "0a640a588364d19c74427aa60c5f98cc41de3b2731fa2092729cbeda20ab1093",
+    "mod/rogue_encounter.lua": "36aad832e87049841740c290ed3d8d8f4acbc435b941636dc696c5c8af20b12d",
+    "mod/GAME/ports/resources.lua": "4aea7f5f03c85c8d046ecb36c57cab5a832ce55e75b6b0d3cfe7a3da878a82e1",
+    "mod/GAME/th41.lua": "8b4e6b08cfcb3eb3ec9f0bc26600ac1421534d84c5864b9ff2083fd0fc2d245b",
+    "mod/GAME/th42.lua": "5943814d35a418def157eae64f6f274fcc7b32a7b681837b0d0370f2871cdf5e",
+    "mod/GAME/th43/runtime.lua": "4f5e19e1d7b851fe0434c64f8f5a98528fc996256d176199480ebb65ce13514a",
+    "mod/GAME/th39/background.lua": "9fb780cd7af05844c27d2e8e3f834a093c9de0b764f27a37cd15be2715e95a50",
+    "mod/GAME/th39/runtime.lua": "4278bcfb6f4d029823eb75b8b8f8ac0da1518cc0dc3eb0ba88a4323cbab547a4",
+    "mod/GAME/th37/scene_state.lua": "1d829109b8710b9215a9ce4d297ca192d53e7c8dbcf7b67be88d8693b559f066",
+    "mod/GAME/th38/background.lua": "fb22675b25e7e90df3907016b02cd194212f3434d8e25f9d99391b47b472f244",
+    "mod/GAME/th38/runtime.lua": "f05cec975517b275b9b2f7a9e18e462072bc05f22022accc10d0235ec9d87599"
+  },
+  "reproduce": [
+    "python3 macos/build.py --update-assets",
+    "python3 tools/profile_rogue_entry.py --out /tmp/rogue-entry-baseline --frames 360",
+    "python3 tools/profile_rogue_entry.py --out /tmp/rogue-entry-theis-keep --source TH41 --frames 240 --retain-resources",
+    "python3 tools/profile_rogue_entry.py --out /tmp/rogue-entry-dreamer-keep --source TH42 --frames 240 --retain-resources",
+    "python3 tools/profile_rogue_entry.py --out /tmp/rogue-entry-night --source TH39 --frames 240 --retain-resources --sample-lua"
+  ]
+}

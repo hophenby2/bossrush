@@ -424,6 +424,7 @@ local function clear()
     if W.music then StopMusic(W.music);W.music=nil end
 end
 W.stop=clear
+function W.prepareRogue() api.ResourceSet.LoadByTag(false,'global') end
 local Guard=Class(object,{
     init=function(o) o.bound=false;o.hide=true;o.colli=false end,
     del=clear,

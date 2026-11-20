@@ -24,6 +24,43 @@
 #include <algorithm>
 #include <cfloat>
 #include <cmath>
+#include <atomic>
+#include <thread>
+#include <memory>
+#include "LSTG/ResourceMgr.h"
+
+// 文件由主线程资源管理器读取；工作线程只解码像素，GPU 上传仍由 LoadTexture 在渲染线程执行。
+struct AndroidPreparedImage {
+    std::atomic<int> state{0};
+    std::unique_ptr<cocos2d::Image> image;
+};
+static std::unordered_map<std::string,std::shared_ptr<AndroidPreparedImage>> androidPreparedImages;
+cocos2d::Image* androidTakePreparedTexture(const std::string& path) {
+    const auto found=androidPreparedImages.find(path);
+    if(found==androidPreparedImages.end() || found->second->state.load(std::memory_order_acquire)==0) return nullptr;
+    auto record=found->second;androidPreparedImages.erase(found);
+    return record->image.release();
+}
+LUA_REGISTER_FUNC_DEF(lstg, AndroidPrepareTexture) {
+    const std::string path=luaL_checkstring(L,1);
+    if(androidPreparedImages.find(path)==androidPreparedImages.end()) {
+        auto record=std::make_shared<AndroidPreparedImage>();androidPreparedImages[path]=record;
+        auto* buffer=LRES.getBufferFromFile(path);
+        if(!buffer) {record->state.store(-1);return 0;}
+        std::vector<unsigned char> bytes(buffer->data(),buffer->data()+buffer->size());
+        std::thread([record,bytes=std::move(bytes)]() {
+            auto image=std::make_unique<cocos2d::Image>();
+            const bool ok=image->initWithImageData(bytes.data(),bytes.size());
+            if(ok) record->image=std::move(image);
+            record->state.store(ok?1:-1,std::memory_order_release);
+        }).detach();
+    }
+    lua_pushinteger(L,androidPreparedImages[path]->state.load(std::memory_order_acquire));return 1;
+}
+LUA_REGISTER_FUNC_DEF(lstg, AndroidClearPreparedTextures) {
+    // 丢弃请求不等待解码；线程持有独立记录，结束后自行释放像素。
+    androidPreparedImages.clear();return 0;
+}
 #if CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID
 #include <EGL/egl.h>
 #endif

@@ -1,6 +1,9 @@
 #pragma once
 #include <cstddef>
 #include <cstdint>
+#include <string>
+namespace cocos2d { class Image; }
+cocos2d::Image* androidTakePreparedTexture(const std::string& path);
 extern uint64_t androidFogStatesCreated,androidFogStatesReused;
 extern bool androidProfileBatches;
 void androidRecordSpriteBatch(std::size_t size);

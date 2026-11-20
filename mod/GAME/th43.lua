@@ -44,6 +44,11 @@ function Card.createFullCardBoss(editor,res,diff,paths,hidden)
     boss.Define(band,name,nil,nil,{0,384},nil,'Yukari',LEVEL)
     local class=_editor_boss[band..LEVEL]
     local init,render=class.init,class.render
+    function class.prepareRogue()
+        E.EISlib.Bullet.Laser.init()
+        if res.bossLoadRes then res.bossLoadRes({}) end
+        if res.background.prepareRogueResources then res.background.prepareRogueResources() end
+    end
     local cards={}
     class.init=function(o,selected)
         local practice=(ext.sc_pr or RogueEncounter and RogueEncounter.enabled(41)) and not (R.chapterScope and IsValid(R.chapterRunner))

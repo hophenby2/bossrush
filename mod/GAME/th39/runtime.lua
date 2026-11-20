@@ -32,6 +32,7 @@ end
 function R.player(context)
     local c=context and (context.controller or context);local t=c and c.weaponTarget
     if t then return t.X+145,t.Y end
+    if c and c.previewPlayer then return c.previewPlayer[1],c.previewPlayer[2] end
     if valid(player) then return unproject(player) end
     return 481,560
 end
@@ -90,7 +91,7 @@ function R.move(o,slow,x1,x2,y1,y2)
 end
 function R.follow(o,axis)
     if not o.is_center then return end
-    local x,y=R.player()
+    local x,y=R.player(o.controller and o.controller.visual and o or nil)
     if axis:find('X',1,true) then y=o.oy elseif axis:find('Y',1,true) then x=o.ox end
     centerMove(o,x,y,axis:find('慢',1,true)~=nil,90)
 end
@@ -492,7 +493,7 @@ local function emit(o,bound)
         s.mx,s.my,s.ax,s.ay=nil,nil,nil,nil
         s.sonmotion_dirty,s.sonaccel_dirty=true,true
         s.sonspeed,s.sonaspeed=speed,accel
-        local origin={x=o.x+ox,y=o.y+oy}
+        local origin={x=o.x+ox,y=o.y+oy,previewPlayer=c.visual and c.previewPlayer or nil}
         s.sonaspeedd=direction(o.sonaspeedd,origin,s.fx,s.fy,o.sonaspeedds)+accelRandom
         s.sonspeedd=direction(o.fdirection,origin,s.fx,s.fy,o.fdirections)+baseRandom+fan+(o.Bindwithspeedd and bound and bound.sonspeedd or 0)
         s.wscale=(s.wscale or 1)+ws;s.hscale=o.syncScale and s.wscale or (s.hscale or 1)+hs
@@ -538,8 +539,8 @@ local function emitter(spec,c)
         o.bucket=layer[o.id]
     end
     for _,key in ipairs({'speed','speedd','aspeed','aspeedd'}) do o[key]=(o[key] or 0)+rnd(rr[key] or 0,o) end
-    if o.fx==-99998 then o.fx=o.x elseif o.fx==-99999 then o.fx=R.player() end
-    if o.fy==-99998 then o.fy=o.y elseif o.fy==-99999 then local _,y=R.player();o.fy=y end
+    if o.fx==-99998 then o.fx=o.x elseif o.fx==-99999 then o.fx=R.player(c.visual and o or nil) end
+    if o.fy==-99998 then o.fy=o.y elseif o.fy==-99999 then local _,y=R.player(c.visual and o or nil);o.fy=y end
     o.speedd=direction(o.speedd,o,o.fx or o.x,o.fy or o.y,o.speedds)
     o.aspeedd=direction(o.aspeedd,o,o.fx or o.x,o.fy or o.y,o.aspeedds)
     return o
@@ -611,13 +612,13 @@ function R.controller(host,id,road,configs)
     local c={host=host,pattern=p,road=road,time=0,offsetx=0,offsety=0,bullets=setmetatable({},{__mode='k'}),jumps={},eventLimits={},serial=0,status=0,statusFrame=0,configs=configs or {},familiars={},deadFamiliars={},parents={}}
     reset(c);R.controllers[c]=true;return c
 end
-function R.backgroundEffect(id,x,y,seed,textureHeights,resources)
+function R.backgroundEffect(id,x,y,seed,textureHeights,resources,previewPlayer)
     local p=R.patterns[id]
     if not p then
         p=dofile('mod/GAME/th39/scenes/'..id..'.lua')
         R.patterns[id]=p
     end
-    local c={pattern=p,visual=true,road=true,originX=x,originY=y,seed=seed,
+    local c={pattern=p,visual=true,road=true,originX=x,originY=y,seed=seed,previewPlayer=previewPlayer,
         textureHeights=textureHeights,resources=resources,time=0,offsetx=0,offsety=0,
         bullets={},particles={},jumps={},eventLimits={},serial=0,status=0,statusFrame=0,
         configs={},familiars={},deadFamiliars={},parents={},drawList={}}
@@ -711,6 +712,25 @@ function R.tickBackground(c)
     for i=#list,n+1,-1 do list[i]=nil end
 end
 
+function R.prepareBackground(c)
+    loadTexture('barrages')
+    loadTexture('bosses')
+    if not CheckRes('img','mhj3_original_aura') then
+        globalResource(function()
+            LoadTexture('mhj3_original_aura','Resources/th39/hud/bosslist.png')
+            LoadImage('mhj3_original_aura','mhj3_original_aura',316,280,640,640)
+            SetImageCenter('mhj3_original_aura',320,320)
+        end)
+    end
+    local base=#D.bulletTypes
+    for i in ipairs(c.pattern.types) do
+        texture({pattern=c.pattern,type=base+i,age=0,controller=c})
+        if RogueEncounter then RogueEncounter.checkpoint() end
+    end
+end
+function R.prepareFamiliars(configs)
+    for _,config in pairs(configs) do loadTexture(D.enemyTypes[config[1]][1]) end
+end
 local function visualOrder(a,b)
     if a.layerid~=b.layerid then return a.layerid<b.layerid end
     if a.Blend~=b.Blend then return not a.Blend end

@@ -192,6 +192,7 @@ local function DoFrame()
         ChangeGameStage()
         if NativeTime then NativeTime.reset() end
     end
+    if RogueEncounter and RogueEncounter.preloading() then return end
     if NativeTime and not NativeTime.allowFrame() then return end
     if SaveResume and not SaveResume.beforeLogic() then return end
     --刷新输入
@@ -367,6 +368,10 @@ function FrameFunc()
         before=stopWatch:GetElapsed();after=before;offset=0
         if stage.next_stage then DoFrame() end
         GameNet.clientFrame();return false
+    end
+    -- 预载仅占显示帧，不消费录像输入或推进战斗时钟；缓存命中不会改变录像帧序。
+    if RogueEncounter and RogueEncounter.preloadFrame() then
+        before=stopWatch:GetElapsed();after=before;offset=0;return false
     end
     if GameNet and not GameNet.readyForLogic() then
         before=stopWatch:GetElapsed();after=before;offset=0;return false

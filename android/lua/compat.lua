@@ -53,6 +53,7 @@ end)
 for _, name in ipairs({ 'LoadTexture', 'LoadFont', 'LoadMusic', 'LoadSound', 'LoadPS' }) do
     local fn = assert(native[name], name)
     expose(name, function(resource, path, ...)
+        if name=='LoadTexture' and RogueEncounter then RogueEncounter.prepareTexture(P.resolve(path)) end
         return fn(resource, P.resolve(path), ...)
     end)
 end

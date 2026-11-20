@@ -7,7 +7,7 @@ local BG=dofile('mod/GAME/th39/background.lua')
 local Collision=NativeActorCollision or dofile('THlib/native_actor_collision.lua')
 local function collider(o,p) Collision.bind(o,35*2/3,50*2/3,'box',p.size[1]/3,p.size[2]/3,'box',true) end
 local LEVEL=37
-local C={runtime=R,data=D,level=LEVEL,chapters={},cards={},rows={}}
+local C={runtime=R,background=BG,data=D,level=LEVEL,chapters={},cards={},rows={}}
 TH39=C
 _editor_class.TH39=R.classes
 local function valid(o) return o and IsValid(o) end
@@ -125,6 +125,10 @@ local function setupCard(meta,group,chapter)
     local card=boss.card.New(meta.kind~=0 and meta.title or '',immune/60,immune/60,timeout/60,meta.hp)
     card.phase_name,card.phase_kind=meta.title,group.role
     card.mhj3_source=meta
+    function card.prepareRogue()
+        BG.prepare(R,chapter,group.time,group,meta)
+        R.prepareFamiliars(meta.familiars)
+    end
     card.nativeBombFactor=group.extraBoss and (meta.kind==0 and .5 or 0) or 1
     local start=60+(flag(meta,'DELAY') and 150 or 0)+(flag(meta,'TRANS') and 100 or 0)
     function card:nativeDamage(timer)

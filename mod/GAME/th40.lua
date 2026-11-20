@@ -19,6 +19,7 @@ for source,path in pairs(dofile('mod/GAME/th40/sounds.lua')) do
 end
 for name,track in pairs(dofile('mod/GAME/th40/music.lua')) do AddMusic('TH40_'..name,track.last,track.length,name,true) end
 class.background=assert(loadfile('mod/GAME/th40/background.lua'))(Visual,data)
+function class.prepareRogue(_,unit) class.background.prepare(unit.sc_group[1].card.th38_source) end
 local Media=dofile('mod/GAME/ports/scene_media.lua')
 local function track(chapter,kind)
     return 'TH40_'..kind..(chapter=='EX' and 'Ex' or '0'..chapter)

@@ -126,6 +126,7 @@ function R.start(variant,filters)
     if not status.valid then return false,status.message end
     -- stage.group.Start立即序列化录像初态；筛选必须先写入lstg.var，不能只放在菜单对象里。
     lstg.var.__rogue_pool_version=R.POOL_VERSION
+    lstg.var.__rogue_preload_version=1
     -- 是否无限必须进入录像初态，旧十战录像不能因当前模式改动而继续抽卡。
     lstg.var.__rogue_endless_version=endless and 1 or nil
     lstg.var.rogue_filters=options
@@ -169,6 +170,7 @@ local function runCards(self)
         local unit=assert(_sc_pr_table[entry.level][entry.index],'随机卡片已移除')
         local class=unit.sc_group[1].boss
         self.level=entry.level
+        if port then encounter.prepare(self,entry,unit) end
         -- 整局沿用首位 Boss 的场景；符卡背景仍由当前 Boss 自己的 _bg 管理。
         if port then
             rogueMusic.stop(self)
@@ -325,6 +327,7 @@ local function register(variant,config)
     end
     function battle:del()
         encounter.stop(self)
+        encounter.release()
         rogueMusic.stop(self)
     end
     local result=stage.New(config.result,false,true)
@@ -381,6 +384,7 @@ function panel:render()
     local previous=lstg.viewmode
     SetViewMode('ui')
     ui.RunHUD.stage(run.current,lstg.world.scrl/2,270,lstg.world.scrl)
+    if run.preparing then ui:RenderText('title','准备下一战…',lstg.world.scrl/2,220,.5,Color(255,255,255,255),'centerpoint') end
     if GameHPScale then GameHPScale.render(lstg.world.scrl/2,165) end
     if previous then SetViewMode(previous) end
 end

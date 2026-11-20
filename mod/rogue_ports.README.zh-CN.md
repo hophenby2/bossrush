@@ -38,7 +38,13 @@
 
 ## 连续切换与资源
 
-`rogue_encounter.lua` 记录本场新建对象和关卡资源。切卡或退出先隔离旧对象的碰撞与回调，取消协程，调用作品清理，再卸载本场新增的 stage 资源。仅设 `status='del'` 不足以阻止同帧碰撞访问已释放的音效。带 `_drop_owner` 的宿主自机弹和 Bomb 保持自身寿命。全局缓存继续由各后端按 `CheckRes` 复用，宿主自机、整局强化及关卡面板保留。
+`rogue_encounter.lua` 记录本场新建对象和关卡资源。切卡或退出先隔离旧对象的碰撞与回调，取消协程，再调用作品清理。仅设 `status='del'` 不足以阻止同帧碰撞访问已释放的音效。带 `_drop_owner` 的宿主自机弹和 Bomb 保持自身寿命，宿主自机、整局强化及关卡面板保留。
+
+对象结束后可保留最近一作的 stage 素材，按纹理 RGBA 大小估算的缓存预算为192 MiB；超预算直接释放，换作品前清空，以隔离未加前缀的资源别名，退出对局也清空。这个预算不包含原后端已有的 global 素材。移植资源表记录每个资源实际命中的池，避免同名 global 遮住 stage 副本时反复载入。
+
+新对局记录 `__rogue_preload_version=1`。入场协程将资源、背景入口状态和网格准备交给 `rogue_preload.lua`，每个显示帧约8ms预算；单次 GPU 上传不能被进一步切分。准备期间仍绘制画面，但不读取录像键帧、不更新关卡、自机或弹幕时钟。没有标记的旧录像和旧续玩继续原同步入口。原生平台在线程中解码纹理，原资源加载函数仍在主线程创建纹理；没有该原生接口的平台使用同步加载回退。
+
+春雪与永夜复用独立的入口状态快照；复制全部可变状态及引用，不改变原作随机数、粒子、插值或时钟。永夜快照还按自机位置区分；实际创建时若自机已移动，按原回调位置分帧重算，并按顺序重放同帧的背景更新与切换事件。雪莲华网格拆为73个按需解析的文件，数值未简化，并提前装载本卡演员、公共弹图与背景。夏夜祭和栖霞园的背景资源也在进入实际对象回调前准备。详细证据和限制见 `tools/verification-rogue-entry-optimized-2026-11-20.json`。首次准备仍需要若干显示帧，这是把阻塞分摊到可继续绘制的加载期间；不表示全部冷加载帧都低于16.7ms，也不表示所有作品的总加载时长都缩短。
 
 春雪显式建立当前卡场景，栖霞园独立初始化原始难度和激光更新器。祈华梦和 Like Dreamer 由各自入口先加载资源、再播放音乐；回到旧作品继续原有随机曲袋。
 
@@ -58,3 +64,17 @@ python3 tools/check_rogue_ports.py --out /tmp/bossrush-rogue-ports
 ```
 
 原生专项通过真实 RogueTen 入口，检查新七作、L / EX / PH、道中、跨作交替、Like Dreamer 后期与最终攻击、真实 Boss/部件受伤倍率、返回标题重开和 `stage.Restart`。在隔离数据目录输出 JSON 与各作截图。超实时运行默认不向音频设备播放高频音效，但仍检查实际音效资源存在；没有覆盖全部卡片的完整击破，也不代表 Android 设备实测。
+
+## 入场性能复测
+
+```sh
+STAGE_STRICT_NEW=1 luajit tools/check_rogue_preload.lua
+STAGE_STRICT_NEW=1 luajit tools/check_rogue_resource_cache.lua
+luajit tools/check_port_resource_reuse.lua
+python3 macos/build.py --update-assets
+python3 tools/profile_rogue_entry.py --out /tmp/bossrush-rogue-entry --frames 360
+python3 tools/profile_rogue_entry.py --out /tmp/bossrush-rogue-moving --source TH39 --move-during-entry --frames 180
+python3 tools/check_rogue_ports.py --out /tmp/bossrush-rogue-regression
+```
+
+采集包含全部准备显示帧及360个非准备帧，使用正常速度和垂直同步，屏蔽物理键鼠。峰值取同一显示帧的逻辑加绘制耗时，不把异步等待计为资源函数的CPU耗时。首次指本进程首次进入该作，没有清除系统文件缓存。`--move-during-entry` 专项在准备完成后、场景实际创建前强制改变自机位置，覆盖失效快照的重算路径。Lua 对照逐字段比较永夜593个背景粒子的完整可变状态与引用，资源专项检查同作复用、跨作别名隔离和退出回收。原生采样只证明这些入口窗口，不代替全部卡片的长时间帧率检查或 Android 实测。

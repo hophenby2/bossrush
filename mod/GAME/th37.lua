@@ -29,6 +29,7 @@ local function setupCard(meta,group)
     local card=boss.card.New(meta.spell and meta.title or '',immune,immune,total,meta.hp)
     card.phase_name,card.phase_kind=meta.title,meta.role or 'boss'
     card.mhj_source=meta
+    function card.prepareRogue() BG.prepare(meta.stage,meta.sceneFrame) end
     card.nativeBombFactor=(meta.flag=='LAST' or meta.spell and group.extraBoss) and 0 or 1
     function card:nativeDamage(timer)
         if endurance or timer<=opening+meta.immune then return 0 end

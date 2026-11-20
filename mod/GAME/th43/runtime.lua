@@ -137,6 +137,7 @@ local function has(kind,name) return CheckRes(kind,name)~=nil end
 local function loadTexture(name,path,mipmap)
     local key=image(name)
     if not has('tex',key) then LoadTexture(key,asset(path),mipmap) end
+    if RogueEncounter then RogueEncounter.checkpoint() end
 end
 local function loadImage(name,texture,...)
     local key=image(name)

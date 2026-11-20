@@ -4,6 +4,7 @@ function T.install()
     local mode=os.getenv('BOSSRUSH_MAC_TEST')
     if mode=='dreamer-practice' then return dofile('macos/dreamer_practice_test.lua').install() end
     if mode=='port-mechanics' then return dofile('macos/port_mechanics_test.lua').install() end
+    if mode=='rogue-entry-profile' then return assert(RogueEntryProfile).install() end
     if not mode then return end
     if mode=='rogue-ports' then return dofile('macos/rogue_ports_test.lua').install() end
     if mode=='practice-options' then return dofile('macos/practice_options_test.lua').install() end

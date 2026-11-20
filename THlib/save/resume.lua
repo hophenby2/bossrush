@@ -389,6 +389,8 @@ function R.pump(step)
         local ok,err=pcall(step)
         if not ok then R.failure='重建出错：'..tostring(err) end
         count=count+1
+        -- 入场任务交还显示帧处理，避免重建批次反复空转。
+        if RogueEncounter and RogueEncounter.preloading() then break end
     end
     if R.failure then R.cancel(R.failure) end
 end

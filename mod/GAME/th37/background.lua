@@ -27,6 +27,7 @@ local function prepare(name)
         SetTextureSamplerState(id,'linear+wrap')
         part.texture=id;part.w,part.h=GetTextureSize(id)
         if lstg.AndroidCreateModelMesh then part.native=lstg.AndroidCreateModelMesh(FindResTexture(id),part[3]) end
+        if RogueEncounter then RogueEncounter.checkpoint() end
     end
     SetResourceStatus(pool)
     return d
@@ -62,11 +63,25 @@ local function draw(m,frame,particle)
         end
     end
 end
+local snapshot,ready
+function B.prepare(chapter,clock)
+    if not setting or not setting.displayBG then return end
+    if not snapshot or snapshot.chapter~=chapter or snapshot.clock~=clock then
+        snapshot={chapter=chapter,clock=clock,state=State.new(chapter,clock,B.musicFrames and B.musicFrames[chapter])}
+    end
+    local state=RogueEncounter.copyPrepared(snapshot.state)
+    for _,m in ipairs(state.models) do prepare(m.name) end
+    for _,p in ipairs(state.particles) do prepare(p.model.name) end
+    ready={chapter=chapter,clock=clock,state=state}
+end
+function B.clearPrepared() snapshot,ready=nil,nil end
 local Scene=Class(background,{
     init=function(o,chapter,clock)
         background.DelBG();lstg.tmpvar.bg=o
         o.layer,o.group,o.bound,o.colli=LAYER.BG-.1,GROUP.GHOST,false,false
-        o.state=State.new(chapter,clock or 0,B.musicFrames and B.musicFrames[chapter]);o.chapter=chapter
+        if ready and ready.chapter==chapter and ready.clock==(clock or 0) then o.state=ready.state;ready=nil
+        else o.state=State.new(chapter,clock or 0,B.musicFrames and B.musicFrames[chapter]) end
+        o.chapter=chapter
     end,
     frame=function(o) State.step(o.state,o.boss and IsValid(o.boss)) end,
     render=function(o)

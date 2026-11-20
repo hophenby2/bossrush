@@ -79,7 +79,7 @@ return function(assetRoot)
     end
     function Set:IsLoaded()
         for _, entry in ipairs(self.entries) do
-            if not self.pool or CheckRes(entry[1], entry[2])~=self.pool then return false end
+            if not self.loaded or not self.loaded[entry] or CheckRes(entry[1], entry[2])~=self.loaded[entry] then return false end
         end
         return true
     end
@@ -87,8 +87,15 @@ return function(assetRoot)
         if self:IsLoaded() then return end
         local pool = GetResourceStatus()
         self.pool = pool
+        self.loaded=self.loaded or {}
         for _, entry in ipairs(self.entries) do
-            if CheckRes(entry[1], entry[2])~=pool then entry[3]() end
+            local found=CheckRes(entry[1], entry[2])
+            if not self.loaded[entry] or found~=self.loaded[entry] then
+                if found~=pool then entry[3]() end
+                -- CheckRes 优先返回 global；同名 stage 副本不能让有效的共享素材永久失去命中。
+                self.loaded[entry]=CheckRes(entry[1], entry[2])
+            end
+            if RogueEncounter then RogueEncounter.checkpoint() end
         end
         for _, option in ipairs(self.options) do option() end
     end

@@ -32,6 +32,12 @@ for n=1,7 do
     R.load('EISlib/background/stage'..n..'bg.lua')
     local class=E['stage'..n..'_background']
     local init,render=class.init,class.render
+    -- 复用原脚本私有 loadRes，仅提前资源 I/O，不调用背景 init 或消耗画面随机数。
+    for i=1,100 do
+        local name,fn=debug.getupvalue(init,i)
+        if not name then break end
+        if name=='loadRes' then class.prepareRogueResources=fn;break end
+    end
     class.init=function(o,...)
         background.DelBG()
         init(o,...)

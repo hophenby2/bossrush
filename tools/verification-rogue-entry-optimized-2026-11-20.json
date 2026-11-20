@@ -1,0 +1,2460 @@
+{
+  "date": "2026-11-20",
+  "source_parent_commit": "51518301bec67922729685612d627bf930bcdebf",
+  "source_note": "本报告与修复代码同一提交；下列逐文件 SHA-256 标识实际采集版本，避免报告自引用提交号。",
+  "scope": "RogueTen 七个新作的入场阻塞；不改弹幕密度、原作粒子、随机数或战斗计时。",
+  "baseline_report": "tools/verification-rogue-entry-2026-11-20.json",
+  "hardware": {
+    "chip": "Apple M4 Max",
+    "cpu_cores": 16,
+    "gpu_cores": 40,
+    "memory_gb": 64,
+    "backend": "原生 macOS / Metal",
+    "framebuffer": [
+      2560,
+      1440
+    ]
+  },
+  "method": {
+    "speed": 1,
+    "vsync": true,
+    "attack_window_frames": 360,
+    "entry_samples": 16,
+    "coverage": "旧 TH31 对照加 TH37–TH43，各取一个 Lunatic / Nightmare 攻击入口，首次及紧接的同作重复；包含全部准备显示帧。",
+    "timings": "AndroidClock 墙钟；比较同一显示帧逻辑与绘制之和的峰值。异步线程解码耗时不在主线程墙钟中；嵌套资源操作计时扣除协程挂起时间。",
+    "cold_definition": "进程内首次进入该作，没有清理系统文件缓存；每个来源各一组样本，非统计显著性结论。",
+    "inputs": "不射击，自机保护，屏蔽实体键鼠，窗口结束后推进正式 RogueTen 路线；位置变化专项在准备后和 Scene 创建前强制改自机坐标。",
+    "limits": [
+      "分帧后首次准备仍需等待，准备帧数及显示用时逐项列出；未宣称所有作品总加载时长缩短。",
+      "8ms 是协程工作预算，单个 GPU 上传、原生调用或驱动初始化不能再切分，仍可能出现超过16.7ms的显示帧。",
+      "43条原生功能流程是超实时执行，不能用于帧率对比；未穷举所有符卡或长期帧率。",
+      "只完成 macOS / Metal 原生构建和运行；Android 共用代码未进行设备实测或本次 APK 构建。"
+    ]
+  },
+  "changes": [
+    "入场准备交给显示帧协程，冻结战斗、自机和录像输入；新对局记录预载版本，无标记的旧录像保留同步入口。",
+    "纹理文件主线程读取，工作线程解码，主线程 GPU 上传；取消请求后由线程独立释放像素。",
+    "切卡清理对象后保留最近一作 stage 资源，估算192MiB上限；跨作或退出清空；global后端缓存另计。",
+    "修正移植资源表在 global/stage 同名资源下无法命中的缓存记录。",
+    "春雪与永夜使用完整独立入口快照；永夜按实际自机坐标核验，失效时分帧重算并重放原同帧回调。",
+    "雪莲华73个网格按需解析，提前准备网格、演员与弹图；夏夜祭、栖霞园及两作脚本资源提前装载。",
+    "存档恢复的逻辑批次在准备开始时让出，加载工作继续由显示帧调度。"
+  ],
+  "comparison": [
+    {
+      "source": "TH31",
+      "title": "永夜抄（旧作对照）",
+      "card_id": 3426,
+      "first": {
+        "before_max_main_frame_ms": 30.7324,
+        "after_max_main_frame_ms": 28.2257,
+        "reduction_percent": 8.1566,
+        "preparation_display_frames": 0,
+        "preparation_display_elapsed_ms": 0,
+        "texture_calls_before": 8,
+        "texture_calls_after": 8
+      },
+      "repeat": {
+        "before_max_main_frame_ms": 9.7588,
+        "after_max_main_frame_ms": 10.6598,
+        "reduction_percent": -9.233,
+        "preparation_display_frames": 0,
+        "preparation_display_elapsed_ms": 0,
+        "texture_calls_before": 0,
+        "texture_calls_after": 0
+      }
+    },
+    {
+      "source": "TH37",
+      "title": "幕华祭春雪",
+      "card_id": 37004,
+      "first": {
+        "before_max_main_frame_ms": 69.9789,
+        "after_max_main_frame_ms": 35.0529,
+        "reduction_percent": 49.9094,
+        "preparation_display_frames": 15,
+        "preparation_display_elapsed_ms": 259.6768,
+        "texture_calls_before": 13,
+        "texture_calls_after": 13
+      },
+      "repeat": {
+        "before_max_main_frame_ms": 41.8667,
+        "after_max_main_frame_ms": 8.8135,
+        "reduction_percent": 78.9488,
+        "preparation_display_frames": 2,
+        "preparation_display_elapsed_ms": 35.3371,
+        "texture_calls_before": 0,
+        "texture_calls_after": 0
+      }
+    },
+    {
+      "source": "TH38",
+      "title": "雪莲华",
+      "card_id": 38002,
+      "first": {
+        "before_max_main_frame_ms": 147.3799,
+        "after_max_main_frame_ms": 40.4517,
+        "reduction_percent": 72.5528,
+        "preparation_display_frames": 136,
+        "preparation_display_elapsed_ms": 2386.6168,
+        "texture_calls_before": 130,
+        "texture_calls_after": 133
+      },
+      "repeat": {
+        "before_max_main_frame_ms": 50.7961,
+        "after_max_main_frame_ms": 13.1808,
+        "reduction_percent": 74.0515,
+        "preparation_display_frames": 2,
+        "preparation_display_elapsed_ms": 33.5175,
+        "texture_calls_before": 6,
+        "texture_calls_after": 0
+      }
+    },
+    {
+      "source": "TH39",
+      "title": "幕华祭永夜",
+      "card_id": 39001,
+      "first": {
+        "before_max_main_frame_ms": 2933.9854,
+        "after_max_main_frame_ms": 18.6482,
+        "reduction_percent": 99.3644,
+        "preparation_display_frames": 104,
+        "preparation_display_elapsed_ms": 1814.9351,
+        "texture_calls_before": 32,
+        "texture_calls_after": 37
+      },
+      "repeat": {
+        "before_max_main_frame_ms": 2658.0771,
+        "after_max_main_frame_ms": 21.6996,
+        "reduction_percent": 99.1836,
+        "preparation_display_frames": 2,
+        "preparation_display_elapsed_ms": 35.36,
+        "texture_calls_before": 27,
+        "texture_calls_after": 0
+      }
+    },
+    {
+      "source": "TH40",
+      "title": "夏夜祭",
+      "card_id": 68002,
+      "first": {
+        "before_max_main_frame_ms": 50.5141,
+        "after_max_main_frame_ms": 10.3825,
+        "reduction_percent": 79.4463,
+        "preparation_display_frames": 10,
+        "preparation_display_elapsed_ms": 174.6631,
+        "texture_calls_before": 7,
+        "texture_calls_after": 7
+      },
+      "repeat": {
+        "before_max_main_frame_ms": 26.897,
+        "after_max_main_frame_ms": 31.9995,
+        "reduction_percent": -18.9707,
+        "preparation_display_frames": 4,
+        "preparation_display_elapsed_ms": 69.8044,
+        "texture_calls_before": 0,
+        "texture_calls_after": 0
+      }
+    },
+    {
+      "source": "TH41",
+      "title": "祈华梦",
+      "card_id": 70101,
+      "first": {
+        "before_max_main_frame_ms": 404.9252,
+        "after_max_main_frame_ms": 11.6742,
+        "reduction_percent": 97.1169,
+        "preparation_display_frames": 66,
+        "preparation_display_elapsed_ms": 1162.8529,
+        "texture_calls_before": 49,
+        "texture_calls_after": 49
+      },
+      "repeat": {
+        "before_max_main_frame_ms": 381.5061,
+        "after_max_main_frame_ms": 10.7698,
+        "reduction_percent": 97.177,
+        "preparation_display_frames": 2,
+        "preparation_display_elapsed_ms": 35.523,
+        "texture_calls_before": 49,
+        "texture_calls_after": 2
+      }
+    },
+    {
+      "source": "TH42",
+      "title": "Like Dreamer",
+      "card_id": 71121,
+      "first": {
+        "before_max_main_frame_ms": 394.1076,
+        "after_max_main_frame_ms": 12.4494,
+        "reduction_percent": 96.8411,
+        "preparation_display_frames": 64,
+        "preparation_display_elapsed_ms": 1124.1636,
+        "texture_calls_before": 43,
+        "texture_calls_after": 43
+      },
+      "repeat": {
+        "before_max_main_frame_ms": 390.107,
+        "after_max_main_frame_ms": 7.9619,
+        "reduction_percent": 97.9591,
+        "preparation_display_frames": 2,
+        "preparation_display_elapsed_ms": 35.4007,
+        "texture_calls_before": 43,
+        "texture_calls_after": 0
+      }
+    },
+    {
+      "source": "TH43",
+      "title": "栖霞园",
+      "card_id": 81402,
+      "first": {
+        "before_max_main_frame_ms": 110.8611,
+        "after_max_main_frame_ms": 15.6554,
+        "reduction_percent": 85.8784,
+        "preparation_display_frames": 18,
+        "preparation_display_elapsed_ms": 316.2161,
+        "texture_calls_before": 15,
+        "texture_calls_after": 15
+      },
+      "repeat": {
+        "before_max_main_frame_ms": 96.182,
+        "after_max_main_frame_ms": 21.0963,
+        "reduction_percent": 78.0662,
+        "preparation_display_frames": 2,
+        "preparation_display_elapsed_ms": 35.3847,
+        "texture_calls_before": 15,
+        "texture_calls_after": 0
+      }
+    }
+  ],
+  "cases": [
+    {
+      "index": 1,
+      "key": "TH31:3426",
+      "frames": 360,
+      "preparation_display_frames": 0,
+      "max_main_frame_ms": 28.2257,
+      "max_logic_ms": 26.6198,
+      "max_render_ms": 9.647,
+      "max_wall_interval_ms": 29.0103,
+      "main_frames_over_16_67_ms": 2,
+      "operations": {
+        "LoadTexture": {
+          "count": 8,
+          "ms": 40.4843,
+          "self_ms": 40.4843
+        },
+        "LoadImage": {
+          "count": 23,
+          "ms": 0.652,
+          "self_ms": 0.652
+        },
+        "encounter.begin": {
+          "count": 1,
+          "ms": 0.0093,
+          "self_ms": 0.0086
+        },
+        "encounter.stop": {
+          "count": 1,
+          "ms": 0.0007,
+          "self_ms": 0.0007
+        },
+        "DoFile": {
+          "count": 5,
+          "ms": 7.395,
+          "self_ms": 7.395
+        }
+      },
+      "top_frames": [
+        {
+          "player_timer": 61,
+          "logic_ms": 26.619834010489,
+          "render_ms": 1.6058339970186,
+          "wall_ms": 29.010292026214,
+          "age": 1,
+          "frame": 205,
+          "preparing": false,
+          "case": 1,
+          "fight_age": 1,
+          "stage_timer": 61
+        },
+        {
+          "player_timer": 197,
+          "logic_ms": 9.4525829190388,
+          "render_ms": 9.6469999989495,
+          "wall_ms": 19.405707949772,
+          "age": 137,
+          "frame": 341,
+          "preparing": false,
+          "case": 1,
+          "fight_age": 137,
+          "stage_timer": 197
+        },
+        {
+          "player_timer": 107,
+          "logic_ms": 3.4987910185009,
+          "render_ms": 8.0483329948038,
+          "wall_ms": 16.602041083388,
+          "age": 47,
+          "frame": 251,
+          "preparing": false,
+          "case": 1,
+          "fight_age": 47,
+          "stage_timer": 107
+        },
+        {
+          "player_timer": 307,
+          "logic_ms": 8.4934170590714,
+          "render_ms": 2.9041660018265,
+          "wall_ms": 16.714042052627,
+          "age": 247,
+          "frame": 451,
+          "preparing": false,
+          "case": 1,
+          "fight_age": 247,
+          "stage_timer": 307
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "key": "TH31:3426",
+      "frames": 360,
+      "preparation_display_frames": 0,
+      "max_main_frame_ms": 10.6598,
+      "max_logic_ms": 8.0617,
+      "max_render_ms": 5.5237,
+      "max_wall_interval_ms": 37.6083,
+      "main_frames_over_16_67_ms": 0,
+      "operations": {
+        "encounter.begin": {
+          "count": 1,
+          "ms": 0.0049,
+          "self_ms": 0.0047
+        },
+        "encounter.stop": {
+          "count": 2,
+          "ms": 0.0023,
+          "self_ms": 0.0023
+        }
+      },
+      "top_frames": [
+        {
+          "player_timer": 708,
+          "logic_ms": 8.0257910303771,
+          "render_ms": 2.634041942656,
+          "wall_ms": 16.875125002116,
+          "age": 227,
+          "frame": 852,
+          "preparing": false,
+          "case": 2,
+          "fight_age": 227,
+          "stage_timer": 708
+        },
+        {
+          "player_timer": 780,
+          "logic_ms": 8.0617499770597,
+          "render_ms": 2.5319580454379,
+          "wall_ms": 16.915042069741,
+          "age": 299,
+          "frame": 924,
+          "preparing": false,
+          "case": 2,
+          "fight_age": 299,
+          "stage_timer": 780
+        },
+        {
+          "player_timer": 624,
+          "logic_ms": 7.4036669684574,
+          "render_ms": 2.695249975659,
+          "wall_ms": 17.034916905686,
+          "age": 143,
+          "frame": 768,
+          "preparing": false,
+          "case": 2,
+          "fight_age": 143,
+          "stage_timer": 624
+        },
+        {
+          "player_timer": 768,
+          "logic_ms": 6.7277499474585,
+          "render_ms": 2.470082952641,
+          "wall_ms": 17.271624994464,
+          "age": 287,
+          "frame": 912,
+          "preparing": false,
+          "case": 2,
+          "fight_age": 287,
+          "stage_timer": 768
+        }
+      ]
+    },
+    {
+      "index": 3,
+      "key": "TH37:37004",
+      "frames": 375,
+      "preparation_display_frames": 15,
+      "max_main_frame_ms": 35.0529,
+      "max_logic_ms": 32.1596,
+      "max_render_ms": 17.557,
+      "max_wall_interval_ms": 35.3863,
+      "main_frames_over_16_67_ms": 3,
+      "operations": {
+        "encounter.begin": {
+          "count": 1,
+          "ms": 0.7707,
+          "self_ms": 0.7705
+        },
+        "encounter.stop": {
+          "count": 2,
+          "ms": 0.0043,
+          "self_ms": 0.0043
+        },
+        "DoFile": {
+          "count": 8,
+          "ms": 4.5821,
+          "self_ms": 4.5821
+        },
+        "LoadTexture": {
+          "count": 13,
+          "ms": 48.4137,
+          "self_ms": 48.4137
+        },
+        "AndroidCreateModelMesh": {
+          "count": 6,
+          "ms": 0.0294,
+          "self_ms": 0.0294
+        },
+        "LoadImage": {
+          "count": 178,
+          "ms": 3.5271,
+          "self_ms": 3.5271
+        },
+        "RemoveResource": {
+          "count": 2,
+          "ms": 0.0675,
+          "self_ms": 0.0675
+        }
+      },
+      "top_frames": [
+        {
+          "player_timer": 993,
+          "logic_ms": 32.159624970518,
+          "render_ms": 2.8932499699295,
+          "wall_ms": 35.386333940551,
+          "age": 106,
+          "frame": 1152,
+          "preparing": false,
+          "case": 3,
+          "fight_age": 91,
+          "stage_timer": 994
+        },
+        {
+          "player_timer": 904,
+          "logic_ms": 22.150250035338,
+          "render_ms": 1.7888329457492,
+          "wall_ms": 24.266500025988,
+          "age": 17,
+          "frame": 1063,
+          "preparing": false,
+          "case": 3,
+          "fight_age": 2,
+          "stage_timer": 905
+        },
+        {
+          "player_timer": 973,
+          "logic_ms": 0.89995807502419,
+          "render_ms": 17.556958016939,
+          "wall_ms": 18.907125107944,
+          "age": 86,
+          "frame": 1132,
+          "preparing": false,
+          "case": 3,
+          "fight_age": 71,
+          "stage_timer": 974
+        },
+        {
+          "player_timer": 902,
+          "logic_ms": 8.019124972634,
+          "render_ms": 2.5018330197781,
+          "wall_ms": 16.947458963841,
+          "age": 2,
+          "frame": 1048,
+          "preparing": true,
+          "case": 3,
+          "fight_age": 0,
+          "stage_timer": 903
+        }
+      ]
+    },
+    {
+      "index": 4,
+      "key": "TH37:37004",
+      "frames": 362,
+      "preparation_display_frames": 2,
+      "max_main_frame_ms": 8.8135,
+      "max_logic_ms": 5.5582,
+      "max_render_ms": 4.4471,
+      "max_wall_interval_ms": 18.6825,
+      "main_frames_over_16_67_ms": 0,
+      "operations": {
+        "encounter.begin": {
+          "count": 1,
+          "ms": 0.0971,
+          "self_ms": 0.0969
+        },
+        "encounter.stop": {
+          "count": 2,
+          "ms": 0.3535,
+          "self_ms": 0.2508
+        },
+        "RemoveResource": {
+          "count": 1,
+          "ms": 0.1027,
+          "self_ms": 0.1027
+        },
+        "LoadImage": {
+          "count": 42,
+          "ms": 0.1378,
+          "self_ms": 0.1378
+        }
+      },
+      "top_frames": [
+        {
+          "player_timer": 1678,
+          "logic_ms": 5.558209028095,
+          "render_ms": 3.2552500488237,
+          "wall_ms": 17.282583983615,
+          "age": 357,
+          "frame": 1839,
+          "preparing": false,
+          "case": 4,
+          "fight_age": 355,
+          "stage_timer": 1680
+        },
+        {
+          "player_timer": 1476,
+          "logic_ms": 5.2177920006216,
+          "render_ms": 2.2738330299035,
+          "wall_ms": 17.55666709505,
+          "age": 155,
+          "frame": 1637,
+          "preparing": false,
+          "case": 4,
+          "fight_age": 153,
+          "stage_timer": 1478
+        },
+        {
+          "player_timer": 1443,
+          "logic_ms": 4.3946250807494,
+          "render_ms": 2.7155840070918,
+          "wall_ms": 17.678749980405,
+          "age": 122,
+          "frame": 1604,
+          "preparing": false,
+          "case": 4,
+          "fight_age": 120,
+          "stage_timer": 1445
+        },
+        {
+          "player_timer": 1663,
+          "logic_ms": 4.4782089535147,
+          "render_ms": 2.4440000997856,
+          "wall_ms": 17.678833915852,
+          "age": 342,
+          "frame": 1824,
+          "preparing": false,
+          "case": 4,
+          "fight_age": 340,
+          "stage_timer": 1665
+        }
+      ]
+    },
+    {
+      "index": 5,
+      "key": "TH38:38002",
+      "frames": 496,
+      "preparation_display_frames": 136,
+      "max_main_frame_ms": 40.4517,
+      "max_logic_ms": 6.0861,
+      "max_render_ms": 38.6963,
+      "max_wall_interval_ms": 40.6332,
+      "main_frames_over_16_67_ms": 2,
+      "operations": {
+        "encounter.begin": {
+          "count": 1,
+          "ms": 1.7677,
+          "self_ms": 0.739
+        },
+        "encounter.stop": {
+          "count": 2,
+          "ms": 1.0329,
+          "self_ms": 0.9754
+        },
+        "RemoveResource": {
+          "count": 43,
+          "ms": 1.0767,
+          "self_ms": 1.0767
+        },
+        "LoadImage": {
+          "count": 586,
+          "ms": 9.6246,
+          "self_ms": 9.6246
+        },
+        "LoadTexture": {
+          "count": 133,
+          "ms": 109.5465,
+          "self_ms": 109.5465
+        },
+        "DoFile": {
+          "count": 3,
+          "ms": 2.1664,
+          "self_ms": 2.1664
+        }
+      },
+      "top_frames": [
+        {
+          "player_timer": 1746,
+          "logic_ms": 1.7553329234943,
+          "render_ms": 38.696333998814,
+          "wall_ms": 40.63324991148,
+          "age": 138,
+          "frame": 2043,
+          "preparing": false,
+          "case": 5,
+          "fight_age": 2,
+          "stage_timer": 1749
+        },
+        {
+          "player_timer": 2053,
+          "logic_ms": 1.9340000580996,
+          "render_ms": 17.985874903388,
+          "wall_ms": 20.156083977781,
+          "age": 445,
+          "frame": 2350,
+          "preparing": false,
+          "case": 5,
+          "fight_age": 309,
+          "stage_timer": 2056
+        },
+        {
+          "player_timer": 1959,
+          "logic_ms": 4.22958296258,
+          "render_ms": 9.0812089620158,
+          "wall_ms": 16.145500005223,
+          "age": 351,
+          "frame": 2256,
+          "preparing": false,
+          "case": 5,
+          "fight_age": 215,
+          "stage_timer": 1962
+        },
+        {
+          "player_timer": 2077,
+          "logic_ms": 5.5720409145579,
+          "render_ms": 4.0963749634102,
+          "wall_ms": 16.011541010812,
+          "age": 469,
+          "frame": 2374,
+          "preparing": false,
+          "case": 5,
+          "fight_age": 333,
+          "stage_timer": 2080
+        }
+      ]
+    },
+    {
+      "index": 6,
+      "key": "TH38:38002",
+      "frames": 362,
+      "preparation_display_frames": 2,
+      "max_main_frame_ms": 13.1808,
+      "max_logic_ms": 5.9213,
+      "max_render_ms": 10.7141,
+      "max_wall_interval_ms": 18.0197,
+      "main_frames_over_16_67_ms": 0,
+      "operations": {
+        "encounter.begin": {
+          "count": 1,
+          "ms": 0.3077,
+          "self_ms": 0.3075
+        },
+        "encounter.stop": {
+          "count": 2,
+          "ms": 1.2406,
+          "self_ms": 0.9152
+        },
+        "RemoveResource": {
+          "count": 1,
+          "ms": 0.3254,
+          "self_ms": 0.3254
+        },
+        "LoadImage": {
+          "count": 12,
+          "ms": 0.2486,
+          "self_ms": 0.2486
+        }
+      },
+      "top_frames": [
+        {
+          "player_timer": 2173,
+          "logic_ms": 2.4667090037838,
+          "render_ms": 10.714125004597,
+          "wall_ms": 15.965208993293,
+          "age": 10,
+          "frame": 2472,
+          "preparing": false,
+          "case": 6,
+          "fight_age": 8,
+          "stage_timer": 2177
+        },
+        {
+          "player_timer": 2398,
+          "logic_ms": 4.3210410512984,
+          "render_ms": 7.1397089632228,
+          "wall_ms": 16.622332972474,
+          "age": 235,
+          "frame": 2697,
+          "preparing": false,
+          "case": 6,
+          "fight_age": 233,
+          "stage_timer": 2402
+        },
+        {
+          "player_timer": 2384,
+          "logic_ms": 2.1545420167968,
+          "render_ms": 9.0897500049323,
+          "wall_ms": 16.743917018175,
+          "age": 221,
+          "frame": 2683,
+          "preparing": false,
+          "case": 6,
+          "fight_age": 219,
+          "stage_timer": 2388
+        },
+        {
+          "player_timer": 2399,
+          "logic_ms": 5.921250092797,
+          "render_ms": 3.9862080011517,
+          "wall_ms": 17.084958031774,
+          "age": 236,
+          "frame": 2698,
+          "preparing": false,
+          "case": 6,
+          "fight_age": 234,
+          "stage_timer": 2403
+        }
+      ]
+    },
+    {
+      "index": 7,
+      "key": "TH39:39001",
+      "frames": 464,
+      "preparation_display_frames": 104,
+      "max_main_frame_ms": 18.6482,
+      "max_logic_ms": 9.2139,
+      "max_render_ms": 15.8569,
+      "max_wall_interval_ms": 18.8783,
+      "main_frames_over_16_67_ms": 1,
+      "operations": {
+        "encounter.begin": {
+          "count": 1,
+          "ms": 0.7825,
+          "self_ms": 0.394
+        },
+        "encounter.stop": {
+          "count": 2,
+          "ms": 1.8472,
+          "self_ms": 1.3751
+        },
+        "RemoveResource": {
+          "count": 19,
+          "ms": 0.8603,
+          "self_ms": 0.8603
+        },
+        "DoFile": {
+          "count": 5,
+          "ms": 8.1867,
+          "self_ms": 8.1867
+        },
+        "LoadTexture": {
+          "count": 37,
+          "ms": 47.1214,
+          "self_ms": 47.1214
+        },
+        "LoadImage": {
+          "count": 117,
+          "ms": 3.7917,
+          "self_ms": 3.7917
+        }
+      },
+      "top_frames": [
+        {
+          "player_timer": 2692,
+          "logic_ms": 2.7913330122828,
+          "render_ms": 15.856874990277,
+          "wall_ms": 18.878291943111,
+          "age": 210,
+          "frame": 3095,
+          "preparing": false,
+          "case": 7,
+          "fight_age": 106,
+          "stage_timer": 2697
+        },
+        {
+          "player_timer": 2586,
+          "logic_ms": 9.2138750478625,
+          "render_ms": 1.7129580955952,
+          "wall_ms": 16.827292041853,
+          "age": 4,
+          "frame": 2889,
+          "preparing": true,
+          "case": 7,
+          "fight_age": 0,
+          "stage_timer": 2591
+        },
+        {
+          "player_timer": 2586,
+          "logic_ms": 9.0924589894712,
+          "render_ms": 1.2834580847993,
+          "wall_ms": 16.746542067267,
+          "age": 2,
+          "frame": 2887,
+          "preparing": true,
+          "case": 7,
+          "fight_age": 0,
+          "stage_timer": 2591
+        },
+        {
+          "player_timer": 2622,
+          "logic_ms": 2.6744580827653,
+          "render_ms": 7.1398749714717,
+          "wall_ms": 17.07704202272,
+          "age": 140,
+          "frame": 3025,
+          "preparing": false,
+          "case": 7,
+          "fight_age": 36,
+          "stage_timer": 2627
+        }
+      ]
+    },
+    {
+      "index": 8,
+      "key": "TH39:39001",
+      "frames": 362,
+      "preparation_display_frames": 2,
+      "max_main_frame_ms": 21.6996,
+      "max_logic_ms": 6.503,
+      "max_render_ms": 18.6793,
+      "max_wall_interval_ms": 21.9953,
+      "main_frames_over_16_67_ms": 1,
+      "operations": {
+        "encounter.begin": {
+          "count": 1,
+          "ms": 0.1314,
+          "self_ms": 0.1312
+        },
+        "encounter.stop": {
+          "count": 2,
+          "ms": 0.3438,
+          "self_ms": 0.3146
+        },
+        "RemoveResource": {
+          "count": 1,
+          "ms": 0.0292,
+          "self_ms": 0.0292
+        },
+        "LoadImage": {
+          "count": 13,
+          "ms": 0.1416,
+          "self_ms": 0.1416
+        }
+      },
+      "top_frames": [
+        {
+          "player_timer": 3223,
+          "logic_ms": 3.020333009772,
+          "render_ms": 18.67925003171,
+          "wall_ms": 21.995250019245,
+          "age": 218,
+          "frame": 3628,
+          "preparing": false,
+          "case": 8,
+          "fight_age": 216,
+          "stage_timer": 3229
+        },
+        {
+          "player_timer": 3266,
+          "logic_ms": 6.2796670245007,
+          "render_ms": 5.7255830615759,
+          "wall_ms": 16.45091699902,
+          "age": 261,
+          "frame": 3671,
+          "preparing": false,
+          "case": 8,
+          "fight_age": 259,
+          "stage_timer": 3272
+        },
+        {
+          "player_timer": 3014,
+          "logic_ms": 4.4782500481233,
+          "render_ms": 6.6490420140326,
+          "wall_ms": 16.753375064582,
+          "age": 9,
+          "frame": 3419,
+          "preparing": false,
+          "case": 8,
+          "fight_age": 7,
+          "stage_timer": 3020
+        },
+        {
+          "player_timer": 3288,
+          "logic_ms": 6.5030420664698,
+          "render_ms": 3.8990828907117,
+          "wall_ms": 16.86354202684,
+          "age": 283,
+          "frame": 3693,
+          "preparing": false,
+          "case": 8,
+          "fight_age": 281,
+          "stage_timer": 3294
+        }
+      ]
+    },
+    {
+      "index": 9,
+      "key": "TH40:68002",
+      "frames": 370,
+      "preparation_display_frames": 10,
+      "max_main_frame_ms": 10.3825,
+      "max_logic_ms": 8.0069,
+      "max_render_ms": 4.8786,
+      "max_wall_interval_ms": 18.3961,
+      "main_frames_over_16_67_ms": 0,
+      "operations": {
+        "encounter.begin": {
+          "count": 1,
+          "ms": 1.4123,
+          "self_ms": 0.1623
+        },
+        "encounter.stop": {
+          "count": 2,
+          "ms": 0.5355,
+          "self_ms": 0.505
+        },
+        "RemoveResource": {
+          "count": 82,
+          "ms": 1.2803,
+          "self_ms": 1.2803
+        },
+        "LoadTexture": {
+          "count": 7,
+          "ms": 4.1789,
+          "self_ms": 4.1789
+        },
+        "AndroidCreateModelMesh": {
+          "count": 5,
+          "ms": 0.0067,
+          "self_ms": 0.0067
+        },
+        "LoadImage": {
+          "count": 7,
+          "ms": 0.0823,
+          "self_ms": 0.0823
+        },
+        "DoFile": {
+          "count": 1,
+          "ms": 0.8229,
+          "self_ms": 0.8229
+        }
+      },
+      "top_frames": [
+        {
+          "player_timer": 3490,
+          "logic_ms": 7.0205420488492,
+          "render_ms": 3.3619590103626,
+          "wall_ms": 16.832709079608,
+          "age": 72,
+          "frame": 3905,
+          "preparing": false,
+          "case": 9,
+          "fight_age": 62,
+          "stage_timer": 3497
+        },
+        {
+          "player_timer": 3772,
+          "logic_ms": 6.7154999123886,
+          "render_ms": 3.0516249826178,
+          "wall_ms": 16.873833956197,
+          "age": 354,
+          "frame": 4187,
+          "preparing": false,
+          "case": 9,
+          "fight_age": 344,
+          "stage_timer": 3779
+        },
+        {
+          "player_timer": 3709,
+          "logic_ms": 5.6430840631947,
+          "render_ms": 3.721792018041,
+          "wall_ms": 16.996500082314,
+          "age": 291,
+          "frame": 4124,
+          "preparing": false,
+          "case": 9,
+          "fight_age": 281,
+          "stage_timer": 3716
+        },
+        {
+          "player_timer": 3428,
+          "logic_ms": 8.0068749375641,
+          "render_ms": 1.2453750241548,
+          "wall_ms": 17.260957974941,
+          "age": 2,
+          "frame": 3835,
+          "preparing": true,
+          "case": 9,
+          "fight_age": 0,
+          "stage_timer": 3435
+        }
+      ]
+    },
+    {
+      "index": 10,
+      "key": "TH40:68002",
+      "frames": 364,
+      "preparation_display_frames": 4,
+      "max_main_frame_ms": 31.9995,
+      "max_logic_ms": 8.0228,
+      "max_render_ms": 30.8621,
+      "max_wall_interval_ms": 32.4072,
+      "main_frames_over_16_67_ms": 1,
+      "operations": {
+        "encounter.begin": {
+          "count": 1,
+          "ms": 0.2364,
+          "self_ms": 0.235
+        },
+        "encounter.stop": {
+          "count": 2,
+          "ms": 0.5465,
+          "self_ms": 0.505
+        },
+        "RemoveResource": {
+          "count": 1,
+          "ms": 0.0416,
+          "self_ms": 0.0416
+        }
+      },
+      "top_frames": [
+        {
+          "player_timer": 3993,
+          "logic_ms": 1.1374580208212,
+          "render_ms": 30.862084007822,
+          "wall_ms": 32.407166087069,
+          "age": 148,
+          "frame": 4412,
+          "preparing": false,
+          "case": 10,
+          "fight_age": 144,
+          "stage_timer": 4001
+        },
+        {
+          "player_timer": 4093,
+          "logic_ms": 4.0501669282094,
+          "render_ms": 6.0959589900449,
+          "wall_ms": 16.394499922171,
+          "age": 248,
+          "frame": 4512,
+          "preparing": false,
+          "case": 10,
+          "fight_age": 244,
+          "stage_timer": 4101
+        },
+        {
+          "player_timer": 3849,
+          "logic_ms": 8.0227920552716,
+          "render_ms": 1.5237079933286,
+          "wall_ms": 16.929917037487,
+          "age": 2,
+          "frame": 4266,
+          "preparing": true,
+          "case": 10,
+          "fight_age": 0,
+          "stage_timer": 3857
+        },
+        {
+          "player_timer": 4030,
+          "logic_ms": 2.6469159638509,
+          "render_ms": 6.7843339638785,
+          "wall_ms": 17.143915989436,
+          "age": 185,
+          "frame": 4449,
+          "preparing": false,
+          "case": 10,
+          "fight_age": 181,
+          "stage_timer": 4038
+        }
+      ]
+    },
+    {
+      "index": 11,
+      "key": "TH41:70101",
+      "frames": 426,
+      "preparation_display_frames": 66,
+      "max_main_frame_ms": 11.6742,
+      "max_logic_ms": 10.9285,
+      "max_render_ms": 4.0691,
+      "max_wall_interval_ms": 18.3204,
+      "main_frames_over_16_67_ms": 0,
+      "operations": {
+        "encounter.begin": {
+          "count": 1,
+          "ms": 0.255,
+          "self_ms": 0.2546
+        },
+        "encounter.stop": {
+          "count": 2,
+          "ms": 1.1975,
+          "self_ms": 1.0935
+        },
+        "RemoveResource": {
+          "count": 1,
+          "ms": 0.1041,
+          "self_ms": 0.1041
+        },
+        "LoadImage": {
+          "count": 1459,
+          "ms": 5.2391,
+          "self_ms": 5.2391
+        },
+        "LoadTexture": {
+          "count": 49,
+          "ms": 37.8573,
+          "self_ms": 37.8573
+        }
+      },
+      "top_frames": [
+        {
+          "player_timer": 4270,
+          "logic_ms": 10.928499978036,
+          "render_ms": 0.74570893775672,
+          "wall_ms": 16.650874982588,
+          "age": 25,
+          "frame": 4714,
+          "preparing": true,
+          "case": 11,
+          "fight_age": 0,
+          "stage_timer": 4279
+        },
+        {
+          "player_timer": 4272,
+          "logic_ms": 9.6719580469653,
+          "render_ms": 1.6249159816653,
+          "wall_ms": 16.718917060643,
+          "age": 68,
+          "frame": 4757,
+          "preparing": false,
+          "case": 11,
+          "fight_age": 2,
+          "stage_timer": 4281
+        },
+        {
+          "player_timer": 4270,
+          "logic_ms": 8.0864999908954,
+          "render_ms": 1.9683750579134,
+          "wall_ms": 16.798582975753,
+          "age": 2,
+          "frame": 4691,
+          "preparing": true,
+          "case": 11,
+          "fight_age": 0,
+          "stage_timer": 4279
+        },
+        {
+          "player_timer": 4293,
+          "logic_ms": 2.6891670422629,
+          "render_ms": 4.0690830210224,
+          "wall_ms": 17.512292019092,
+          "age": 89,
+          "frame": 4778,
+          "preparing": false,
+          "case": 11,
+          "fight_age": 23,
+          "stage_timer": 4302
+        }
+      ]
+    },
+    {
+      "index": 12,
+      "key": "TH41:70101",
+      "frames": 362,
+      "preparation_display_frames": 2,
+      "max_main_frame_ms": 10.7698,
+      "max_logic_ms": 9.086,
+      "max_render_ms": 4.6954,
+      "max_wall_interval_ms": 18.067,
+      "main_frames_over_16_67_ms": 0,
+      "operations": {
+        "encounter.begin": {
+          "count": 1,
+          "ms": 0.3957,
+          "self_ms": 0.3943
+        },
+        "encounter.stop": {
+          "count": 2,
+          "ms": 1.7811,
+          "self_ms": 1.7762
+        },
+        "RemoveResource": {
+          "count": 1,
+          "ms": 0.0048,
+          "self_ms": 0.0048
+        },
+        "LoadTexture": {
+          "count": 2,
+          "ms": 0.1779,
+          "self_ms": 0.1779
+        },
+        "LoadImage": {
+          "count": 5,
+          "ms": 0.0305,
+          "self_ms": 0.0305
+        }
+      },
+      "top_frames": [
+        {
+          "player_timer": 4836,
+          "logic_ms": 9.0860410127789,
+          "render_ms": 1.6837500734255,
+          "wall_ms": 16.565207974054,
+          "age": 147,
+          "frame": 5323,
+          "preparing": false,
+          "case": 12,
+          "fight_age": 145,
+          "stage_timer": 4846
+        },
+        {
+          "player_timer": 4693,
+          "logic_ms": 5.9072920121253,
+          "render_ms": 2.19054101035,
+          "wall_ms": 17.429542029276,
+          "age": 4,
+          "frame": 5180,
+          "preparing": false,
+          "case": 12,
+          "fight_age": 2,
+          "stage_timer": 4703
+        },
+        {
+          "player_timer": 4752,
+          "logic_ms": 1.7579999985173,
+          "render_ms": 4.6953749842942,
+          "wall_ms": 17.723000026308,
+          "age": 63,
+          "frame": 5239,
+          "preparing": false,
+          "case": 12,
+          "fight_age": 61,
+          "stage_timer": 4762
+        },
+        {
+          "player_timer": 4893,
+          "logic_ms": 2.0755419973284,
+          "render_ms": 4.2593339458108,
+          "wall_ms": 16.922833980061,
+          "age": 204,
+          "frame": 5380,
+          "preparing": false,
+          "case": 12,
+          "fight_age": 202,
+          "stage_timer": 4903
+        }
+      ]
+    },
+    {
+      "index": 13,
+      "key": "TH42:71121",
+      "frames": 424,
+      "preparation_display_frames": 64,
+      "max_main_frame_ms": 12.4494,
+      "max_logic_ms": 10.6677,
+      "max_render_ms": 10.0074,
+      "max_wall_interval_ms": 18.6878,
+      "main_frames_over_16_67_ms": 0,
+      "operations": {
+        "encounter.begin": {
+          "count": 1,
+          "ms": 8.2887,
+          "self_ms": 1.0738
+        },
+        "encounter.stop": {
+          "count": 2,
+          "ms": 1.7492,
+          "self_ms": 1.742
+        },
+        "RemoveResource": {
+          "count": 1639,
+          "ms": 7.2215,
+          "self_ms": 7.2215
+        },
+        "LoadImage": {
+          "count": 961,
+          "ms": 5.0996,
+          "self_ms": 5.0996
+        },
+        "LoadTexture": {
+          "count": 43,
+          "ms": 37.3859,
+          "self_ms": 37.3859
+        }
+      },
+      "top_frames": [
+        {
+          "player_timer": 5112,
+          "logic_ms": 10.667749913409,
+          "render_ms": 1.7816670006141,
+          "wall_ms": 16.383707989007,
+          "age": 1,
+          "frame": 5600,
+          "preparing": true,
+          "case": 13,
+          "fight_age": 0,
+          "stage_timer": 5123
+        },
+        {
+          "player_timer": 5112,
+          "logic_ms": 0.017791055142879,
+          "render_ms": 10.007416945882,
+          "wall_ms": 17.068332992494,
+          "age": 32,
+          "frame": 5631,
+          "preparing": true,
+          "case": 13,
+          "fight_age": 0,
+          "stage_timer": 5123
+        },
+        {
+          "player_timer": 5181,
+          "logic_ms": 2.1610419498757,
+          "render_ms": 6.0542500577867,
+          "wall_ms": 17.300667008385,
+          "age": 133,
+          "frame": 5732,
+          "preparing": false,
+          "case": 13,
+          "fight_age": 69,
+          "stage_timer": 5192
+        },
+        {
+          "player_timer": 5203,
+          "logic_ms": 3.3864169381559,
+          "render_ms": 4.7058750642464,
+          "wall_ms": 17.346833948977,
+          "age": 155,
+          "frame": 5754,
+          "preparing": false,
+          "case": 13,
+          "fight_age": 91,
+          "stage_timer": 5214
+        }
+      ]
+    },
+    {
+      "index": 14,
+      "key": "TH42:71121",
+      "frames": 362,
+      "preparation_display_frames": 2,
+      "max_main_frame_ms": 7.9619,
+      "max_logic_ms": 4.6941,
+      "max_render_ms": 5.0822,
+      "max_wall_interval_ms": 18.8926,
+      "main_frames_over_16_67_ms": 0,
+      "operations": {
+        "encounter.begin": {
+          "count": 1,
+          "ms": 0.726,
+          "self_ms": 0.7257
+        },
+        "encounter.stop": {
+          "count": 2,
+          "ms": 1.4459,
+          "self_ms": 1.4459
+        }
+      },
+      "top_frames": [
+        {
+          "player_timer": 5637,
+          "logic_ms": 3.8124159909785,
+          "render_ms": 4.1494590695947,
+          "wall_ms": 17.576207988895,
+          "age": 103,
+          "frame": 6190,
+          "preparing": false,
+          "case": 14,
+          "fight_age": 101,
+          "stage_timer": 5649
+        },
+        {
+          "player_timer": 5594,
+          "logic_ms": 4.6941250329837,
+          "render_ms": 2.9557920061052,
+          "wall_ms": 17.435290967114,
+          "age": 60,
+          "frame": 6147,
+          "preparing": false,
+          "case": 14,
+          "fight_age": 58,
+          "stage_timer": 5606
+        },
+        {
+          "player_timer": 5723,
+          "logic_ms": 3.6407919833437,
+          "render_ms": 3.9229169487953,
+          "wall_ms": 16.98337495327,
+          "age": 189,
+          "frame": 6276,
+          "preparing": false,
+          "case": 14,
+          "fight_age": 187,
+          "stage_timer": 5735
+        },
+        {
+          "player_timer": 5857,
+          "logic_ms": 3.9575420087203,
+          "render_ms": 2.896458026953,
+          "wall_ms": 16.268625040539,
+          "age": 323,
+          "frame": 6410,
+          "preparing": false,
+          "case": 14,
+          "fight_age": 321,
+          "stage_timer": 5869
+        }
+      ]
+    },
+    {
+      "index": 15,
+      "key": "TH43:81402",
+      "frames": 378,
+      "preparation_display_frames": 18,
+      "max_main_frame_ms": 15.6554,
+      "max_logic_ms": 14.6075,
+      "max_render_ms": 5.1932,
+      "max_wall_interval_ms": 18.0725,
+      "main_frames_over_16_67_ms": 0,
+      "operations": {
+        "encounter.begin": {
+          "count": 1,
+          "ms": 10.6838,
+          "self_ms": 1.5249
+        },
+        "encounter.stop": {
+          "count": 2,
+          "ms": 3.1811,
+          "self_ms": 3.1811
+        },
+        "RemoveResource": {
+          "count": 1037,
+          "ms": 9.1583,
+          "self_ms": 9.1583
+        },
+        "LoadImage": {
+          "count": 40,
+          "ms": 0.4576,
+          "self_ms": 0.4576
+        },
+        "LoadTexture": {
+          "count": 15,
+          "ms": 7.5069,
+          "self_ms": 7.5069
+        }
+      },
+      "top_frames": [
+        {
+          "player_timer": 5960,
+          "logic_ms": 14.60750005208,
+          "render_ms": 1.0478749172762,
+          "wall_ms": 16.003042110242,
+          "age": 1,
+          "frame": 6514,
+          "preparing": true,
+          "case": 15,
+          "fight_age": 0,
+          "stage_timer": 5973
+        },
+        {
+          "player_timer": 6191,
+          "logic_ms": 2.594708930701,
+          "render_ms": 5.1932089263573,
+          "wall_ms": 17.342875013128,
+          "age": 249,
+          "frame": 6762,
+          "preparing": false,
+          "case": 15,
+          "fight_age": 231,
+          "stage_timer": 6204
+        },
+        {
+          "player_timer": 6267,
+          "logic_ms": 3.641583956778,
+          "render_ms": 4.0196659974754,
+          "wall_ms": 16.851417021826,
+          "age": 325,
+          "frame": 6838,
+          "preparing": false,
+          "case": 15,
+          "fight_age": 307,
+          "stage_timer": 6280
+        },
+        {
+          "player_timer": 6123,
+          "logic_ms": 2.3862080415711,
+          "render_ms": 4.5315000461414,
+          "wall_ms": 17.690791049972,
+          "age": 181,
+          "frame": 6694,
+          "preparing": false,
+          "case": 15,
+          "fight_age": 163,
+          "stage_timer": 6136
+        }
+      ]
+    },
+    {
+      "index": 16,
+      "key": "TH43:81402",
+      "frames": 362,
+      "preparation_display_frames": 2,
+      "max_main_frame_ms": 21.0963,
+      "max_logic_ms": 7.9577,
+      "max_render_ms": 20.4302,
+      "max_wall_interval_ms": 21.4076,
+      "main_frames_over_16_67_ms": 1,
+      "operations": {
+        "encounter.begin": {
+          "count": 1,
+          "ms": 0.3443,
+          "self_ms": 0.3402
+        },
+        "encounter.stop": {
+          "count": 2,
+          "ms": 0.8578,
+          "self_ms": 0.8578
+        },
+        "LoadImage": {
+          "count": 12,
+          "ms": 0.3689,
+          "self_ms": 0.3689
+        }
+      },
+      "top_frames": [
+        {
+          "player_timer": 6721,
+          "logic_ms": 0.66612497903407,
+          "render_ms": 20.430207950994,
+          "wall_ms": 21.407582913525,
+          "age": 342,
+          "frame": 7294,
+          "preparing": false,
+          "case": 16,
+          "fight_age": 340,
+          "stage_timer": 6735
+        },
+        {
+          "player_timer": 6382,
+          "logic_ms": 7.9576669959351,
+          "render_ms": 3.7726250011474,
+          "wall_ms": 16.415084013715,
+          "age": 3,
+          "frame": 6955,
+          "preparing": false,
+          "case": 16,
+          "fight_age": 1,
+          "stage_timer": 6396
+        },
+        {
+          "player_timer": 6682,
+          "logic_ms": 5.1318330224603,
+          "render_ms": 3.8465830730274,
+          "wall_ms": 17.069125082344,
+          "age": 303,
+          "frame": 7255,
+          "preparing": false,
+          "case": 16,
+          "fight_age": 301,
+          "stage_timer": 6696
+        },
+        {
+          "player_timer": 6452,
+          "logic_ms": 3.1917910091579,
+          "render_ms": 5.6968330172822,
+          "wall_ms": 17.053749994375,
+          "age": 73,
+          "frame": 7025,
+          "preparing": false,
+          "case": 16,
+          "fight_age": 71,
+          "stage_timer": 6466
+        }
+      ]
+    }
+  ],
+  "invariants": {
+    "frozen_preparation_frame_pairs": 415,
+    "moving_frozen_preparation_frame_pairs": 2159,
+    "moving_task_boundary_logic_frames": [
+      {
+        "case": 2,
+        "frame": 1573,
+        "stage_timer_before": 303,
+        "stage_timer_after": 304,
+        "player_timer_before": 301,
+        "player_timer_after": 302
+      },
+      {
+        "case": 3,
+        "frame": 2508,
+        "stage_timer_before": 545,
+        "stage_timer_after": 546,
+        "player_timer_before": 542,
+        "player_timer_after": 543
+      }
+    ],
+    "moving_boundary_note": "preparing 是跨任务的界面状态。准备任务结束后，原逻辑帧可能立即发起背景重算；这些记录各推进一次原逻辑帧，单独列出，不算冻结显示帧。",
+    "night_background": "Lua 对照完整593个粒子、全部可变状态、循环引用、随机种子与插值；修改运行实例不污染缓存；位置变化后的排队更新和符卡背景事件一致。",
+    "mesh_original_sha256": "e7bd90f978961b204b15c046b20809f8d51651174110e13d395ba5d6cfa07953",
+    "mesh_count": 73,
+    "mesh_vertices": 27347,
+    "mesh_comparison": "所有网格逐字段和数值完全相同，没有几何简化。",
+    "resource_checks": "同作复用、跨作先释放同名别名、退出回收、超过192MiB卸载、宿主资源不被删除、global/stage池重置后只重新装载实际缺失资源。"
+  },
+  "moving_native": {
+    "passed": true,
+    "cases": [
+      {
+        "background_reprepares": 1,
+        "card_id": 39001,
+        "position_change": {
+          "to": 24,
+          "from": 0
+        },
+        "first_frame": 205,
+        "source": "TH39",
+        "key": "TH39:39001",
+        "index": 1
+      },
+      {
+        "background_reprepares": 1,
+        "card_id": 39001,
+        "position_change": {
+          "to": 48,
+          "from": 24
+        },
+        "first_frame": 1224,
+        "source": "TH39",
+        "key": "TH39:39001",
+        "index": 2
+      },
+      {
+        "background_reprepares": 1,
+        "card_id": 39001,
+        "position_change": {
+          "to": 72,
+          "from": 48
+        },
+        "first_frame": 2168,
+        "source": "TH39",
+        "key": "TH39:39001",
+        "index": 3
+      }
+    ],
+    "expected_reprepares": 3,
+    "observed_reprepares": 3,
+    "raw_sha256": "71aee7cae10cc93568957c2283f6613592a389b97d8b4d1fa11d2ed649fda4a1"
+  },
+  "native_regression": {
+    "passed": true,
+    "cases": [
+      {
+        "shots": 1263,
+        "hits": 902,
+        "round": 1,
+        "frames": 1218,
+        "key": "TH37:37001",
+        "hp": {
+          "raw_hp": 12992.277227723,
+          "source_units": 8.6666666666667,
+          "base_damage": 1,
+          "scaled_damage": 8.5808580858084,
+          "factor": 1.01
+        },
+        "kind": "boss"
+      },
+      {
+        "shots": 1203,
+        "hits": 895,
+        "round": 1,
+        "frames": 1173,
+        "key": "TH37:37071",
+        "hp": {
+          "raw_hp": 17997.097650942,
+          "source_units": 8.6666666666667,
+          "base_damage": 1,
+          "scaled_damage": 8.4126059664777,
+          "factor": 1.0302
+        },
+        "kind": "boss"
+      },
+      {
+        "shots": 1177,
+        "hits": 884,
+        "round": 1,
+        "frames": 1126,
+        "key": "TH37:37096",
+        "hp": {
+          "raw_hp": 14993.629288686,
+          "source_units": 8.6666666666667,
+          "base_damage": 1,
+          "scaled_damage": 8.1675786082324,
+          "factor": 1.061106
+        },
+        "kind": "boss"
+      },
+      {
+        "shots": 1179,
+        "hits": 902,
+        "round": 1,
+        "frames": 1173,
+        "key": "TH37:37004",
+        "hp": {
+          "raw_hp": 16493.403109586,
+          "source_units": 8.6666666666667,
+          "base_damage": 1,
+          "scaled_damage": 7.8534409694548,
+          "factor": 1.10355024
+        },
+        "kind": "boss"
+      },
+      {
+        "shots": 963,
+        "hits": 180,
+        "round": 1,
+        "frames": 961,
+        "key": "TH37:37000",
+        "hp": {
+          "raw_hp": 9990,
+          "source_units": 8.6666666666667,
+          "base_damage": 1,
+          "scaled_damage": 7.4794675899557,
+          "factor": 1.158727752
+        },
+        "kind": "road"
+      },
+      {
+        "shots": 827,
+        "hits": 0,
+        "round": 1,
+        "frames": 827,
+        "key": "TH31:3436",
+        "hp": false,
+        "kind": "boss"
+      },
+      {
+        "shots": 2230,
+        "hits": 463,
+        "round": 1,
+        "frames": 1173,
+        "key": "TH38:38001",
+        "hp": {
+          "raw_hp": 5000,
+          "source_units": 6.4,
+          "base_damage": 1,
+          "scaled_damage": 4.869775298318,
+          "factor": 1.3142290163184
+        },
+        "kind": "boss"
+      },
+      {
+        "shots": 1696,
+        "hits": 76,
+        "round": 1,
+        "frames": 1421,
+        "key": "TH38:38069",
+        "hp": {
+          "raw_hp": 1200,
+          "source_units": 6.4,
+          "base_damage": 1,
+          "scaled_damage": 4.5090512021461,
+          "factor": 1.4193673376239
+        },
+        "kind": "boss"
+      },
+      {
+        "shots": 842,
+        "hits": 391,
+        "round": 1,
+        "frames": 840,
+        "key": "TH38:38002",
+        "hp": {
+          "raw_hp": 4996.9872919179,
+          "source_units": 6.4,
+          "base_damage": 1,
+          "scaled_damage": 4.1367442221526,
+          "factor": 1.54711039801
+        },
+        "kind": "boss"
+      },
+      {
+        "shots": 963,
+        "hits": 56,
+        "round": 1,
+        "frames": 961,
+        "key": "TH38:38008",
+        "hp": {
+          "raw_hp": 50,
+          "source_units": 6.4,
+          "base_damage": 1,
+          "scaled_damage": 3.7606765655932,
+          "factor": 1.701821437811
+        },
+        "kind": "road"
+      },
+      {
+        "shots": 720,
+        "hits": 0,
+        "round": 1,
+        "frames": 720,
+        "key": "TH31:3436",
+        "hp": false,
+        "kind": "boss"
+      },
+      {
+        "shots": 1190,
+        "hits": 495,
+        "round": 1,
+        "frames": 696,
+        "key": "TH39:39001",
+        "hp": {
+          "raw_hp": 20322.459111982,
+          "source_units": 22,
+          "base_damage": 1,
+          "scaled_damage": 10.398428003722,
+          "factor": 2.1157044114867
+        },
+        "kind": "boss"
+      },
+      {
+        "shots": 859,
+        "hits": 407,
+        "round": 1,
+        "frames": 491,
+        "key": "TH39:39070",
+        "hp": {
+          "raw_hp": 15000,
+          "source_units": 22,
+          "base_damage": 1,
+          "scaled_damage": 9.2021486758604,
+          "factor": 2.3907459849799
+        },
+        "kind": "boss"
+      },
+      {
+        "shots": 492,
+        "hits": 360,
+        "round": 1,
+        "frames": 472,
+        "key": "TH39:39095",
+        "hp": {
+          "raw_hp": 14839.154513206,
+          "source_units": 22,
+          "base_damage": 1,
+          "scaled_damage": 8.0720602419824,
+          "factor": 2.7254504228771
+        },
+        "kind": "boss"
+      },
+      {
+        "shots": 964,
+        "hits": 45,
+        "round": 1,
+        "frames": 961,
+        "key": "TH39:39000",
+        "hp": {
+          "raw_hp": 420,
+          "source_units": 32,
+          "base_damage": 1,
+          "scaled_damage": 10.209720464167,
+          "factor": 3.1342679863087
+        },
+        "kind": "road"
+      },
+      {
+        "shots": 710,
+        "hits": 0,
+        "round": 1,
+        "frames": 710,
+        "key": "TH31:3436",
+        "hp": false,
+        "kind": "boss"
+      },
+      {
+        "shots": 806,
+        "hits": 411,
+        "round": 1,
+        "frames": 759,
+        "key": "TH40:68001",
+        "hp": {
+          "raw_hp": 7991.74986958,
+          "source_units": 9.3333333333333,
+          "base_damage": 1,
+          "scaled_damage": 2.1941019270425,
+          "factor": 4.2538285110182
+        },
+        "kind": "boss"
+      },
+      {
+        "shots": 1087,
+        "hits": 713,
+        "round": 1,
+        "frames": 1046,
+        "key": "TH40:68057",
+        "hp": {
+          "raw_hp": 10000,
+          "source_units": 9.3333333333333,
+          "base_damage": 0.75,
+          "scaled_damage": 1.3945563095604,
+          "factor": 5.0195176430014
+        },
+        "kind": "boss"
+      },
+      {
+        "shots": 710,
+        "hits": 452,
+        "round": 1,
+        "frames": 700,
+        "key": "TH40:68002",
+        "hp": {
+          "raw_hp": 1987.686841238,
+          "source_units": 9.3333333333333,
+          "base_damage": 0.29999999999995,
+          "scaled_damage": 0.46875842338181,
+          "factor": 5.9732259951717
+        },
+        "kind": "boss"
+      },
+      {
+        "shots": 963,
+        "hits": 2,
+        "round": 1,
+        "frames": 961,
+        "key": "TH40:68079",
+        "hp": false,
+        "kind": "road"
+      },
+      {
+        "shots": 961,
+        "hits": 0,
+        "round": 1,
+        "frames": 961,
+        "key": "TH31:3436",
+        "hp": false,
+        "kind": "boss"
+      },
+      {
+        "shots": 1735,
+        "hits": 839,
+        "round": 1,
+        "frames": 1263,
+        "key": "TH41:70101",
+        "hp": {
+          "raw_hp": 2999.8582392946,
+          "source_units": 1.6666666666667,
+          "base_damage": 1,
+          "scaled_damage": 0.15751189487673,
+          "factor": 10.581211456887
+        },
+        "kind": "boss"
+      },
+      {
+        "shots": 1086,
+        "hits": 2,
+        "round": 1,
+        "frames": 1084,
+        "key": "TH41:70702",
+        "hp": {
+          "raw_hp": 2000,
+          "source_units": 1.6666666666667,
+          "base_damage": 0.0055555555554747,
+          "scaled_damage": 0.00071143583954836,
+          "factor": 13.014890091971
+        },
+        "kind": "boss"
+      },
+      {
+        "shots": 1356,
+        "hits": 492,
+        "round": 1,
+        "frames": 961,
+        "key": "TH41:70100",
+        "hp": {
+          "raw_hp": 30,
+          "source_units": 1.6666666666667,
+          "base_damage": 0.2,
+          "scaled_damage": 0.020654588890221,
+          "factor": 16.138463714044
+        },
+        "kind": "road"
+      },
+      {
+        "shots": 961,
+        "hits": 0,
+        "round": 1,
+        "frames": 961,
+        "key": "TH31:3436",
+        "hp": false,
+        "kind": "boss"
+      },
+      {
+        "shots": 1443,
+        "hits": 844,
+        "round": 1,
+        "frames": 965,
+        "key": "TH42:71121",
+        "hp": {
+          "raw_hp": 59678.695229236,
+          "source_units": 1,
+          "base_damage": 52,
+          "scaled_damage": 2.045787851981,
+          "factor": 25.418080349619
+        },
+        "kind": "boss"
+      },
+      {
+        "shots": 963,
+        "hits": 925,
+        "round": 1,
+        "frames": 961,
+        "key": "TH42:71101",
+        "hp": {
+          "raw_hp": 2380.3985172704,
+          "source_units": 1,
+          "base_damage": 52,
+          "scaled_damage": 1.6108565763652,
+          "factor": 32.280962044016
+        },
+        "kind": "road"
+      },
+      {
+        "shots": 961,
+        "hits": 0,
+        "round": 1,
+        "frames": 961,
+        "key": "TH31:3436",
+        "hp": false,
+        "kind": "boss"
+      },
+      {
+        "shots": 1090,
+        "hits": 775,
+        "round": 1,
+        "frames": 963,
+        "key": "TH43:81401",
+        "hp": {
+          "raw_hp": 1199.8841667778,
+          "source_units": 1,
+          "base_damage": 1,
+          "scaled_damage": 0.018760907875503,
+          "factor": 53.30232452708
+        },
+        "kind": "boss"
+      },
+      {
+        "shots": 1428,
+        "hits": 902,
+        "round": 1,
+        "frames": 1143,
+        "key": "TH43:87501",
+        "hp": {
+          "raw_hp": 1999.9458889236,
+          "source_units": 1,
+          "base_damage": 1,
+          "scaled_damage": 0.014431467596523,
+          "factor": 69.293021885204
+        },
+        "kind": "boss"
+      },
+      {
+        "shots": 1145,
+        "hits": 880,
+        "round": 1,
+        "frames": 1143,
+        "key": "TH43:81402",
+        "hp": {
+          "raw_hp": 1199.3615712624,
+          "source_units": 1,
+          "base_damage": 1,
+          "scaled_damage": 0.011016387478321,
+          "factor": 90.773858669617
+        },
+        "kind": "boss"
+      },
+      {
+        "shots": 856,
+        "hits": 1972,
+        "round": 1,
+        "frames": 854,
+        "key": "TH43:81001",
+        "hp": {
+          "raw_hp": 90,
+          "source_units": 1,
+          "base_damage": 1,
+          "scaled_damage": 0.0083457480895817,
+          "factor": 119.82149344389
+        },
+        "kind": "road"
+      },
+      {
+        "shots": 961,
+        "hits": 0,
+        "round": 1,
+        "frames": 961,
+        "key": "TH31:3436",
+        "hp": false,
+        "kind": "boss"
+      },
+      {
+        "shots": 1529,
+        "hits": 4381,
+        "round": 1,
+        "frames": 965,
+        "key": "TH42:71721",
+        "hp": {
+          "raw_hp": 9995.9212898948,
+          "source_units": 1,
+          "base_damage": 52,
+          "scaled_damage": 0.24350740694535,
+          "factor": 213.54586561571
+        },
+        "kind": "boss"
+      },
+      {
+        "shots": 1800,
+        "hits": 1672,
+        "round": 1,
+        "frames": 965,
+        "key": "TH42:72046",
+        "hp": {
+          "raw_hp": 31979.757561152,
+          "source_units": 1,
+          "base_damage": 52,
+          "scaled_damage": 0.18037585699494,
+          "factor": 288.28691858121
+        }
+      },
+      {
+        "shots": 1232,
+        "hits": 902,
+        "round": 2,
+        "frames": 1218,
+        "key": "TH37:37001",
+        "hp": {
+          "raw_hp": 12992.277227723,
+          "source_units": 8.6666666666667,
+          "base_damage": 1,
+          "scaled_damage": 8.5808580858084,
+          "factor": 1.01
+        },
+        "kind": "boss"
+      },
+      {
+        "shots": 1225,
+        "hits": 902,
+        "round": 2,
+        "frames": 1218,
+        "key": "TH37:37001",
+        "hp": {
+          "raw_hp": 12992.277227723,
+          "source_units": 8.6666666666667,
+          "base_damage": 1,
+          "scaled_damage": 8.5808580858084,
+          "factor": 1.01
+        },
+        "kind": "boss"
+      },
+      {
+        "shots": 1228,
+        "hits": 540,
+        "round": 2,
+        "frames": 1173,
+        "key": "TH38:38001",
+        "hp": {
+          "raw_hp": 4982.2325761988,
+          "source_units": 6.4,
+          "base_damage": 1,
+          "scaled_damage": 6.2123859444764,
+          "factor": 1.0302
+        },
+        "kind": "boss"
+      },
+      {
+        "shots": 1485,
+        "hits": 1257,
+        "round": 2,
+        "frames": 1170,
+        "key": "TH39:39001",
+        "hp": {
+          "raw_hp": 20492.47389045,
+          "source_units": 22,
+          "base_damage": 1,
+          "scaled_damage": 20.733084159358,
+          "factor": 1.061106
+        },
+        "kind": "boss"
+      },
+      {
+        "shots": 870,
+        "hits": 496,
+        "round": 2,
+        "frames": 867,
+        "key": "TH40:68001",
+        "hp": {
+          "raw_hp": 7993.0986377204,
+          "source_units": 9.3333333333333,
+          "base_damage": 1,
+          "scaled_damage": 8.4575518132579,
+          "factor": 1.10355024
+        },
+        "kind": "boss"
+      },
+      {
+        "shots": 1647,
+        "hits": 827,
+        "round": 2,
+        "frames": 1263,
+        "key": "TH41:70101",
+        "hp": {
+          "raw_hp": 2999.1369845089,
+          "source_units": 1.6666666666667,
+          "base_damage": 1,
+          "scaled_damage": 1.4383591519145,
+          "factor": 1.158727752
+        },
+        "kind": "boss"
+      },
+      {
+        "shots": 1038,
+        "hits": 474,
+        "round": 2,
+        "frames": 573,
+        "key": "TH42:71121",
+        "hp": {
+          "raw_hp": 59023.379103594,
+          "source_units": 1,
+          "base_damage": 52,
+          "scaled_damage": 42.336608999751,
+          "factor": 1.22825141712
+        },
+        "kind": "boss"
+      },
+      {
+        "shots": 983,
+        "hits": 686,
+        "round": 2,
+        "frames": 860,
+        "key": "TH43:81401",
+        "hp": {
+          "raw_hp": 1198.8002091109,
+          "source_units": 1,
+          "base_damage": 1,
+          "scaled_damage": 0.76090239036216,
+          "factor": 1.3142290163184
+        }
+      }
+    ],
+    "counts": {
+      "TH31": {
+        "lunatic": 96,
+        "extra": 24
+      },
+      "TH42": {
+        "lunatic": 101
+      },
+      "TH37": {
+        "phantasm": 26,
+        "lunatic": 69,
+        "extra": 26
+      },
+      "TH39": {
+        "phantasm": 25,
+        "lunatic": 65,
+        "extra": 25
+      },
+      "TH40": {
+        "lunatic": 66,
+        "extra": 24
+      },
+      "TH35": {
+        "lunatic": 51,
+        "extra": 23
+      },
+      "TH32": {
+        "lunatic": 81,
+        "extra": 24
+      },
+      "TH43": {
+        "lunatic": 78,
+        "extra": 26
+      },
+      "TH38": {
+        "lunatic": 68,
+        "extra": 23
+      },
+      "TH41": {
+        "lunatic": 105,
+        "extra": 23
+      },
+      "TH34": {
+        "phantasm": 23,
+        "lunatic": 66,
+        "extra": 22
+      }
+    },
+    "restarted": true,
+    "scope": "43条真实 RogueTen 流程：L/EX/PH、道中、跨作、真实Boss/部件受伤与HP倍率、Like Dreamer后期/最终攻击、旧作返回、标题重开、stage.Restart。",
+    "raw_sha256": "65b765fa1ea29254d5294a1c53f2b5ca68ea42bb53afe17742e3e6d7e75d3ec3"
+  },
+  "build": {
+    "platform": "macOS arm64 / Metal",
+    "native_compile": "兼容层与引擎完整编译成功，随后通过正式 update-assets 管线更新并签名。",
+    "resume_fingerprint": "3c0af33b20125bc569e72d04fee5c222f285ff3972c63f2336a3e2a7c6189e7d",
+    "executable_sha256": "ae06c6deb3acc8c07cc9ab840f982805729a34c78a04f6e0583b8c8f70ee8f3f"
+  },
+  "raw_profile_sha256": "ca2b883e264739ae209ab57106c8e4fbd8d3825986ee97434f8c8fa9fd741231",
+  "code_file_sha256": {
+    "THlib/ext/ext.lua": "d908fb3f155b6bf11d14304e67d6a2a0f161a391ff3298a05db8f6fc32261eb2",
+    "THlib/save/resume.lua": "47347f91031eb469310259ffeb306234671db9d4f5e4116d0e75d7672b493cf2",
+    "android/lua/compat.lua": "e03b416c490bce02fa461cb736ae82e8774bda8cf245f34afcbe38cdc0f99bd5",
+    "android/lua/main.lua": "ad429afe9484b5665862d193ce9c7d95efc74904864ebcf08ae8e50bd486cac8",
+    "android/native/compat.cpp": "0cde463ce2b2a425101fde5fcb5541b0a43f12f9f17780b425e1932f347f71b3",
+    "android/native/compat.h": "a9a47592d8c4aad9382484fd9d3ab22c721b6380bd83a60feaeb8619f0c28dae",
+    "android/patch_engine.py": "6b901bb7f7e725dc6b9d60e6fe7b6309cf294b3a634215c08e61cb02771a01df",
+    "macos/lua/rogue_entry_profile.lua": "2236d36c27a4df8a8bd22fb607c9ded0e5ad6bfe94de2250316c4362c97f7607",
+    "macos/lua/rogue_ports_test.lua": "94dbf3a79ae0e47dc0ea299a8da6848928fd9bb9a7cb8c361c8d7201dabaec52",
+    "macos/lua/test.lua": "24e391a0ec4c09d4243fec5a3e3e6fc6ff680d0b667e4dcf753b016d1e452758",
+    "mod/GAME/ports/resources.lua": "a8c8cb287f2b24bb4340c2a37bffb12f8bcb9c7fca58694ad12c05c52778da72",
+    "mod/GAME/th37.lua": "374b2cadc521226594efc0fe288f8de7daaf510479c666f1f477acc79e7d7ca0",
+    "mod/GAME/th37/background.lua": "8d7f7efa04588f6ab674dec32852a32f2ea669aab7c5934c39b6f83ae28acef8",
+    "mod/GAME/th37/scene_state.lua": "8dc26bdc74a612fd7777f2098c4431ab6fa01b3f399e1bae19ffe2088a16dddd",
+    "mod/GAME/th38.lua": "053189cc2bad77c5151503d32d8084c63aa4f86b540bb2dc18eb2b136f4fbba5",
+    "mod/GAME/th38/actor.lua": "6d062543214c4fa6f08f812b461c4dd1a843662166c8c5312f86ba69b81ceaf1",
+    "mod/GAME/th38/background.lua": "35233de7d15f0e77750635b89dbf5f05743ce60a3a6d4505a36ff76e492ee146",
+    "mod/GAME/th38/runtime.lua": "03d75207b979414be5e72435e8e93fdcabe7293264535890781ddfbad947e5a8",
+    "mod/GAME/th38/scenes/meshes.lua": "b1b0cbc2b798e8f015c59afdd452c8e5178e6f827b2928d6fec6cf9ae5b88b68",
+    "mod/GAME/th38/scenes/meshes/001.lua": "4df2e59aa1c3c4d2368a7fcb6fa4492fb11781bbbb7034e5df9eb0c6cfd0b2cb",
+    "mod/GAME/th38/scenes/meshes/002.lua": "6dff548fe67ecfe4db51319158aeae42e3574d5d0a235cf502a1ca6bff3414f3",
+    "mod/GAME/th38/scenes/meshes/003.lua": "6dff548fe67ecfe4db51319158aeae42e3574d5d0a235cf502a1ca6bff3414f3",
+    "mod/GAME/th38/scenes/meshes/004.lua": "6dff548fe67ecfe4db51319158aeae42e3574d5d0a235cf502a1ca6bff3414f3",
+    "mod/GAME/th38/scenes/meshes/005.lua": "6dff548fe67ecfe4db51319158aeae42e3574d5d0a235cf502a1ca6bff3414f3",
+    "mod/GAME/th38/scenes/meshes/006.lua": "000febaaeed8b950d850d400efac475ac9d760db5419ebf9dfae734c42676456",
+    "mod/GAME/th38/scenes/meshes/007.lua": "bb866201463dae1662faafcbd2c358592222901353e26bcf7603298d3c78afab",
+    "mod/GAME/th38/scenes/meshes/008.lua": "9b6d7a4b7191c1b36527b0dd75ec5a56b397c017343e0f652de8f93f1b196225",
+    "mod/GAME/th38/scenes/meshes/009.lua": "2ba8899c6517f6ee5d48a09be35e44bd614761f00a1644d25ab687443858f3c8",
+    "mod/GAME/th38/scenes/meshes/010.lua": "c897b4c358221776d749673ebc43fccf1e8dc335baf698ea4cdfe0d424f1d4d3",
+    "mod/GAME/th38/scenes/meshes/011.lua": "f3d788e3a3972ca03f622439a4fe791d62414064bb65d52f93af0ffe6e9ebbed",
+    "mod/GAME/th38/scenes/meshes/012.lua": "d3e1b7c8e5d5908869b836cadf818d2ea70259cc84cf220ed9e5d1c0d7f23fdb",
+    "mod/GAME/th38/scenes/meshes/013.lua": "e5d57e361d6e531f70be042f3c5c1e5583178ed757698d66304b361857626d5e",
+    "mod/GAME/th38/scenes/meshes/014.lua": "db7c285cbff63f0401c9b69768c1b6a085422c96b67d6ebdddbbdf874b0f5a78",
+    "mod/GAME/th38/scenes/meshes/015.lua": "db7c285cbff63f0401c9b69768c1b6a085422c96b67d6ebdddbbdf874b0f5a78",
+    "mod/GAME/th38/scenes/meshes/016.lua": "db7c285cbff63f0401c9b69768c1b6a085422c96b67d6ebdddbbdf874b0f5a78",
+    "mod/GAME/th38/scenes/meshes/017.lua": "db7c285cbff63f0401c9b69768c1b6a085422c96b67d6ebdddbbdf874b0f5a78",
+    "mod/GAME/th38/scenes/meshes/018.lua": "db7c285cbff63f0401c9b69768c1b6a085422c96b67d6ebdddbbdf874b0f5a78",
+    "mod/GAME/th38/scenes/meshes/019.lua": "db7c285cbff63f0401c9b69768c1b6a085422c96b67d6ebdddbbdf874b0f5a78",
+    "mod/GAME/th38/scenes/meshes/020.lua": "db7c285cbff63f0401c9b69768c1b6a085422c96b67d6ebdddbbdf874b0f5a78",
+    "mod/GAME/th38/scenes/meshes/021.lua": "db7c285cbff63f0401c9b69768c1b6a085422c96b67d6ebdddbbdf874b0f5a78",
+    "mod/GAME/th38/scenes/meshes/022.lua": "db7c285cbff63f0401c9b69768c1b6a085422c96b67d6ebdddbbdf874b0f5a78",
+    "mod/GAME/th38/scenes/meshes/023.lua": "db7c285cbff63f0401c9b69768c1b6a085422c96b67d6ebdddbbdf874b0f5a78",
+    "mod/GAME/th38/scenes/meshes/024.lua": "db7c285cbff63f0401c9b69768c1b6a085422c96b67d6ebdddbbdf874b0f5a78",
+    "mod/GAME/th38/scenes/meshes/025.lua": "db7c285cbff63f0401c9b69768c1b6a085422c96b67d6ebdddbbdf874b0f5a78",
+    "mod/GAME/th38/scenes/meshes/026.lua": "db7c285cbff63f0401c9b69768c1b6a085422c96b67d6ebdddbbdf874b0f5a78",
+    "mod/GAME/th38/scenes/meshes/027.lua": "db7c285cbff63f0401c9b69768c1b6a085422c96b67d6ebdddbbdf874b0f5a78",
+    "mod/GAME/th38/scenes/meshes/028.lua": "062e152966b8fcc088ab5997da0077a3fc7f8e376135fe8ed8620f924f69e500",
+    "mod/GAME/th38/scenes/meshes/029.lua": "6dcaf787cdfda8077217e94e2638a7e878ec7317a440f85772749df20d44071e",
+    "mod/GAME/th38/scenes/meshes/030.lua": "6dcaf787cdfda8077217e94e2638a7e878ec7317a440f85772749df20d44071e",
+    "mod/GAME/th38/scenes/meshes/031.lua": "6dcaf787cdfda8077217e94e2638a7e878ec7317a440f85772749df20d44071e",
+    "mod/GAME/th38/scenes/meshes/032.lua": "6dcaf787cdfda8077217e94e2638a7e878ec7317a440f85772749df20d44071e",
+    "mod/GAME/th38/scenes/meshes/033.lua": "6dcaf787cdfda8077217e94e2638a7e878ec7317a440f85772749df20d44071e",
+    "mod/GAME/th38/scenes/meshes/034.lua": "6dcaf787cdfda8077217e94e2638a7e878ec7317a440f85772749df20d44071e",
+    "mod/GAME/th38/scenes/meshes/035.lua": "6dcaf787cdfda8077217e94e2638a7e878ec7317a440f85772749df20d44071e",
+    "mod/GAME/th38/scenes/meshes/036.lua": "6dcaf787cdfda8077217e94e2638a7e878ec7317a440f85772749df20d44071e",
+    "mod/GAME/th38/scenes/meshes/037.lua": "6dcaf787cdfda8077217e94e2638a7e878ec7317a440f85772749df20d44071e",
+    "mod/GAME/th38/scenes/meshes/038.lua": "6dcaf787cdfda8077217e94e2638a7e878ec7317a440f85772749df20d44071e",
+    "mod/GAME/th38/scenes/meshes/039.lua": "6dcaf787cdfda8077217e94e2638a7e878ec7317a440f85772749df20d44071e",
+    "mod/GAME/th38/scenes/meshes/040.lua": "6dcaf787cdfda8077217e94e2638a7e878ec7317a440f85772749df20d44071e",
+    "mod/GAME/th38/scenes/meshes/041.lua": "6dcaf787cdfda8077217e94e2638a7e878ec7317a440f85772749df20d44071e",
+    "mod/GAME/th38/scenes/meshes/042.lua": "6dcaf787cdfda8077217e94e2638a7e878ec7317a440f85772749df20d44071e",
+    "mod/GAME/th38/scenes/meshes/043.lua": "267b6f50fb3b3fd310e4e58d795ef47acfbe124ef11da1991b9bc9d0aa760d22",
+    "mod/GAME/th38/scenes/meshes/044.lua": "267b6f50fb3b3fd310e4e58d795ef47acfbe124ef11da1991b9bc9d0aa760d22",
+    "mod/GAME/th38/scenes/meshes/045.lua": "d89683af4b501d8b83aba173baebdb39ee073232db2971e491c3c72e99a037e4",
+    "mod/GAME/th38/scenes/meshes/046.lua": "064d04d0ed9771be2b888fb44572264dc30a7a094affff0cdefd7803e25b037e",
+    "mod/GAME/th38/scenes/meshes/047.lua": "621f2b1e5f41672238befdbba8e95dfa76e3f0dbb1d1bd33534535380f546471",
+    "mod/GAME/th38/scenes/meshes/048.lua": "b93ba50dd6286f440bbc8689a66a2e0826c479f399a56f099f53d80ed254add0",
+    "mod/GAME/th38/scenes/meshes/049.lua": "172288aa3c24ad84227558bdc74223486dd67a6968c41273179b54c6cd03d63f",
+    "mod/GAME/th38/scenes/meshes/050.lua": "531993e5fa6910933983cf4fe69105c18118bac90d0cb23fec5eb934f824b92a",
+    "mod/GAME/th38/scenes/meshes/051.lua": "a86a01f040cb3b089a65d9603c50f4c39d17e220139fdc3054a1e65fb788bc7b",
+    "mod/GAME/th38/scenes/meshes/052.lua": "984a6deb919199a00f1568b63e54371a34d83ac08bbc1599b405e3ad0b389a8f",
+    "mod/GAME/th38/scenes/meshes/053.lua": "34ed6db8dcc35931cad9565be79bcf15bbf2fd8fc10b541dfc913fe2dc82360e",
+    "mod/GAME/th38/scenes/meshes/054.lua": "0366b3be7ffbe995f7da4c99335495544cf86d9027994c0512b049883ffa5d9b",
+    "mod/GAME/th38/scenes/meshes/055.lua": "20b726ab180513f46d7ac2ca3bb1829b81894271182b1ada82f78f9a8c202fb7",
+    "mod/GAME/th38/scenes/meshes/056.lua": "a0783035d9d02dac4b46f044159d1a45eef52a462aefeff3734ce5799b5b6ed2",
+    "mod/GAME/th38/scenes/meshes/057.lua": "a0783035d9d02dac4b46f044159d1a45eef52a462aefeff3734ce5799b5b6ed2",
+    "mod/GAME/th38/scenes/meshes/058.lua": "a0783035d9d02dac4b46f044159d1a45eef52a462aefeff3734ce5799b5b6ed2",
+    "mod/GAME/th38/scenes/meshes/059.lua": "a0783035d9d02dac4b46f044159d1a45eef52a462aefeff3734ce5799b5b6ed2",
+    "mod/GAME/th38/scenes/meshes/060.lua": "a0783035d9d02dac4b46f044159d1a45eef52a462aefeff3734ce5799b5b6ed2",
+    "mod/GAME/th38/scenes/meshes/061.lua": "daf6be905ca96a0a9f85c4126ee1524af5356223e51a4c89d8655a2a4e0ecf59",
+    "mod/GAME/th38/scenes/meshes/062.lua": "daf6be905ca96a0a9f85c4126ee1524af5356223e51a4c89d8655a2a4e0ecf59",
+    "mod/GAME/th38/scenes/meshes/063.lua": "daf6be905ca96a0a9f85c4126ee1524af5356223e51a4c89d8655a2a4e0ecf59",
+    "mod/GAME/th38/scenes/meshes/064.lua": "daf6be905ca96a0a9f85c4126ee1524af5356223e51a4c89d8655a2a4e0ecf59",
+    "mod/GAME/th38/scenes/meshes/065.lua": "daf6be905ca96a0a9f85c4126ee1524af5356223e51a4c89d8655a2a4e0ecf59",
+    "mod/GAME/th38/scenes/meshes/066.lua": "daf6be905ca96a0a9f85c4126ee1524af5356223e51a4c89d8655a2a4e0ecf59",
+    "mod/GAME/th38/scenes/meshes/067.lua": "a0783035d9d02dac4b46f044159d1a45eef52a462aefeff3734ce5799b5b6ed2",
+    "mod/GAME/th38/scenes/meshes/068.lua": "a0783035d9d02dac4b46f044159d1a45eef52a462aefeff3734ce5799b5b6ed2",
+    "mod/GAME/th38/scenes/meshes/069.lua": "a0783035d9d02dac4b46f044159d1a45eef52a462aefeff3734ce5799b5b6ed2",
+    "mod/GAME/th38/scenes/meshes/070.lua": "c07fdb99fe8039ddfdce55f38de96e0c9fa9eca28e0e5cc7452e982a7d8562b8",
+    "mod/GAME/th38/scenes/meshes/071.lua": "c07fdb99fe8039ddfdce55f38de96e0c9fa9eca28e0e5cc7452e982a7d8562b8",
+    "mod/GAME/th38/scenes/meshes/072.lua": "ad4b27080e54f88709dc14ff3550606234916333d025b120498fbe64a076c36d",
+    "mod/GAME/th38/scenes/meshes/073.lua": "ebb4ab522d0b95877d606017ed11473744bce6c5a23adeb6492f5f0ca6dbd6c3",
+    "mod/GAME/th39.lua": "0ca2fc5f8f9cbd38f6bbb36b93c84a39bd8d34aaba703d1a4517048b3fbef076",
+    "mod/GAME/th39/background.lua": "46150433c5e6a1f79ebfbb4e1e68c8bb8b48f804550006263d2a2a0f0045cf97",
+    "mod/GAME/th39/runtime.lua": "680c49bd6c75dc07418678829bc5cc518f80fbc834ccef025c2246e4b3b01669",
+    "mod/GAME/th40.lua": "843deea60f66d828beead0a09d72bb7157e769ef22b9a540ad0c6d0966a813db",
+    "mod/GAME/th40/background.lua": "f78d3c6b1707b7c147a69383bfdc59d991002c3fdc3e085b203c9946df55f49e",
+    "mod/GAME/th40/scene.lua": "9514cdd9532b48a6388c869b2aa508c40a14134257be09ccd697dcb2463016ab",
+    "mod/GAME/th40/scene_state.lua": "7a2836d45e1cf2ab9f1c7f692bc470e6bac89dfc67fd1e0b21a928f5b3e1ae79",
+    "mod/GAME/th40/visual.lua": "fc6ca18a4a9b09f99cd7bc014673eff24c72567e32cdbc0200bb775edf008271",
+    "mod/GAME/th41.lua": "7bf0447a0b419488df76d62b7eb51402f6a2f4ed733be9732e900a27e42f5c22",
+    "mod/GAME/th42.lua": "8c80bade59a95ab6efa5efda59bb0cb70e6ff32040baec1276d1c8c2729d7ccf",
+    "mod/GAME/th43.lua": "109f297bfd71a137ea7cd147f095ae3377fee63cf5aa1c000077a53e63e062ee",
+    "mod/GAME/th43/background.lua": "6566471ff905f2eb4a0a2088ca03549c3bb9b4c6fc578c91bd6dd047b09e886c",
+    "mod/GAME/th43/runtime.lua": "91ffcc2bb855be6bdb92b114a9cae6a4ec6ea048dcaffbd62fec62ba5118cb7d",
+    "mod/rogue_encounter.lua": "3cec61e08d76d6d7aa7dd3a64666663614f5dc8bb3ae17a6ad9d03609bba6c1c",
+    "mod/rogue_preload.lua": "70c8951e8a75c634bb5af25e1e5938427d690a922d22d5bd26d4be47e976177e",
+    "mod/roguelike.lua": "a5bd45046838f46f8e5110134afd7081d02dc674ee5977d7400dd0ff12764dce",
+    "tools/check_port_resource_reuse.lua": "c5ba9887d83eb89e86f0f24287689bc1d95b79f3b650fe0c756254b7095a3211",
+    "tools/check_rogue_preload.lua": "9d3898aece1eef4c111af589b4383ac4bfb3dd66e284d3818a0c26aa7f2e8489",
+    "tools/check_rogue_resource_cache.lua": "e282e7431e5092579f8c164750549714a0f6e6a4367c571aaebc9ea14240bfc5",
+    "tools/profile_rogue_entry.py": "b086e9c47b2ed12b21ae318d13d0c7904a4e552ad03b742399d2bdd3c51eb7ca",
+    "tools/split_th38_meshes.lua": "b273f4b30c58121eea54e39556e55864fa175d6a65ea95dc36836c1925473185",
+    "tools/th38-tests/export_background.py": "9e448e97e77c939d3e698da9288fbb8f184286449384c1aa8ed83dc49bd2a23e"
+  },
+  "reproduce": [
+    "STAGE_STRICT_NEW=1 luajit tools/check_rogue_preload.lua",
+    "STAGE_STRICT_NEW=1 luajit tools/check_rogue_resource_cache.lua",
+    "luajit tools/check_port_resource_reuse.lua",
+    "python3 macos/build.py --update-assets",
+    "python3 tools/profile_rogue_entry.py --out /tmp/bossrush-rogue-entry --frames 360",
+    "python3 tools/profile_rogue_entry.py --out /tmp/bossrush-rogue-moving --source TH39 --move-during-entry --frames 180",
+    "python3 tools/check_rogue_ports.py --out /tmp/bossrush-rogue-regression"
+  ]
+}

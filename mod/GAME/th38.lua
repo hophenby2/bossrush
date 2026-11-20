@@ -30,6 +30,11 @@ local function addCard(meta,band)
     local immune=meta.endurance and duration or min(duration,(opening+meta.immune/2)/60)
     local card=boss.card.New(meta.spell and meta.title or '',immune,immune,duration,meta.hp)
     card.phase_name,card.phase_kind,card.asl_source=phaseLabel(meta),meta.role,meta
+    function card.prepareRogue()
+        R.loadAssets()
+        Actor.prepare(meta.key)
+        BG.prepare(meta.key:match('/stage(%d+)/') or 'EXA',meta.spell and '_spell' or (meta.key:find('EXA',1,true) and '' or '_boss'))
+    end
     function card:before()
         self.asl_controller,self.asl_clock=nil,nil
         BG.card(meta.key:match('/stage(%d+)/') or 'EXA',meta.spell)

@@ -32,10 +32,17 @@ function R.loadAssets()
     if assets then return end
     globalResource(function()
         LoadTexture('asl_bullet','Resources/th38/bullet.png')
-        for n,r in pairs(R.data.sprites) do LoadImage('asl_b'..n,'asl_bullet',unpack(r)) end
+        if RogueEncounter then RogueEncounter.checkpoint() end
+        for n,r in pairs(R.data.sprites) do
+            LoadImage('asl_b'..n,'asl_bullet',unpack(r))
+            if RogueEncounter then RogueEncounter.checkpoint() end
+        end
         for key,r in pairs(R.data.customs) do
-            LoadTexture('asl_'..r.file,'Resources/th38/'..r.file)
-            LoadImage('asl_'..r.file,'asl_'..r.file,0,0,r.w,r.h)
+            if not CheckRes('tex','asl_'..r.file) then
+                LoadTexture('asl_'..r.file,'Resources/th38/'..r.file)
+                LoadImage('asl_'..r.file,'asl_'..r.file,0,0,r.w,r.h)
+            end
+            if RogueEncounter then RogueEncounter.checkpoint() end
         end
     end)
     assets=true

@@ -419,11 +419,14 @@ def main():
                 for node in data['nodes']:
                     handle.write(lua(node)+',\n')
                 handle.write('}}\n')
+    (OUT/'meshes').mkdir(exist_ok=True)
     with (OUT/'meshes.lua').open('w') as handle:
-        handle.write('return {\n')
-        for name, m in sorted(source.meshes.items()):
-            handle.write(f'[{lua(name)}]={lua(m)},\n')
-        handle.write('}\n')
+        handle.write('-- 按网格惰性解析；由 export_background.py 或 tools/split_th38_meshes.lua 生成。\nlocal files={\n')
+        for index, (name, mesh) in enumerate(sorted(source.meshes.items()), 1):
+            key = f'{index:03d}'
+            (OUT/'meshes'/(key+'.lua')).write_text('return '+lua(mesh)+'\n')
+            handle.write(f'[{lua(name)}]={lua(key)},\n')
+        handle.write("}\nreturn setmetatable({}, {__index=function(t,key)\n local name=files[key];if not name then return end\n local data=dofile('mod/GAME/th38/scenes/meshes/'..name..'.lua');rawset(t,key,data);return data\nend})\n")
     print(source.counts, len(source.meshes), 'mesh assets')
 
 

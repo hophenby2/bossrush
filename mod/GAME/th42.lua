@@ -90,6 +90,9 @@ local function clear()
     objects,L.runtime=nil,nil
 end
 W.stop=clear
+function W.prepareRogue(_,unit)
+    L.Resources.load(assert(unit.sc_group[1].card.port_source.stage))
+end
 
 local Guard=Class(object,{
     init=function(o) o.bound=false;o.hide=true;o.colli=false end,

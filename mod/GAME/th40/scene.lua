@@ -73,6 +73,12 @@ local function backdrop(name,x,y,a)
     local d=data[name];local id=texture(d.file);SetImageCenter(id,d.cx,d.cy);SetImageState(id,'',a or 255,255,255,255)
     Render(id,lstg.world.l+x,lstg.world.t-y)
 end
+function M.prepare(s)
+    for _,o in ipairs(s.objects) do model(o.name,o.floor) end
+    for _,o in ipairs(s.particles) do model(o.name,o.floor) end
+    local backdrops=s.chapter=='1' and {'BG01a'} or s.chapter=='5' and {'夜空底色','星星1','星星2'} or s.chapter=='EX' and {'天色'} or {}
+    for _,name in ipairs(backdrops) do texture(data[name].file) end
+end
 function M.render(s)
     local previous=lstg.view3d;lstg.view3d={};local w=lstg.world
     SetViewMode('world');SetImageState('white','',255,unpack(s.fogColor));RenderRect('white',w.l,w.r,w.b,w.t);SetImageState('white','',255,255,255,255)

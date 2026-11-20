@@ -77,7 +77,10 @@ function S.new(chapter,offset)
         s.eye={400,-460,210};s.at={400,0,0};s.fogEnd=0;s.fov=pi/4;add(s,'Stair',0,0)
     elseif chapter=='6' then s.velocity=.5;s.fov=pi/4
     elseif chapter=='EX' then s.eye[3]=250;s.fogColor={80,165,255} end
-    for t=1,offset or 0 do S.step(s,t) end
+    for t=1,offset or 0 do
+        S.step(s,t)
+        if RogueEncounter then RogueEncounter.checkpoint() end
+    end
     return s
 end
 function S.step(s,story)

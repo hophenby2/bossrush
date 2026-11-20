@@ -83,6 +83,10 @@ local function start()
     load('game/android/compat.lua')
     if desktop then load('game/macos/compat.lua') end
     load('game/android/lazy_textures.lua')
+    if desktop and os.getenv('BOSSRUSH_MAC_TEST')=='rogue-entry-profile' then
+        RogueEntryProfile=load('game/macos/rogue_entry_profile.lua')
+        RogueEntryProfile.boot()
+    end
     if not desktop then AndroidPortrait=load('game/android/portrait.lua') end
     args = {}; start_game = true; cjson = cjson or json
     lstg.DoFile('launch.lua')
