@@ -90,6 +90,31 @@ for _,value in ipairs({1.01,10000,123456789012345,1e30,1e100,1e300}) do
         check(row.scale==scale and row.color.r==255 and row.color.b==255,'换行保留最新倍率颜色：'..value)
     end
 end
+-- 新作真实 HP 不改数值域；继承/部件转伤只折算一次，重设血槽仍沿用本阶段倍率。
+local run=lstg.var.rogue_run
+run.poolVersion,run.source_hp,run.source_damage=10,true,2
+local base={take_damage=function(o,d) o.hp=o.hp-d end}
+local child={base=base,init=function(o) o.hp=100;o.maxhp=100 end}
+child.take_damage=function(o,d) base.take_damage(o,d*2) end
+local linked={base=base,init=child.init,take_damage=function(o,d) child.take_damage(o.master,d) end}
+local a=New(child);local b=New(linked);b.master=a
+local factor=H.factor(a)
+check(a.hp==100 and a.maxhp==100,'新作保留原作 HP 与阈值数值域')
+child.take_damage(a,10);check(near(a.hp,100-40/factor),'继承调用只折算一次伤害单位和阶段倍率')
+a.hp=100;linked.take_damage(b,10)
+check(near(a.hp,100-40/factor) and b.hp==100,'部件转伤只对本次输入折算一次')
+a.hp,a.maxhp=240,240;H.verify(a);child.take_damage(a,10)
+check(near(a.hp,240-40/factor) and a.maxhp==240,'原脚本重设 HP 不丢失倍率或重复放大')
+local maxhp,hp=H.health(a,1000,350)
+check(maxhp==1000 and hp==350,'宿主 Boss 的新作原始血槽也保留相同数值域')
+run.source_damage,run.source_boss_damage=32,22
+local root=New(child);root.IsBoss=true;H.apply(root)
+local part=New(linked);part.owner=root;H.apply(part)
+local mob=New(child)
+check(root._hp_growth_source_rate==22 and part._hp_growth_source_rate==22 and mob._hp_growth_source_rate==32,'永夜篇本体/部件使用共享上限，普通敌机使用原始主炮单位')
+run.source_hp=false
+local legacy=New(actor,100)
+check(near(legacy.hp,100*factor),'切回旧作恢复原有实体血量缩放')
 lstg.var.__hp_scale_version=nil
 check(not H.enabled() and H.factor()==1 and New(actor,100).hp==100,'旧录像不启用阶段HP倍率')
 drawn={};H.render(144,165);check(#drawn==0,'旧录像不凭空插入倍率动画')

@@ -1,19 +1,23 @@
 -- 选关界面右侧的高级选项默认折叠；隐藏时不参与键盘焦点和鼠标命中。
 local U={}
-local options={
-    {group='stages',key='TH31',text='永夜抄原作 · TH31',x=505,y=366},
-    {group='stages',key='TH32',text='红魔乡原作 · TH32',x=720,y=366},
-    {group='stages',key='TH34',text='妖妖梦原作 · TH34',x=505,y=334},
-    {group='stages',key='TH35',text='风神录原作 · TH35',x=720,y=334},
-    {group='difficulties',key='lunatic',text='Lunatic',x=505,y=270,width=133},
-    {group='difficulties',key='extra',text='Extra/Phantasm',x=646,y=270,width=133},
-    {group='difficulties',key='lastword',text='Last Word',x=787,y=270,width=133},
-    {group='encounters',key='boss',text='Boss',x=505,y=208},
-    {group='encounters',key='road',text='道中',x=720,y=208},
-    {group='cards',key='survival',text='时符（耐久卡）',x=505,y=110,optional=true},
-    {group='cards',key='nonspell',text='非符',x=505,y=146,optional=true},
-    {group='cards',key='spell',text='符卡',x=720,y=146,optional=true},
-}
+local options={}
+local works={{'TH31','永夜抄'},{'TH32','红魔乡'},{'TH34','妖妖梦'},{'TH35','风神录'},
+    {'TH37','幕华祭春雪'},{'TH38','雪莲华'},{'TH39','幕华祭永夜'},{'TH40','夏夜祭'},
+    {'TH41','祈华梦'},{'TH42','Like Dreamer'},{'TH43','栖霞园'}}
+for i,work in ipairs(works) do
+    options[#options+1]={group='stages',key=work[1],text=work[2],x=505+((i-1)%3)*141,
+        y=376-math.floor((i-1)/3)*30,width=133}
+end
+for _,entry in ipairs({
+    {group='difficulties',key='lunatic',text='Lunatic / NM',x=505,y=234,width=133},
+    {group='difficulties',key='extra',text='Extra/Phantasm',x=646,y=234,width=133},
+    {group='difficulties',key='lastword',text='Last Word',x=787,y=234,width=133},
+    {group='encounters',key='boss',text='Boss',x=505,y=182},
+    {group='encounters',key='road',text='道中',x=720,y=182},
+    {group='cards',key='survival',text='时符（耐久卡）',x=505,y=98,optional=true},
+    {group='cards',key='nonspell',text='非符',x=505,y=130,optional=true},
+    {group='cards',key='spell',text='符卡',x=720,y=130,optional=true},
+}) do options[#options+1]=entry end
 local groupNames={stages='关卡',difficulties='难度',encounters='Boss / 道中'}
 U.options=options
 local function over(mouse,entry)
@@ -103,7 +107,7 @@ function U.render(o)
     RenderRect('white',505,920,423,457)
     ui:RenderText('title',(o.pool_expanded and '− ' or '+ ')..'高级选项',715,440,.9,white,'centerpoint')
     if o.pool_expanded then
-        for _,heading in ipairs({{'关卡',400},{'难度',302},{'战斗',240},{'卡片类型',178}}) do
+        for _,heading in ipairs({{'作品',402},{'难度（NM = Nightmare）',260},{'战斗',207},{'卡片类型',154}}) do
             ui:RenderText('title',heading[1],505,heading[2],.65,muted,'left','vcenter')
         end
         for index,entry in ipairs(options) do
@@ -115,7 +119,7 @@ function U.render(o)
             RenderRect('white',entry.x,right,entry.y-14,entry.y+14)
             if focused then SetImageState('white','',accent);misc.RenderOutLine('white',entry.x,right,entry.y-14,entry.y+14,0,1) end
             ui:RenderText('title',checked and '√' or '□',entry.x+14,entry.y,.72,checked and accent or muted,'centerpoint')
-            ui:RenderText('title',entry.text,entry.x+31,entry.y,.65,checked and white or muted,'left','vcenter')
+            ui:RenderText('title',entry.text,entry.x+31,entry.y,(entry.width==133 and .58 or .65),checked and white or muted,'left','vcenter')
         end
     end
     local state=o.pool_status;local valid=state and state.valid

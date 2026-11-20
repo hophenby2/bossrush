@@ -73,6 +73,9 @@ lstg.var.rogue_run.finished=true;ext.MusicFrame('timer',100000)
 check(#events==countBefore,'结算后停止自动切歌');lstg.var.rogue_run.finished=nil
 M.stop(stage.current_stage);M.stop(stage.current_stage)
 check(not s.active and stops==2 and not GetMusicState(s.current),'离开战斗停止当前BGM，重复清理安全')
+local left=#s.remaining
+check(M.resume(stage.current_stage) and s.active and #s.remaining==left-1,'独立作品结束后继续原有曲袋轮播')
+check(s.current~=current,'返回时抽下一首，不从已移出曲袋的首曲重复开始')
 s=reset(19);playing[s.current]='stopped';current=s.current;ext.MusicFrame('timer')
 check(s.current~=current,'音频源自然停止时同样换曲')
 local savedSequence

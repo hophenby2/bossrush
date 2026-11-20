@@ -3,11 +3,45 @@
 local DELAY,FLIGHT,FADE=6,48,6 -- 飞行由24帧延长到48帧，速度减半；停留和淡出节奏保持原值。
 local H={VERSION=1,DURATION=DELAY+FLIGHT+FADE}
 local rawNew=New
+local wrapped=setmetatable({},{__mode='k'})
+local damageDepth=0
+local damageMethods={'take_damage','take_damage2'}
 local function state()
     local run=lstg.var.rogue_run
     return lstg.var.__hp_scale_version==H.VERSION and run and run.hp_growth
 end
 function H.enabled() return not not state() end
+local function sourceHealth()
+    local run=lstg.var.rogue_run
+    return state() and (run.poolVersion or 0)>=10 and run.source_hp
+end
+local function sourceRate(o)
+    local run=lstg.var.rogue_run
+    local owner=o.owner or o._master
+    if run.source_boss_damage and (o.IsBoss or owner and owner.IsBoss) then return run.source_boss_damage end
+    return run.source_damage
+end
+-- 新后端有原始 HP 阈值、共享部件和自行重设血量的状态机。
+-- 保留其数值域，受伤除以阶段倍率；等效血量仍乘同一倍率，阈值和百分比不变。
+function H.wrapSourceClass(class)
+    if not class then return end
+    H.wrapSourceClass(class.base)
+    wrapped[class]=wrapped[class] or {}
+    for _,key in ipairs(damageMethods) do
+        local fn=class[key]
+        if fn and wrapped[class][key]~=fn then
+            local wrapper=function(o,dmg,...)
+                if not o._hp_growth_source or damageDepth>0 or not H.enabled() then return fn(o,dmg,...) end
+                damageDepth=damageDepth+1
+                local ok,result=pcall(fn,o,dmg*(o._hp_growth_source_rate or 1)/H.factor(o),...)
+                damageDepth=damageDepth-1
+                if not ok then error(result,0) end
+                return result
+            end
+            class[key]=wrapper;wrapped[class][key]=wrapper
+        end
+    end
+end
 function H.init(run)
     if lstg.var.__hp_scale_version~=H.VERSION then return end
     run.hp_growth={stage=0,total=1,shown=1,shown_stage=0,queue={}}
@@ -85,6 +119,11 @@ end
 function H.health(o,maxhp,hp)
     hp=hp or maxhp
     if not H.enabled() then return maxhp,hp end
+    if sourceHealth() then
+        o._hp_growth_source=true;o._hp_growth_factor=H.factor(o)
+        o._hp_growth_source_rate=sourceRate(o)
+        return maxhp,hp
+    end
     local card=o.current_card
     if card and (card.is_combat==false or card.t1==card.t3) then return maxhp,hp end
     local factor=H.factor(o);o._hp_growth_factor=factor
@@ -92,7 +131,13 @@ function H.health(o,maxhp,hp)
     return maxhp*factor,hp*factor
 end
 function H.apply(o)
-    if not H.enabled() or not IsValid(o) or o._bosssys or o._rank_hp_proxy then return end
+    if not H.enabled() or not IsValid(o) then return end
+    if sourceHealth() and GROUP and (o.group==GROUP.ENEMY or o.group==GROUP.NONTJT) then
+        o._hp_growth_source=true;o._hp_growth_factor=H.factor(o)
+        o._hp_growth_source_rate=sourceRate(o)
+        return
+    end
+    if o._bosssys or o._rank_hp_proxy then return end
     if not GROUP or (o.group~=GROUP.ENEMY and o.group~=GROUP.NONTJT) then return end
     local maxhp=o.maxhp or o.hp
     -- 999999及以上是不可击破结构/流程宿主；不把占位血量当作真实敌机血槽。
@@ -100,10 +145,11 @@ function H.apply(o)
     o.maxhp,o.hp=H.health(o,maxhp,o.hp)
 end
 function H.verify(o)
-    if not H.enabled() or not o._hp_growth_last or o._rank_hp_proxy then return end
+    if not H.enabled() or o._hp_growth_source or not o._hp_growth_last or o._rank_hp_proxy then return end
     if o.maxhp~=o._hp_growth_last then o.maxhp,o.hp=H.health(o,o.maxhp,o.hp) end
 end
 local function new(class,...)
+    if sourceHealth() then H.wrapSourceClass(class) end
     local o=rawNew(class,...);H.apply(o);return o
 end
 New,lstg.New=new,new

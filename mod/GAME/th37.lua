@@ -36,7 +36,7 @@ local function setupCard(meta,group)
     end
     function card:before()
         self.mhj_controller,self.mhj_clock=nil,nil
-        if ext.sc_pr then BG.show(meta.stage,meta.sceneFrame) end
+        if ext.sc_pr or RogueEncounter and RogueEncounter.enabled(35) then BG.show(meta.stage,meta.sceneFrame) end
     end
     function card:init()
         BG.setBoss(self)

@@ -110,7 +110,7 @@ local function start(number, first)
     local native = P and P.enabled(nil,W.level)
     -- 复用关卡逻辑，保留 Boss Rush 自机、资源和重试设置。
     lstg.var.is_practice=false
-    env.difficulty=lstg.var.sequence_key=='likedreamer_chaos' and 4 or 3
+    env.difficulty=not (RogueEncounter and RogueEncounter.enabled(40)) and lstg.var.sequence_key=='likedreamer_chaos' and 4 or 3
     local rt=L.Enemy.Runtime.new(number)
     lstg.var.is_practice=oldPractice
     rt.frame,rt.rawStartFrame,rt.portManaged=first,first,true
@@ -135,7 +135,8 @@ local function start(number, first)
     if lstg.tmpvar.bg and IsValid(lstg.tmpvar.bg) then background.DelBG() end
     rt.background=L.Background.create(rt)
     lstg.tmpvar.bg=rt.background
-    L.SideHud.create(rt)
+    -- 随机模式使用宿主残机、强化和阶段倍率；原作侧栏会遮住它们并显示另一套库存。
+    if not (RogueEncounter and RogueEncounter.enabled(40)) then L.SideHud.create(rt) end
     if L.BossHud then L.BossHud.create(rt) end
     if L.Presentation then L.Presentation.create(rt) end
     local bossMusic='ld_bgm_Boss'..math.min(5,math.floor((number+1)/2))

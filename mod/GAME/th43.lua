@@ -46,7 +46,7 @@ function Card.createFullCardBoss(editor,res,diff,paths,hidden)
     local init,render=class.init,class.render
     local cards={}
     class.init=function(o,selected)
-        local practice=ext.sc_pr and not (R.chapterScope and IsValid(R.chapterRunner))
+        local practice=(ext.sc_pr or RogueEncounter and RogueEncounter.enabled(41)) and not (R.chapterScope and IsValid(R.chapterRunner))
         if practice then
             R.reset(diff,true)
             R.playMusic(res.bgm)

@@ -48,6 +48,14 @@ function M.pick(s)
     local gen=Rand();gen:Seed((s.seed+s.draws*104729)%2147483647)
     return table.remove(s.remaining,choices[gen:Int(1,#choices)])
 end
+-- 从独立后端返回时继续本局曲袋；首曲已经播过也不能让轮播永久停用。
+function M.resume(scene)
+    local s=state();if not s then return false end
+    local id=M.pick(s) or s.current
+    if not id then return false end
+    play(scene,s,id)
+    return true
+end
 function M.frame()
     local s=state();local scene=stage.current_stage
     if not s or not s.active or not scene or scene.is_menu or scene.rogue_finished or stage.next_stage then return end

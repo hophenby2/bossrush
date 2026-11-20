@@ -40,7 +40,7 @@
 | 启动和载入 | `launch.lua`、`core.lua`、`mod/root.lua`、`mod/_editor_output.lua` |
 | 标题、选项和练习界面 | `THlib/UI/`、`mod/original_practice.lua` |
 | 关卡与顺序模式 | `mod/main_stage.lua`、`mod/original_sequence.lua`、`mod/sequence_catalog.lua`、`mod/GAME/original/stage_flow.lua` |
-| 随机模式 | `mod/roguelike.lua`、`mod/rogue_dual.lua`、`mod/rogue_pool.lua` |
+| 随机模式 | `mod/roguelike.lua`、`mod/rogue_dual.lua`、`mod/rogue_pool.lua`；新作卡池/资源/伤害单位见 `mod/rogue_ports.README.zh-CN.md` |
 | Boss、敌机和自机基类 | `THlib/enemy/`、`THlib/player/` |
 | 原作自机、死亡和判定适配 | `THlib/native_players.lua`、`THlib/native_player_*.lua`、`THlib/native_actor_collision.lua` |
 | TH31–TH35 自机和资源规则 | `THlib/sequence_resources.lua`、`mod/GAME/original/players/` |

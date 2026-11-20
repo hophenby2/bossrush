@@ -1,0 +1,776 @@
+{
+  "date": "2026-11-20",
+  "platform": "macOS arm64 Metal",
+  "pool_version": 10,
+  "passed": true,
+  "new_pool_entries_all_filters": 750,
+  "counts": {
+    "TH37": {
+      "lunatic": 69,
+      "extra": 26,
+      "phantasm": 26
+    },
+    "TH38": {
+      "lunatic": 68,
+      "extra": 23
+    },
+    "TH39": {
+      "lunatic": 65,
+      "extra": 25,
+      "phantasm": 25
+    },
+    "TH40": {
+      "lunatic": 66,
+      "extra": 24
+    },
+    "TH41": {
+      "lunatic": 105,
+      "extra": 23
+    },
+    "TH42": {
+      "lunatic": 101
+    },
+    "TH43": {
+      "lunatic": 78,
+      "extra": 26
+    }
+  },
+  "unit_checks": {
+    "rogue_hp": 210,
+    "roguelike": 14585,
+    "rogue_music": 5505,
+    "dual_rogue_exit": 0
+  },
+  "full_suite": {
+    "command": "python3 tools/check_rogue_ports.py --out /tmp/bossrush-rogue-ports-release",
+    "scope": "代表卡和道中采样；自动射击、保护自机、900帧有效受伤采样后经原状态机收尾，部分阶段自然提前结束；非全部卡完整击破",
+    "speed": 8,
+    "source_sha256": {
+      "mod/roguelike.lua": "2b970508eacc83cbe822c6b499fda4fbcfe6c41dade7b1b0dc018b912c50c506",
+      "mod/rogue_pool.lua": "d8bbaefab76c269e3cee2d24fca485d3402a0fc816d38075a4bec03b357c776f",
+      "mod/rogue_ports.lua": "453c121274e3bf7e5fa502a73c360e43302de6c6fbd595e2fdf73a20ad4ee6bb",
+      "mod/rogue_encounter.lua": "8bc6098bc01291dd338de90c43e3695ee73e2284e0faf123bb4d314cca841712",
+      "THlib/rogue_hp.lua": "f45efdbc928b5b483e1c00ab1291a3ab27ddd8898b7b6fcb8ae8462500d0acac",
+      "mod/GAME/th42.lua": "26ba9407f0de5677c036bf790e581abc8f39f5da5e6a4d610a3e6e1c72fdc620",
+      "macos/rogue_ports_test.lua": "5a2e067c1dba041861932a7c36949bd53a35d38286ae8e117bf4f26a1ceb364c"
+    },
+    "cases": [
+      {
+        "hits": 902,
+        "shots": 1218,
+        "round": 1,
+        "frames": 1218,
+        "key": "TH37:37001",
+        "hp": {
+          "factor": 1.01,
+          "raw_hp": 12992.277227723,
+          "source_units": 8.6666666666667,
+          "base_damage": 1,
+          "scaled_damage": 8.5808580858084
+        },
+        "kind": "boss"
+      },
+      {
+        "hits": 902,
+        "shots": 1173,
+        "round": 1,
+        "frames": 1173,
+        "key": "TH37:37071",
+        "hp": {
+          "factor": 1.0302,
+          "raw_hp": 17993.942923704,
+          "source_units": 8.6666666666667,
+          "base_damage": 1,
+          "scaled_damage": 8.4126059664777
+        },
+        "kind": "boss"
+      },
+      {
+        "hits": 902,
+        "shots": 1143,
+        "round": 1,
+        "frames": 1143,
+        "key": "TH37:37096",
+        "hp": {
+          "factor": 1.061106,
+          "raw_hp": 14993.874316044,
+          "source_units": 8.6666666666667,
+          "base_damage": 1,
+          "scaled_damage": 8.1675786082324
+        },
+        "kind": "boss"
+      },
+      {
+        "hits": 876,
+        "shots": 1148,
+        "round": 1,
+        "frames": 1148,
+        "key": "TH37:37004",
+        "hp": {
+          "factor": 1.10355024,
+          "raw_hp": 16492.931903127,
+          "source_units": 8.6666666666667,
+          "base_damage": 1,
+          "scaled_damage": 7.8534409694548
+        },
+        "kind": "boss"
+      },
+      {
+        "hits": 165,
+        "shots": 961,
+        "round": 1,
+        "frames": 961,
+        "key": "TH37:37000",
+        "hp": {
+          "factor": 1.158727752,
+          "raw_hp": 9990,
+          "source_units": 8.6666666666667,
+          "base_damage": 1,
+          "scaled_damage": 7.4794675899557
+        },
+        "kind": "road"
+      },
+      {
+        "hits": 0,
+        "shots": 817,
+        "round": 1,
+        "frames": 817,
+        "key": "TH31:3436",
+        "hp": false,
+        "kind": "boss"
+      },
+      {
+        "hits": 321,
+        "shots": 637,
+        "round": 1,
+        "frames": 637,
+        "key": "TH38:38001",
+        "hp": {
+          "factor": 1.3142290163184,
+          "raw_hp": 4994.0540043608,
+          "source_units": 6.4,
+          "base_damage": 1,
+          "scaled_damage": 4.869775298318
+        },
+        "kind": "boss"
+      },
+      {
+        "hits": 81,
+        "shots": 1423,
+        "round": 1,
+        "frames": 1423,
+        "key": "TH38:38069",
+        "hp": {
+          "factor": 1.4193673376239,
+          "raw_hp": 1200,
+          "source_units": 6.4,
+          "base_damage": 1,
+          "scaled_damage": 4.5090512021461
+        },
+        "kind": "boss"
+      },
+      {
+        "hits": 454,
+        "shots": 907,
+        "round": 1,
+        "frames": 907,
+        "key": "TH38:38002",
+        "hp": {
+          "factor": 1.54711039801,
+          "raw_hp": 5000,
+          "source_units": 6.4,
+          "base_damage": 1,
+          "scaled_damage": 4.1367442221526
+        },
+        "kind": "boss"
+      },
+      {
+        "hits": 55,
+        "shots": 961,
+        "round": 1,
+        "frames": 961,
+        "key": "TH38:38008",
+        "hp": {
+          "factor": 1.701821437811,
+          "raw_hp": 50,
+          "source_units": 6.4,
+          "base_damage": 1,
+          "scaled_damage": 3.7606765655932
+        },
+        "kind": "road"
+      },
+      {
+        "hits": 0,
+        "shots": 737,
+        "round": 1,
+        "frames": 737,
+        "key": "TH31:3436",
+        "hp": false,
+        "kind": "boss"
+      },
+      {
+        "hits": 709,
+        "shots": 888,
+        "round": 1,
+        "frames": 888,
+        "key": "TH39:39001",
+        "hp": {
+          "factor": 2.1157044114867,
+          "raw_hp": 20364.37579917,
+          "source_units": 22,
+          "base_damage": 1,
+          "scaled_damage": 10.398428003722
+        },
+        "kind": "boss"
+      },
+      {
+        "hits": 515,
+        "shots": 565,
+        "round": 1,
+        "frames": 565,
+        "key": "TH39:39070",
+        "hp": {
+          "factor": 2.3907459849799,
+          "raw_hp": 14982.976761122,
+          "source_units": 22,
+          "base_damage": 1,
+          "scaled_damage": 9.2021486758604
+        },
+        "kind": "boss"
+      },
+      {
+        "hits": 567,
+        "shots": 642,
+        "round": 1,
+        "frames": 642,
+        "key": "TH39:39095",
+        "hp": {
+          "factor": 2.7254504228771,
+          "raw_hp": 15000,
+          "source_units": 22,
+          "base_damage": 1,
+          "scaled_damage": 8.0720602419824
+        },
+        "kind": "boss"
+      },
+      {
+        "hits": 110,
+        "shots": 961,
+        "round": 1,
+        "frames": 961,
+        "key": "TH39:39000",
+        "hp": {
+          "factor": 3.1342679863087,
+          "raw_hp": 420,
+          "source_units": 32,
+          "base_damage": 1,
+          "scaled_damage": 10.209720464167
+        },
+        "kind": "road"
+      },
+      {
+        "hits": 0,
+        "shots": 961,
+        "round": 1,
+        "frames": 961,
+        "key": "TH31:3436",
+        "hp": false,
+        "kind": "boss"
+      },
+      {
+        "hits": 605,
+        "shots": 983,
+        "round": 1,
+        "frames": 983,
+        "key": "TH40:68001",
+        "hp": {
+          "factor": 4.2538285110182,
+          "raw_hp": 8000,
+          "source_units": 9.3333333333333,
+          "base_damage": 1,
+          "scaled_damage": 2.1941019270425
+        },
+        "kind": "boss"
+      },
+      {
+        "hits": 782,
+        "shots": 1123,
+        "round": 1,
+        "frames": 1123,
+        "key": "TH40:68057",
+        "hp": {
+          "factor": 5.0195176430014,
+          "raw_hp": 9996.3871508599,
+          "source_units": 9.3333333333333,
+          "base_damage": 0.75,
+          "scaled_damage": 1.3945563095604
+        },
+        "kind": "boss"
+      },
+      {
+        "hits": 573,
+        "shots": 828,
+        "round": 1,
+        "frames": 828,
+        "key": "TH40:68002",
+        "hp": {
+          "factor": 5.9732259951717,
+          "raw_hp": 1990.2847004204,
+          "source_units": 9.3333333333333,
+          "base_damage": 0.29999999999995,
+          "scaled_damage": 0.46875842338181
+        },
+        "kind": "boss"
+      },
+      {
+        "hits": 2,
+        "shots": 961,
+        "round": 1,
+        "frames": 961,
+        "key": "TH40:68079",
+        "hp": false,
+        "kind": "road"
+      },
+      {
+        "hits": 0,
+        "shots": 961,
+        "round": 1,
+        "frames": 961,
+        "key": "TH31:3436",
+        "hp": false,
+        "kind": "boss"
+      },
+      {
+        "hits": 860,
+        "shots": 1263,
+        "round": 1,
+        "frames": 1263,
+        "key": "TH41:70101",
+        "hp": {
+          "factor": 10.581211456887,
+          "raw_hp": 2999.9054928631,
+          "source_units": 1.6666666666667,
+          "base_damage": 1,
+          "scaled_damage": 0.15751189487673
+        },
+        "kind": "boss"
+      },
+      {
+        "hits": 2,
+        "shots": 1084,
+        "round": 1,
+        "frames": 1084,
+        "key": "TH41:70702",
+        "hp": {
+          "factor": 13.014890091971,
+          "raw_hp": 2000,
+          "source_units": 1.6666666666667,
+          "base_damage": 0.0055555555554747,
+          "scaled_damage": 0.00071143583954836
+        },
+        "kind": "boss"
+      },
+      {
+        "hits": 474,
+        "shots": 961,
+        "round": 1,
+        "frames": 961,
+        "key": "TH41:70100",
+        "hp": {
+          "factor": 16.138463714044,
+          "raw_hp": 30,
+          "source_units": 1.6666666666667,
+          "base_damage": 0.2,
+          "scaled_damage": 0.020654588890221
+        },
+        "kind": "road"
+      },
+      {
+        "hits": 0,
+        "shots": 961,
+        "round": 1,
+        "frames": 961,
+        "key": "TH31:3436",
+        "hp": false,
+        "kind": "boss"
+      },
+      {
+        "hits": 843,
+        "shots": 1645,
+        "round": 1,
+        "frames": 1645,
+        "key": "TH42:71121",
+        "hp": {
+          "factor": 25.418080349619,
+          "raw_hp": 59759.626678492,
+          "source_units": 1,
+          "base_damage": 52,
+          "scaled_damage": 2.045787851981
+        },
+        "kind": "boss"
+      },
+      {
+        "hits": 971,
+        "shots": 960,
+        "round": 1,
+        "frames": 961,
+        "key": "TH42:71101",
+        "hp": {
+          "factor": 32.280962044016,
+          "raw_hp": 2385.4317352947,
+          "source_units": 1,
+          "base_damage": 52,
+          "scaled_damage": 1.6108565763652
+        },
+        "kind": "road"
+      },
+      {
+        "hits": 0,
+        "shots": 961,
+        "round": 1,
+        "frames": 961,
+        "key": "TH31:3436",
+        "hp": false,
+        "kind": "boss"
+      },
+      {
+        "hits": 776,
+        "shots": 963,
+        "round": 1,
+        "frames": 963,
+        "key": "TH43:81401",
+        "hp": {
+          "factor": 53.30232452708,
+          "raw_hp": 1199.9490990304,
+          "source_units": 1,
+          "base_damage": 1,
+          "scaled_damage": 0.018760907875503
+        },
+        "kind": "boss"
+      },
+      {
+        "hits": 902,
+        "shots": 1143,
+        "round": 1,
+        "frames": 1143,
+        "key": "TH43:87501",
+        "hp": {
+          "factor": 69.293021885204,
+          "raw_hp": 1999.8872345326,
+          "source_units": 1,
+          "base_damage": 1,
+          "scaled_damage": 0.014431467596523
+        },
+        "kind": "boss"
+      },
+      {
+        "hits": 871,
+        "shots": 1143,
+        "round": 1,
+        "frames": 1143,
+        "key": "TH43:81402",
+        "hp": {
+          "factor": 90.773858669617,
+          "raw_hp": 1199.274054877,
+          "source_units": 1,
+          "base_damage": 1,
+          "scaled_damage": 0.011016387478321
+        },
+        "kind": "boss"
+      },
+      {
+        "hits": 1939,
+        "shots": 854,
+        "round": 1,
+        "frames": 854,
+        "key": "TH43:81001",
+        "hp": {
+          "factor": 119.82149344389,
+          "raw_hp": 90,
+          "source_units": 1,
+          "base_damage": 1,
+          "scaled_damage": 0.0083457480895817
+        },
+        "kind": "road"
+      },
+      {
+        "hits": 0,
+        "shots": 961,
+        "round": 1,
+        "frames": 961,
+        "key": "TH31:3436",
+        "hp": false,
+        "kind": "boss"
+      },
+      {
+        "hits": 4220,
+        "shots": 1621,
+        "round": 1,
+        "frames": 1655,
+        "key": "TH42:71721",
+        "hp": {
+          "factor": 213.54586561571,
+          "raw_hp": 10000,
+          "source_units": 1,
+          "base_damage": 52,
+          "scaled_damage": 0.24350740694535
+        },
+        "kind": "boss"
+      },
+      {
+        "hits": 3833,
+        "shots": 6345,
+        "round": 1,
+        "frames": 6470,
+        "hp": {
+          "factor": 288.28691858121,
+          "raw_hp": 29224.421027712,
+          "source_units": 1,
+          "base_damage": 52,
+          "scaled_damage": 0.18037585699494
+        },
+        "key": "TH42:72046"
+      },
+      {
+        "hits": 902,
+        "shots": 1218,
+        "round": 2,
+        "frames": 1218,
+        "key": "TH37:37001",
+        "hp": {
+          "factor": 1.01,
+          "raw_hp": 12992.277227723,
+          "source_units": 8.6666666666667,
+          "base_damage": 1,
+          "scaled_damage": 8.5808580858084
+        },
+        "kind": "boss"
+      },
+      {
+        "hits": 902,
+        "shots": 1218,
+        "round": 2,
+        "frames": 1218,
+        "key": "TH37:37001",
+        "hp": {
+          "factor": 1.01,
+          "raw_hp": 12992.277227723,
+          "source_units": 8.6666666666667,
+          "base_damage": 1,
+          "scaled_damage": 8.5808580858084
+        },
+        "kind": "boss"
+      },
+      {
+        "hits": 449,
+        "shots": 1173,
+        "round": 2,
+        "frames": 1173,
+        "key": "TH38:38001",
+        "hp": {
+          "factor": 1.0302,
+          "raw_hp": 4981.424966026,
+          "source_units": 6.4,
+          "base_damage": 1,
+          "scaled_damage": 6.2123859444764
+        },
+        "kind": "boss"
+      },
+      {
+        "hits": 887,
+        "shots": 938,
+        "round": 2,
+        "frames": 938,
+        "key": "TH39:39001",
+        "hp": {
+          "factor": 1.061106,
+          "raw_hp": 20491.914097178,
+          "source_units": 22,
+          "base_damage": 1,
+          "scaled_damage": 20.733084159358
+        },
+        "kind": "boss"
+      },
+      {
+        "hits": 499,
+        "shots": 871,
+        "round": 2,
+        "frames": 871,
+        "key": "TH40:68001",
+        "hp": {
+          "factor": 1.10355024,
+          "raw_hp": 7993.1493830313,
+          "source_units": 9.3333333333333,
+          "base_damage": 1,
+          "scaled_damage": 8.4575518132579
+        },
+        "kind": "boss"
+      },
+      {
+        "hits": 869,
+        "shots": 1261,
+        "round": 2,
+        "frames": 1263,
+        "key": "TH41:70101",
+        "hp": {
+          "factor": 1.158727752,
+          "raw_hp": 2998.7054767633,
+          "source_units": 1.6666666666667,
+          "base_damage": 1,
+          "scaled_damage": 1.4383591519145
+        },
+        "kind": "boss"
+      },
+      {
+        "hits": 424,
+        "shots": 1192,
+        "round": 2,
+        "frames": 1192,
+        "key": "TH42:71121",
+        "hp": {
+          "factor": 1.22825141712,
+          "raw_hp": 58699.622587251,
+          "source_units": 1,
+          "base_damage": 52,
+          "scaled_damage": 42.336608999751
+        },
+        "kind": "boss"
+      },
+      {
+        "hits": 632,
+        "shots": 812,
+        "round": 2,
+        "frames": 812,
+        "hp": {
+          "factor": 1.3142290163184,
+          "raw_hp": 1200,
+          "source_units": 1,
+          "base_damage": 1,
+          "scaled_damage": 0.76090239036216
+        },
+        "key": "TH43:81401"
+      }
+    ],
+    "restarted": true
+  },
+  "final_targeted_suite": {
+    "command": "python3 tools/check_rogue_ports.py --source TH42 --out /tmp/bossrush-rogue-ports-delivery",
+    "scope": "补测 Like Dreamer 侧栏调整、宿主子弹/Bomb跨卡保留；包含一、七、十面最终攻击和返回标题/重试",
+    "speed": 8,
+    "source_sha256": {
+      "mod/roguelike.lua": "2b970508eacc83cbe822c6b499fda4fbcfe6c41dade7b1b0dc018b912c50c506",
+      "mod/rogue_pool.lua": "d8bbaefab76c269e3cee2d24fca485d3402a0fc816d38075a4bec03b357c776f",
+      "mod/rogue_ports.lua": "453c121274e3bf7e5fa502a73c360e43302de6c6fbd595e2fdf73a20ad4ee6bb",
+      "mod/rogue_encounter.lua": "36aad832e87049841740c290ed3d8d8f4acbc435b941636dc696c5c8af20b12d",
+      "THlib/rogue_hp.lua": "f45efdbc928b5b483e1c00ab1291a3ab27ddd8898b7b6fcb8ae8462500d0acac",
+      "mod/GAME/th42.lua": "5943814d35a418def157eae64f6f274fcc7b32a7b681837b0d0370f2871cdf5e",
+      "macos/rogue_ports_test.lua": "2a1ecaac2a385e09294826f10a6524ce17979a60cdd1f609899e96bb93c4e6c1"
+    },
+    "cases": [
+      {
+        "round": 1,
+        "frames": 1508,
+        "shots": 1508,
+        "hits": 667,
+        "key": "TH42:71121",
+        "hp": {
+          "raw_hp": 59011.485148515,
+          "factor": 1.01,
+          "base_damage": 52,
+          "scaled_damage": 51.485148514854,
+          "source_units": 1
+        },
+        "kind": "boss"
+      },
+      {
+        "round": 1,
+        "frames": 961,
+        "shots": 961,
+        "hits": 591,
+        "key": "TH42:71101",
+        "hp": {
+          "raw_hp": 2352.3005241701,
+          "factor": 1.0302,
+          "base_damage": 52,
+          "scaled_damage": 50.475635798874,
+          "source_units": 1
+        },
+        "kind": "road"
+      },
+      {
+        "round": 1,
+        "frames": 1655,
+        "shots": 1655,
+        "hits": 7000,
+        "key": "TH42:71721",
+        "hp": {
+          "raw_hp": 10000,
+          "factor": 1.061106,
+          "base_damage": 52,
+          "scaled_damage": 49.005471649392,
+          "source_units": 1
+        },
+        "kind": "boss"
+      },
+      {
+        "round": 1,
+        "shots": 5570,
+        "frames": 5571,
+        "key": "TH42:72046",
+        "hp": false,
+        "hits": 1917
+      },
+      {
+        "round": 2,
+        "frames": 1508,
+        "shots": 1508,
+        "hits": 667,
+        "key": "TH42:71121",
+        "hp": {
+          "raw_hp": 59011.485148515,
+          "factor": 1.01,
+          "base_damage": 52,
+          "scaled_damage": 51.485148514854,
+          "source_units": 1
+        },
+        "kind": "boss"
+      },
+      {
+        "round": 2,
+        "frames": 1508,
+        "shots": 1508,
+        "hits": 667,
+        "key": "TH42:71121",
+        "hp": {
+          "raw_hp": 59011.485148515,
+          "factor": 1.01,
+          "base_damage": 52,
+          "scaled_damage": 51.485148514854,
+          "source_units": 1
+        },
+        "kind": "boss"
+      },
+      {
+        "round": 2,
+        "shots": 961,
+        "frames": 961,
+        "key": "TH42:71101",
+        "hp": {
+          "raw_hp": 2350.0291205591,
+          "factor": 1.0302,
+          "base_damage": 52,
+          "scaled_damage": 50.475635798874,
+          "source_units": 1
+        },
+        "hits": 576
+      }
+    ],
+    "restarted": true,
+    "player_bomb_preserved": true
+  },
+  "limits": [
+    "代表卡和道中采样，未逐一完整击破750个条目",
+    "默认超实时运行；检查音效资源存在但不播放高频音效",
+    "未做Android设备运行验证"
+  ]
+}
