@@ -3,6 +3,7 @@
 -- 离线数值表来自Basic/Basic_zi/Bulletmove；游戏内不依赖Unity或外部txt。
 local R={classes={},patterns={},objects=setmetatable({},{__mode='k'}),controllers=setmetatable({},{__mode='k'}),bulletCount=0,bulletLimit=1500}
 local Time=NativeTime or dofile('THlib/native_time.lua')
+local FixedLaser=dofile('mod/GAME/th38/fixed_laser.lua')
 local float=require('ffi').typeof('float')
 local function f32(x) return tonumber(float(x)) end
 R.data=dofile('mod/GAME/th38/catalogue.lua')
@@ -71,6 +72,13 @@ local function sync(b,s)
     b.x,b.y=project(s.x,s.y);b.vx,b.vy=0,0
     if s.kind=='curve' then b.x,b.y=project(s.x,s.y);b.vx,b.vy=0,0;return end
     if s.kind=='beam' then
+        if s.beamMode==1 then
+            b.rot=FixedLaser.direction(s)+180
+            b.l2=max(0,(s.lineLength*4-.32)*48)
+            b.w0=s.lineRadius*96;b.w=b.w0
+            b.alpha=min(1,max(0,s.alpha/100));b.colli=s.collision and s.lineActive
+            return
+        end
         b.rot=s.direction+180;b.w0=max(0,s.width*7.68);b.l2=max(0,min(s.length,s.age*abs(s.speed)*.0025)*192)
         b.w=b.w0;b.alpha=min(1,max(0,s.alpha/100));b.colli=s.collision and s.life>0
         return
@@ -201,7 +209,9 @@ R.classes.beam=Class(laser,{
     end,
     frame=function(b)
         if not b.asl.alive or b.asl.c.closed then clean(b);return end
-        sync(b,b.asl);laser.frame(b)
+        sync(b,b.asl)
+        -- 固定激光的判定与擦弹按原作 120Hz 更新，不再叠加宿主激光判定。
+        if b.asl.beamMode~=1 then laser.frame(b) end
     end,
     render=function(b)
         local s=b.asl;local v=NativePlayers and NativePlayers.visual
@@ -211,7 +221,9 @@ R.classes.beam=Class(laser,{
         if keys then img,scale=v.sprite(keys[s.color+1]) end
         if img then
             SetImageState(img,s.blend==1 and 'mul+add' or '',s.alpha*2.55,s.red*2.55,s.green*2.55,s.blue*2.55)
-            Render(img,b.x,b.y,s.direction-90,s.width*scale,math.min(s.length,s.age*abs(s.speed)*.0025)*scale)
+            if s.beamMode==1 then
+                Render(img,b.x,b.y,FixedLaser.direction(s)-90,max(0,s.lineWidth)*scale,s.lineLength*scale)
+            else Render(img,b.x,b.y,s.direction-90,s.width*scale,math.min(s.length,s.age*abs(s.speed)*.0025)*scale) end
         else laser.render(b) end
     end,
     del=function(b) clean(b) end,kill=function(b) clean(b) end,
@@ -223,7 +235,12 @@ local function get(s,target,son)
     local key=son and entityFields[target] or emitterFields[target]
     if son and s.kind=='boss' and target==14 then key='act' end
     local base=son and 24 or 37
-    if target>=base and target<base+4 then return s.vars[target-base+1] or 0,'var'..(target-base+1) end
+    if target>=base and target<base+4 then
+        if son and s.beamMode==1 then return s.c.vars[target-base+1] or 0,'global'..(target-base+1) end
+        return s.vars[target-base+1] or 0,'var'..(target-base+1)
+    end
+    -- Laser_move_line 不接受普通弹的速度、加速度、转向、弹型及宽高事件。
+    if son and s.beamMode==1 and (target>=2 and target<=6 or target>=8 and target<=12 or target==14) then return 0,nil end
     if son and (s.kind=='beam' or s.kind=='curve') and target==10 then key='width' elseif son and (s.kind=='beam' or s.kind=='curve') and target==11 then key='length' end
     return key and s[key] or 0,key
 end
@@ -232,6 +249,7 @@ local function assign(s,key,value)
     if key:sub(1,3)=='var' then s.vars[tonumber(key:sub(4))]=value;return end
     if key:sub(1,6)=='global' then s.c.vars[tonumber(key:sub(7))]=value;return end
     if integerFields[key] then value=trunc(value) end
+    if s.beamMode==1 and key=='life' then value=max(0,value) end
     if key=='a4_3' or key=='a4_12' then value=max(1,value) end
     if key=='shape' then value=max(0,min(25,value)) end
     if key=='color' then value=max(0,min(15,value)) end
@@ -258,7 +276,7 @@ local function condition(s,kind,op,value,repeats,period,t,son,slot)
         if op~=1 then return compare(a%360,op,b) end
         local d=(b-old+180)%360-180;local da=(a-old+180)%360-180
         return abs(da)<.3 or (d>0 and da>0 and da<=d) or (d<0 and da<0 and da>=d)
-    elseif kind>=6 and kind<=9 then return compare((son and s.vars or s.c.vars)[kind-5] or 0,op,value)
+    elseif kind>=6 and kind<=9 then return compare((son and s.beamMode~=1 and s.vars or s.c.vars)[kind-5] or 0,op,value)
     elseif kind==10 then return valid(player) and (player.death or 0)>0
     elseif kind==11 then return valid(player) and (player.nextspell or 0)>0 end
     return false
@@ -333,9 +351,10 @@ local function spawn(e,x,y,direction,speed)
         red=e.a7_1+rnd(e.a7_2),green=e.a7_3+rnd(e.a7_4),blue=e.a7_5+rnd(e.a7_6),alpha=e.a7_7+rnd(e.a7_8),
         exit=e.a6_10,delayExit=e.a6_14,outTime=0,mist=e.a6_11,invincible=e.a6_12,dispel=e.a6_13,blend=e.a9_4,
         collision=e.a5_2==0,events=e.sonEvents,limits={},changes={},vars={0,0,0,0},kind=e.a47==1 and 'enemy' or e.a47==3 and (e.a54_1>=2 and 'curve' or 'beam') or 'bullet',
-        enemyType=e.a48_1,enemyStyle=1+(e.a48_1*2+e.a48_2)%9,laserStyle=e.a54_4 or 0,
+        enemyType=e.a48_1,enemyStyle=1+(e.a48_1*2+e.a48_2)%9,laserStyle=e.a54_4 or 0,beamMode=e.a47==3 and e.a54_1 or nil,
         tailTicks=max(5,floor((e.a54_2 or 5)/5)*5),contact=e.a48_4*.01,hit=e.a48_5*.01,immune=e.a48_6,followSpeed=e.a8_9==1,length=e.a54_2 and e.a54_2*.01 or 1,width=e.a54_3 or 1}
     if e.a47==4 then return end -- Unity蓄力/爆炸/震屏只演出，不制造有判定的替代弹。
+    if s.beamMode==1 then FixedLaser.init(s,e) end
     if s.kind=='enemy' and s.enemyType==21 then
         -- Enemy_chuliluo 的 life 是持续tick、pdbj是时间倍率；没有敌机贴图和碰撞。
         s.kind='time';s.slowLeft=s.life;s.slowScale=f32(e.a48_4*f32(.01))
@@ -345,7 +364,10 @@ local function spawn(e,x,y,direction,speed)
     if s.kind=='enemy' then s.vars=c.vars end
     if s.kind=='bullet' then s.pooled=true;R.bulletCount=R.bulletCount+1 end
     local b=New(cls,s);c.entities[#c.entities+1]=s
-    if e.a9_1==1 and e.emitHost then s.parent=e.emitHost;s.lastParentX,s.lastParentY,s.parentRotation=e.emitHost.x,e.emitHost.y,e.emitHost.rotation end
+    if e.a9_1==1 and e.emitHost then
+        s.parent=e.emitHost;s.lastParentX,s.lastParentY,s.parentRotation=e.emitHost.x,e.emitHost.y,e.emitHost.rotation
+        if s.beamMode==1 then s.lineParentRotation=e.emitHost.rotation end
+    end
     attach(e,s)
     return b
 end
@@ -447,6 +469,14 @@ local function move(s)
     local boundBullet=parent and s.kind=='bullet'
     if boundBullet then followParent(s,parent) end
     events(s,s.events,s.age,true)
+    if s.beamMode==1 then
+        if parent then followParent(s,parent) end
+        FixedLaser.step(s)
+        if valid(s.native) then
+            if s.alive then sync(s.native,s);FixedLaser.collide(s,s.native) else clean(s.native) end
+        end
+        return
+    end
     if s.kind=='time' then
         if s.slowLeft>0 then
             Time.set(c,s.slowScale);s.slowLeft=s.slowLeft-1
@@ -575,14 +605,24 @@ function R.deathClear(x,y,r,outside,dropKind)
                     elseif valid(s.c.host) then Damage(s.c.host,40) end
                 end
             elseif s.kind=='beam' and s.invincible~=1 then
-                -- Laser_zhi_delete缩短纵轴，每次回退头部0.16单位；宽度不变。
-                local co,si=cos(s.direction),sin(s.direction)
-                local function distance()
-                    local dx,dy=x-b.x,y-b.y;local along=math.max(0,math.min(b.l2,-dx*co-dy*si))
-                    return math.sqrt((dx+along*co)^2+(dy+along*si)^2)
-                end
-                while s.length>.08*s.width and (outside and distance()>r or not outside and distance()<r+(b.w or 0)/2) do
-                    s.length=s.length-.04;s.x,s.y=s.x-.16*co,s.y-.16*si;sync(b,s)
+                if s.beamMode==1 then
+                    -- 原固定激光仅在判定已开启时响应自机消弹；缩短实际纵轴。
+                    if s.lineActive then
+                        local distance=FixedLaser.distance(s,x,y,outside)
+                        while (outside and distance>r+s.lineRadius*48 or not outside and distance<r+s.lineRadius*48) and FixedLaser.shrink(s) do
+                            sync(b,s);distance=FixedLaser.distance(s,x,y,outside)
+                        end
+                    end
+                else
+                    -- Laser_zhi_delete缩短纵轴，每次回退头部0.16单位；宽度不变。
+                    local co,si=cos(s.direction),sin(s.direction)
+                    local function distance()
+                        local dx,dy=x-b.x,y-b.y;local along=math.max(0,math.min(b.l2,-dx*co-dy*si))
+                        return math.sqrt((dx+along*co)^2+(dy+along*si)^2)
+                    end
+                    while s.length>.08*s.width and (outside and distance()>r or not outside and distance()<r+(b.w or 0)/2) do
+                        s.length=s.length-.04;s.x,s.y=s.x-.16*co,s.y-.16*si;sync(b,s)
+                    end
                 end
             elseif s.kind=='curve' then
                 if s.invincible~=1 then
