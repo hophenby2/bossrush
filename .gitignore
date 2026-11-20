@@ -25,6 +25,7 @@ replay/
 # ---------- 引擎与运行时二进制（外部获取，非本仓库产物） ----------
 LuaSTGSub.exe
 *.dll
+/windows/build/
 
 # ---------- 资源包（由 mod/、THlib/、Resources/、shader/ 打包而来，属派生副本） ----------
 /mod.dat

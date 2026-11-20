@@ -1,6 +1,7 @@
 -- 春雪篇原始XNA网格、背景时间轴、相机、UV动画与深度模式。
 local B={}
 local State=dofile('mod/GAME/th37/scene_state.lua')
+local Mesh=dofile('mod/GAME/th37/source_mesh.lua')
 local models={}
 local white=Color(255,255,255,255)
 local alphaMode,cutoutMode='',''
@@ -26,13 +27,16 @@ local function prepare(name)
         if not CheckRes('tex',id) then LoadTexture(id,'Resources/th37/scene/'..part[1]..'.png') end
         SetTextureSamplerState(id,'linear+wrap')
         part.texture=id;part.w,part.h=GetTextureSize(id)
-        if lstg.AndroidCreateModelMesh then part.native=lstg.AndroidCreateModelMesh(FindResTexture(id),part[3]) end
+        if not Mesh.available() and lstg.AndroidCreateModelMesh then part.native=lstg.AndroidCreateModelMesh(FindResTexture(id),part[3]) end
         if RogueEncounter then RogueEncounter.checkpoint() end
     end
+    if Mesh.available() then d.sourceMeshes=Mesh.prepare(d) end
     SetResourceStatus(pool)
     return d
 end
 local corners={{},{},{}}
+local transform,uvTransform={},{1,1,0,0}
+local viewPlanes
 local function draw(m,frame,particle)
     if m.alpha<=0 or m.prepare or m.separate and not particle then return end
     local data=prepare(m.name)
@@ -41,9 +45,15 @@ local function draw(m,frame,particle)
     local a=m.alpha*(particle and particle.alpha or 1)
     if particle then pos,scale,rotation=particle.pos,particle.scale,particle.rotation end
     local tint=Color(255*a,255*m.color[1]*a,255*m.color[2]*a,255*m.color[3]*a)
+    local u,v=m.uv and m.uv[1]*frame or 0,m.uv and m.uv[2]*frame or 0
+    if data.sourceMeshes then
+        Mesh.transform(pos,scale,rotation,transform);uvTransform[3],uvTransform[4]=u,v
+        local depth=m.label=='1003' and 0 or m.depth and 1 or 2
+        Mesh.draw(data.sourceMeshes,transform,tint,uvTransform,m.blend,depth,m.cutout,m.cutout and 0 or 1,viewPlanes)
+        return
+    end
     -- Sub 的深度状态要求数字；第二参保留给 LuaSTG-x 的深度写入开关。
     SetZBufferEnable(m.label~="1003" and 1 or 0,not m.depth)
-    local u,v=m.uv and m.uv[1]*frame or 0,m.uv and m.uv[2]*frame or 0
     local cx,sx,cy,sy,cz,sz=math.cos(rotation[1]),math.sin(rotation[1]),math.cos(rotation[2]),math.sin(rotation[2]),math.cos(rotation[3]),math.sin(rotation[3])
     for _,part in ipairs(data) do
         if part.native then
@@ -64,6 +74,7 @@ local function draw(m,frame,particle)
     end
 end
 local snapshot,ready
+local spellObject
 function B.prepare(chapter,clock)
     if not setting or not setting.displayBG then return end
     if not snapshot or snapshot.chapter~=chapter or snapshot.clock~=clock then
@@ -86,6 +97,10 @@ local Scene=Class(background,{
     frame=function(o) State.step(o.state,o.boss and IsValid(o.boss)) end,
     render=function(o)
         if not setting.displayBG then return end
+        -- 原作 StageManager.Draw 在 BossBackground.Start 后不再绘制道中场景。
+        -- Spell.render 先以不透明黑底覆盖整个战斗区，无需提交下面的网格和粒子。
+        -- 只省略绘制，场景时间轴仍由 frame 推进；符卡结束即可恢复当前场景。
+        if spellObject and IsValid(spellObject) and not spellObject.hide then return end
         local s=o.state;local eye,at,travel=s.eye,s.at,s.travel
         local previous=lstg.view3d;lstg.view3d={}
         SetViewMode('world');SetImageState('white','',255,0,0,0)
@@ -94,6 +109,7 @@ local Scene=Class(background,{
         Set3D('at',at[1]+travel[1],at[2]+travel[2],at[3]+travel[3]);Set3D('up',unpack(s.up))
         -- 原作先画640×480，再裁取384×448战斗区；保留240/tan(pi/8)的像素焦距。
         local fov=2*math.atan(math.tan(math.pi/8)*448/480)
+        if Mesh.available() then viewPlanes=Mesh.frustum(eye,at,s.up,travel,fov,-(w.r-w.l)/(w.t-w.b),20,s.far) end
         Set3D('fovy',fov);Set3D('z',20,s.far);Set3D('fog',0,0,white)
         SetViewMode('3d')
         -- LuaSTG为左手坐标；XNA为右手坐标。负横纵比恢复原模型的投影方向。
@@ -115,7 +131,6 @@ function B.setBoss(boss) local o=current();if o then o.boss=boss end end
 function B.signalMusic() local o=current();if o and o.state.mode=='music' then o.state.mode='boss' end end
 -- 原作Data/<stage><bgtype>.xna：按BSprite更新、循环、缩放及混合顺序绘制。
 local spellData=dofile('mod/GAME/th37/spell_backgrounds.lua')
-local spellObject
 local Spell=Class(object,{
     init=function(o,key)
         o.layer=LAYER.BG-.05;o.group=GROUP.GHOST;o.bound,o.colli=false,false
