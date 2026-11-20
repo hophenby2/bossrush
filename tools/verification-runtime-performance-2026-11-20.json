@@ -1,0 +1,548 @@
+{
+  "date": "2026-11-20",
+  "subject": "移植符卡运行期性能",
+  "reference_commit": "e6c42fd169662ba7ad8b452d738f7681f517bc3e",
+  "environment": {
+    "platform": "macOS arm64 / Metal",
+    "cpu": "Apple M4 Max",
+    "ram_bytes": 68719476736,
+    "os_version": "15.7.3",
+    "framebuffer": [
+      2560,
+      1440
+    ]
+  },
+  "method": {
+    "mode": "真实RogueTen单人；固定五卡顺序；不射击；自机保护；独立存档",
+    "clock_seed": 20261120,
+    "ran_seed": 29952,
+    "frames_per_case": 1800,
+    "analyzed_nonpreparing_fight_ages": [
+      180,
+      1800
+    ],
+    "analyzed_frames_per_case": 1621,
+    "metric": "每帧主线程逻辑与绘制墙钟；不含GPU执行时间。百分位使用线性插值；预算超限不是实际掉帧计数。",
+    "control": "相同构建配置和探针，把四个Lua优化文件替换为参考提交，通过官方--game-root管线打包；永夜代理退出修复两边均保留。两边原生弹体批量同步实现相同，旧Lua未调用。",
+    "scheduling": "基线和最终采集均速度1、不采样；没有并行构建或轨迹计算。",
+    "native_difference": "基线客户端还含一项没有旧Lua调用的试验粒子API；最终原生编译产物删除了该未使用接口，未声称两个Mach-O逐字节相同。"
+  },
+  "baseline": {
+    "raw_report": "/tmp/bossrush-runtime-control-profile-valid/bossrush/User/rogue-entry-profile.json",
+    "sha256": "fb44b13b083b70a6601f07184ed37878e05a63c11c94ad32b30758a6782fa56a",
+    "passed": true,
+    "speed": 1,
+    "sampling": false,
+    "native_sync_checks": 3360,
+    "cases": [
+      {
+        "key": "TH37:37067",
+        "title": "幕华祭6 西行寺幽幽子 终焉「千桜华宴」",
+        "frames": 1621,
+        "mean_logic_ms": 5.1824,
+        "mean_render_ms": 2.7843,
+        "mean_total_ms": 7.9667,
+        "p95_total_ms": 10.43,
+        "p99_total_ms": 12.1894,
+        "max_total_ms": 15.3219,
+        "frames_over_60hz_budget": 0,
+        "sampled_objects_min": 81,
+        "sampled_objects_max": 1003,
+        "sampled_lua_kb_max": 194152.06
+      },
+      {
+        "key": "TH38:38041",
+        "title": "雪莲华 4面 Boss B 联结「死生有命双子星」",
+        "frames": 1621,
+        "mean_logic_ms": 3.0221,
+        "mean_render_ms": 2.4655,
+        "mean_total_ms": 5.4876,
+        "p95_total_ms": 9.6989,
+        "p99_total_ms": 12.7991,
+        "max_total_ms": 24.8018,
+        "frames_over_60hz_budget": 3,
+        "sampled_objects_min": 377,
+        "sampled_objects_max": 1002,
+        "sampled_lua_kb_max": 213430.13
+      },
+      {
+        "key": "TH40:68041",
+        "title": "焰符「八百里的烈焰」",
+        "frames": 1621,
+        "mean_logic_ms": 3.87,
+        "mean_render_ms": 1.9506,
+        "mean_total_ms": 5.8207,
+        "p95_total_ms": 7.9733,
+        "p99_total_ms": 11.2145,
+        "max_total_ms": 21.9217,
+        "frames_over_60hz_budget": 3,
+        "sampled_objects_min": 16,
+        "sampled_objects_max": 1556,
+        "sampled_lua_kb_max": 217906.64
+      },
+      {
+        "key": "TH40:68053",
+        "title": "「流星神话」",
+        "frames": 1621,
+        "mean_logic_ms": 2.925,
+        "mean_render_ms": 1.5946,
+        "mean_total_ms": 4.5197,
+        "p95_total_ms": 6.2573,
+        "p99_total_ms": 7.0512,
+        "max_total_ms": 26.8658,
+        "frames_over_60hz_budget": 2,
+        "sampled_objects_min": 15,
+        "sampled_objects_max": 297,
+        "sampled_lua_kb_max": 218476.72
+      },
+      {
+        "key": "TH39:39060",
+        "title": "幕华祭永夜篇 6 终焉「天月祝鸣」",
+        "frames": 1621,
+        "mean_logic_ms": 3.059,
+        "mean_render_ms": 2.3564,
+        "mean_total_ms": 5.4154,
+        "p95_total_ms": 6.9102,
+        "p99_total_ms": 8.6031,
+        "max_total_ms": 25.7026,
+        "frames_over_60hz_budget": 3,
+        "sampled_objects_min": 33,
+        "sampled_objects_max": 1696,
+        "sampled_lua_kb_max": 245753.9
+      }
+    ]
+  },
+  "candidate": {
+    "raw_report": "/tmp/bossrush-runtime-delivery-profile/bossrush/User/rogue-entry-profile.json",
+    "sha256": "d7dae325a9169bb010acb37ca7b357068c53650ca1b683f3661a6435d213d7a1",
+    "passed": true,
+    "speed": 1,
+    "sampling": false,
+    "native_sync_checks": 3360,
+    "cases": [
+      {
+        "key": "TH37:37067",
+        "title": "幕华祭6 西行寺幽幽子 终焉「千桜华宴」",
+        "frames": 1621,
+        "mean_logic_ms": 3.7046,
+        "mean_render_ms": 2.4789,
+        "mean_total_ms": 6.1835,
+        "p95_total_ms": 8.2247,
+        "p99_total_ms": 10.0781,
+        "max_total_ms": 14.5581,
+        "frames_over_60hz_budget": 0,
+        "sampled_objects_min": 81,
+        "sampled_objects_max": 997,
+        "sampled_lua_kb_max": 190478.18
+      },
+      {
+        "key": "TH38:38041",
+        "title": "雪莲华 4面 Boss B 联结「死生有命双子星」",
+        "frames": 1621,
+        "mean_logic_ms": 2.2386,
+        "mean_render_ms": 3.2518,
+        "mean_total_ms": 5.4904,
+        "p95_total_ms": 11.0172,
+        "p99_total_ms": 13.8099,
+        "max_total_ms": 20.5397,
+        "frames_over_60hz_budget": 5,
+        "sampled_objects_min": 377,
+        "sampled_objects_max": 1002,
+        "sampled_lua_kb_max": 207483.71
+      },
+      {
+        "key": "TH40:68041",
+        "title": "焰符「八百里的烈焰」",
+        "frames": 1621,
+        "mean_logic_ms": 3.7689,
+        "mean_render_ms": 2.0373,
+        "mean_total_ms": 5.8062,
+        "p95_total_ms": 8.093,
+        "p99_total_ms": 11.0495,
+        "max_total_ms": 17.8544,
+        "frames_over_60hz_budget": 2,
+        "sampled_objects_min": 16,
+        "sampled_objects_max": 1556,
+        "sampled_lua_kb_max": 216603.26
+      },
+      {
+        "key": "TH40:68053",
+        "title": "「流星神话」",
+        "frames": 1621,
+        "mean_logic_ms": 2.7684,
+        "mean_render_ms": 1.6766,
+        "mean_total_ms": 4.445,
+        "p95_total_ms": 6.0352,
+        "p99_total_ms": 6.6395,
+        "max_total_ms": 27.1974,
+        "frames_over_60hz_budget": 1,
+        "sampled_objects_min": 15,
+        "sampled_objects_max": 297,
+        "sampled_lua_kb_max": 219066.3
+      },
+      {
+        "key": "TH39:39060",
+        "title": "幕华祭永夜篇 6 终焉「天月祝鸣」",
+        "frames": 1621,
+        "mean_logic_ms": 3.7269,
+        "mean_render_ms": 3.1376,
+        "mean_total_ms": 6.8645,
+        "p95_total_ms": 9.1886,
+        "p99_total_ms": 10.589,
+        "max_total_ms": 26.9783,
+        "frames_over_60hz_budget": 4,
+        "sampled_objects_min": 33,
+        "sampled_objects_max": 1696,
+        "sampled_lua_kb_max": 284003.97
+      }
+    ]
+  },
+  "changes": [
+    {
+      "key": "TH37:37067",
+      "logic_reduction_percent": 28.52,
+      "render_reduction_percent": 10.97,
+      "total_reduction_percent": 22.38
+    },
+    {
+      "key": "TH38:38041",
+      "logic_reduction_percent": 25.93,
+      "render_reduction_percent": -31.89,
+      "total_reduction_percent": -0.05
+    },
+    {
+      "key": "TH40:68041",
+      "logic_reduction_percent": 2.61,
+      "render_reduction_percent": -4.44,
+      "total_reduction_percent": 0.25
+    },
+    {
+      "key": "TH40:68053",
+      "logic_reduction_percent": 5.35,
+      "render_reduction_percent": -5.14,
+      "total_reduction_percent": 1.65
+    },
+    {
+      "key": "TH39:39060",
+      "logic_reduction_percent": -21.83,
+      "render_reduction_percent": -33.15,
+      "total_reduction_percent": -26.76
+    }
+  ],
+  "behavior": {
+    "native_setter_comparisons": 3360,
+    "native_cases": 240,
+    "native_fields_per_case": 14,
+    "paired_traces": {
+      "baseline": "e6c42fd",
+      "frames_spring_snow": 900,
+      "ticks_summer": 2400,
+      "paths": "春雪/雪莲华同时比较原接口回退与批量接口Lua契约桩；夏夜祭比较最终绑定运动和原实现。实际C类型转换另由原生3360项对照覆盖。",
+      "result": "位置、图像、缩放、判定、寿命、事件、绑定历史与随机流逐值一致",
+      "cases": [
+        {
+          "kind": "spring",
+          "pattern": "191",
+          "bytes": 7393,
+          "sha256": "3c166abdfd205bb7d756e3a00d480261bd33983a4d7eeb7601046de645ea7782"
+        },
+        {
+          "kind": "spring",
+          "pattern": "367",
+          "bytes": 5906153,
+          "sha256": "db4a8c63a3161fedad2594d69cedd9632efceab18909d2cdac7df3af972c49d8"
+        },
+        {
+          "kind": "snow",
+          "pattern": "L/stage1/a",
+          "bytes": 1457393,
+          "sha256": "9de7714107b583ddf6f963a359d58f07baf85eacf4c30ff9d15a5bb5d404f72d"
+        },
+        {
+          "kind": "snow",
+          "pattern": "L/stage6/boss1/9",
+          "bytes": 6777981,
+          "sha256": "7ffd4ca33382cba6258f5e69f150ef2f48f3fe36fc6b6126962cd035962d6720"
+        },
+        {
+          "kind": "summer",
+          "pattern": "68041",
+          "bytes": 11930833,
+          "sha256": "b0fe7f3b466324eabbe9b797c187fb263dc2e65ca680030c532ba7efc3380809"
+        },
+        {
+          "kind": "summer",
+          "pattern": "68053",
+          "bytes": 4345823,
+          "sha256": "06417366551619854888361ae22114e690ec7a8bf2fc47a62dfc8f06d7f7956f"
+        }
+      ],
+      "log_sha256": "51aad3aa30c74677c4a89349486af0408db2cdb79fe5a08c43e39a3c92588152"
+    },
+    "native_rogue_regression": {
+      "passed": true,
+      "cases": 43,
+      "counts": {
+        "TH32": {
+          "lunatic": 81,
+          "extra": 24
+        },
+        "TH43": {
+          "lunatic": 78,
+          "extra": 26
+        },
+        "TH37": {
+          "phantasm": 26,
+          "lunatic": 69,
+          "extra": 26
+        },
+        "TH39": {
+          "phantasm": 25,
+          "lunatic": 65,
+          "extra": 25
+        },
+        "TH42": {
+          "lunatic": 101
+        },
+        "TH40": {
+          "lunatic": 66,
+          "extra": 24
+        },
+        "TH41": {
+          "lunatic": 105,
+          "extra": 23
+        },
+        "TH38": {
+          "lunatic": 68,
+          "extra": 23
+        },
+        "TH35": {
+          "lunatic": 51,
+          "extra": 23
+        },
+        "TH31": {
+          "lunatic": 96,
+          "extra": 24
+        },
+        "TH34": {
+          "phantasm": 23,
+          "lunatic": 66,
+          "extra": 22
+        }
+      },
+      "sha256": "2e189b40b05299142fd7fe06daae8824fc0830cec4ed636ccc2f573d21468406",
+      "raw_report": "/tmp/bossrush-runtime-delivery-regression/bossrush/User/mac-test.json"
+    },
+    "summer_recycling": {
+      "ticks": 7200,
+      "kind": "本轮先前的Lua长时对象追踪；最后仅撤回批量提交，回收规则未改变；不代表设备长时FPS",
+      "log_sha256": "36dbaa8a04c062a5bff03237929a5efefadb0fd9651710c84c3bd58aaebee0e6"
+    }
+  },
+  "implementation": [
+    "春雪/雪莲华普通弹体一次原生提交图像、位置、旋转、缩放、判定、图层、分组和碰撞开关，沿用原setter类型换算，仅重算一次判定；未换图时不重复切资源",
+    "春雪没有Cover事件时不逐帧创建空列表",
+    "夏夜祭复用绑定历史的四个值、同角度sin/cos和反向遍历函数，保留原更新顺序",
+    "永夜双Boss附属代理直接回收，修复普通杂鱼死亡回调因缺少特效索引而报错"
+  ],
+  "unchanged": "攻击参数、弹幕密度、运动顺序、随机流、伤害、判定数值、寿命及出屏回收边界；雪莲华背景沿用参考提交",
+  "rejected_prototypes": {
+    "reason": "雪莲华背景粒子缓存/批量绘制、夏夜祭批量同步通过行为对照，但耗时收益不稳定，部分窗口更慢；均已撤回。不得把下列试验数据当作最终收益。",
+    "first": {
+      "raw_report": "/tmp/bossrush-runtime-batch-final-profile/bossrush/User/rogue-entry-profile.json",
+      "sha256": "9460e7db915b9d45b87355bb41a568269568a1a93b1df7c27eebc464aa49546d",
+      "passed": true,
+      "speed": 1,
+      "sampling": false,
+      "native_sync_checks": 3360,
+      "cases": [
+        {
+          "key": "TH37:37067",
+          "title": "幕华祭6 西行寺幽幽子 终焉「千桜华宴」",
+          "frames": 1621,
+          "mean_logic_ms": 4.5549,
+          "mean_render_ms": 2.7816,
+          "mean_total_ms": 7.3365,
+          "p95_total_ms": 9.5491,
+          "p99_total_ms": 11.1712,
+          "max_total_ms": 14.0023,
+          "frames_over_60hz_budget": 0,
+          "sampled_objects_min": 81,
+          "sampled_objects_max": 1005,
+          "sampled_lua_kb_max": 198104.11
+        },
+        {
+          "key": "TH38:38041",
+          "title": "雪莲华 4面 Boss B 联结「死生有命双子星」",
+          "frames": 1621,
+          "mean_logic_ms": 2.245,
+          "mean_render_ms": 4.8992,
+          "mean_total_ms": 7.1442,
+          "p95_total_ms": 11.1053,
+          "p99_total_ms": 13.053,
+          "max_total_ms": 20.3403,
+          "frames_over_60hz_budget": 2,
+          "sampled_objects_min": 377,
+          "sampled_objects_max": 1027,
+          "sampled_lua_kb_max": 233471.49
+        },
+        {
+          "key": "TH40:68041",
+          "title": "焰符「八百里的烈焰」",
+          "frames": 1621,
+          "mean_logic_ms": 4.2412,
+          "mean_render_ms": 2.2616,
+          "mean_total_ms": 6.5029,
+          "p95_total_ms": 9.8272,
+          "p99_total_ms": 12.5927,
+          "max_total_ms": 27.9277,
+          "frames_over_60hz_budget": 4,
+          "sampled_objects_min": 16,
+          "sampled_objects_max": 1556,
+          "sampled_lua_kb_max": 234470.74
+        },
+        {
+          "key": "TH40:68053",
+          "title": "「流星神话」",
+          "frames": 1621,
+          "mean_logic_ms": 2.7171,
+          "mean_render_ms": 1.7717,
+          "mean_total_ms": 4.4888,
+          "p95_total_ms": 6.6857,
+          "p99_total_ms": 8.1208,
+          "max_total_ms": 20.7293,
+          "frames_over_60hz_budget": 2,
+          "sampled_objects_min": 15,
+          "sampled_objects_max": 297,
+          "sampled_lua_kb_max": 226718.0
+        },
+        {
+          "key": "TH39:39060",
+          "title": "幕华祭永夜篇 6 终焉「天月祝鸣」",
+          "frames": 1621,
+          "mean_logic_ms": 4.0846,
+          "mean_render_ms": 3.117,
+          "mean_total_ms": 7.2016,
+          "p95_total_ms": 10.0578,
+          "p99_total_ms": 11.4954,
+          "max_total_ms": 21.6622,
+          "frames_over_60hz_budget": 4,
+          "sampled_objects_min": 33,
+          "sampled_objects_max": 1696,
+          "sampled_lua_kb_max": 271159.55
+        }
+      ]
+    },
+    "second": {
+      "raw_report": "/tmp/bossrush-runtime-verified-profile/bossrush/User/rogue-entry-profile.json",
+      "sha256": "ff9dea0daf273afd71c57c0ca605d3777c64741cef2a8a36aaedadcad6d346a6",
+      "passed": true,
+      "speed": 1,
+      "sampling": false,
+      "native_sync_checks": 3360,
+      "cases": [
+        {
+          "key": "TH37:37067",
+          "title": "幕华祭6 西行寺幽幽子 终焉「千桜华宴」",
+          "frames": 1621,
+          "mean_logic_ms": 4.3935,
+          "mean_render_ms": 2.7558,
+          "mean_total_ms": 7.1493,
+          "p95_total_ms": 9.2568,
+          "p99_total_ms": 10.6365,
+          "max_total_ms": 12.5896,
+          "frames_over_60hz_budget": 0,
+          "sampled_objects_min": 81,
+          "sampled_objects_max": 1003,
+          "sampled_lua_kb_max": 192773.34
+        },
+        {
+          "key": "TH38:38041",
+          "title": "雪莲华 4面 Boss B 联结「死生有命双子星」",
+          "frames": 1621,
+          "mean_logic_ms": 2.3757,
+          "mean_render_ms": 5.7235,
+          "mean_total_ms": 8.0992,
+          "p95_total_ms": 10.3935,
+          "p99_total_ms": 11.7881,
+          "max_total_ms": 16.5651,
+          "frames_over_60hz_budget": 0,
+          "sampled_objects_min": 377,
+          "sampled_objects_max": 1001,
+          "sampled_lua_kb_max": 237795.17
+        },
+        {
+          "key": "TH40:68041",
+          "title": "焰符「八百里的烈焰」",
+          "frames": 1621,
+          "mean_logic_ms": 5.2434,
+          "mean_render_ms": 2.4746,
+          "mean_total_ms": 7.7179,
+          "p95_total_ms": 10.3754,
+          "p99_total_ms": 14.7127,
+          "max_total_ms": 19.1078,
+          "frames_over_60hz_budget": 9,
+          "sampled_objects_min": 16,
+          "sampled_objects_max": 1556,
+          "sampled_lua_kb_max": 242636.11
+        },
+        {
+          "key": "TH40:68053",
+          "title": "「流星神话」",
+          "frames": 1621,
+          "mean_logic_ms": 2.4947,
+          "mean_render_ms": 2.2057,
+          "mean_total_ms": 4.7005,
+          "p95_total_ms": 6.9236,
+          "p99_total_ms": 8.2564,
+          "max_total_ms": 22.6595,
+          "frames_over_60hz_budget": 2,
+          "sampled_objects_min": 15,
+          "sampled_objects_max": 297,
+          "sampled_lua_kb_max": 243914.81
+        },
+        {
+          "key": "TH39:39060",
+          "title": "幕华祭永夜篇 6 终焉「天月祝鸣」",
+          "frames": 1621,
+          "mean_logic_ms": 4.3005,
+          "mean_render_ms": 3.4582,
+          "mean_total_ms": 7.7587,
+          "p95_total_ms": 9.4767,
+          "p99_total_ms": 11.3317,
+          "max_total_ms": 23.5094,
+          "frames_over_60hz_budget": 3,
+          "sampled_objects_min": 33,
+          "sampled_objects_max": 1706,
+          "sampled_lua_kb_max": 289966
+        }
+      ]
+    },
+    "first_note": "第一次试验采集期间有绘制指令对照工具运行，只记录波动，不作严格配对结论。"
+  },
+  "limitations": [
+    "单次连续窗口仍受系统负载、GC和JIT状态影响；永夜运行期未优化，作为变化幅度参考，不能把所有差值都归因于补丁。",
+    "仅覆盖五张正式耗时样本及43条原生流程；未穷举每张符卡，不宣称全部符卡稳定60FPS或所有高峰已消失。",
+    "原生实测只在macOS/Metal，未进行Android设备或Windows性能实测；Android需重编译，Windows继续回退。",
+    "连续跨卡LuaJIT栈采样曾停滞，独立单卡采样可完成；因此采样入口限制为单卡，正式数据不采样。"
+  ],
+  "baseline_gameplay_sha256": {
+    "mod/GAME/th37/runtime.lua": "e1c4eb00c85cc00e2b6b6fcdd57155147e07dbab12c9c041e7c37b7a71a0f8e3",
+    "mod/GAME/th38/runtime.lua": "03d75207b979414be5e72435e8e93fdcabe7293264535890781ddfbad947e5a8",
+    "mod/GAME/th38/background.lua": "35233de7d15f0e77750635b89dbf5f05743ce60a3a6d4505a36ff76e492ee146",
+    "mod/GAME/th40/native.lua": "73d455ea859e621a9af4f6d52becb226e390b05b3068757620aa56307e690fe2"
+  },
+  "candidate_source_sha256": {
+    "android/native/compat.cpp": "3e272be5014fa9eb8e7f180299428abf5d7829e8af9ad76961f7b4a51d91cf2a",
+    "android/native/model_mesh.inc": "dfb533086a0be0eb82a675c4a98ef5589ad779b39a697066c27cbf28c02c7cd5",
+    "android/patch_engine.py": "410c1a4f671198cc1ac1fce029f627f497badc434ecb4660e7f1b2c3f1d68a35",
+    "macos/lua/rogue_entry_profile.lua": "7a87a6ee3ebd10692049631d6fa3954b9203bdf93c46fb4f936ba6469e0787f2",
+    "mod/GAME/th37/runtime.lua": "906fbde2973bae4f2dbf097cb476ccd573de8637719b6e9e98005d3afb9356cc",
+    "mod/GAME/th38/runtime.lua": "e6d75efb30d67754db87e1a5ff7bc4b6012c830cffe1f1c06671ff737f4efcb7",
+    "mod/GAME/th38/background.lua": "35233de7d15f0e77750635b89dbf5f05743ce60a3a6d4505a36ff76e492ee146",
+    "mod/GAME/th39.lua": "0b242a035f8b7b60e5abf631a98b6a1a48b46b2afe8b2b4ef1eaf80afbd44922",
+    "mod/GAME/th40/native.lua": "dc3d1e8657fcbd8260688e069c2cc5d4b52f7bfd9897e28b5ac02dcf6f2460f4"
+  },
+  "native_binary_sha256": "1500d2cc52e1bcfd29b90921c577af74c9153155f2e248a3521bb4e1171faf5a",
+  "compiled_patches": "03f2497234bc7a94768d466cb01cab265effa8ca040b6a67a1c6d2294231e964"
+}

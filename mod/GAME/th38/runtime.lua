@@ -76,6 +76,15 @@ function R.enemyDeathEffect(b)
     return enemyDeath.spawn(b,b.asl.enemyType)
 end
 local function sync(b,s)
+    if lstg.AndroidProjectBullet and s.kind=='bullet' then
+        local x,y=project(s.x,s.y)
+        local r=s.customOn==1 and s.customRadius*.01 or (radius[s.shape+1] or .05)
+        local collidable=s.collision and r>0 and s.scaleX~=0 and s.scaleY~=0
+        lstg.AndroidProjectBullet(b,image(s),x,y,s.rotation-90,s.scaleX*.48,s.scaleY*.48,
+            max(0,r*48*abs(s.scaleX)),max(0,r*48*abs(s.scaleY)),b.layer,
+            s.invincible==1 and GROUP.INDES or GROUP.ENEMY_BULLET,collidable)
+        return
+    end
     b.x,b.y=project(s.x,s.y);b.vx,b.vy=0,0
     if s.kind=='curve' then b.x,b.y=project(s.x,s.y);b.vx,b.vy=0,0;return end
     if s.kind=='beam' then
@@ -97,7 +106,9 @@ local function sync(b,s)
         b.protect=s.age<s.immune;SetAttr(b,'colli',b.colli)
         return
     end
-    b.img=image(s);b.rot=s.rotation-90
+    local img=image(s)
+    if b.img~=img then b.img=img end
+    b.rot=s.rotation-90
     b.hscale,b.vscale=s.scaleX*.48,s.scaleY*.48
     local r=s.customOn==1 and s.customRadius*.01 or (radius[s.shape+1] or .05)
     b.a,b.b=max(0,r*48*abs(s.scaleX)),max(0,r*48*abs(s.scaleY));b.rect=false

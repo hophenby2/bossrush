@@ -12,12 +12,17 @@ ROOT = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--out', required=True, type=Path)
 parser.add_argument('--source')
+parser.add_argument('--cards', help='按逗号指定卡号，沿真实随机模式逐卡采集')
+parser.add_argument('--runtime', action='store_true', help='每作首尾攻击与运行中的对象计数')
+parser.add_argument('--runtime-sample', action='store_true', help='运行期间 LuaJIT 栈采样；仅定位热点，不用于性能对比')
+parser.add_argument('--speed', type=int, default=1, help='超实时仅用于查找热点，正式耗时采集使用1')
 parser.add_argument('--move-during-entry', action='store_true', help='入场边界强制改变自机位置，覆盖永夜失效快照重建')
 parser.add_argument('--frames', type=int, default=480)
 parser.add_argument('--retain-resources', action='store_true', help='仅用于同作重复入场的诊断对照')
 parser.add_argument('--sample-lua', action='store_true', help='对永夜背景预演采集 LuaJIT 调用栈')
 parser.add_argument('--timeout', type=int, default=400)
 args = parser.parse_args()
+assert not args.runtime_sample or args.cards and len(args.cards.split(',')) == 1, '运行栈采样请单独指定一个 --cards 卡号；多卡耗时使用无采样配置'
 assert not args.retain_resources or args.source, '保留资源对照必须限定单个作品，避免同名资源冲突'
 out = args.out.resolve()
 out.mkdir(parents=True, exist_ok=True)
@@ -30,7 +35,11 @@ for name in ('android/lua/main.lua', 'macos/lua/test.lua', 'macos/lua/rogue_entr
 env = dict(os.environ, BOSSRUSH_MAC_DATA=str(out), BOSSRUSH_MAC_TEST='rogue-entry-profile',
            BOSSRUSH_ENTRY_FRAMES=str(args.frames), BOSSRUSH_ENTRY_RETAIN=str(int(args.retain_resources)),
            BOSSRUSH_ENTRY_SAMPLE=str(int(args.sample_lua)),
-           BOSSRUSH_ENTRY_MOVE=str(int(args.move_during_entry)))
+           BOSSRUSH_ENTRY_MOVE=str(int(args.move_during_entry)),
+           BOSSRUSH_ENTRY_SPEED=str(args.speed),BOSSRUSH_ENTRY_RUNTIME=str(int(args.runtime)),
+           BOSSRUSH_ENTRY_RUNTIME_SAMPLE=str(int(args.runtime_sample)))
+if args.cards:
+    env['BOSSRUSH_ENTRY_CARDS'] = args.cards
 if args.source:
     env['BOSSRUSH_ENTRY_SOURCE'] = args.source
 with (out / 'stdout.log').open('w') as log:
@@ -55,6 +64,7 @@ report = out / 'bossrush/User/rogue-entry-profile.json'
 if error or process.returncode != 0 or not report.exists():
     raise SystemExit(error or f'采集未完成：exit={process.returncode}，日志 {out}')
 result = json.loads(report.read_text())
+assert result['passed'], '采集仅保存了部分样本，未完成整条路线'
 summaries = []
 for case in result['cases']:
     frames = [f for f in result['frames'] if f['case'] == case['index'] and f.get('fight_age', f['age']) <= args.frames]
@@ -76,7 +86,8 @@ for case in result['cases']:
                           key=lambda e: e['ms'], reverse=True)[:14]))
 if args.move_during_entry:
     assert any(c.get('background_reprepares', 0) for c in result['cases']), '未触发背景位置重建'
-summary = dict(data=str(report), retain_resources=args.retain_resources, speed=1,
+summary = dict(data=str(report), retain_resources=args.retain_resources, speed=args.speed,
+               runtime_scan=args.runtime,sampling=args.runtime_sample,
                move_during_entry=args.move_during_entry,
                window_frames=args.frames, cases=summaries)
 (out / 'summary.json').write_text(json.dumps(summary, ensure_ascii=False, indent=2))

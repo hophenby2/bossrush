@@ -608,3 +608,8 @@ replace('frameworks/LSTG/Resource/ResTexture.cpp', '#include "ResTexture.h"', '#
 replace('frameworks/LSTG/Resource/ResTexture.cpp',
         'ResTexture* ResTexture::create(const std::string& name, const std::string& path)\n{',
         'ResTexture* ResTexture::create(const std::string& name, const std::string& path)\n{\n    if (auto* image=androidTakePreparedTexture(path)) {\n        auto* tex=new Texture2D();tex->autorelease();\n        ResTexture* resource=nullptr;\n        if (tex->initWithImage(image)) {\n            resource=new (std::nothrow) ResTexture(name,tex);\n            if(resource) resource->resPath=path;\n        }\n        delete image;return resource;\n    }')
+
+# 批量同步只用于手动积分的移植弹体，保留原引擎的零速度语义。
+replace('frameworks/LSTG/Object/GameObjectManager.h',
+        'size_t GetObjectCount()  { return pool.size(); }',
+        'size_t GetObjectCount()  { return pool.size(); }\n        void androidZeroVelocity(GameObject* p) { pool.vx[p->id]=0;pool.vy[p->id]=0; }')

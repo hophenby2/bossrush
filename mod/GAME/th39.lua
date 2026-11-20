@@ -104,6 +104,9 @@ R.classes.actor=Class(actorBase,{
         animate(o,o.actor)
     end,
     render=function(o) drawBoss(o,o.actor) end,
+    -- 共享血槽的代理只跟随本体结束，不走普通杂鱼的气泡死亡效果。
+    del=function(o) object.RawDel(o) end,
+    kill=function(o) object.RawDel(o) end,
 })
 local function entry(host)
     if host.entry==0 then return R.project(336,-150) end

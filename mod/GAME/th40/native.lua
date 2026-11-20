@@ -95,8 +95,11 @@ local function motion(o)
     if parent then
         local last=o.parent_last or {parent.cx,parent.cy,parent.angle,parent.direction}
         local dx,dy=o.cx-last[1],o.cy-last[2];local angle=((parent.angle or 0)-last[3])+((parent.follow and parent.direction or 0)-(parent.follow and last[4] or 0))
-        o.cx=parent.cx+dx*cos(angle*R)-dy*sin(angle*R);o.cy=parent.cy+dx*sin(angle*R)+dy*cos(angle*R);o.direction=o.direction+angle
-        o.parent_last={parent.cx,parent.cy,parent.angle or 0,parent.direction or 0}
+        local ca,sa=cos(angle*R),sin(angle*R)
+        o.cx=parent.cx+dx*ca-dy*sa;o.cy=parent.cy+dx*sa+dy*ca;o.direction=o.direction+angle
+        -- 绑定历史只供本函数读取，更新四个值即可，不必逐帧分配新表。
+        last[1],last[2],last[3],last[4]=parent.cx,parent.cy,parent.angle or 0,parent.direction or 0
+        o.parent_last=last
     end
     local ax,ay=o.frame_ax or o.accel*cos(o.accel_angle*R),o.frame_ay or o.accel*sin(o.accel_angle*R)
     if ax~=0 or ay~=0 then
@@ -465,9 +468,11 @@ function N.deathDamage(x,y,r,damage)
         end
     end
 end
+local function each(list)
+    for i=#list,1,-1 do if valid(list[i]) then update(list[i]) else table.remove(list,i) end end
+end
 function N.step(run,hostUpdate)
     run.time=run.time+1
-    local function each(list) for i=#list,1,-1 do if valid(list[i]) then update(list[i]) else table.remove(list,i) end end end
     each(run.enemies);each(run.bullets)
     if hostUpdate then hostUpdate() end
     each(run.effects)

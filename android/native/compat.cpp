@@ -28,6 +28,7 @@
 #include <thread>
 #include <memory>
 #include "LSTG/ResourceMgr.h"
+#include "LSTG/Object/GameObjectManager.h"
 
 // 文件由主线程资源管理器读取；工作线程只解码像素，GPU 上传仍由 LoadTexture 在渲染线程执行。
 struct AndroidPreparedImage {
@@ -185,6 +186,31 @@ LUA_REGISTER_FUNC_DEF(lstg, AndroidRendererInfo) {
 }
 LUA_REGISTER_FUNC_DEF(lstg, AndroidClock) {
     lua_pushnumber(L, androidNow()); return 1;
+}
+// 移植弹体一次提交最终的二维属性。使用原 setter 的转换和组件，碰撞数据只重算一次。
+LUA_REGISTER_FUNC_DEF(lstg, AndroidProjectBullet) {
+    GameObject* object=nullptr;
+    if(!lua::luaval_to_GameObject(L,1,&object) || !object) return luaL_error(L,"无效的移植弹体");
+    const float x=luaL_checknumber(L,3),y=luaL_checknumber(L,4);
+    const float rotation=luaL_checknumber(L,5)*LDEGREE2RAD;
+    const float sx=luaL_checknumber(L,6),sy=luaL_checknumber(L,7);
+    const float a=(float)luaL_checknumber(L,8)*LPOOL.getColliderScale();
+    const float b=(float)luaL_checknumber(L,9)*LPOOL.getColliderScale();
+    const lua_Number layer=luaL_checknumber(L,10);
+    const lua_Integer group=luaL_checkinteger(L,11);
+    if(a<0 || b<0) return luaL_error(L,"移植弹体的判定半径不能为负");
+    if(!lua_isnil(L,2)) {
+        const char* name=luaL_checkstring(L,2);
+        if((!object->res || object->res->getName()!=name) && !LPOOL.setObjectResource(object,L,2))
+            return luaL_error(L,"找不到移植弹体的图像");
+    }
+    auto* cm=object->cm;
+    cm->setX(x);cm->setY(y);cm->setRot(rotation);cm->setHScale(sx);cm->setVScale(sy);
+    auto* collider=cm->getDataColli();
+    collider->a=a;collider->b=b;collider->type=XColliderType::Circle;cm->updateColli();
+    LPOOL.setObjectLayer(object,layer);LPOOL.setObjectGroup(object,group);
+    LPOOL.androidZeroVelocity(object);object->colli=lua_toboolean(L,12)!=0;
+    return 0;
 }
 LUA_REGISTER_FUNC_DEF(lstg, AndroidDrawCounts) {
     auto* renderer=cocos2d::Director::getInstance()->getRenderer();
