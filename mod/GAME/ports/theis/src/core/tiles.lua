@@ -1,7 +1,6 @@
 function misc.RenderTile(tex, blend, color, x, y, rot, hscale, vscale, u, v, uvrot, uvhscale, uvvscale)
-	--设置采样方式
-	if AndroidPlatform then SetTextureSamplerState(tex,"linear+wrap")
-	else SetTextureSamplerState("address","wrap") end
+	-- Sub 与移动端兼容层均按纹理设置采样，旧版全局 address 接口已被 Sub 禁用。
+	SetTextureSamplerState(tex,"linear+wrap")
 	--计算顶点坐标
 	local texw, texh = GetTextureSize(tex)
 	local texw2, texh2 = texw / 2, texh / 2
@@ -41,8 +40,7 @@ function misc.RenderTile(tex, blend, color, x, y, rot, hscale, vscale, u, v, uvr
 	--渲染
 	RenderTexture(tex, blend, vertex[1], vertex[2], vertex[3], vertex[4])
 	--恢复采样方式
-	if AndroidPlatform then SetTextureSamplerState(tex,"linear+clamp")
-	else SetTextureSamplerState("address","clamp") end
+	SetTextureSamplerState(tex,"linear+clamp")
 end
 
 ---纹理平铺符卡背景

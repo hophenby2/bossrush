@@ -3,6 +3,7 @@
 -- CrazyStorm内部比敌机多(+93,-13)，故弹坐标换算为(x-317,227-y)。
 local R={patterns={},classes={},assets={},objects=setmetatable({},{__mode='k'})}
 local D=dofile('mod/GAME/th37/catalogue.lua')
+local Bindings=dofile('mod/GAME/ports/binding_index.lua')
 local floor,abs,min,max=math.floor,math.abs,math.min,math.max
 local float=require('ffi').typeof('float')
 local function f32(x) return tonumber(float(x)) end
@@ -165,8 +166,13 @@ local function globalResource(fn)
     local pool=GetResourceStatus()
     SetResourceStatus('global');fn();SetResourceStatus(pool)
 end
+local commonTextures={}
 local function texture(p,index)
     index=max(1,trunc(index));local profile
+    local cache=commonTextures
+    if index>228 then p.textureCache=p.textureCache or {};cache=p.textureCache end
+    local cached=cache[index]
+    if cached then return cached[1],cached[2] end
     if index<=228 then profile=D.bulletTypes[index]
     else profile=p.types[index-228] end
     if not profile then return 'img_void',{0,0,1,1,0,0,0,0} end
@@ -178,6 +184,7 @@ local function texture(p,index)
             SetImageCenter(name,profile[5],profile[6])
         end);R.assets[name]=true
     end
+    cache[index]={name,profile}
     return name,profile
 end
 function R.loadPattern(id)
@@ -210,6 +217,7 @@ end
 local function clean(b)
     local s=b.mhj
     if s and s.controller and s.controller.bullets then s.controller.bullets[b]=nil end
+    if s then Bindings.remove(s.bindingBucket,b) end
     if s then s.object=nil end
     R.objects[b]=nil;object.RawDel(b)
 end
@@ -255,6 +263,21 @@ local function projectileOutside(s)
     if s.Outdispel then return s.fx< -16 or s.fx>545 or s.fy< -33 or s.fy>515 end
     return s.fx< -316 or s.fx>767 or s.fy< -333 or s.fy>815
 end
+local function bindingBucket(c,layer,id,create)
+    c.parents=c.parents or {}
+    local groups=c.parents[layer]
+    if not groups and create then groups={};c.parents[layer]=groups end
+    if not groups then return end
+    if not groups[id] and create then groups[id]=Bindings.new() end
+    return groups[id]
+end
+local function bindingTargets(o)
+    return Bindings.snapshot(bindingBucket(o.controller,o.parentid,o.bindid))
+end
+local function targetable(pair,mistAge)
+    local b,s=pair[1],pair[2]
+    return b and valid(b) and (not s.Mist or s.age>mistAge)
+end
 R.classes.projectile=Class(bullet,{
     init=function(b,s)
         -- 不经过通用雾化类；CrazyStorm自己有15帧出生与事件时钟。
@@ -264,7 +287,10 @@ R.classes.projectile=Class(bullet,{
         b._a,b._r,b._g,b._b=255,255,255,255;b._blend='';s.age=0;s.changes={};s.limits=s.limits or {};s.object=nil
         s.shadows={};s.previousX,s.previousY=s.fx,s.fy
         if s.Withspeedd then s.head=s.sonspeedd end
-        R.objects[b]=true;s.controller.bullets[b]=s;projected(b)
+        R.objects[b]=true;s.controller.bullets[b]=s
+        s.controller.serial=(s.controller.serial or 0)+1;s.serial=s.controller.serial
+        s.bindingBucket=bindingBucket(s.controller,s.layerid,s.parentid,true)
+        Bindings.add(s.bindingBucket,b,s);projected(b)
     end,
     frame=function(b)
         local s=b.mhj;s.age=s.age+1
@@ -449,13 +475,9 @@ local function fire(o,bound)
     if bound then emit(o,bound);return end
     if not o.bindid or o.bindid<0 or o.bindid==o.id then emit(o);return end
     -- Batch.Shoot的额外发射与周期发射都必须找到已出生的绑定宿主。
-    local targets={}
-    for b,s in pairs(o.controller.bullets) do
-        if valid(b) and s.kind~='laser' and s.parentid==o.bindid and s.layerid==o.parentid and (not s.Mist or s.age>15) then
-            targets[#targets+1]=s
-        end
+    for _,pair in ipairs(bindingTargets(o)) do
+        if targetable(pair,15) then emit(o,pair[2]) end
     end
-    for _,s in ipairs(targets) do emit(o,s) end
 end
 function R.fire(o) fire(o,o.bound_source) end
 local function emitter(spec,c)
@@ -490,8 +512,8 @@ local function field(o,c,t)
         if o.bound_source then
             centers[1]={fx=o.bound_source.fx-4,fy=o.bound_source.fy+16,key=o.bound_source}
         elseif o.bindid and o.bindid>=0 then
-            for b,s in pairs(c.bullets) do
-                if valid(b) and s.kind~='laser' and s.parentid==o.bindid and s.layerid==o.parentid and (not s.Mist or s.age>=15) then centers[#centers+1]=s end
+            for _,pair in ipairs(bindingTargets(o)) do
+                if targetable(pair,14) then centers[#centers+1]=pair[2] end
             end
         else centers[1]=false end
         for _,center in ipairs(centers) do
@@ -591,13 +613,11 @@ function R.tick(c)
     for _,o in ipairs(c.emitters) do
         if o.Deepbind and o.bindid and o.bindid>=0 and (o.kind=='cover' or o.bindid~=o.id) then
             for _,child in pairs(o.children) do child.active=false end
-            local targets={}
-            for b,s in pairs(c.bullets) do if valid(b) and s.kind~='laser' and s.parentid==o.bindid and s.layerid==o.parentid and (not s.Mist or s.age>15) then targets[#targets+1]={b,s} end end
-            for _,pair in ipairs(targets) do
+            for _,pair in ipairs(bindingTargets(o)) do if targetable(pair,15) then
                 local child=o.children[pair[1]]
                 if not child then child=emitter(o,c);child.bindid=-1;child.Deepbind=false;child.limits={};o.children[pair[1]]=child end
                 step(child,pair[2].age-(child.begin or 1)+2,pair[2])
-            end
+            end end
         else step(o,t-(o.begin or 1)+1) end
     end
     -- CrazyStorm.Update在各层发射之后推进中心；中心基准x/y始终不变。
@@ -626,6 +646,7 @@ function R.clear(c)
         if valid(b) then clean(b)
         else R.objects[b]=nil;c.bullets[b]=nil end
     end
+    c.parents={}
 end
 function R.clearAll()
     for b in pairs(R.objects) do

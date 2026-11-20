@@ -2,6 +2,7 @@
 local R={patterns={},classes={},assets={},objects=setmetatable({},{__mode='k'}),bulletCount=0,overflow=0,controllers=setmetatable({},{__mode='k'})}
 local D=dofile('mod/GAME/th39/catalogue.lua')
 local Mask=dofile('mod/GAME/th39/background_mask.lua')
+local Bindings=dofile('mod/GAME/ports/binding_index.lua')
 local floor,abs,min,max=math.floor,math.abs,math.min,math.max
 local SCALE=2/3
 function R.project(x,y) return (x-336)*SCALE,(360-y)*SCALE end
@@ -236,6 +237,7 @@ local function profile(p,index)
     return index<=#D.bulletTypes and D.bulletTypes[index] or p.types[min(index-#D.bulletTypes,#p.types)]
 end
 function R.weaponProfile(s) return profile(s.pattern,s.type) end
+local textureFrames=setmetatable({},{__mode='k'})
 local function texture(s)
     local p=profile(s.pattern,s.type)
     if not p or p[3]<=0 or p[4]<=0 or p[16]=='' then return 'img_void' end
@@ -244,11 +246,20 @@ local function texture(s)
     local c=s.controller
     local height=(c.textureHeights and c.textureHeights[key]) or D.textureHeights[key] or p[4]
     local columns=max(1,floor(height/p[4]))
-    local name='mhj3_b_'..key..'_'..p[1]..'_'..p[2]..'_'..p[3]..'_'..p[4]..'_'..p[5]..'_'..p[6]..'_'..n
-    local x,y=p[1]+floor(n/columns)*p[3],p[2]+n%columns*p[4]
+    local frames=textureFrames[p]
+    if not frames then frames={};textureFrames[p]=frames end
+    local columnFrames=frames[columns]
+    if not columnFrames then columnFrames={};frames[columns]=columnFrames end
+    local frame=columnFrames[n]
+    if not frame then
+        local name='mhj3_b_'..key..'_'..p[1]..'_'..p[2]..'_'..p[3]..'_'..p[4]..'_'..p[5]..'_'..p[6]..'_'..n
+        frame={name,'mhj3_tex_'..key,p[1]+floor(n/columns)*p[3],p[2]+n%columns*p[4]}
+        columnFrames[n]=frame
+    end
+    local name,tex,x,y=frame[1],frame[2],frame[3],frame[4]
     if c.visual and key:sub(1,6)=='scene/' then
         local store=c.resources
-        local tex='mhj3_tex_'..key
+        -- 场景图片仍逐次核对资源池，练习退出后可按原路径重新载入。
         if not CheckRes('tex',tex) then
             LoadTexture(tex,'Resources/th39/'..key..'.png')
             if store then store.tex[tex]=GetResourceStatus() end
@@ -260,11 +271,19 @@ local function texture(s)
         end
         return name,tex,x,y,p
     end
-    return R.sprite(name,key,x,y,p[3],p[4],p[5],p[6]),'mhj3_tex_'..key,x,y,p
+    return R.sprite(name,key,x,y,p[3],p[4],p[5],p[6]),tex,x,y,p
 end
 function R.loadPattern(id)
     if not R.patterns[id] then R.patterns[id]=dofile('mod/GAME/th39/'..(id:sub(1,1)=='e' and 'player_patterns/' or 'patterns/')..id..'.lua') end
     return R.patterns[id]
+end
+local function bindingTargets(o)
+    local layer=o.controller.parents[o.parentid]
+    return Bindings.snapshot(layer and layer[o.bindid])
+end
+local function targetable(c,pair)
+    local b,s=pair[1],pair[2]
+    return b and live(c,b) and s.kind~='laser' and (not s.Mist or s.age>15)
 end
 local function projected(b)
     local s=b.mhj
@@ -286,7 +305,7 @@ local function clean(b)
     if s and s.controller and s.controller.host==b then R.stopEmitter(s.controller) end
     if s and s.controller and s.controller.bullets then
         s.controller.bullets[b]=nil
-        if s.bucket then s.bucket[b]=nil end
+        Bindings.remove(s.bucket,b)
         if s.counted then R.bulletCount=R.bulletCount-1;s.counted=false end
     end
     if s and s.familiar and s.controller then
@@ -508,14 +527,15 @@ local function emit(o,bound)
         elseif o.kind=='laser' then b=New(s.Ray=='Curve' and R.classes.curve or R.classes.beam,s)
         elseif config then b=New(R.classes.familiar,s,slot,config)
         else b=New(R.classes.projectile,s) end
-        if bucket then bucket[b]=s end
+        if bucket then Bindings.add(bucket,b,s) end
     end
 end
 function R.fire(o)
     if o.bound_source then emit(o,o.bound_source)
     elseif o.bindid and o.bindid>=0 and o.bindid~=o.id then
-        local targets=o.controller.targets(o)
-        for _,pair in ipairs(targets) do emit(o,pair[2]) end
+        for _,pair in ipairs(bindingTargets(o)) do
+            if targetable(o.controller,pair) then emit(o,pair[2]) end
+        end
     else emit(o) end
 end
 function R.recover(o)
@@ -535,7 +555,7 @@ local function emitter(spec,c)
     if o.kind=='batch' then
         c.parents[o.parentid]=c.parents[o.parentid] or {}
         local layer=c.parents[o.parentid]
-        layer[o.id]=layer[o.id] or {}
+        layer[o.id]=layer[o.id] or Bindings.new()
         o.bucket=layer[o.id]
     end
     for _,key in ipairs({'speed','speedd','aspeed','aspeedd'}) do o[key]=(o[key] or 0)+rnd(rr[key] or 0,o) end
@@ -564,11 +584,12 @@ local function field(o,c,t)
         if not o.Sonevents then return end
         local layer=c.parents[o.parentid]
         local sources=o.bindid and o.bindid>=0 and layer and layer[o.bindid]
-        local targets=o.type==1 and layer and layer[o.controlid-1] or c.bullets
+        local targetBucket=o.type==1 and layer and layer[o.controlid-1]
+        local targets=targetBucket and targetBucket.members or c.bullets
         if o.type==1 and (not layer or not layer[o.controlid-1]) then return end
         local function contains(s)
             if not sources then return (not o.bindid or o.bindid<0) and area(o,s,c) end
-            for b,center in pairs(sources) do
+            for b,center in pairs(sources.members) do
                 if s~=center and live(c,b) and (not center.Mist or center.age>=15) and area(o,s,c,center) then return true end
             end
             return false
@@ -647,20 +668,7 @@ function R.tick(c)
         if valid(c.host) and not c.road then c.host.x,c.host.y=projectBullet(center.ox,center.oy) end
         c.offsetx,c.offsety=center.ox-center.fx,center.oy-center.fy
     else c.offsetx,c.offsety=0,0 end
-    local function targets(o)
-        local out={}
-        local layer=c.parents[o.parentid]
-        local bucket=layer and layer[o.bindid]
-        if not bucket then return out end
-        for b,s in pairs(bucket) do
-            if live(c,b) and s.kind~='laser' and (not s.Mist or s.age>15) then
-                out[#out+1]={b,s}
-            end
-        end
-        table.sort(out,function(a,b) return a[2].serial<b[2].serial end)
-        return out
-    end
-    c.targets=targets
+    c.targets=bindingTargets
     local function step(o,ot,bound)
         o.active=ot>=1 and ot<=o.life
         if not o.active then return end
@@ -674,14 +682,16 @@ function R.tick(c)
             if o.t>0 and ot%o.t+trunc(rnd(o.rand.t or 0,o))==0 then
                 if bound then emit(o,bound)
                 elseif o.bindid and o.bindid>=0 and o.bindid~=o.id then
-                    for _,pair in ipairs(targets(o)) do emit(o,pair[2]) end
+                    for _,pair in ipairs(bindingTargets(o)) do
+                        if targetable(c,pair) then emit(o,pair[2]) end
+                    end
                 else emit(o) end
             end
         else field(o,c,ot) end
     end
     for _,o in ipairs(c.emitters) do
         if o.Deepbind and o.bindid and o.bindid>=0 and o.bindid~=o.id then
-            for _,pair in ipairs(targets(o)) do
+            for _,pair in ipairs(bindingTargets(o)) do if targetable(c,pair) then
                 local child=o.children[pair[1]]
                 if not child then
                     child=emitter(o,c);child.bindid=-1;child.Deepbind=false;child.limits={};child.localTime=0
@@ -692,7 +702,7 @@ function R.tick(c)
                     child.fx,child.fy=child.x,child.y
                     step(child,child.localTime-(child.begin or 1)+1,pair[2])
                 end
-            end
+            end end
         else step(o,t-(o.begin or 1)+1) end
     end
 end
@@ -706,7 +716,7 @@ function R.tickBackground(c)
         else
             s.alive=false
             c.bullets[s]=nil
-            if s.bucket then s.bucket[s]=nil end
+            Bindings.remove(s.bucket,s)
         end
     end
     for i=#list,n+1,-1 do list[i]=nil end
@@ -800,6 +810,7 @@ function R.clear(c)
     for b in pairs(c.bullets) do
         if valid(b) then clean(b) end
     end
+    c.closed=true;c.emitters={};c.parents={}
 end
 function R.replace(c,host,id,road,configs)
     -- 同一符卡内的时间/血量/使魔阈值只替换弹幕，不解除自机控制或石化。

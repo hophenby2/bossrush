@@ -18,7 +18,7 @@ function R.player() return valid(player) and player.x/48+4.5 or 4.5,valid(player
 local function aim(s,x) if x==-99999 then local px,py=R.player();return angle(s.x,s.y,px,py) end;return x end
 local function copy(d,c)
     local s={};for k,v in pairs(d) do s[k]=v end
-    s.c=c;s.limits={};s.changes={};s.vars={0,0,0,0};s.birth=0;s.count=0;s.age=0;s.alive=true;s.djX,s.djY=0,0
+    s.c=c;s.limits={};s.changes={};s.vars=c.vars;s.birth=0;s.count=0;s.age=0;s.alive=true;s.djX,s.djY=0,0
     return s
 end
 local function globalResource(fn)
@@ -273,8 +273,9 @@ local function assign(s,key,value)
     if key=='color' then value=max(0,min(15,value)) end
     s[key]=value
 end
+local variableIndices={[89999]=1,[89998]=2,[-89999]=3,[-89998]=4}
 local function variable(s,v,son)
-    local index=({[89999]=1,[89998]=2,[-89999]=3,[-89998]=4})[v]
+    local index=variableIndices[v]
     return index and ((son and s.vars or s.c.vars)[index] or 0) or v
 end
 local function compare(a,op,b) return op==0 and a>=b or op==1 and abs(a-b)<=.07 or op==2 and a<b end
@@ -355,7 +356,8 @@ local function template(d,c)
     local s=copy(d,c);s.isEmitter=true;s.vars=c.vars
     s.a2_1=s.a2_1==-99999 and -99999 or s.a2_1*.01+.5
     s.a2_3=s.a2_3==-99999 and -99999 or s.a2_3*.01-9.5
-    s.x,s.y=s.a2_1,s.a2_3;s.boundHosts=setmetatable({},{__mode='k'})
+    -- 只有共享绑定的根发射器需要宿主表，深绑定副本不分配空弱表。
+    s.x,s.y=s.a2_1,s.a2_3;s.boundHosts=nil
     return s
 end
 local function spawn(e,x,y,direction,speed)
@@ -475,7 +477,7 @@ local function followParent(s,parent)
     s.x,s.y=parent.x+x*cosTurn-y*sinTurn,parent.y+x*sinTurn+y*cosTurn
     s.lastParentX,s.lastParentY,s.parentRotation=parent.x,parent.y,parent.rotation
 end
-local function move(s)
+local function move(s,deferBulletProjection)
     local c=s.c;s.age=c.time-s.birth
     if s.age<0 then return end
     if s.native and not valid(s.native) then release(s);s.alive=false;return end
@@ -532,7 +534,10 @@ local function move(s)
         local out=s.x<0 or s.x>9.2 or s.y< -10 or s.y>.5
         s.outTime=out and s.outTime+1 or 0
         if s.life<0 or s.age>0 and (s.exit==1 and out and (s.kind~='curve' or s.outTime>s.tailTicks) or s.delayExit==1 and s.outTime>50) then s.alive=false end
-        if valid(s.native) then if s.alive then sync(s.native,s) else clean(s.native) end end
+        if valid(s.native) then
+            if not s.alive then clean(s.native)
+            elseif not deferBulletProjection or s.kind~='bullet' then sync(s.native,s) end
+        end
     end
 end
 local function load(key)
@@ -542,10 +547,18 @@ end
 function R.controller(host,key,first)
     local c={host=host,time=first or 0,emitters={},entities={},byName={},vars={0,0,0,0},closed=false,key=key};R.controllers[c]=true
     local pat=load(key)
-    for _,d in ipairs(pat.items) do local e=template(d,c);c.emitters[#c.emitters+1]=e;c.byName[d.name]=e end
+    for _,d in ipairs(pat.items) do
+        local e=template(d,c);c.emitters[#c.emitters+1]=e;c.byName[d.name]=e
+        -- 固定激光可在半帧内触发自机死亡及消弹，必须保留当时的普通弹坐标。
+        if e.a47==3 and e.a54_1==1 then c.syncEveryTick=true end
+    end
     for _,e in ipairs(c.emitters) do for _,link in ipairs(e.links) do
         local target=c.byName[link.name]
-        if target then if link.kind==1 or link.kind==4 then target.bound=true elseif link.kind==2 or link.kind==5 then target.deep=true end end
+        if target then
+            if link.kind==1 or link.kind==4 then
+                target.bound=true;target.boundHosts=target.boundHosts or setmetatable({},{__mode='k'})
+            elseif link.kind==2 or link.kind==5 then target.deep=true end
+        end
     end end
     local bosses={}
     for _,e in ipairs(c.emitters) do if e.a47==2 then bosses[#bosses+1]=e end end
@@ -562,12 +575,12 @@ function R.controller(host,key,first)
     end
     return c
 end
-function R.step(c)
+function R.step(c,deferBulletProjection)
     if not c or c.closed then return end
     do
         -- 新对象下一tick开始积分；所有对象仍是引擎内的子弹/敌机/激光实体。
         local n=#c.entities
-        for i=1,n do local s=c.entities[i];if s.alive then move(s) end end
+        for i=1,n do local s=c.entities[i];if s.alive then move(s,deferBulletProjection) end end
         local ecount=#c.emitters
         for i=1,ecount do local e=c.emitters[i];if e.alive and not e.skip and not e.deep then emit(e) end end
         local j=1
@@ -579,7 +592,12 @@ function R.step(c)
         c.time=c.time+1
     end
 end
-function R.tick(c) R.step(c);R.step(c) end
+function R.tick(c)
+    if not c or c.closed then return end
+    -- 两个原作 tick 都保留；普通弹在宿主碰撞、绘制前同步最终状态即可。
+    -- 激光的逐 tick 判定、敌机和 Boss 的更新仍按原路径执行。
+    R.step(c,not c.syncEveryTick);R.step(c)
+end
 -- 转阶段替换发射器；保留同一卡的倒计时和血量。清弹标记来自Boss_zhuanjieduan。
 function R.transition(c,key,reset,clear)
     if clear then Time.reset(c) end
@@ -592,6 +610,7 @@ function R.transition(c,key,reset,clear)
         elseif s.alive then keep[#keep+1]=s end
     end
     local nextState=R.controller(c.host,key,reset and 0 or c.time)
+    c.syncEveryTick=nextState.syncEveryTick or not clear and c.syncEveryTick
     c.time,c.key,c.emitters,c.byName=nextState.time,key,nextState.emitters,nextState.byName
     for _,e in ipairs(c.emitters) do e.c=c;e.vars=c.vars end
     local index=0
