@@ -228,6 +228,8 @@ function pointer:frame()
     end
 end
 function pointer:render()
+    -- 随机模式的底部统一在最后绘制，避免被独立后端遮住或重复画箭头。
+    if RogueBossHUD and RogueBossHUD.enabled() and not self.ui.rogue_bottom then return end
     local _ui = self.ui
     local b = self.system.boss
     if not (IsValid(b)) then

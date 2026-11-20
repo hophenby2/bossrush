@@ -25,6 +25,7 @@ function extboss:init()
 end
 function extboss:frame()
     self.timer = self.timer + 1
+    if RogueBossHUD then RogueBossHUD.frame() end
     --背景，法阵，符卡环处理
     local bgroup = boss_group
     if #bgroup > 0 then
@@ -44,7 +45,8 @@ function extboss:frame()
     end
 end
 function extboss:render()
-    if ui.OriginalHUD and ui.OriginalHUD.enabled() then return end
+    local rogue=RogueBossHUD and RogueBossHUD.enabled()
+    if not rogue and ui.OriginalHUD and ui.OriginalHUD.enabled() then return end
 
     if stage.current_stage.is_menu then
         return
@@ -59,11 +61,11 @@ function extboss:render()
         -- 阶段刻度在锚点下方 26，横屏底边至少留 4 个 UI 单位。
         bottom=max(bottom,26+4)
     end
-    local alpha = self.alpha
+    local alpha = rogue and 1 or self.alpha
     local white = "white"
     local bosses = boss_group
-    local validboss = {}
-    if #bosses > 0 then
+    local validboss = rogue and RogueBossHUD.current or {}
+    if #bosses > 0 or rogue then
         do
             local show_name = ""
             local t = 0
@@ -83,14 +85,16 @@ function extboss:render()
                     Color(255, 205 + 50 * sin(timer / 4), 227, 132), "noclip")
         end
         local unit, percent
-        for _, b in ipairs(boss_group) do
-            if IsValid(b) and b.maxhp>0 and b.ui.drawhp and not (b.no_hp_render or b.time_sc) then
-                table.insert(validboss, b)
+        if not rogue then
+            for _, b in ipairs(boss_group) do
+                if IsValid(b) and b.maxhp>0 and b.ui.drawhp and not (b.no_hp_render or b.time_sc) then
+                    table.insert(validboss, b)
+                end
             end
         end
         if #validboss > 0 then
             self.maxlen = (w.scrr - w.scrl) / #validboss
-            self.curlen = self.curlen + (-self.curlen + self.maxlen) * 0.11
+            self.curlen = rogue and self.maxlen or self.curlen + (-self.curlen + self.maxlen) * 0.11
             local maxlen = self.curlen
             local last_x = w.scrl
             local b
@@ -125,6 +129,7 @@ function extboss:render()
     else
         self.alpha = max(0, alpha - 1 / 60)
     end
+    if rogue then RogueBossHUD.renderPointers() end
 end
 
 ---@param index string
@@ -143,6 +148,7 @@ function extboss:Do(index, unit, other)
     if other then other(self) end
 end
 function extboss:refresh()
+    if RogueBossHUD then RogueBossHUD.reset() end
     self.alpha = 0
     self.boss_id = nil--防止boss无缝创建的东西
     self.boss_bg = nil --背景处理

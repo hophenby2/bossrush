@@ -41,6 +41,21 @@ LUA_REGISTER_FUNC_DEF(lstg, MacConfigureDisplay) {
     lua_pushinteger(L,width);lua_pushinteger(L,height);return 2;
 }
 
+// 游戏布局使用帧缓冲像素；GLFW 鼠标使用窗口点坐标、左上原点。
+// 绕过 Cocos 已转换过的 EventMouse::getLocation，统一到左下原点像素。
+LUA_REGISTER_FUNC_DEF(lstg, MacMousePosition) {
+    auto* view=static_cast<cocos2d::GLViewImpl*>(cocos2d::Director::getInstance()->getOpenGLView());
+    auto* window=view->getWindow();
+    int width,height,pixelWidth,pixelHeight;double x,y;
+    glfwGetWindowSize(window,&width,&height);
+    glfwGetFramebufferSize(window,&pixelWidth,&pixelHeight);
+    glfwGetCursorPos(window,&x,&y);
+    if(width<=0 || height<=0) { lua_pushnumber(L,0);lua_pushnumber(L,0);return 2; }
+    lua_pushnumber(L,x*pixelWidth/width);
+    lua_pushnumber(L,(height-y)*pixelHeight/height);
+    return 2;
+}
+
 // 同时报告 AL 符号归属，避免版本字符串正确但实际调用落入系统旧后端。
 LUA_REGISTER_FUNC_DEF(lstg, MacAudioInfo) {
     Dl_info image={};dladdr(reinterpret_cast<void*>(&alBufferData),&image);

@@ -31,6 +31,7 @@ local function startIndex(o) return o.pool_expanded and #options+2 or 2 end
 function U.fresh(o,mode)
     o.pool_options=nil;o.pool_status=nil;o.pool_notice=nil;o.pool_notice_time=0
     o.pool_focus=0;o.pool_expanded=false
+    o.pool_mouse_down=ext.mouse:isPress(1)
     if mode=='roguelike' then
         o.pool_options=RogueTen.savedFilters()
         o.simple_title='roguelike模式 · 准备';refresh(o)
@@ -60,8 +61,21 @@ function U.ready(o)
 end
 function U.frame(o)
     local mouse=ext.mouse
+    -- 多个菜单可能刷新同一个 ext.mouse；本界面独立记录按下沿，避免点击被提前消费。
+    local down=mouse:isPress(1)
+    local clicked=down and not o.pool_mouse_down
+    o.pool_mouse_down=down
     if o.pool_notice_time>0 then o.pool_notice_time=o.pool_notice_time-1 end
     o.maxcolindex=o.pool_focus==startIndex(o) and 1 or 0
+    -- 鼠标先按实际命中位置分发，不能被当前键盘焦点的确认操作抢先处理。
+    if clicked then
+        if sp.math.PointBoundCheck(mouse.x,mouse.y,505,920,423,457) then U.expand(o);return end
+        if o.pool_expanded then
+            for index,entry in ipairs(options) do
+                if over(mouse,entry) then o.pool_focus=index+1;U.toggle(o,index);return end
+            end
+        end
+    end
     if GetLastKey()==KEY.ENTER then o:yes();return end
     if menu:keyYes() or GetLastKey()==setting.keys.shoot then
         if o.pool_focus==1 then U.expand(o)
@@ -75,27 +89,21 @@ function U.frame(o)
     if menu:keyDown() then o.pool_focus=(o.pool_focus+1)%focusCount;PlaySound('select00') end
     if menu:keyLeft() then o:addpos1(-1) end
     if menu:keyRight() then o:addpos1(1) end
-    if sp.math.PointBoundCheck(mouse.x,mouse.y,505,920,423,457) and mouse:isDown(1) then U.expand(o);return end
-    if o.pool_expanded then
-        for index,entry in ipairs(options) do
-            if over(mouse,entry) and mouse:isDown(1) then o.pool_focus=index+1;U.toggle(o,index);return end
-        end
-    end
     local r=155+sin(o.timer*3)*2
     if Dist(mouse.x,mouse.y,240,250)<r then
         if mouse._wheel~=0 then o.pool_focus=0;o:addpos1(-sign(mouse._wheel)) end
-        if mouse:isDown(1) then
+        if clicked then
             o.pool_focus=0
             local a=(Angle(mouse.x,mouse.y,240,250)-o.orot)%360
             o:addpos1((a>=225 and a<315) and 0 or (a>=135 and a<225) and 1 or (a>=45 and a<135) and 2 or -1)
         end
     elseif sp.math.PointBoundCheck(mouse.x,mouse.y,420,540,30,60) then
         o.maxcolindex=1
-        if mouse:isDown(1) then o.pool_focus=startIndex(o);o:yes() end
+        if clicked then o.pool_focus=startIndex(o);o:yes() end
     elseif Dist(mouse.x,mouse.y,240+r+45,250)<30 then
-        if mouse:isDown(1) then o.pool_focus=0;o:addpos1(1) end
+        if clicked then o.pool_focus=0;o:addpos1(1) end
     elseif Dist(mouse.x,mouse.y,240-r-45,250)<30 then
-        if mouse:isDown(1) then o.pool_focus=0;o:addpos1(-1) end
+        if clicked then o.pool_focus=0;o:addpos1(-1) end
     end
 end
 function U.render(o)

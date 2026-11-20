@@ -1,6 +1,6 @@
 -- 复用 Android 的 Windows 键码映射；桌面默认使用键盘 / 鼠标，F8 可切换触屏预览。
 local fu=cc.FileUtils:getInstance()
-local rawPosition,rawMouse=lstg.GetMousePosition,lstg.GetMouseState
+local rawPosition,rawMouse=lstg.MacMousePosition or lstg.GetMousePosition,lstg.GetMouseState
 local I=assert(loadstring(fu:getStringFromFile('game/android/input.lua'),'@game/android/input.lua'))()
 local beginFrame,render=I.beginFrame,I.render
 local touchMousePosition,touchMouseState=lstg.GetMousePosition,lstg.GetMouseState
@@ -54,9 +54,9 @@ function I.install(scene)
             if I.preview then
                 if kind~='moved' and e:getMouseButton()~=0 then return end
                 if kind=='began' then held=true elseif kind=='ended' then held=false elseif not held then return end
-                local p=e:getLocation()
-                I.lastMouse={kind=kind,x=p.x,y=p.y,scale=screen.scale,nx=(p.x-screen.dx)/screen.scale,ny=(p.y-screen.dy)/screen.scale}
-                I.touch('mac-mouse',(p.x-screen.dx)/screen.scale,(p.y-screen.dy)/screen.scale,kind)
+                local x,y=rawPosition()
+                I.lastMouse={kind=kind,x=x,y=y,scale=screen.scale,nx=(x-screen.dx)/screen.scale,ny=(y-screen.dy)/screen.scale}
+                I.touch('mac-mouse',(x-screen.dx)/screen.scale,(y-screen.dy)/screen.scale,kind)
             end
         end
     end

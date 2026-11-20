@@ -53,6 +53,7 @@ end
 local poolSource=dofile('mod/rogue_pool.lua')
 local rogueMusic=dofile('mod/rogue_music.lua')
 local encounter=dofile('mod/rogue_encounter.lua')
+RogueBossHUD=dofile('mod/rogue_boss_hud.lua')
 R.sources=poolSource.sources
 R.defaultFilters=poolSource.defaults
 R.copyFilters=poolSource.copy
