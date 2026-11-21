@@ -450,11 +450,11 @@ function deathEffectClass:render()
     local alpha = Core.clamp(trunc(self.drawAlpha or self.alpha), 0, 0xff)
     if alpha <= 0 then return end
     SetImageState(self.image, self.kind == "center" and "mul+add" or "",
-        Color(alpha, 255, 255, 255))
+        alpha, 255, 255, 255)
     Render(self.image, self.x, self.y,
         Core.angleToDeg(self.drawAngle16 or self.angle16),
         scaleX * 1, scaleY * 1)
-    SetImageState(self.image, "", Color(255, 255, 255, 255))
+    SetImageState(self.image, "", 255, 255, 255, 255)
 end
 
 local function spawnDeathEffect(rt, kind, image, x, y, angle16, speed, scale,
@@ -564,10 +564,10 @@ function scorePopupClass:render()
 
     local function drawFrame(frame, logicalOffset)
         local image = "ld_num_s_" .. tostring(frame + 1)
-        SetImageState(image, "", Color(alpha, 255, 255, 255))
+        SetImageState(image, "", alpha, 255, 255, 255)
         Render(image, self.x + logicalOffset * Core.worldScale(), self.y, 0,
             scale * 1, scale * 1)
-        SetImageState(image, "", Color(255, 255, 255, 255))
+        SetImageState(image, "", 255, 255, 255, 255)
     end
 
     local remaining, ordinal = value, 0
@@ -625,9 +625,9 @@ function stockPortraitClass:render()
     if alpha <= 0 then return end
     LikeDreamer.Viewport.draw(function()
         local box = LikeDreamer.Viewport.capture()
-        SetImageState(self.image, "", Color(alpha, 255, 255, 255))
+        SetImageState(self.image, "", alpha, 255, 255, 255)
         lstg.Render(self.image, box:mapX(430), box:mapY(360), 0, box.scale, box.scale)
-        SetImageState(self.image, "", Color(255, 255, 255, 255))
+        SetImageState(self.image, "", 255, 255, 255, 255)
     end)
 end
 
@@ -671,13 +671,13 @@ function lifeBannerClass:render()
     end
     if alpha <= 0 or entrance <= 0 then return end
     local scale = 1
-    SetImageState("ld_state_20", "", Color(alpha, 255, 255, 255))
+    SetImageState("ld_state_20", "", alpha, 255, 255, 255)
     Render("ld_state_20", self.x, self.y, 0, scale, entrance * scale)
     if age % 3 == 0 then
-        SetImageState("ld_state_20", "mul+add", Color(alpha, 255, 255, 255))
+        SetImageState("ld_state_20", "mul+add", alpha, 255, 255, 255)
         Render("ld_state_20", self.x, self.y, 0, scale, entrance * scale)
     end
-    SetImageState("ld_state_20", "", Color(255, 255, 255, 255))
+    SetImageState("ld_state_20", "", 255, 255, 255, 255)
 end
 
 function M.spawnPlayerPortrait(rt, frameOffset, lifetime)
@@ -886,10 +886,10 @@ function rewardItemClass:render()
     if itemType >= 6 then
         scale = scale * (1 + 0.1 * sin(self.drawAge * pi / 32))
     end
-    SetImageState(image, "", Color(alpha, red, green, blue))
+    SetImageState(image, "", alpha, red, green, blue)
     Render(image, self.x, self.y, 0,
         scale * 1, scale * 1)
-    SetImageState(image, "", Color(255, 255, 255, 255))
+    SetImageState(image, "", 255, 255, 255, 255)
 end
 
 function M.spawnItem(itemType, x, y, angle16, speed, radiusOrScale)
@@ -975,11 +975,11 @@ function counterFeedbackClass:render()
     local frameIndex = age < self.multiplier * 2 and
         floor(age / 2) + 1 or self.multiplier
     local image = "ld_item_" .. tostring(frameIndex + 1)
-    SetImageState(image, "", Color(alpha, 255, 255, 255))
+    SetImageState(image, "", alpha, 255, 255, 255)
     Render(image, self.x, self.y, 0,
         scale * self.displayScale * 1,
         scale * self.displayScale * 1)
-    SetImageState(image, "", Color(255, 255, 255, 255))
+    SetImageState(image, "", 255, 255, 255, 255)
 end
 
 local feedbackClass = Class(object)
@@ -1056,10 +1056,10 @@ function counterRingClass:render()
     if age >= 8 then
         alpha = alpha - trunc((age - 8) * alpha * 0.125)
     end
-    SetImageState("ld_effect_m_5", "", Color(alpha, 255, 255, 255))
+    SetImageState("ld_effect_m_5", "", alpha, 255, 255, 255)
     Render("ld_effect_m_5", self.x, self.y, 0,
         scale * 1, scale * 1)
-    SetImageState("ld_effect_m_5", "", Color(255, 255, 255, 255))
+    SetImageState("ld_effect_m_5", "", 255, 255, 255, 255)
 end
 
 function M.spawnCounterSuccessFeedback(rt, x, y, angle16)

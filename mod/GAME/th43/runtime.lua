@@ -262,9 +262,11 @@ function E.sp.misc.RenderRing3(tex,x,y,inner,outer,n,repeats,rot,length,blend,co
 end
 stg.ResourceSet={create=function() return res end,find=function() return res end}
 E.BulletLibrary={addBulletStyles=noop,usingBulletStyles=noop,classCreatorBase=noop}
-E.Add_bentlaser_texture_16=function(_,tex) bent_laser.Add_texture('th43_bent4',image(tex)) end
-E.Add_bentlaser_envelope=noop
-E.Add_bentlaser_texture=function(_,tex) bent_laser.Add_texture(tex,image(tex)) end
+local bentAdapter=dofile('mod/GAME/th43/bent_laser_adapter.lua')(bent_laser,
+    function(name) return resolve('tex',name) end,function(name) return resolve('img',name) end)
+E.Add_bentlaser_texture_16=bentAdapter.addTexture16
+E.Add_bentlaser_envelope=bentAdapter.addEnvelope
+E.Add_bentlaser_texture=bentAdapter.addTexture
 
 E.task=overlay(task)
 function E.task.MoveTo(o,x,y,t,mode)
@@ -448,16 +450,8 @@ E.luaclass=function() return {} end
 E.bossface={}
 E.r18g={findfile=function() return nil end}
 E.laser_bent=overlay(bent_laser,{
-    init=function(o,_,x,y,len,width,texture,node)
-        bent_laser.init(o,1,x,y,len,width,texture,false)
-        o.th43_laser_texture=texture and resolve('tex',texture)
-    end,
-    render=function(o)
-        if o.th43_laser_texture then
-            local w,h=GetTextureSize(o.th43_laser_texture)
-            o.data:Render(o.th43_laser_texture,o._blend,Color(o._a*o.alpha,o._r,o._g,o._b),0,0,w,h)
-        else o.node=nil;bent_laser.render(o) end
-    end,
+    init=bentAdapter.init,
+    render=bent_laser.render,
     getLength=function(o) return o.l end,
     setLength=function(o,n) o.l=math.max(2,math.floor(n)) end,
     getAlpha=function(o) return o.alpha end,

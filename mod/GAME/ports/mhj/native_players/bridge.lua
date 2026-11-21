@@ -89,14 +89,7 @@ E.SpriteSortMode={Deferred=0}
 E.ushort={MaxValue=65535}
 E.Controller={__static=true,Rumble=function() end}
 E.Game={ScreenRange=CS.Rectangle(48,24,576,672)}
-local function inside(o,p,extend,ray)
-    if not valid(o) or not o.colli then return false end
-    local c=o.native_actor_collision
-    if c and c.noDamage then return false end
-    local target=pos(o);local a=c and c.damage[1] or o.a;local b=c and c.damage[2] or o.b
-    if ray then a,b=a*2,b*2 end
-    return math.abs(p.X-target.X)<=a/scale+extend and math.abs(p.Y-target.Y)<=b/scale+extend
-end
+local inside=dofile('mod/GAME/ports/mhj/native_players/target_collision.lua')(CS,valid,scale,cx,cy)
 local function rayHit(o,start,dir,damage)
     if not valid(o) or not o.colli then return false end
     local p=pos(o);local c=o.native_actor_collision
@@ -114,7 +107,7 @@ local function rayHit(o,start,dir,damage)
     end
     if type(damage)=='number' then Damage(o,damage) end;return true
 end
-local wrappers=setmetatable({}, {__mode='k'})
+local wrappers,pruneTargets,clearTargets=dofile('mod/GAME/ports/object_cache.lua')(valid,128)
 local function damage(o,amount,limited)
     if night and o.IsBoss and limited and B.lantern then
         -- 原 BossStage.DamageRecord 由同一张卡的多个本体共用。
@@ -157,10 +150,19 @@ local function target(o)
     if o.IsBoss then w.Scale=1 end
     w.hp,w.ohp,w.die,w.Die,w.Dying,w.leave=o.hp,o.maxhp,false,false,false,not o.colli
     w.DamagedTime=o.timer or 0
+    -- 只标记桥接自有的标准引擎属性；自定义元表或遮蔽字段仍由原查询处理。
+    local mt=getmetatable(o)
+    w.nativeQueryFields=mt and mt.__index==GetAttr and rawget(o,'x')==nil and rawget(o,'y')==nil and rawget(o,'colli')==nil
+        and c and getmetatable(c)==nil or false
+    w.nativeQueryShape=c
     return w
 end
 local em={EnemyArray=CS.List()}
 function em:Judge(p,power,extend)
+    if night and self.EnemyArray.Count==0 then return end
+    if night and lstg.FindSourceTargetInList then
+        return lstg.FindSourceTargetInList(self.nativeQueryView or self.EnemyArray.items,self.EnemyArray.Count,p.X,p.Y,power,scale,cx,cy,true)
+    end
     for _,w in CS.each(self.EnemyArray) do
         if night then if inside(w.object,p,power) then return w end
         elseif w:Judge(p,power,extend)~=0 and w.object.hp>0 then return w.object.maxhp/w.object.hp end
@@ -203,6 +205,12 @@ end
 function em:MinDistance(p) return nearestIn(self.EnemyArray,p) end
 function familiar:MinDistance(p) return nearestIn(self.Familiars,p) end
 function familiar:Judge(p,extend)
+    if self.Familiars.Count==0 then return end
+    if night and lstg.FindSourceTargetInList then
+        local w=lstg.FindSourceTargetInList(self.nativeQueryView or self.Familiars.items,self.Familiars.Count,p.X,p.Y,extend,scale,cx,cy,true)
+        if w then self.LastDamaged=w end
+        return w
+    end
     for _,w in CS.each(self.Familiars) do if inside(w.object,p,extend) then self.LastDamaged=w;return w end end
 end
 function familiar:JudgeRay(start,dir)
@@ -229,6 +237,10 @@ local function updateTargets(p)
         end
     end)
     if night then nearest,nearestFamiliar=em:MinDistance(pos(p)),familiar:MinDistance(pos(p)) end
+    if night and lstg.CreateSourceTargetView then
+        em.nativeQueryView=em.EnemyArray.Count>1 and lstg.CreateSourceTargetView(em.EnemyArray.items,em.EnemyArray.Count) or nil
+        familiar.nativeQueryView=familiar.Familiars.Count>1 and lstg.CreateSourceTargetView(familiar.Familiars.items,familiar.Familiars.Count) or nil
+    end
     bosses.CardArray:Clear()
     if currentBoss then bosses.CardArray:Add({DeHp=function(_,power,selfShot,limited)
         damage(currentBoss.object,power,limited)
@@ -457,6 +469,8 @@ local EquipmentPass=Class(object,{
     end,
 })
 function B.bind(p)
+    clearTargets()
+    em.nativeQueryView,familiar.nativeQueryView=nil,nil
     key,previous={},{};B.inputTimer=-1;B.bomb=nil
     B.equipment=nil
     B.player=p;E.SelfBarrageManager.Clear();effects={};game.Crazystorms:Clear()
@@ -511,6 +525,7 @@ function B.makeConfig(name,raw)
         return result
 end
 function B.frame(p,s)
+    pruneTargets()
     input(p);character(p);updateTargets(p)
     local source=p.mhj_source
     if night then

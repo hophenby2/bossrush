@@ -1,0 +1,2324 @@
+{
+  "date": "2026-11-21",
+  "platform": "Windows",
+  "base_commit": "54382570e6974d9a0337704c7af23c397829d742",
+  "engine": {
+    "repository": "https://github.com/Legacy-LuaSTG-Engine/LuaSTG-Sub.git",
+    "ref": "master",
+    "commit": "8728b3f9e91e6cd577665a7f5777c6c7c23b5f31",
+    "version": "0.21.129",
+    "patch": "native/source_model_mesh.hpp",
+    "frame_rate_controller_patch": "build_source_mesh.py",
+    "presentation_patch": "build_source_mesh.py",
+    "main_thread_affinity_patch": "build_source_mesh.py"
+  },
+  "final_exe_sha256": "f09734a801693599ffb83736f61de1e4d379b0ad166f173cdadc12f831428b1d",
+  "games": [
+    {
+      "game": "th31",
+      "level": 29,
+      "card": 367,
+      "sequence": "th08_lunatic_b",
+      "chapter": "6B",
+      "modes": {
+        "practice": {
+          "directory": "allworks-th31-baseline",
+          "samples": 1500,
+          "logic_ms": {
+            "mean": 1.123,
+            "p99": 2.1386,
+            "min": 0.3337,
+            "max": 3.7894
+          },
+          "render_ms": {
+            "mean": 0.8599,
+            "p99": 1.4332,
+            "min": 0.3795,
+            "max": 5.9798
+          },
+          "combined_ms": {
+            "mean": 1.9829,
+            "p99": 3.3395,
+            "min": 0.7132,
+            "max": 7.1417
+          },
+          "fps": {
+            "mean": 59.9963,
+            "p99": 60.0002,
+            "min": 59.9137,
+            "max": 60.0002
+          },
+          "below55": 0,
+          "over_budget": 0,
+          "objects": {
+            "mean": 282.6807,
+            "p99": 464,
+            "min": 61,
+            "max": 479
+          },
+          "heap_kb": {
+            "mean": 112060.1088,
+            "p99": 147449.3506,
+            "min": 75750.9902,
+            "max": 148178.2021
+          },
+          "native_machine": null,
+          "sequence_machine": null,
+          "sequence_resources": null,
+          "audio_bgm": 0,
+          "audio_se": 0,
+          "ended_at": null,
+          "error": null,
+          "exe_sha256": "6d85ef9753a30c5323cd873e0512d7db38c845233dcf379434df9f2f3d54930e",
+          "lua_tree": null
+        },
+        "sequence": {
+          "directory": "allworks-baseline-sequence-retry/th31-sequence",
+          "samples": 1500,
+          "logic_ms": {
+            "mean": 2.0266,
+            "p99": 3.615,
+            "min": 1.0436,
+            "max": 22.8927
+          },
+          "render_ms": {
+            "mean": 1.4893,
+            "p99": 2.924,
+            "min": 0.919,
+            "max": 4.8213
+          },
+          "combined_ms": {
+            "mean": 3.5159,
+            "p99": 6.4948,
+            "min": 2.0332,
+            "max": 25.8315
+          },
+          "fps": {
+            "mean": 59.9663,
+            "p99": 60.0002,
+            "min": 59.3538,
+            "max": 60.0002
+          },
+          "below55": 0,
+          "over_budget": 1,
+          "objects": {
+            "mean": 505.056,
+            "p99": 686,
+            "min": 218,
+            "max": 697
+          },
+          "heap_kb": {
+            "mean": 125534.8264,
+            "p99": 170266.832,
+            "min": 80128.125,
+            "max": 173051.5352
+          },
+          "native_machine": null,
+          "sequence_machine": "team0",
+          "sequence_resources": true,
+          "audio_bgm": 0,
+          "audio_se": 0,
+          "ended_at": null,
+          "error": null,
+          "exe_sha256": "6d85ef9753a30c5323cd873e0512d7db38c845233dcf379434df9f2f3d54930e",
+          "lua_tree": {
+            "files": 3191,
+            "sha256": "533eb7751dcade78a116a9209acab9d7a7609ab32a9d1803d237cc2567573b6c"
+          }
+        }
+      }
+    },
+    {
+      "game": "th32",
+      "level": 30,
+      "card": 3985,
+      "sequence": "th06_lunatic",
+      "chapter": "6",
+      "modes": {
+        "practice": {
+          "directory": "allworks-baseline-screen/th32-practice",
+          "samples": 1500,
+          "logic_ms": {
+            "mean": 1.2762,
+            "p99": 1.8409,
+            "min": 0.9401,
+            "max": 2.5905
+          },
+          "render_ms": {
+            "mean": 0.9919,
+            "p99": 1.6885,
+            "min": 0.7423,
+            "max": 7.5095
+          },
+          "combined_ms": {
+            "mean": 2.268,
+            "p99": 3.3199,
+            "min": 1.8075,
+            "max": 9.0223
+          },
+          "fps": {
+            "mean": 59.9948,
+            "p99": 60.0002,
+            "min": 59.8946,
+            "max": 60.0002
+          },
+          "below55": 0,
+          "over_budget": 0,
+          "objects": {
+            "mean": 394.1727,
+            "p99": 409,
+            "min": 329,
+            "max": 409
+          },
+          "heap_kb": {
+            "mean": 116622.0446,
+            "p99": 146988.3311,
+            "min": 75567.5537,
+            "max": 147819.6367
+          },
+          "native_machine": null,
+          "sequence_machine": null,
+          "sequence_resources": false,
+          "audio_bgm": 0,
+          "audio_se": 0,
+          "ended_at": null,
+          "error": null,
+          "exe_sha256": "6d85ef9753a30c5323cd873e0512d7db38c845233dcf379434df9f2f3d54930e",
+          "lua_tree": null
+        },
+        "sequence": {
+          "directory": "allworks-baseline-sequence-retry/th32-sequence",
+          "samples": 1500,
+          "logic_ms": {
+            "mean": 1.5012,
+            "p99": 3.3705,
+            "min": 0.2348,
+            "max": 12.524
+          },
+          "render_ms": {
+            "mean": 1.125,
+            "p99": 3.3957,
+            "min": 0.3416,
+            "max": 11.8765
+          },
+          "combined_ms": {
+            "mean": 2.6263,
+            "p99": 5.9642,
+            "min": 0.5819,
+            "max": 14.7976
+          },
+          "fps": {
+            "mean": 59.9934,
+            "p99": 60.0002,
+            "min": 59.9446,
+            "max": 60.0002
+          },
+          "below55": 0,
+          "over_budget": 0,
+          "objects": {
+            "mean": 339.7153,
+            "p99": 567,
+            "min": 19,
+            "max": 579
+          },
+          "heap_kb": {
+            "mean": 117081.8473,
+            "p99": 162530.4902,
+            "min": 72178.8271,
+            "max": 163833.3027
+          },
+          "native_machine": null,
+          "sequence_machine": "reimua",
+          "sequence_resources": true,
+          "audio_bgm": 0,
+          "audio_se": 0,
+          "ended_at": null,
+          "error": null,
+          "exe_sha256": "6d85ef9753a30c5323cd873e0512d7db38c845233dcf379434df9f2f3d54930e",
+          "lua_tree": {
+            "files": 3191,
+            "sha256": "533eb7751dcade78a116a9209acab9d7a7609ab32a9d1803d237cc2567573b6c"
+          }
+        }
+      }
+    },
+    {
+      "game": "th33",
+      "level": 31,
+      "card": 33460,
+      "sequence": "th095_extra",
+      "chapter": "EX",
+      "modes": {
+        "practice": {
+          "directory": "allworks-baseline-screen/th33-practice",
+          "samples": 1500,
+          "logic_ms": {
+            "mean": 2.2142,
+            "p99": 4.9743,
+            "min": 1.1016,
+            "max": 8.487
+          },
+          "render_ms": {
+            "mean": 1.4787,
+            "p99": 2.3081,
+            "min": 1.0393,
+            "max": 3.7518
+          },
+          "combined_ms": {
+            "mean": 3.6929,
+            "p99": 6.9567,
+            "min": 2.1565,
+            "max": 10.971
+          },
+          "fps": {
+            "mean": 59.9939,
+            "p99": 60.0002,
+            "min": 59.9378,
+            "max": 60.0002
+          },
+          "below55": 0,
+          "over_budget": 0,
+          "objects": {
+            "mean": 611.29,
+            "p99": 658,
+            "min": 350,
+            "max": 667
+          },
+          "heap_kb": {
+            "mean": 126186.0755,
+            "p99": 175103.6709,
+            "min": 78307.085,
+            "max": 176428.3584
+          },
+          "native_machine": null,
+          "sequence_machine": null,
+          "sequence_resources": false,
+          "audio_bgm": 0,
+          "audio_se": 0,
+          "ended_at": null,
+          "error": null,
+          "exe_sha256": "6d85ef9753a30c5323cd873e0512d7db38c845233dcf379434df9f2f3d54930e",
+          "lua_tree": null
+        },
+        "sequence": {
+          "directory": "allworks-baseline-sequence-retry/th33-sequence",
+          "samples": 1500,
+          "logic_ms": {
+            "mean": 1.5419,
+            "p99": 3.5771,
+            "min": 0.7318,
+            "max": 35.426
+          },
+          "render_ms": {
+            "mean": 1.0248,
+            "p99": 1.8112,
+            "min": 0.6393,
+            "max": 3.9963
+          },
+          "combined_ms": {
+            "mean": 2.5667,
+            "p99": 5.645,
+            "min": 1.3996,
+            "max": 38.8804
+          },
+          "fps": {
+            "mean": 59.9381,
+            "p99": 60.0002,
+            "min": 58.5956,
+            "max": 60.0002
+          },
+          "below55": 0,
+          "over_budget": 1,
+          "objects": {
+            "mean": 387.002,
+            "p99": 755,
+            "min": 200,
+            "max": 763
+          },
+          "heap_kb": {
+            "mean": 124070.3909,
+            "p99": 169734.4629,
+            "min": 79159.7871,
+            "max": 171142.1426
+          },
+          "native_machine": null,
+          "sequence_machine": "aya",
+          "sequence_resources": true,
+          "audio_bgm": 0,
+          "audio_se": 0,
+          "ended_at": null,
+          "error": null,
+          "exe_sha256": "6d85ef9753a30c5323cd873e0512d7db38c845233dcf379434df9f2f3d54930e",
+          "lua_tree": {
+            "files": 3191,
+            "sha256": "533eb7751dcade78a116a9209acab9d7a7609ab32a9d1803d237cc2567573b6c"
+          }
+        }
+      }
+    },
+    {
+      "game": "th34",
+      "level": 32,
+      "card": 4401,
+      "sequence": "th07_lunatic",
+      "chapter": "6",
+      "modes": {
+        "practice": {
+          "directory": "allworks-baseline-screen/th34-practice",
+          "samples": 1500,
+          "logic_ms": {
+            "mean": 1.9861,
+            "p99": 4.7093,
+            "min": 0.2295,
+            "max": 16.641
+          },
+          "render_ms": {
+            "mean": 1.0178,
+            "p99": 2.1603,
+            "min": 0.3316,
+            "max": 15.5287
+          },
+          "combined_ms": {
+            "mean": 3.0039,
+            "p99": 6.2641,
+            "min": 0.5671,
+            "max": 22.3929
+          },
+          "fps": {
+            "mean": 59.9652,
+            "p99": 60.0002,
+            "min": 59.5899,
+            "max": 60.0002
+          },
+          "below55": 0,
+          "over_budget": 3,
+          "objects": {
+            "mean": 482.722,
+            "p99": 871,
+            "min": 53,
+            "max": 880
+          },
+          "heap_kb": {
+            "mean": 116242.8384,
+            "p99": 146709.8945,
+            "min": 77936.1934,
+            "max": 147742.1797
+          },
+          "native_machine": null,
+          "sequence_machine": null,
+          "sequence_resources": false,
+          "audio_bgm": 0,
+          "audio_se": 0,
+          "ended_at": null,
+          "error": null,
+          "exe_sha256": "6d85ef9753a30c5323cd873e0512d7db38c845233dcf379434df9f2f3d54930e",
+          "lua_tree": null
+        },
+        "sequence": {
+          "directory": "allworks-baseline-sequence-retry/th34-sequence",
+          "samples": 1500,
+          "logic_ms": {
+            "mean": 2.6435,
+            "p99": 6.9693,
+            "min": 0.1807,
+            "max": 17.8597
+          },
+          "render_ms": {
+            "mean": 1.6394,
+            "p99": 5.2532,
+            "min": 0.3265,
+            "max": 16.7715
+          },
+          "combined_ms": {
+            "mean": 4.2829,
+            "p99": 12.3141,
+            "min": 0.5166,
+            "max": 20.1721
+          },
+          "fps": {
+            "mean": 59.9403,
+            "p99": 60.0002,
+            "min": 59.5284,
+            "max": 60.0002
+          },
+          "below55": 0,
+          "over_budget": 3,
+          "objects": {
+            "mean": 548.9807,
+            "p99": 1159,
+            "min": 15,
+            "max": 1169
+          },
+          "heap_kb": {
+            "mean": 117865.4715,
+            "p99": 166591.2607,
+            "min": 73426.2871,
+            "max": 169441.5615
+          },
+          "native_machine": null,
+          "sequence_machine": "reimua",
+          "sequence_resources": true,
+          "audio_bgm": 0,
+          "audio_se": 0,
+          "ended_at": null,
+          "error": null,
+          "exe_sha256": "6d85ef9753a30c5323cd873e0512d7db38c845233dcf379434df9f2f3d54930e",
+          "lua_tree": {
+            "files": 3191,
+            "sha256": "533eb7751dcade78a116a9209acab9d7a7609ab32a9d1803d237cc2567573b6c"
+          }
+        }
+      }
+    },
+    {
+      "game": "th35",
+      "level": 33,
+      "card": 3600,
+      "sequence": "th10_lunatic",
+      "chapter": "6",
+      "modes": {
+        "practice": {
+          "directory": "allworks-baseline-screen/th35-practice",
+          "samples": 1500,
+          "logic_ms": {
+            "mean": 6.0847,
+            "p99": 10.7853,
+            "min": 2.8597,
+            "max": 13.9394
+          },
+          "render_ms": {
+            "mean": 2.999,
+            "p99": 4.6698,
+            "min": 1.5702,
+            "max": 6.6567
+          },
+          "combined_ms": {
+            "mean": 9.0837,
+            "p99": 14.9724,
+            "min": 4.4468,
+            "max": 17.8527
+          },
+          "fps": {
+            "mean": 59.9663,
+            "p99": 60.0002,
+            "min": 59.5789,
+            "max": 60.0002
+          },
+          "below55": 0,
+          "over_budget": 6,
+          "objects": {
+            "mean": 1423.762,
+            "p99": 1621,
+            "min": 840,
+            "max": 1637
+          },
+          "heap_kb": {
+            "mean": 138930.2582,
+            "p99": 193728.1621,
+            "min": 81973.959,
+            "max": 196015.1113
+          },
+          "native_machine": null,
+          "sequence_machine": null,
+          "sequence_resources": false,
+          "audio_bgm": 0,
+          "audio_se": 0,
+          "ended_at": null,
+          "error": null,
+          "exe_sha256": "6d85ef9753a30c5323cd873e0512d7db38c845233dcf379434df9f2f3d54930e",
+          "lua_tree": null
+        },
+        "sequence": {
+          "directory": "allworks-baseline-screen/th35-sequence",
+          "samples": 1500,
+          "logic_ms": {
+            "mean": 3.1401,
+            "p99": 10.2646,
+            "min": 0.3859,
+            "max": 23.5529
+          },
+          "render_ms": {
+            "mean": 2.2626,
+            "p99": 8.1282,
+            "min": 0.709,
+            "max": 12.989
+          },
+          "combined_ms": {
+            "mean": 5.4027,
+            "p99": 17.485,
+            "min": 1.1364,
+            "max": 34.7958
+          },
+          "fps": {
+            "mean": 59.7042,
+            "p99": 60.0002,
+            "min": 56.4899,
+            "max": 60.0002
+          },
+          "below55": 0,
+          "over_budget": 16,
+          "objects": {
+            "mean": 614.5287,
+            "p99": 2016,
+            "min": 102,
+            "max": 2137
+          },
+          "heap_kb": {
+            "mean": 139892.3758,
+            "p99": 195467.9893,
+            "min": 83612.958,
+            "max": 198145.8994
+          },
+          "native_machine": null,
+          "sequence_machine": "reimua",
+          "sequence_resources": true,
+          "audio_bgm": 0,
+          "audio_se": 0,
+          "ended_at": null,
+          "error": null,
+          "exe_sha256": "6d85ef9753a30c5323cd873e0512d7db38c845233dcf379434df9f2f3d54930e",
+          "lua_tree": null
+        }
+      }
+    },
+    {
+      "game": "th37",
+      "level": 35,
+      "card": 37067,
+      "sequence": "thmhj2_lunatic",
+      "chapter": "6",
+      "modes": {
+        "practice": {
+          "directory": "allworks-cache-final/th37-practice",
+          "samples": 3300,
+          "logic_ms": {
+            "mean": 6.7577,
+            "p99": 13.6702,
+            "min": 1.5378,
+            "max": 56.2249
+          },
+          "render_ms": {
+            "mean": 1.8858,
+            "p99": 3.7855,
+            "min": 0.6815,
+            "max": 5.7803
+          },
+          "combined_ms": {
+            "mean": 8.6436,
+            "p99": 17.1184,
+            "min": 2.2872,
+            "max": 58.0251
+          },
+          "fps": {
+            "mean": 59.5619,
+            "p99": 60.0002,
+            "min": 51.3065,
+            "max": 60.0002
+          },
+          "below55": 59,
+          "over_budget": 42,
+          "objects": {
+            "mean": 910.3067,
+            "p99": 1346,
+            "min": 190,
+            "max": 1359
+          },
+          "heap_kb": {
+            "mean": 158639.6706,
+            "p99": 205896.9727,
+            "min": 102650.6641,
+            "max": 209727.2588
+          },
+          "native_machine": "reimu",
+          "sequence_machine": null,
+          "sequence_resources": false,
+          "audio_bgm": 0,
+          "audio_se": 0,
+          "ended_at": null,
+          "error": null,
+          "exe_sha256": "f09734a801693599ffb83736f61de1e4d379b0ad166f173cdadc12f831428b1d",
+          "lua_tree": {
+            "files": 3196,
+            "sha256": "954fab1ee0969a346d327ab91eca4813bedc00a2a5b5abfb476c5eddc3cf2ad4"
+          }
+        },
+        "sequence": {
+          "directory": "allworks-cache-final/th37-sequence",
+          "samples": 3300,
+          "logic_ms": {
+            "mean": 3.8312,
+            "p99": 9.5634,
+            "min": 0.5341,
+            "max": 41.6232
+          },
+          "render_ms": {
+            "mean": 1.4428,
+            "p99": 3.5395,
+            "min": 0.5961,
+            "max": 7.2108
+          },
+          "combined_ms": {
+            "mean": 5.2739,
+            "p99": 12.8192,
+            "min": 1.1625,
+            "max": 42.8986
+          },
+          "fps": {
+            "mean": 59.7889,
+            "p99": 60.0002,
+            "min": 54.806,
+            "max": 60.0002
+          },
+          "below55": 57,
+          "over_budget": 1,
+          "objects": {
+            "mean": 461.9406,
+            "p99": 929,
+            "min": 46,
+            "max": 964
+          },
+          "heap_kb": {
+            "mean": 153645.7056,
+            "p99": 203787.3965,
+            "min": 94794.6143,
+            "max": 206680.2686
+          },
+          "native_machine": "reimu",
+          "sequence_machine": "reimu",
+          "sequence_resources": false,
+          "audio_bgm": 0,
+          "audio_se": 0,
+          "ended_at": null,
+          "error": null,
+          "exe_sha256": "f09734a801693599ffb83736f61de1e4d379b0ad166f173cdadc12f831428b1d",
+          "lua_tree": {
+            "files": 3196,
+            "sha256": "954fab1ee0969a346d327ab91eca4813bedc00a2a5b5abfb476c5eddc3cf2ad4"
+          }
+        }
+      }
+    },
+    {
+      "game": "th38",
+      "level": 36,
+      "card": 38066,
+      "sequence": "thasl_lunatic",
+      "chapter": "6",
+      "modes": {
+        "practice": {
+          "directory": "allworks-cache-final/th38-practice",
+          "samples": 3300,
+          "logic_ms": {
+            "mean": 5.5535,
+            "p99": 11.6506,
+            "min": 1.5556,
+            "max": 16.806
+          },
+          "render_ms": {
+            "mean": 1.9441,
+            "p99": 3.7283,
+            "min": 0.8523,
+            "max": 6.012
+          },
+          "combined_ms": {
+            "mean": 7.4976,
+            "p99": 14.9787,
+            "min": 2.4884,
+            "max": 20.2838
+          },
+          "fps": {
+            "mean": 59.4865,
+            "p99": 60.0002,
+            "min": 44.542,
+            "max": 60.0002
+          },
+          "below55": 119,
+          "over_budget": 16,
+          "objects": {
+            "mean": 827.7573,
+            "p99": 1143,
+            "min": 85,
+            "max": 1174
+          },
+          "heap_kb": {
+            "mean": 128635.4708,
+            "p99": 182599.9951,
+            "min": 75259.5029,
+            "max": 189106.7568
+          },
+          "native_machine": "reimu",
+          "sequence_machine": null,
+          "sequence_resources": false,
+          "audio_bgm": 0,
+          "audio_se": 0,
+          "ended_at": null,
+          "error": null,
+          "exe_sha256": "f09734a801693599ffb83736f61de1e4d379b0ad166f173cdadc12f831428b1d",
+          "lua_tree": {
+            "files": 3196,
+            "sha256": "954fab1ee0969a346d327ab91eca4813bedc00a2a5b5abfb476c5eddc3cf2ad4"
+          }
+        },
+        "sequence": {
+          "directory": "allworks-cache-final/th38-sequence",
+          "samples": 3300,
+          "logic_ms": {
+            "mean": 5.224,
+            "p99": 12.5701,
+            "min": 1.2199,
+            "max": 17.8322
+          },
+          "render_ms": {
+            "mean": 1.6919,
+            "p99": 4.0212,
+            "min": 0.712,
+            "max": 6.7409
+          },
+          "combined_ms": {
+            "mean": 6.9159,
+            "p99": 15.6874,
+            "min": 2.0343,
+            "max": 21.6972
+          },
+          "fps": {
+            "mean": 59.5256,
+            "p99": 60.0002,
+            "min": 44.8956,
+            "max": 60.0002
+          },
+          "below55": 61,
+          "over_budget": 23,
+          "objects": {
+            "mean": 668.25,
+            "p99": 1495,
+            "min": 68,
+            "max": 1518
+          },
+          "heap_kb": {
+            "mean": 127374.28,
+            "p99": 179831.334,
+            "min": 75843.4395,
+            "max": 188086.8262
+          },
+          "native_machine": "reimu",
+          "sequence_machine": "reimu",
+          "sequence_resources": false,
+          "audio_bgm": 0,
+          "audio_se": 0,
+          "ended_at": null,
+          "error": null,
+          "exe_sha256": "f09734a801693599ffb83736f61de1e4d379b0ad166f173cdadc12f831428b1d",
+          "lua_tree": {
+            "files": 3196,
+            "sha256": "954fab1ee0969a346d327ab91eca4813bedc00a2a5b5abfb476c5eddc3cf2ad4"
+          }
+        }
+      }
+    },
+    {
+      "game": "th39",
+      "level": 37,
+      "card": 39060,
+      "sequence": "thmhj3_lunatic",
+      "chapter": "6",
+      "modes": {
+        "practice": {
+          "directory": "allworks-cache-final/th39-practice",
+          "samples": 3300,
+          "logic_ms": {
+            "mean": 7.2405,
+            "p99": 15.7858,
+            "min": 2.5513,
+            "max": 23.8151
+          },
+          "render_ms": {
+            "mean": 3.7359,
+            "p99": 8.6187,
+            "min": 1.1105,
+            "max": 83.7441
+          },
+          "combined_ms": {
+            "mean": 10.9764,
+            "p99": 23.7733,
+            "min": 3.7384,
+            "max": 94.618
+          },
+          "fps": {
+            "mean": 58.7702,
+            "p99": 60.0002,
+            "min": 46.8301,
+            "max": 60.0002
+          },
+          "below55": 273,
+          "over_budget": 229,
+          "objects": {
+            "mean": 1765.7173,
+            "p99": 2603,
+            "min": 340,
+            "max": 2664
+          },
+          "heap_kb": {
+            "mean": 163887.246,
+            "p99": 232398.9717,
+            "min": 93851.5605,
+            "max": 241483.8701
+          },
+          "native_machine": "reimu",
+          "sequence_machine": null,
+          "sequence_resources": false,
+          "audio_bgm": 0,
+          "audio_se": 0,
+          "ended_at": null,
+          "error": null,
+          "exe_sha256": "f09734a801693599ffb83736f61de1e4d379b0ad166f173cdadc12f831428b1d",
+          "lua_tree": {
+            "files": 3196,
+            "sha256": "954fab1ee0969a346d327ab91eca4813bedc00a2a5b5abfb476c5eddc3cf2ad4"
+          }
+        },
+        "sequence": {
+          "directory": "allworks-cache-final/th39-sequence",
+          "samples": 3300,
+          "logic_ms": {
+            "mean": 6.2703,
+            "p99": 16.7824,
+            "min": 1.5145,
+            "max": 24.8809
+          },
+          "render_ms": {
+            "mean": 2.5763,
+            "p99": 6.7934,
+            "min": 0.7681,
+            "max": 43.401
+          },
+          "combined_ms": {
+            "mean": 8.8466,
+            "p99": 23.6037,
+            "min": 2.321,
+            "max": 46.0701
+          },
+          "fps": {
+            "mean": 58.6185,
+            "p99": 60.0002,
+            "min": 46.9779,
+            "max": 60.0002
+          },
+          "below55": 183,
+          "over_budget": 138,
+          "objects": {
+            "mean": 1207.1752,
+            "p99": 2070,
+            "min": 167,
+            "max": 2137
+          },
+          "heap_kb": {
+            "mean": 135610.2409,
+            "p99": 195676.5303,
+            "min": 77502.792,
+            "max": 200901.9082
+          },
+          "native_machine": "reimu",
+          "sequence_machine": "reimu",
+          "sequence_resources": false,
+          "audio_bgm": 0,
+          "audio_se": 0,
+          "ended_at": null,
+          "error": null,
+          "exe_sha256": "f09734a801693599ffb83736f61de1e4d379b0ad166f173cdadc12f831428b1d",
+          "lua_tree": {
+            "files": 3196,
+            "sha256": "954fab1ee0969a346d327ab91eca4813bedc00a2a5b5abfb476c5eddc3cf2ad4"
+          }
+        }
+      }
+    },
+    {
+      "game": "th40",
+      "level": 38,
+      "card": 68041,
+      "sequence": "thsss_lunatic",
+      "chapter": "6",
+      "modes": {
+        "practice": {
+          "directory": "allworks-baseline-screen/th40-practice",
+          "samples": 1500,
+          "logic_ms": {
+            "mean": 4.0293,
+            "p99": 8.8985,
+            "min": 0.4846,
+            "max": 14.3394
+          },
+          "render_ms": {
+            "mean": 1.2805,
+            "p99": 2.4188,
+            "min": 0.5218,
+            "max": 4.6563
+          },
+          "combined_ms": {
+            "mean": 5.3098,
+            "p99": 10.8888,
+            "min": 1.0092,
+            "max": 16.3288
+          },
+          "fps": {
+            "mean": 59.9852,
+            "p99": 60.0002,
+            "min": 50.7987,
+            "max": 60.0002
+          },
+          "below55": 1,
+          "over_budget": 0,
+          "objects": {
+            "mean": 848.4713,
+            "p99": 1063,
+            "min": 159,
+            "max": 1095
+          },
+          "heap_kb": {
+            "mean": 127261.4858,
+            "p99": 181746.6152,
+            "min": 78041.5332,
+            "max": 185227.2441
+          },
+          "native_machine": "A",
+          "sequence_machine": null,
+          "sequence_resources": false,
+          "audio_bgm": 0,
+          "audio_se": 0,
+          "ended_at": null,
+          "error": null,
+          "exe_sha256": "6d85ef9753a30c5323cd873e0512d7db38c845233dcf379434df9f2f3d54930e",
+          "lua_tree": null
+        },
+        "sequence": {
+          "directory": "allworks-baseline-screen/th40-sequence",
+          "samples": 1500,
+          "logic_ms": {
+            "mean": 1.1495,
+            "p99": 2.6711,
+            "min": 0.2353,
+            "max": 6.7681
+          },
+          "render_ms": {
+            "mean": 0.7135,
+            "p99": 1.6642,
+            "min": 0.3391,
+            "max": 15.8907
+          },
+          "combined_ms": {
+            "mean": 1.863,
+            "p99": 4.1232,
+            "min": 0.6011,
+            "max": 18.0164
+          },
+          "fps": {
+            "mean": 59.9905,
+            "p99": 60.0002,
+            "min": 59.8574,
+            "max": 60.0002
+          },
+          "below55": 0,
+          "over_budget": 1,
+          "objects": {
+            "mean": 328.6953,
+            "p99": 645,
+            "min": 92,
+            "max": 711
+          },
+          "heap_kb": {
+            "mean": 114725.2104,
+            "p99": 158342.4648,
+            "min": 74310.7656,
+            "max": 159642.4023
+          },
+          "native_machine": "A",
+          "sequence_machine": "A",
+          "sequence_resources": false,
+          "audio_bgm": 0,
+          "audio_se": 0,
+          "ended_at": null,
+          "error": null,
+          "exe_sha256": "6d85ef9753a30c5323cd873e0512d7db38c845233dcf379434df9f2f3d54930e",
+          "lua_tree": null
+        }
+      }
+    },
+    {
+      "game": "th41",
+      "level": 39,
+      "card": 70610,
+      "sequence": "theis_lunatic",
+      "chapter": "6",
+      "modes": {
+        "practice": {
+          "directory": "allworks-baseline-screen/th41-practice",
+          "samples": 1500,
+          "logic_ms": {
+            "mean": 1.3893,
+            "p99": 2.2801,
+            "min": 0.6641,
+            "max": 4.6792
+          },
+          "render_ms": {
+            "mean": 1.0486,
+            "p99": 2.2532,
+            "min": 0.6494,
+            "max": 5.8928
+          },
+          "combined_ms": {
+            "mean": 2.4379,
+            "p99": 4.2512,
+            "min": 1.351,
+            "max": 7.0789
+          },
+          "fps": {
+            "mean": 59.9956,
+            "p99": 60.0002,
+            "min": 59.962,
+            "max": 60.0002
+          },
+          "below55": 0,
+          "over_budget": 0,
+          "objects": {
+            "mean": 485.4273,
+            "p99": 757,
+            "min": 130,
+            "max": 798
+          },
+          "heap_kb": {
+            "mean": 122837.9102,
+            "p99": 164568.7734,
+            "min": 77078.9648,
+            "max": 166309.9961
+          },
+          "native_machine": "reimu",
+          "sequence_machine": null,
+          "sequence_resources": false,
+          "audio_bgm": 0,
+          "audio_se": 0,
+          "ended_at": null,
+          "error": null,
+          "exe_sha256": "6d85ef9753a30c5323cd873e0512d7db38c845233dcf379434df9f2f3d54930e",
+          "lua_tree": null
+        },
+        "sequence": {
+          "directory": "allworks-baseline-screen/th41-sequence",
+          "samples": 1500,
+          "logic_ms": {
+            "mean": 0.963,
+            "p99": 1.6537,
+            "min": 0.5777,
+            "max": 14.5978
+          },
+          "render_ms": {
+            "mean": 1.1322,
+            "p99": 2.1235,
+            "min": 0.6642,
+            "max": 7.33
+          },
+          "combined_ms": {
+            "mean": 2.0951,
+            "p99": 3.5274,
+            "min": 1.3236,
+            "max": 16.7285
+          },
+          "fps": {
+            "mean": 59.9955,
+            "p99": 60.0002,
+            "min": 59.9193,
+            "max": 60.0002
+          },
+          "below55": 0,
+          "over_budget": 1,
+          "objects": {
+            "mean": 211.5733,
+            "p99": 565,
+            "min": 78,
+            "max": 578
+          },
+          "heap_kb": {
+            "mean": 120250.0433,
+            "p99": 157286.8672,
+            "min": 75980.7852,
+            "max": 158397.0117
+          },
+          "native_machine": "reimu",
+          "sequence_machine": "reimu",
+          "sequence_resources": false,
+          "audio_bgm": 0,
+          "audio_se": 0,
+          "ended_at": null,
+          "error": null,
+          "exe_sha256": "6d85ef9753a30c5323cd873e0512d7db38c845233dcf379434df9f2f3d54930e",
+          "lua_tree": null
+        }
+      }
+    },
+    {
+      "game": "th42",
+      "level": 40,
+      "card": 72039,
+      "sequence": "likedreamer_chaos",
+      "chapter": "10",
+      "modes": {
+        "practice": {
+          "directory": "allworks-final-changed/th42-practice",
+          "samples": 2027,
+          "logic_ms": {
+            "mean": 2.8487,
+            "p99": 5.7377,
+            "min": 0.0933,
+            "max": 6.8918
+          },
+          "render_ms": {
+            "mean": 2.0398,
+            "p99": 8.6509,
+            "min": 0.1315,
+            "max": 12.8641
+          },
+          "combined_ms": {
+            "mean": 4.8885,
+            "p99": 13.7147,
+            "min": 0.2263,
+            "max": 19.19
+          },
+          "fps": {
+            "mean": 59.9822,
+            "p99": 60.0002,
+            "min": 59.5908,
+            "max": 60.0002
+          },
+          "below55": 0,
+          "over_budget": 3,
+          "objects": {
+            "mean": 1380.5989,
+            "p99": 3506,
+            "min": 8,
+            "max": 3644
+          },
+          "heap_kb": {
+            "mean": 127451.9064,
+            "p99": 172599.3027,
+            "min": 82523.9668,
+            "max": 180073.6152
+          },
+          "native_machine": "dream",
+          "sequence_machine": null,
+          "sequence_resources": false,
+          "audio_bgm": 0,
+          "audio_se": 0,
+          "ended_at": 2326,
+          "error": null,
+          "exe_sha256": "6d85ef9753a30c5323cd873e0512d7db38c845233dcf379434df9f2f3d54930e",
+          "lua_tree": {
+            "files": 3195,
+            "sha256": "464bba6a229d88633ffc811dccac5d5778a520f804b33d05904d6713b332455b"
+          }
+        },
+        "sequence": {
+          "directory": "allworks-final-changed/th42-sequence",
+          "samples": 3300,
+          "logic_ms": {
+            "mean": 0.8209,
+            "p99": 2.0574,
+            "min": 0.209,
+            "max": 5.7453
+          },
+          "render_ms": {
+            "mean": 0.8497,
+            "p99": 1.7311,
+            "min": 0.3352,
+            "max": 5.7355
+          },
+          "combined_ms": {
+            "mean": 1.6706,
+            "p99": 3.4126,
+            "min": 0.571,
+            "max": 6.9893
+          },
+          "fps": {
+            "mean": 59.9944,
+            "p99": 60.0002,
+            "min": 59.7645,
+            "max": 60.0002
+          },
+          "below55": 0,
+          "over_budget": 0,
+          "objects": {
+            "mean": 246.5967,
+            "p99": 410,
+            "min": 52,
+            "max": 491
+          },
+          "heap_kb": {
+            "mean": 122819.0059,
+            "p99": 165525.7725,
+            "min": 78795.999,
+            "max": 167009.2998
+          },
+          "native_machine": "dream",
+          "sequence_machine": "dream",
+          "sequence_resources": false,
+          "audio_bgm": 0,
+          "audio_se": 0,
+          "ended_at": null,
+          "error": null,
+          "exe_sha256": "6d85ef9753a30c5323cd873e0512d7db38c845233dcf379434df9f2f3d54930e",
+          "lua_tree": {
+            "files": 3195,
+            "sha256": "464bba6a229d88633ffc811dccac5d5778a520f804b33d05904d6713b332455b"
+          }
+        }
+      }
+    },
+    {
+      "game": "th43",
+      "level": 41,
+      "card": 86410,
+      "sequence": "thbdb_lunatic",
+      "chapter": "6",
+      "modes": {
+        "practice": {
+          "directory": "allworks-final-changed/th43-practice",
+          "samples": 3300,
+          "logic_ms": {
+            "mean": 1.9457,
+            "p99": 3.5947,
+            "min": 0.5698,
+            "max": 23.8363
+          },
+          "render_ms": {
+            "mean": 1.8773,
+            "p99": 3.9563,
+            "min": 0.5692,
+            "max": 9.4483
+          },
+          "combined_ms": {
+            "mean": 3.823,
+            "p99": 7.3225,
+            "min": 1.1871,
+            "max": 25.2207
+          },
+          "fps": {
+            "mean": 59.9878,
+            "p99": 60.0002,
+            "min": 59.4721,
+            "max": 60.0002
+          },
+          "below55": 0,
+          "over_budget": 1,
+          "objects": {
+            "mean": 1155.157,
+            "p99": 1775,
+            "min": 176,
+            "max": 1835
+          },
+          "heap_kb": {
+            "mean": 117506.2289,
+            "p99": 162752.1729,
+            "min": 78010.6885,
+            "max": 164322.3643
+          },
+          "native_machine": "reimu",
+          "sequence_machine": null,
+          "sequence_resources": false,
+          "audio_bgm": 0,
+          "audio_se": 0,
+          "ended_at": null,
+          "error": null,
+          "exe_sha256": "6d85ef9753a30c5323cd873e0512d7db38c845233dcf379434df9f2f3d54930e",
+          "lua_tree": {
+            "files": 3195,
+            "sha256": "464bba6a229d88633ffc811dccac5d5778a520f804b33d05904d6713b332455b"
+          }
+        },
+        "sequence": {
+          "directory": "allworks-final-changed/th43-sequence",
+          "samples": 3300,
+          "logic_ms": {
+            "mean": 1.482,
+            "p99": 3.7847,
+            "min": 0.3082,
+            "max": 10.705
+          },
+          "render_ms": {
+            "mean": 1.4437,
+            "p99": 3.0831,
+            "min": 0.5352,
+            "max": 8.3315
+          },
+          "combined_ms": {
+            "mean": 2.9258,
+            "p99": 6.4337,
+            "min": 0.863,
+            "max": 13.2243
+          },
+          "fps": {
+            "mean": 59.9966,
+            "p99": 60.0002,
+            "min": 59.9352,
+            "max": 60.0002
+          },
+          "below55": 0,
+          "over_budget": 0,
+          "objects": {
+            "mean": 734.5836,
+            "p99": 1773,
+            "min": 145,
+            "max": 2020
+          },
+          "heap_kb": {
+            "mean": 121919.8914,
+            "p99": 157883.5029,
+            "min": 76298.0928,
+            "max": 159120.4873
+          },
+          "native_machine": "reimu",
+          "sequence_machine": "reimu",
+          "sequence_resources": false,
+          "audio_bgm": 0,
+          "audio_se": 0,
+          "ended_at": null,
+          "error": null,
+          "exe_sha256": "6d85ef9753a30c5323cd873e0512d7db38c845233dcf379434df9f2f3d54930e",
+          "lua_tree": {
+            "files": 3195,
+            "sha256": "f704e160936af129fc6fc74ff0b7f1c304add6c5099166165a5fdf0cb9fbb43d"
+          }
+        }
+      }
+    }
+  ],
+  "comparisons": [
+    {
+      "name": "雪莲华六面道中",
+      "before": {
+        "directory": "allworks-snow-diagnostic",
+        "samples": 1500,
+        "logic_ms": {
+          "mean": 7.4845,
+          "p99": 26.1324,
+          "min": 1.5774,
+          "max": 34.1278
+        },
+        "render_ms": {
+          "mean": 1.6331,
+          "p99": 3.549,
+          "min": 0.7535,
+          "max": 5.4514
+        },
+        "combined_ms": {
+          "mean": 9.1176,
+          "p99": 28.3619,
+          "min": 2.3946,
+          "max": 37.3334
+        },
+        "fps": {
+          "mean": 58.6761,
+          "p99": 60.0002,
+          "min": 49.0027,
+          "max": 60.0002
+        },
+        "below55": 21,
+        "over_budget": 63,
+        "objects": {
+          "mean": 833.5133,
+          "p99": 1507,
+          "min": 169,
+          "max": 1518
+        },
+        "heap_kb": {
+          "mean": 123615.6533,
+          "p99": 173617.1699,
+          "min": 74868.1777,
+          "max": 178789.4668
+        },
+        "native_machine": "reimu",
+        "sequence_machine": "reimu",
+        "sequence_resources": false,
+        "audio_bgm": 0,
+        "audio_se": 0,
+        "ended_at": null,
+        "error": null,
+        "exe_sha256": "6d85ef9753a30c5323cd873e0512d7db38c845233dcf379434df9f2f3d54930e",
+        "lua_tree": {
+          "files": 3191,
+          "sha256": "533eb7751dcade78a116a9209acab9d7a7609ab32a9d1803d237cc2567573b6c"
+        }
+      },
+      "after": {
+        "directory": "allworks-cache-final/th38-sequence",
+        "samples": 1500,
+        "logic_ms": {
+          "mean": 6.2623,
+          "p99": 13.8816,
+          "min": 1.7118,
+          "max": 17.8322
+        },
+        "render_ms": {
+          "mean": 1.8579,
+          "p99": 3.8063,
+          "min": 0.8436,
+          "max": 6.5036
+        },
+        "combined_ms": {
+          "mean": 8.1202,
+          "p99": 17.2956,
+          "min": 2.6289,
+          "max": 21.6972
+        },
+        "fps": {
+          "mean": 59.5908,
+          "p99": 60.0002,
+          "min": 44.8956,
+          "max": 60.0002
+        },
+        "below55": 1,
+        "over_budget": 17,
+        "objects": {
+          "mean": 833.5133,
+          "p99": 1507,
+          "min": 169,
+          "max": 1518
+        },
+        "heap_kb": {
+          "mean": 123621.1368,
+          "p99": 173974.2559,
+          "min": 75843.4395,
+          "max": 177844.6973
+        },
+        "native_machine": "reimu",
+        "sequence_machine": "reimu",
+        "sequence_resources": false,
+        "audio_bgm": 0,
+        "audio_se": 0,
+        "ended_at": null,
+        "error": null,
+        "exe_sha256": "f09734a801693599ffb83736f61de1e4d379b0ad166f173cdadc12f831428b1d",
+        "lua_tree": {
+          "files": 3196,
+          "sha256": "954fab1ee0969a346d327ab91eca4813bedc00a2a5b5abfb476c5eddc3cf2ad4"
+        }
+      }
+    },
+    {
+      "name": "Like Dreamer 第十关攻击九",
+      "before": {
+        "directory": "allworks-like-baseline-control",
+        "samples": 1500,
+        "logic_ms": {
+          "mean": 3.9123,
+          "p99": 6.5222,
+          "min": 2.6916,
+          "max": 8.316
+        },
+        "render_ms": {
+          "mean": 2.7098,
+          "p99": 17.1144,
+          "min": 0.9002,
+          "max": 33.3378
+        },
+        "combined_ms": {
+          "mean": 6.622,
+          "p99": 21.8699,
+          "min": 3.7228,
+          "max": 38.7613
+        },
+        "fps": {
+          "mean": 59.3603,
+          "p99": 60.0002,
+          "min": 53.5984,
+          "max": 60.0002
+        },
+        "below55": 53,
+        "over_budget": 36,
+        "objects": {
+          "mean": 1533.2367,
+          "p99": 3547,
+          "min": 1038,
+          "max": 3644
+        },
+        "heap_kb": {
+          "mean": 125002.3161,
+          "p99": 167707.5508,
+          "min": 81672.6758,
+          "max": 176157.2383
+        },
+        "native_machine": "dream",
+        "sequence_machine": null,
+        "sequence_resources": false,
+        "audio_bgm": 0,
+        "audio_se": 0,
+        "ended_at": null,
+        "error": null,
+        "exe_sha256": "6d85ef9753a30c5323cd873e0512d7db38c845233dcf379434df9f2f3d54930e",
+        "lua_tree": {
+          "files": 3192,
+          "sha256": "afc631e210c892c9c1109a0e5a803c5b7f6c16e04b9d7c21071ec8767fde2eaa"
+        }
+      },
+      "after": {
+        "directory": "allworks-final-changed/th42-practice",
+        "samples": 1500,
+        "logic_ms": {
+          "mean": 3.0858,
+          "p99": 5.6488,
+          "min": 1.9984,
+          "max": 6.8918
+        },
+        "render_ms": {
+          "mean": 2.1499,
+          "p99": 8.7428,
+          "min": 0.867,
+          "max": 12.8641
+        },
+        "combined_ms": {
+          "mean": 5.2357,
+          "p99": 13.8932,
+          "min": 2.8739,
+          "max": 19.19
+        },
+        "fps": {
+          "mean": 59.9783,
+          "p99": 60.0002,
+          "min": 59.5908,
+          "max": 60.0002
+        },
+        "below55": 0,
+        "over_budget": 3,
+        "objects": {
+          "mean": 1533.2367,
+          "p99": 3547,
+          "min": 1038,
+          "max": 3644
+        },
+        "heap_kb": {
+          "mean": 129556.965,
+          "p99": 175093.1309,
+          "min": 82523.9668,
+          "max": 180073.6152
+        },
+        "native_machine": "dream",
+        "sequence_machine": null,
+        "sequence_resources": false,
+        "audio_bgm": 0,
+        "audio_se": 0,
+        "ended_at": 2326,
+        "error": null,
+        "exe_sha256": "6d85ef9753a30c5323cd873e0512d7db38c845233dcf379434df9f2f3d54930e",
+        "lua_tree": {
+          "files": 3195,
+          "sha256": "464bba6a229d88633ffc811dccac5d5778a520f804b33d05904d6713b332455b"
+        }
+      }
+    },
+    {
+      "name": "永夜六面道中（相同可执行文件）",
+      "before": {
+        "directory": "allworks-night-matched/before-sequence",
+        "samples": 3300,
+        "logic_ms": {
+          "mean": 21.3139,
+          "p99": 88.8029,
+          "min": 1.7894,
+          "max": 132.8035
+        },
+        "render_ms": {
+          "mean": 3.4896,
+          "p99": 7.687,
+          "min": 0.9176,
+          "max": 60.392
+        },
+        "combined_ms": {
+          "mean": 24.8035,
+          "p99": 93.7044,
+          "min": 2.7431,
+          "max": 137.8703
+        },
+        "fps": {
+          "mean": 41.4389,
+          "p99": 60.0002,
+          "min": 15.1368,
+          "max": 60.0002
+        },
+        "below55": 1963,
+        "over_budget": 1791,
+        "objects": {
+          "mean": 1207.1752,
+          "p99": 2070,
+          "min": 167,
+          "max": 2137
+        },
+        "heap_kb": {
+          "mean": 137118.2364,
+          "p99": 199955.4199,
+          "min": 77827.9277,
+          "max": 207604.958
+        },
+        "native_machine": "reimu",
+        "sequence_machine": "reimu",
+        "sequence_resources": false,
+        "audio_bgm": 0,
+        "audio_se": 0,
+        "ended_at": null,
+        "error": null,
+        "exe_sha256": "cb396f0847ca97f196f32af26b28af95467bd01551055a2f7d192c858cb29b20",
+        "lua_tree": {
+          "files": 3195,
+          "sha256": "6d0369831019f106915bdc11e99aea34f6b717f8be5bde2b0570b340429ca0c2"
+        }
+      },
+      "after": {
+        "directory": "allworks-night-matched/after-sequence",
+        "samples": 3300,
+        "logic_ms": {
+          "mean": 7.3272,
+          "p99": 19.7522,
+          "min": 1.7607,
+          "max": 37.6231
+        },
+        "render_ms": {
+          "mean": 3.2217,
+          "p99": 8.1328,
+          "min": 0.9052,
+          "max": 52.8833
+        },
+        "combined_ms": {
+          "mean": 10.5488,
+          "p99": 27.3953,
+          "min": 2.6817,
+          "max": 56.1588
+        },
+        "fps": {
+          "mean": 57.7069,
+          "p99": 60.0002,
+          "min": 41.4333,
+          "max": 60.0002
+        },
+        "below55": 618,
+        "over_budget": 282,
+        "objects": {
+          "mean": 1207.1752,
+          "p99": 2070,
+          "min": 167,
+          "max": 2137
+        },
+        "heap_kb": {
+          "mean": 137198.2647,
+          "p99": 199553.415,
+          "min": 78001.5068,
+          "max": 208004.2246
+        },
+        "native_machine": "reimu",
+        "sequence_machine": "reimu",
+        "sequence_resources": false,
+        "audio_bgm": 0,
+        "audio_se": 0,
+        "ended_at": null,
+        "error": null,
+        "exe_sha256": "cb396f0847ca97f196f32af26b28af95467bd01551055a2f7d192c858cb29b20",
+        "lua_tree": {
+          "files": 3195,
+          "sha256": "1fe7e7dedc992067d2d6cef046a3ff858b1d6da433e5b4151d25c0e4da628bb9"
+        }
+      }
+    },
+    {
+      "name": "天月祝鸣（相同可执行文件）",
+      "before": {
+        "directory": "allworks-night-matched/before-practice",
+        "samples": 3300,
+        "logic_ms": {
+          "mean": 8.803,
+          "p99": 19.4927,
+          "min": 3.0456,
+          "max": 31.3575
+        },
+        "render_ms": {
+          "mean": 4.58,
+          "p99": 10.0256,
+          "min": 1.3784,
+          "max": 64.7671
+        },
+        "combined_ms": {
+          "mean": 13.383,
+          "p99": 29.5466,
+          "min": 4.5189,
+          "max": 75.9119
+        },
+        "fps": {
+          "mean": 57.2211,
+          "p99": 60.0002,
+          "min": 40.0716,
+          "max": 60.0002
+        },
+        "below55": 712,
+        "over_budget": 507,
+        "objects": {
+          "mean": 1765.7173,
+          "p99": 2603,
+          "min": 340,
+          "max": 2664
+        },
+        "heap_kb": {
+          "mean": 162942.542,
+          "p99": 228676.7002,
+          "min": 96419.71,
+          "max": 235162.71
+        },
+        "native_machine": "reimu",
+        "sequence_machine": null,
+        "sequence_resources": false,
+        "audio_bgm": 0,
+        "audio_se": 0,
+        "ended_at": null,
+        "error": null,
+        "exe_sha256": "cb396f0847ca97f196f32af26b28af95467bd01551055a2f7d192c858cb29b20",
+        "lua_tree": {
+          "files": 3195,
+          "sha256": "6d0369831019f106915bdc11e99aea34f6b717f8be5bde2b0570b340429ca0c2"
+        }
+      },
+      "after": {
+        "directory": "allworks-night-matched/after-practice",
+        "samples": 3300,
+        "logic_ms": {
+          "mean": 8.7184,
+          "p99": 18.0156,
+          "min": 3.0488,
+          "max": 26.8243
+        },
+        "render_ms": {
+          "mean": 4.578,
+          "p99": 9.7999,
+          "min": 1.3592,
+          "max": 77.1309
+        },
+        "combined_ms": {
+          "mean": 13.2964,
+          "p99": 28.1228,
+          "min": 4.423,
+          "max": 90.5273
+        },
+        "fps": {
+          "mean": 57.4,
+          "p99": 60.0002,
+          "min": 46.2249,
+          "max": 60.0002
+        },
+        "below55": 753,
+        "over_budget": 492,
+        "objects": {
+          "mean": 1765.7173,
+          "p99": 2603,
+          "min": 340,
+          "max": 2664
+        },
+        "heap_kb": {
+          "mean": 166484.4732,
+          "p99": 234789.0566,
+          "min": 95930.1035,
+          "max": 241786.4395
+        },
+        "native_machine": "reimu",
+        "sequence_machine": null,
+        "sequence_resources": false,
+        "audio_bgm": 0,
+        "audio_se": 0,
+        "ended_at": null,
+        "error": null,
+        "exe_sha256": "cb396f0847ca97f196f32af26b28af95467bd01551055a2f7d192c858cb29b20",
+        "lua_tree": {
+          "files": 3195,
+          "sha256": "1fe7e7dedc992067d2d6cef046a3ff858b1d6da433e5b4151d25c0e4da628bb9"
+        }
+      }
+    }
+  ],
+  "build": {
+    "engine": "E:\\fork\\bossrush\\windows\\build\\official-sub",
+    "version": "0.21.129",
+    "repository": "https://github.com/Legacy-LuaSTG-Engine/LuaSTG-Sub.git",
+    "ref": "master",
+    "commit": "8728b3f9e91e6cd577665a7f5777c6c7c23b5f31",
+    "submodules": "b734d3bb5b05ca4c3859bb174b131139fc72bd4d external/beautiful-win32-api (heads/main)\n 019020993ce33bdf56c876004e8b27139a0d011f external/image.qoi (0190209)\n 91ca29db9a4a4fd0eedaebcd5d5f3ba2ace5ae63 external/lua-cjson (2.1.0.8-43-g91ca29d)\n fff48de34357e8e86197a45f5b4bc2b1b28cce53 external/luajit2 (luastg-sub-20251111)\n d63939b5b5cd69ffeaa908f2ec38708a62ad3139 external/xmath (d63939b)\n f1cc2ae15e53a861a874c3034aae6798fde194ab imgui/imgui (v1.62-5575-gf1cc2ae15)\n 7eeb9168d2e5e6b14e266d8782ecf7e649dfc3a4 imgui/implot (v1.0-8-g7eeb916)",
+    "renderer_sha256": "b61881e2d12539a8d6ff00d04aacfaf86f136cd5fdea788625a3983ef61ccc94",
+    "pacer_source_sha256": "481f7daad5524b0ec6e7000d9aa5510f9c7e2d0e5c92acec232ea800f4114086",
+    "pacer_patch_sha256": "c64a9dc6f7180dbc61ba4636804ebe7db2da67599ceb15c85968f3d5fb7ce2e3",
+    "frame_pacing": "按上一帧实际起点限帧，不追赶旧截止时间",
+    "presentation": "无垂直同步时不在更新前等待 DXGI 队列；Present 必要时阻塞，保留画面提交",
+    "app_source_sha256": "0c9e9a716d0161c643659946cbf75f3186d66198acd05919e7287b286dcb5eb1",
+    "app_patch_sha256": "fdc23f5d17940275c0ea8f86f8242ab1f2b45ba4a8981ebf5f70078183479db4",
+    "swap_source_sha256": "1028b6c31aaaae779725be8ed7cb4dd015a8cae075722007e05268a4cddbc4dd",
+    "swap_patch_sha256": "8de32216422a975a5fcbc6144a1221d3c16c5211298e73d7a8f717501315f346",
+    "main_thread_affinity": "系统默认亲和性，不固定 CPU 0",
+    "application_source_sha256": "eed00dc8760a9fce50482b0f8c64ba37bf64b9625db92bfe44b2ceacce9e5b24",
+    "application_patch_sha256": "1c7df76c8d1868f78da8b9289c5699effdbce5d9a28bbf807add1b455c3e3a0d",
+    "patch_sha256": "65bba2aef92841c9cc349cc10d6f11791fdb8579e6526f1ccafa77281b122faa",
+    "exe_sha256": "f09734a801693599ffb83736f61de1e4d379b0ad166f173cdadc12f831428b1d"
+  },
+  "target_query": {
+    "checks": 72000,
+    "directory": "allworks-target-kernel-final"
+  },
+  "pixels": [
+    {
+      "game": "snow",
+      "frame": 120,
+      "size": [
+        960,
+        720
+      ],
+      "combat_crop": [
+        156,
+        108,
+        588,
+        612
+      ],
+      "combat_changed_pixels": 0,
+      "whole_difference_bbox": null
+    },
+    {
+      "game": "snow",
+      "frame": 600,
+      "size": [
+        960,
+        720
+      ],
+      "combat_crop": [
+        156,
+        108,
+        588,
+        612
+      ],
+      "combat_changed_pixels": 0,
+      "whole_difference_bbox": [
+        911,
+        607,
+        960,
+        641
+      ]
+    },
+    {
+      "game": "like",
+      "frame": 120,
+      "size": [
+        960,
+        720
+      ],
+      "combat_crop": [
+        254,
+        90,
+        706,
+        630
+      ],
+      "combat_changed_pixels": 0,
+      "whole_difference_bbox": null
+    },
+    {
+      "game": "like",
+      "frame": 600,
+      "size": [
+        960,
+        720
+      ],
+      "combat_crop": [
+        254,
+        90,
+        706,
+        630
+      ],
+      "combat_changed_pixels": 0,
+      "whole_difference_bbox": null
+    }
+  ],
+  "logic_parity": {
+    "lifecycle": [
+      {
+        "stage": 5,
+        "scenario": 0,
+        "same": true,
+        "result": "stage=5 difficulty=3 scenario=0 phases=6 bullets=1929 created=34 remaining=0"
+      },
+      {
+        "stage": 5,
+        "scenario": 1,
+        "same": true,
+        "result": "stage=5 difficulty=3 scenario=1 phases=6 bullets=1929 created=34 remaining=0"
+      },
+      {
+        "stage": 5,
+        "scenario": 3,
+        "same": true,
+        "result": "stage=5 difficulty=3 scenario=3 phases=6 bullets=1839 created=4 remaining=0"
+      },
+      {
+        "stage": 6,
+        "scenario": 0,
+        "same": true,
+        "result": "stage=6 difficulty=3 scenario=0 phases=5 bullets=1531 created=40 remaining=0"
+      },
+      {
+        "stage": 6,
+        "scenario": 1,
+        "same": true,
+        "result": "stage=6 difficulty=3 scenario=1 phases=5 bullets=10489 created=40 remaining=0"
+      },
+      {
+        "stage": 6,
+        "scenario": 3,
+        "same": true,
+        "result": "stage=6 difficulty=3 scenario=3 phases=5 bullets=1384 created=45 remaining=5"
+      },
+      {
+        "stage": 7,
+        "scenario": 0,
+        "same": true,
+        "result": "stage=7 difficulty=3 scenario=0 phases=5 bullets=3218 created=58 remaining=0"
+      },
+      {
+        "stage": 7,
+        "scenario": 1,
+        "same": true,
+        "result": "stage=7 difficulty=3 scenario=1 phases=5 bullets=1956 created=58 remaining=0"
+      },
+      {
+        "stage": 7,
+        "scenario": 3,
+        "same": true,
+        "result": "stage=7 difficulty=3 scenario=3 phases=5 bullets=711 created=54 remaining=6"
+      },
+      {
+        "stage": 8,
+        "scenario": 0,
+        "same": true,
+        "result": "stage=8 difficulty=3 scenario=0 phases=7 bullets=5706 created=102 remaining=0"
+      },
+      {
+        "stage": 8,
+        "scenario": 1,
+        "same": true,
+        "result": "stage=8 difficulty=3 scenario=1 phases=7 bullets=5706 created=102 remaining=0"
+      },
+      {
+        "stage": 8,
+        "scenario": 3,
+        "same": true,
+        "result": "stage=8 difficulty=3 scenario=3 phases=7 bullets=2242 created=123 remaining=0"
+      },
+      {
+        "stage": 9,
+        "scenario": 0,
+        "same": true,
+        "result": "stage=9 difficulty=3 scenario=0 phases=4 bullets=938 created=66 remaining=0"
+      },
+      {
+        "stage": 9,
+        "scenario": 1,
+        "same": true,
+        "result": "stage=9 difficulty=3 scenario=1 phases=4 bullets=938 created=66 remaining=0"
+      },
+      {
+        "stage": 9,
+        "scenario": 3,
+        "same": true,
+        "result": "stage=9 difficulty=3 scenario=3 phases=4 bullets=938 created=66 remaining=0"
+      },
+      {
+        "stage": 10,
+        "scenario": 0,
+        "same": true,
+        "result": "stage=10 difficulty=3 scenario=0 phases=16 bullets=8496 created=394 remaining=0"
+      },
+      {
+        "stage": 10,
+        "scenario": 1,
+        "same": true,
+        "result": "stage=10 difficulty=3 scenario=1 phases=16 bullets=9904 created=403 remaining=0"
+      },
+      {
+        "stage": 10,
+        "scenario": 3,
+        "same": true,
+        "result": "stage=10 difficulty=3 scenario=3 phases=16 bullets=8496 created=394 remaining=0"
+      }
+    ],
+    "practice": "Like Dreamer 61 个攻击入口均在一帧内直接开放，HP、状态、坐标及时限与正常路线一致。",
+    "practice_passed": true
+  },
+  "post_checks": [
+    {
+      "case": "pacing",
+      "exit": 0,
+      "directory": "E:\\fork\\bossrush\\windows\\build\\allworks-post\\pacing"
+    },
+    {
+      "case": "window",
+      "exit": 0,
+      "directory": "E:\\fork\\bossrush\\windows\\build\\allworks-post\\window"
+    },
+    {
+      "case": "image",
+      "exit": 0,
+      "directory": "E:\\fork\\bossrush\\windows\\build\\allworks-post\\image"
+    },
+    {
+      "case": "object-image",
+      "exit": 0,
+      "directory": "E:\\fork\\bossrush\\windows\\build\\allworks-post\\object-image"
+    },
+    {
+      "case": "snow-before",
+      "exit": 0,
+      "directory": "E:\\fork\\bossrush\\windows\\build\\allworks-post\\snow-before"
+    },
+    {
+      "case": "snow-after",
+      "exit": 0,
+      "directory": "E:\\fork\\bossrush\\windows\\build\\allworks-post\\snow-after"
+    },
+    {
+      "case": "like-before",
+      "exit": 0,
+      "directory": "E:\\fork\\bossrush\\windows\\build\\allworks-post\\like-before"
+    },
+    {
+      "case": "like-after",
+      "exit": 0,
+      "directory": "E:\\fork\\bossrush\\windows\\build\\allworks-post\\like-after"
+    },
+    {
+      "case": "qixia-image",
+      "exit": 0,
+      "directory": "E:\\fork\\bossrush\\windows\\build\\allworks-post\\qixia-image"
+    },
+    {
+      "case": "summer-long",
+      "exit": 0,
+      "directory": "E:\\fork\\bossrush\\windows\\build\\allworks-post\\summer-long"
+    },
+    {
+      "case": "check_source_csharp_values",
+      "exit": 0,
+      "stdout": "单精度边界与 20000 组位模式、矩形值语义通过；解释执行 100000 次转换增量 0.00 KB\n",
+      "stderr": ""
+    },
+    {
+      "case": "check_unity_transform",
+      "exit": 0,
+      "stdout": "Unity 变换 20000 组多层/动态修改逐位一致，返回值保持独立。\n",
+      "stderr": ""
+    },
+    {
+      "case": "check_snow_damage",
+      "exit": 0,
+      "stdout": "雪莲华 Damage1 5000 组伤害、边界、无敌、目标顺序、效果与销毁结果一致。\n",
+      "stderr": ""
+    },
+    {
+      "case": "check_likedreamer_context",
+      "exit": 0,
+      "stdout": "Like Dreamer 敌机视图实时字段、同帧增删、排序、恢复与容器身份通过。\n",
+      "stderr": ""
+    },
+    {
+      "case": "check_likedreamer_registry",
+      "exit": 0,
+      "stdout": "Like Dreamer 弹链稳定顺序、终帧保留、下一帧摘链、活动序号和切换恢复通过。\n",
+      "stderr": ""
+    },
+    {
+      "case": "check_mhj_target_collision",
+      "exit": 0,
+      "stdout": "春雪/永夜目标碰撞 20000 组坐标、边界、无敌和形状切换一致。\n",
+      "stderr": ""
+    },
+    {
+      "case": "check_th43_bent",
+      "exit": 0,
+      "stdout": "栖霞园曲线激光十六行 UV、颜色索引、包络、节点、消失和资源隔离通过。\n",
+      "stderr": ""
+    },
+    {
+      "case": "check_night_barrage_view",
+      "exit": 0,
+      "stdout": "灯笼视图筛选、实时写回、代理复用、回收和重置通过；2002 弹体、1000 帧增量 0.88 KB\n",
+      "stderr": ""
+    },
+    {
+      "case": "summer-recycling",
+      "exit": 0,
+      "stdout": "frame=600 objects=771 emitters=65 bullets=704\nframe=900 objects=930 emitters=66 bullets=870\nframe=1200 objects=950 emitters=66 bullets=890\nframe=1500 objects=958 emitters=66 bullets=899\nframe=1800 objects=959 emitters=66 bullets=898\nframe=2100 objects=956 emitters=66 bullets=895\nframe=2400 objects=953 emitters=66 bullets=892\nframe=2700 objects=943 emitters=66 bullets=884\nframe=3000 objects=957 emitters=66 bullets=896\nframe=3300 objects=950 emitters=66 bullets=892\nframe=3600 objects=950 emitters=66 bullets=889\nframe=3900 objects=958 emitters=66 bullets=897\nframe=4200 objects=955 emitters=66 bullets=895\nframe=4500 objects=958 emitters=66 bullets=899\nframe=4800 objects=961 emitters=66 bullets=902\nframe=5100 objects=947 emitters=66 bullets=886\nframe=5400 objects=971 emitters=66 bullets=910\nframe=5700 objects=959 emitters=66 bullets=899\nframe=6000 objects=963 emitters=66 bullets=904\nframe=6300 objects=947 emitters=66 bullets=886\nframe=6600 objects=954 emitters=66 bullets=893\nframe=6900 objects=956 emitters=66 bullets=896\nframe=7200 objects=958 emitters=66 bullets=897\n八百里的烈焰生命周期检查通过：7200帧，存活对象峰值1613。\n",
+      "stderr": "The system cannot find the path specified.\nThe system cannot find the path specified.\nThe system cannot find the path specified.\n"
+    },
+    {
+      "case": "check_object_cache",
+      "exit": 0,
+      "notes": "3000 个失效反向引用代理及 1000 个存活代理，覆盖插入重哈希与清场；通过"
+    }
+  ],
+  "summer_long": {
+    "directory": "allworks-post/summer-long",
+    "samples": 3585,
+    "logic_ms": {
+      "mean": 4.0115,
+      "p99": 9.2952,
+      "min": 0.2211,
+      "max": 15.3412
+    },
+    "render_ms": {
+      "mean": 1.2821,
+      "p99": 2.4026,
+      "min": 0.3754,
+      "max": 5.1396
+    },
+    "combined_ms": {
+      "mean": 5.2936,
+      "p99": 11.4371,
+      "min": 0.609,
+      "max": 17.9002
+    },
+    "fps": {
+      "mean": 59.9844,
+      "p99": 60.0002,
+      "min": 50.8503,
+      "max": 60.0002
+    },
+    "below55": 1,
+    "over_budget": 1,
+    "objects": {
+      "mean": 857.9213,
+      "p99": 1067,
+      "min": 73,
+      "max": 1095
+    },
+    "heap_kb": {
+      "mean": 135581.4656,
+      "p99": 194533.1963,
+      "min": 78330.7119,
+      "max": 200498.9189
+    },
+    "native_machine": "A",
+    "sequence_machine": null,
+    "sequence_resources": false,
+    "audio_bgm": 0,
+    "audio_se": 0,
+    "ended_at": 3884,
+    "error": null,
+    "exe_sha256": "03d36a129e1f173570f49ef72b7743c4df4e21484f1d1f0db4a32b2e0742cb01",
+    "lua_tree": {
+      "files": 3195,
+      "sha256": "994fc8e4dddd930146acaba10c661cf258c0a8a591b34d9171d357e8d58142c4"
+    }
+  },
+  "limitations": [
+    "只覆盖列出的代表攻击、关卡及默认机体，未穷举 1451 个练习项或全部自机/分支。",
+    "本次只有 Windows 原生实测，未构建或实测 Mac、Android。",
+    "Like Dreamer 一次采样进程在 XAudio2_9Redist.dll 中访问异常，后续相同场景多次未复现；失败运行不计作通过。",
+    "初筛 th32/th33/th34 顺序测试的 JSON null 参数错误已修正并重跑；Like Dreamer 原先阶段16结算后空闲数据已弃用，改测阶段9。"
+  ],
+  "every_frame_parity": [
+    {
+      "scene": "night-sequence",
+      "compared_frames": 3600,
+      "fields": [
+        "objects",
+        "score",
+        "bullets"
+      ],
+      "differences": 0,
+      "examples": []
+    },
+    {
+      "scene": "night-practice",
+      "compared_frames": 3600,
+      "fields": [
+        "objects",
+        "score",
+        "bullets"
+      ],
+      "differences": 0,
+      "examples": []
+    },
+    {
+      "scene": "snow-sequence",
+      "compared_frames": 1800,
+      "fields": [
+        "objects",
+        "score",
+        "bullets"
+      ],
+      "differences": 0,
+      "examples": []
+    }
+  ],
+  "frame_pacing": {
+    "case": "frame-pacing",
+    "recovery_min_ms": 16.6546,
+    "fast_recovery_frames": 0,
+    "engine": {
+      "repository": "https://github.com/Legacy-LuaSTG-Engine/LuaSTG-Sub.git",
+      "ref": "master",
+      "commit": "8728b3f9e91e6cd577665a7f5777c6c7c23b5f31",
+      "version": "0.21.129",
+      "patch": "native/source_model_mesh.hpp",
+      "frame_rate_controller_patch": "build_source_mesh.py",
+      "presentation_patch": "build_source_mesh.py",
+      "main_thread_affinity_patch": "build_source_mesh.py"
+    },
+    "wall_seconds": 6.6545509999850765
+  },
+  "window": {
+    "case": "window",
+    "fullscreen": true,
+    "windowed": true,
+    "states": [
+      {
+        "style": 2,
+        "width": 480,
+        "height": 640,
+        "label": "initial"
+      },
+      {
+        "style": 2,
+        "width": 1280,
+        "height": 720,
+        "label": "fullscreen"
+      },
+      {
+        "style": 1,
+        "width": 480,
+        "height": 640,
+        "label": "windowed"
+      }
+    ],
+    "engine": {
+      "repository": "https://github.com/Legacy-LuaSTG-Engine/LuaSTG-Sub.git",
+      "ref": "master",
+      "commit": "8728b3f9e91e6cd577665a7f5777c6c7c23b5f31",
+      "version": "0.21.129",
+      "patch": "native/source_model_mesh.hpp",
+      "frame_rate_controller_patch": "build_source_mesh.py",
+      "presentation_patch": "build_source_mesh.py",
+      "main_thread_affinity_patch": "build_source_mesh.py"
+    },
+    "wall_seconds": 5.799970099935308
+  },
+  "method": {
+    "registered_practice_entries": 1451,
+    "games": 12,
+    "representative_modes_per_game": 2,
+    "resolution": [
+      960,
+      720
+    ],
+    "fps": 60,
+    "windowed": true,
+    "vsync": false,
+    "start_frame": 300,
+    "shoot": true,
+    "protect": 120,
+    "mute_bgm": 0,
+    "mute_se": 0
+  }
+}

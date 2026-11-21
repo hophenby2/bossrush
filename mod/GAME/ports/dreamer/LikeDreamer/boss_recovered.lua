@@ -66,6 +66,7 @@ local direct = {
     sourceDispatchKind = true, sourceDispatchField = true,
 }
 local function native(enemy) return rawget(enemy, '_native') or enemy end
+local function entityOrder(a, b) return a.entityId < b.entityId end
 local function view(ctx, object)
     if not object then return nil end
     if rawget(object, '_native') then return object end
@@ -222,6 +223,7 @@ function R.context(rt, object)
         rawset(ctx, 'config_', {})
         rawset(ctx, 'player_', {})
         rawset(ctx, 'enemies_', {})
+        rawset(ctx, '_enemyViewCache', {})
         rawset(ctx, 'pendingEnemies_', {_push = function(spec) create(ctx, spec) end})
         rt._ldExactWorld = ctx
         if not ctx.isolated then
@@ -256,10 +258,18 @@ function R.context(rt, object)
     ctx.player_.invulnerableFrames = tonumber(p.invulnerableFrames) or tonumber(p.protect) or 0
     ctx.player_.playerStateTimer = p.playerStateTimer or 0
     ctx.player_.bombLock, ctx.player_.specialGauge = p.bombLock or 0, p.specialGauge or 0
-    R.clear(ctx.enemies_)
     R.clear(ctx.pendingEnemies_)
-    for _, e in pairs(rt.enemiesById or {}) do ctx.enemies_[#ctx.enemies_ + 1] = view(ctx, e) end
-    table.sort(ctx.enemies_, function(a, b) return a.entityId < b.entityId end)
+    -- 原作的敌机容器只在增删时变化；代理实时读取对象字段，不需要每个敌机更新前重建和排序。
+    -- 版本在出生、释放和练习恢复处递增，同一帧内增删也立即对下一次调用可见。
+    local cache = ctx._enemyViewCache
+    if cache.source ~= rt.enemiesById or cache.revision ~= rt.enemyRevision
+        or cache.count ~= rt.enemyCount or cache.nextId ~= rt.nextEntityId then
+        R.clear(ctx.enemies_)
+        for _, e in pairs(rt.enemiesById or {}) do ctx.enemies_[#ctx.enemies_ + 1] = view(ctx, e) end
+        table.sort(ctx.enemies_, entityOrder)
+        cache.source, cache.revision = rt.enemiesById, rt.enemyRevision
+        cache.count, cache.nextId = rt.enemyCount, rt.nextEntityId
+    end
     ctx.state.nextEntityId_ = rt.nextEntityId or 3
     local parent = object and object.parent
     if parent and parent.spawnType >= 0x139 and parent.spawnType <= 0x13b then

@@ -10,6 +10,7 @@
 #include <wrl/client.h>
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstring>
 #include <memory>
 #include <stdexcept>
@@ -199,6 +200,172 @@ static int syncBulletGeometry(lua_State* L) {
     object->rot=values[4]*L_DEG_TO_RAD;object->hscale=values[5];object->vscale=values[6];
     return 0;
 }
+// 保留原目标列表顺序和实时字段，仅把逐目标的 Lua/引擎跨界合并为一次只读查询。
+// 不建立空间近似，不缓存位置，也不负责伤害、删除或弹幕更新。
+#pragma float_control(precise, on, push)
+struct SourceDamageShape { uint64_t unique{};void const* metadata{};double a{},b{}; };
+static std::array<SourceDamageShape,65536> sourceDamageShapes;
+struct TargetEntry { uint16_t id{};uint64_t unique{};void const* metadata{};bool canonical{}; };
+struct TargetView {
+    lua_State* state{};int members=LUA_NOREF;std::vector<TargetEntry> entries;
+    ~TargetView() { if (members!=LUA_NOREF) luaL_unref(state,LUA_REGISTRYINDEX,members); }
+};
+static constexpr char target_view_name[]="BossRush.SourceTargetView";
+// 只复制本帧成员及原顺序；几何、位置与无敌状态不复制。由桥接每次刷新目标列表后重建。
+static int createTargetView(lua_State* L) {
+    luaL_checktype(L,1,LUA_TTABLE);const auto count=luaL_checkinteger(L,2);
+    luaL_argcheck(L,count>=0 && count<=65536,2,"目标列表长度无效");
+    auto* view=new(lua_newuserdata(L,sizeof(TargetView))) TargetView();view->state=L;
+    if (luaL_newmetatable(L,target_view_name)) {
+        lua_pushcfunction(L,[](lua_State* s) { static_cast<TargetView*>(luaL_checkudata(s,1,target_view_name))->~TargetView();return 0; });
+        lua_setfield(L,-2,"__gc");
+    }
+    lua_setmetatable(L,-2);const int output=lua_gettop(L);
+    lua_createtable(L,static_cast<int>(count),0);const int members=lua_gettop(L);
+    view->entries.reserve(static_cast<size_t>(count));
+    for (lua_Integer i=0;i<count;++i) {
+        lua_settop(L,members);lua_rawgeti(L,1,static_cast<int>(i));luaL_checktype(L,-1,LUA_TTABLE);
+        const int wrapper=lua_gettop(L);lua_pushvalue(L,wrapper);lua_rawseti(L,members,static_cast<int>(i));
+        lua_getfield(L,wrapper,"nativeQueryFields");const bool canonical=lua_toboolean(L,-1);lua_pop(L,1);
+        lua_getfield(L,wrapper,"object");TargetEntry entry;
+        if (canonical && binding::GameObject::is(L,-1)) {
+            auto* object=binding::GameObject::as(L,-1);entry.id=static_cast<uint16_t>(object->id);entry.unique=object->unique_id;
+            lua_getfield(L,wrapper,"nativeQueryShape");entry.metadata=lua_topointer(L,-1);entry.canonical=true;
+        }
+        view->entries.push_back(entry);
+    }
+    lua_settop(L,members);view->members=luaL_ref(L,LUA_REGISTRYINDEX);
+    lua_settop(L,output);return 1;
+}
+// NativeActorCollision 是 damage 数组的写入入口；同步同一份数值，不从精灵或体术半径推测受弹范围。
+static int setActorDamageShape(lua_State* L) {
+    auto* object=binding::GameObject::as(L,1);luaL_checktype(L,2,LUA_TTABLE);
+    const double a=luaL_checknumber(L,3),b=luaL_checknumber(L,4);
+    sourceDamageShapes[object->id]={object->unique_id,lua_topointer(L,2),a,b};return 0;
+}
+static int findTargetInList(lua_State* L) {
+    TargetView* view=nullptr;
+    if (lua_isuserdata(L,1)) view=static_cast<TargetView*>(luaL_checkudata(L,1,target_view_name));
+    else luaL_checktype(L,1,LUA_TTABLE);
+    const auto count=luaL_checkinteger(L,2);
+    luaL_argcheck(L,count>=0 && count<=65536,2,"目标列表长度无效");
+    const double px=luaL_checknumber(L,3),py=luaL_checknumber(L,4),extend=luaL_checknumber(L,5);
+    const double scale=luaL_checknumber(L,6),cx=luaL_checknumber(L,7),cy=luaL_checknumber(L,8);
+    const bool prepared=lua_toboolean(L,9);
+    // 有界输入下的保守排除：浮点源坐标绝对值至多 12288，float 舍入误差投影后小于 1/1024。
+    // 另留一倍余量覆盖 double 运算；边缘候选仍计算原始公式，超出范围也直接走原始公式。
+    const bool bounded=scale>=.5 && scale<=2 && std::abs(px)<=4096 && std::abs(py)<=4096
+        && std::abs(cx)<=4096 && std::abs(cy)<=4096 && std::abs(extend)<=4096;
+    const double worldX=(px-cx)*scale,worldY=(cy-py)*scale,worldExtend=extend*scale;
+    luaL_argcheck(L,scale>0,6,"坐标比例必须大于零");
+    auto fieldNumber=[L](int index,char const* name) {
+        lua_getfield(L,index,name);const double value=luaL_checknumber(L,-1);lua_pop(L,1);return value;
+    };
+    auto rawNumber=[L](int index,char const* name,double fallback) {
+        lua_pushstring(L,name);lua_rawget(L,index);
+        const double value=lua_isnil(L,-1) ? fallback:luaL_checknumber(L,-1);lua_pop(L,1);return value;
+    };
+    lua_getglobal(L,"lstg");lua_getfield(L,-1,"GetAttr");const auto standardGetter=lua_tocfunction(L,-1);lua_pop(L,2);
+    const int base=view ? 9:8,wrapperIndex=base+1,objectIndex=base+2,shapeIndex=base+3,damageIndex=base+4;
+    if (view) {
+        luaL_argcheck(L,static_cast<size_t>(count)<=view->entries.size(),2,"目标视图长度已改变，需要重建");
+        // 第九格持有 userdata，防止替换第一参后在查询期间被 GC 回收。
+        lua_settop(L,9);lua_pushvalue(L,1);lua_rawgeti(L,LUA_REGISTRYINDEX,view->members);lua_replace(L,1);lua_replace(L,9);
+    }
+    for (lua_Integer i=0;i<count;++i) {
+        if (view) {
+            auto const& entry=view->entries[static_cast<size_t>(i)];
+            if (entry.canonical) {
+                auto* native=LPOOL.GetPooledObject(entry.id);auto const& shape=sourceDamageShapes[entry.id];
+                if (native && native->status!=GameObjectStatus::Free && native->unique_id==entry.unique
+                    && shape.unique==entry.unique && shape.metadata==entry.metadata) {
+                    if (!native->colli) continue;
+                    if (bounded && std::abs(native->x)<=4096 && std::abs(native->y)<=4096
+                        && std::abs(shape.a)<=4096 && std::abs(shape.b)<=4096) {
+                        if (std::abs(native->x-worldX)>shape.a+worldExtend+1./512
+                            || std::abs(native->y-worldY)>shape.b+worldExtend+1./512) continue;
+                    }
+                    volatile double qx=native->x/scale,qy=native->y/scale;
+                    volatile float x=static_cast<float>(qx+cx),y=static_cast<float>(cy-qy);
+                    volatile double width=shape.a/scale+extend,height=shape.b/scale+extend;
+                    if (!(std::abs(px-static_cast<double>(x))<=width && std::abs(py-static_cast<double>(y))<=height)) continue;
+                }
+            }
+        }
+        lua_settop(L,base);lua_rawgeti(L,1,static_cast<int>(i));
+        luaL_checktype(L,wrapperIndex,LUA_TTABLE);lua_getfield(L,wrapperIndex,"object");
+        if (!binding::GameObject::is(L,objectIndex)) continue;
+        if (prepared) {
+            lua_getfield(L,wrapperIndex,"nativeQueryFields");const bool canonical=lua_toboolean(L,-1);lua_pop(L,1);
+            if (canonical) {
+                auto* native=binding::GameObject::as(L,objectIndex);
+                auto const& shape=sourceDamageShapes[native->id];
+                lua_getfield(L,wrapperIndex,"nativeQueryShape");
+                if (shape.unique==native->unique_id && shape.metadata==lua_topointer(L,shapeIndex)) {
+                    // 仅几何元数据来自 bind；位置与引擎碰撞开关始终读取本次查询的实时值。
+                    if (!native->colli) continue;
+                    volatile double qx=native->x/scale,qy=native->y/scale;
+                    volatile float x=static_cast<float>(qx+cx),y=static_cast<float>(cy-qy);
+                    volatile double width=shape.a/scale+extend,height=shape.b/scale+extend;
+                    if (!(std::abs(px-static_cast<double>(x))<=width && std::abs(py-static_cast<double>(y))<=height)) continue;
+                    lua_getfield(L,shapeIndex,"noDamage");const bool protectedTarget=lua_toboolean(L,-1);lua_pop(L,1);
+                    if (protectedTarget) continue;
+                    lua_pushvalue(L,wrapperIndex);return 1;
+                }
+                lua_pop(L,1);
+            }
+        }
+        // 标准 GetAttr 直接读取同一份引擎字段；自定义 __index 保留原属性查询路径。
+        // 原始表若有同名遮蔽字段，仍按 Lua 的优先级读取，不能绕过调用方的元表语义。
+        bool standard=false;
+        if (lua_getmetatable(L,objectIndex)) {
+            lua_getfield(L,-1,"__index");standard=standardGetter && lua_tocfunction(L,-1)==standardGetter;lua_pop(L,2);
+        }
+        auto* object=standard ? binding::GameObject::as(L,objectIndex):nullptr;
+        if (standard) { lua_pushliteral(L,"colli");lua_rawget(L,objectIndex); }
+        else lua_getfield(L,objectIndex,"colli");
+        const bool collidable=standard && lua_isnil(L,-1) ? object->colli:lua_toboolean(L,-1);lua_pop(L,1);
+        if (!collidable) continue;
+        if (standard) { lua_pushliteral(L,"native_actor_collision");lua_rawget(L,objectIndex); }
+        else lua_getfield(L,objectIndex,"native_actor_collision");
+        const bool hasShape=lua_toboolean(L,shapeIndex);
+        if (hasShape) {
+            lua_getfield(L,shapeIndex,"noDamage");const bool protectedTarget=lua_toboolean(L,-1);lua_pop(L,1);
+            if (protectedTarget) continue;
+        }
+        // 与 pos(o) 的两个 float 转换逐位一致；保留除法、加减法和单精度写回的顺序。
+        const double ox=standard ? rawNumber(objectIndex,"x",object->x):fieldNumber(objectIndex,"x");
+        const double oy=standard ? rawNumber(objectIndex,"y",object->y):fieldNumber(objectIndex,"y");
+        volatile double dx=ox/scale,dy=oy/scale;
+        volatile float x=static_cast<float>(dx+cx),y=static_cast<float>(cy-dy);
+        double oa=0,ob=0;
+        if (standard) {
+#ifdef GLOBAL_SCALE_COLLI_SHAPE
+            oa=object->a/LRES.GetGlobalImageScaleFactor();ob=object->b/LRES.GetGlobalImageScaleFactor();
+#else
+            oa=object->a;ob=object->b;
+#endif
+        }
+        auto radius=[&](char const* name,double fallback) { return standard ? rawNumber(objectIndex,name,fallback):fieldNumber(objectIndex,name); };
+        double a,b;
+        auto const* cached=standard && hasShape ? &sourceDamageShapes[object->id]:nullptr;
+        if (cached && cached->unique==object->unique_id && cached->metadata==lua_topointer(L,shapeIndex)) {
+            a=cached->a;b=cached->b;
+        } else if (hasShape) {
+            lua_getfield(L,shapeIndex,"damage");luaL_checktype(L,damageIndex,LUA_TTABLE);
+            lua_pushinteger(L,1);lua_gettable(L,damageIndex);
+            a=lua_toboolean(L,-1) ? luaL_checknumber(L,-1):radius("a",oa);lua_pop(L,1);
+            lua_pushinteger(L,2);lua_gettable(L,damageIndex);
+            b=lua_toboolean(L,-1) ? luaL_checknumber(L,-1):radius("b",ob);lua_pop(L,1);
+        } else { a=radius("a",oa);b=radius("b",ob); }
+        volatile double width=a/scale+extend,height=b/scale+extend;
+        if (std::abs(px-static_cast<double>(x))<=width && std::abs(py-static_cast<double>(y))<=height) {
+            lua_pushvalue(L,wrapperIndex);return 1;
+        }
+    }
+    return 0;
+}
+#pragma float_control(pop)
 // 只读上一完整帧的引擎计时，包含 Lua 之外的提交与等待，不改变帧调度。
 extern "C" double GetSourcePacerWait();
 extern "C" unsigned long long GetSourcePresentBusy();

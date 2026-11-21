@@ -146,15 +146,19 @@ function ProjectileRegistry:prepare(rt)
     self.frame = frame
     local p = rawget(_G, "player")
     self.playerStateTimer = p and p.playerStateTimer or nil
-    local compact = {}
-    for _, projectile in ipairs(self.projectiles) do
+    -- 原地稳定压缩，仅移除原路径本帧已允许摘链的节点；避免每帧重新分配整张索引表。
+    local compact, count = self.projectiles, 0
+    local previous = #compact
+    for i = 1, previous do
+        local projectile = compact[i]
         if (projectile.active or projectile._deactivatedFrame == frame) and
            projectile.status ~= "del" and projectile.status ~= "kill" then
-            projectile._linkedOrdinal = #compact
-            compact[#compact + 1] = projectile
+            projectile._linkedOrdinal = count
+            count = count + 1
+            compact[count] = projectile
         end
     end
-    self.projectiles = compact
+    for i = count + 1, previous do compact[i] = nil end
 end
 
 function ProjectileRegistry:ordinal(projectile, rt)
@@ -307,10 +311,10 @@ function projectileEffectClass:render()
     end
     alpha = max(0, min(255, alpha))
     SetImageState(self.img, self.blend,
-                  Color(alpha, self.red, self.green, self.blue))
+                  alpha, self.red, self.green, self.blue)
     Render(self.img, self.x, self.y, Core.angleToDeg(self.angle16),
            scaleX, scaleY)
-    SetImageState(self.img, "", Color(255, 255, 255, 255))
+    SetImageState(self.img, "", 255, 255, 255, 255)
 end
 
 local function spawnProjectileEffect(kind, img, x, y, angle16, scaleX, scaleY,
@@ -374,11 +378,11 @@ function grazeFeedbackClass:render()
         alpha = trunc(sin((age - (self.lifetime - 16)) * pi / 16) * 0xc0)
     end
     if alpha <= 0 then return end
-    SetImageState("ld_item_2", "", Color(alpha, 255, 255, 255))
+    SetImageState("ld_item_2", "", alpha, 255, 255, 255)
     Render("ld_item_2", self.x, self.y, 0,
            entrance * 0.5,
            entrance * 0.5)
-    SetImageState("ld_item_2", "", Color(255, 255, 255, 255))
+    SetImageState("ld_item_2", "", 255, 255, 255, 255)
 end
 
 local grazeParticleClass = Class(object)
@@ -438,10 +442,10 @@ function grazeParticleClass:render()
     end
     if alpha <= 0 then return end
     local angle = Core.angle16(self.angle16 + (self.random % 571 + 30) * age)
-    SetImageState("ld_player_15", "", Color(alpha, 255, 255, 255))
+    SetImageState("ld_player_15", "", alpha, 255, 255, 255)
     Render("ld_player_15", self.x, self.y, Core.angleToDeg(angle),
            self.scale, self.scale)
-    SetImageState("ld_player_15", "", Color(255, 255, 255, 255))
+    SetImageState("ld_player_15", "", 255, 255, 255, 255)
 end
 
 local cancelRewardDriverClass = Class(object)
@@ -558,10 +562,10 @@ function projectileUnderlayClass:render()
     local visual, age = self.visual, owner.drawAge
     if visual == 0x11 or visual == 0x12 then
         local pulseY = 0.6 + sin(age * 2 * pi / 17) * 0.4
-        SetImageState("ld_effect_s_8", "", Color(0xc0, 255, 255, 255))
+        SetImageState("ld_effect_s_8", "", 0xc0, 255, 255, 255)
         Render("ld_effect_s_8", owner.x, owner.y, Core.angleToDeg(owner.angle16),
                1, pulseY)
-        SetImageState("ld_effect_s_8", "", Color(255, 255, 255, 255))
+        SetImageState("ld_effect_s_8", "", 255, 255, 255, 255)
         return
     end
     local clockwise = visual == 0x14

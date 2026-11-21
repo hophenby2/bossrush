@@ -5,6 +5,7 @@ local D=dofile('mod/GAME/th38/native_players/data.lua')
 local CS=dofile('mod/GAME/ports/source_csharp.lua').new()
 local E=CS.env
 local V=CS.Vector3
+local spatial=dofile('mod/GAME/ports/source_unity_transform.lua')(CS)
 local units,components,mainShots={}, {}, {}
 local p,center,form,config,alternate,clock
 local releases,initialGain,initialLeft,rate,lastState={},0,0,nil,nil
@@ -15,11 +16,11 @@ local function rotate(v,a) return V(v.x*cos(a)-v.y*sin(a),v.x*sin(a)+v.y*cos(a),
 local transform={}
 local transformMeta={__index=function(t,k)
     local parent=rawget(t,'_parent')
-    if k=='position' then return parent and parent.position+rotate(t._local*parent.lossyScale,parent.eulerAngles.z) or CS.copy(t._local)
+    if k=='position' then return spatial.position(t)
     elseif k=='localPosition' then return t._local
     elseif k=='localScale' then return t._scale
-    elseif k=='lossyScale' then return parent and parent.lossyScale*t._scale or CS.copy(t._scale)
-    elseif k=='eulerAngles' then return V(0,0,t._angle+(parent and parent.eulerAngles.z or 0))
+    elseif k=='lossyScale' then return spatial.scale(t)
+    elseif k=='eulerAngles' then return V(0,0,spatial.angle(t))
     elseif k=='rotation' then return {x=0,y=0,z=0,eulerAngles=t.eulerAngles}
     elseif k=='localRotation' then return {x=0,y=0,z=0,eulerAngles=V(0,0,t._angle)}
     elseif k=='parent' then return parent
@@ -177,7 +178,8 @@ end,__newindex=function(t,k,v)
 end})
 local model=dofile('mod/GAME/th38/native_players/source.lua')(CS)
 for k,v in pairs(model) do E[k]=v end
-local targetMap=setmetatable({},{__mode='k'})
+model.Damage1.FixedUpdate=dofile('mod/GAME/th38/native_players/damage.lua')(CS,S,spatial.coordinates,instantiate,destroy)
+local targetMap,pruneTargets,clearTargets=dofile('mod/GAME/ports/object_cache.lua')(valid,128)
 local function targets()
     S.enemy:Clear();S.boss:Clear()
     object.EnemyNontjtDo(function(o)
@@ -252,6 +254,7 @@ local function resetForm()
     S.ziji_ziji_now=form;alternate=p.altForm
 end
 function M.bind(player)
+    clearTargets()
     p=player;units,components,mainShots={},{},{};clock=0
     p.unity_body_image=function(key)
         local d=D.sprites[key]
@@ -338,6 +341,7 @@ local function advance()
 end
 function M.frame(player,state)
     if p~=player then M.bind(player) end
+    pruneTargets()
     center.transform.position=position(p);form.transform.position=position(p)
     if alternate~=p.altForm then resetForm() end
     targets()

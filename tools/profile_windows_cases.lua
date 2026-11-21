@@ -1,5 +1,7 @@
 -- Windows 原生定点采样。目录由 Python 驱动隔离，不读取源码目录的玩家数据。
 local f=assert(io.open('case.json','rb'));local config=DeSerialize(f:read('*a'));f:close()
+-- JSON null 代表未指定选项，不能把 cjson.null 当成机体 ID 或关卡编号传给正式入口。
+for key,value in pairs(config) do if value==cjson.null then config[key]=nil end end
 local result={case=config.case,frames={},stacks={}}
 local finished,active=false,false
 local watch=lstg.StopWatch()
@@ -8,6 +10,14 @@ local BG,scene,R,controller,host
 local frameFile=assert(io.open('frames.jsonl','wb'));frameFile:setvbuf('full',262144)
 local checkpointFile=assert(io.open('checkpoints.jsonl','wb'));checkpointFile:setvbuf('full',262144)
 local currentRow
+local targetLevel=config.level or 37
+local targetCard=config.card or 39060
+local targetStage='Spell Practice@Spell Practice'
+local function audioLevels()
+    local bgm,se=lstg.GetBGMVolume(),lstg.GetSEVolume()
+    assert(bgm==0 and se==0,'测试音量被重新开启')
+    return bgm,se
+end
 local function flushRow()
     if currentRow then
         if config.engine_stats then
@@ -22,6 +32,86 @@ end
 local function save(err)
     finished=true;result.error=err;flushRow();frameFile:close();checkpointFile:close()
     local out=assert(io.open('result.json','wb'));out:write(Serialize(result));out:close()
+end
+if config.case=='target-query' then
+    local C=dofile('mod/GAME/ports/source_csharp.lua').new()
+    local actorCollision=dofile('THlib/native_actor_collision.lua')
+    local native=assert(lstg.FindSourceTargetInList,'缺少目标列表查询接口')
+    local noop=function() end
+    local class={is_class=true,noop,noop,noop,noop,noop,noop}
+    function GameInit()
+        local list={};local seed=21971
+        local function value() seed=seed*16807%2147483647;return (seed/2147483647-.5)*1000 end
+        for i=0,31 do
+            local o=New(class);o.x,o.y=value(),value();o.a,o.b=2+i,3+i;o.bound=false;o.colli=true
+            list[i]={object=o,index=i}
+        end
+        list[32]={object={},index=32}
+        local custom=list[0].object;local meta=getmetatable(custom)
+        local customMeta={};for k,v in pairs(meta) do customMeta[k]=v end
+        customMeta.__index=function(o,k) if k=='x' then return lstg.GetAttr(o,k)+17.25 end;return lstg.GetAttr(o,k) end
+        setmetatable(custom,customMeta)
+        local checks=0;local views=setmetatable({},{__mode='k'})
+        for _,scale in ipairs({1,2/3}) do
+            local cx,cy=scale==1 and 224 or 336,scale==1 and 240 or 360
+            local function reference(px,py,extend)
+                for i=0,32 do local w=list[i];local o=w.object
+                    if IsValid(o) and o.colli then
+                        local c=o.native_actor_collision
+                        if not (c and c.noDamage) then
+                            local p=C.Vector2(o.x/scale+cx,cy-o.y/scale)
+                            local a,b=c and c.damage[1] or o.a,c and c.damage[2] or o.b
+                            if math.abs(px-p.X)<=a/scale+extend and math.abs(py-p.Y)<=b/scale+extend then return w end
+                        end
+                    end
+                end
+            end
+            for n=1,12000 do
+                local i=n%32;local o=list[i].object
+                o.x,o.y=value(),value();o.colli=n%7~=0
+                o.native_actor_collision=n%2==0 and {noDamage=n%11==0,damage={o.a/2,o.b/3}} or nil
+                if n%10==0 and lstg.SetSourceActorDamageShape then
+                    local c=o.native_actor_collision
+                    actorCollision.bind(o,c.damage[1],c.damage[2],'box')
+                end
+                -- 标准元表上的原始同名字段也必须优先于引擎值。
+                if i==1 then rawset(o,'x',n%3==0 and 99.123456789 or nil) end
+                local mt=getmetatable(o);local shape=o.native_actor_collision
+                list[i].nativeQueryFields=mt and mt.__index==lstg.GetAttr and rawget(o,'x')==nil and rawget(o,'y')==nil and rawget(o,'colli')==nil
+                    and shape and getmetatable(shape)==nil or false
+                list[i].nativeQueryShape=shape
+                local extend=n%5;local px,py=value(),value()
+                if n%3==0 then
+                    local c=o.native_actor_collision
+                    local a,b=c and c.damage[1] or o.a,c and c.damage[2] or o.b
+                    px=C.f(o.x/scale+cx)+(n%2==0 and -1 or 1)*(a/scale+extend)
+                    py=C.f(cy-o.y/scale)+(b/scale+extend)*(n%4==0 and 1 or 0)
+                    if n%13==0 then px=px+1e-10 end
+                end
+                if n%131==0 then px=0/0 elseif n%137==0 then py=math.huge end
+                assert(reference(px,py,extend)==native(list,33,px,py,extend,scale,cx,cy),'原生目标顺序或判定边界不同：'..n)
+                assert(reference(px,py,extend)==native(list,33,px,py,extend,scale,cx,cy,true),'准备列表的目标顺序或判定边界不同：'..n)
+                if lstg.CreateSourceTargetView then
+                    local view=lstg.CreateSourceTargetView(list,33);views[view]=true
+                    assert(reference(px,py,extend)==native(view,33,px,py,extend,scale,cx,cy,true),'原生目标视图的顺序或判定边界不同：'..n)
+                    checks=checks+1
+                end
+                checks=checks+2
+            end
+        end
+        assert(native({},0,0,0,0,1,0,0)==nil)
+        collectgarbage('collect');collectgarbage('collect');assert(next(views)==nil,'目标视图没有回收')
+        result.target_query_checks=checks
+        result.audio_bgm,result.audio_se=audioLevels()
+    end
+    local check=GameInit
+    GameInit=function() local good,err=xpcall(check,debug.traceback);if not good then save(err) end end
+    function FrameFunc() if finished then return true end;clock=clock+1;if clock>=config.frames then save();return true end;return false end
+    function RenderFunc() BeginScene();RenderClear(Color(255,20,30,40));EndScene() end
+    function GameExit() end
+    function FocusLoseFunc() end
+    function FocusGainFunc() end
+    return
 end
 if config.case=='frame-pacing' then
     local ffi=require('ffi');ffi.cdef('void __stdcall Sleep(unsigned long);')
@@ -246,9 +336,24 @@ function GameInit()
         Include('mod/root.lua');InitAllClass();InitGameSaveData();stage.next_stage=stage.stages.init
         local frame,render=FrameFunc,RenderFunc
         if config.full_game then
-            assert(config.case=='th39-39060','完整练习采样目前只对应天月祝鸣')
-            local phases,hookRuntime,profileStarted,lanternHooked
+            assert(config.case=='th39-39060' or config.case=='practice' or config.case=='catalogue' or config.case=='sequence','未知完整练习采样')
+            local phases,hookRuntime,profileStarted,lanternHooked,practiceEntered
             local shootingKeys={shoot=true}
+            local heldHp=setmetatable({},{__mode='k'})
+            local function keepHp(b)
+                if not b or not IsValid(b) or type(b.hp)~='number' or b.hp<=0 then return end
+                local phase=b.current_card or b.portPhase
+                local record=heldHp[b]
+                if not record or record.phase~=phase then record={phase=phase,hp=b.hp};heldHp[b]=record end
+                b.hp=record.hp
+            end
+            if config.shoot then
+                local input=GetInput
+                GetInput=function(...)
+                    input(...)
+                    if active then KeyState.shoot=true end
+                end
+            end
             if config.frame_detail then
                 local function wrap(owner,key,label)
                     local fn=owner and owner[key];if type(fn)~='function' then return end
@@ -262,13 +367,19 @@ function GameInit()
                 for _,key in ipairs({'beforeLogic','afterLogic'}) do wrap(SaveResume,key,'resume.'..key) end
                 for _,key in ipairs({'beforeObjects','afterObjects'}) do wrap(GameRank,key,'rank.'..key) end
                 for _,key in ipairs({'begin','shots','finish'}) do wrap(NativeActorCollision,key,'actor.'..key) end
-                local attached37,attached39
+                local attached37,attached38,attached39,attachedPlayer
                 hookRuntime=function()
                     if TH37 and TH37.runtime and not attached37 then
                         wrap(TH37.runtime,'beginCollisions','th37.begin');wrap(TH37.runtime,'finishCollisions','th37.finish');attached37=true
                     end
+                    if TH38 and TH38.runtime and not attached38 then
+                        wrap(TH38.runtime,'tick','th38.tick');attached38=true
+                    end
                     if TH39 and TH39.runtime and not attached39 then
                         wrap(TH39.runtime,'tick','th39.tick');wrap(TH39.runtime,'tickBackground','th39.background');attached39=true
+                    end
+                    if not attachedPlayer and NativePlayers.adapters[targetLevel] then
+                        wrap(NativePlayers.adapters[targetLevel],'frame','native.player');attachedPlayer=true
                     end
                 end
                 wrap(GameDrops,'frame','drops')
@@ -285,11 +396,18 @@ function GameInit()
                         end
                         if config.shoot then
                             player.key=shootingKeys
-                            if TH39 and TH39.runtime then for c in pairs(TH39.runtime.controllers) do
+                            keepHp(_boss)
+                            for _,b in ObjList(GROUP.ENEMY) do
+                                if b.current_card and b.maxhp then keepHp(b) end
+                            end
+                            if targetLevel==40 then
+                                local source=GameContent.ports[40].source
+                                if source.runtime then keepHp(source.runtime.boss) end
+                            end
+                            if targetLevel==37 and TH39 and TH39.runtime then for c in pairs(TH39.runtime.controllers) do
                                 local o=c.host
-                                if o and IsValid(o) then
-                                    local b=o.owner or o
-                                    if IsValid(b) and b.mhj3_card then b.hp=b.maxhp end
+                                if o and IsValid(o) then local b=o.owner or o
+                                    if IsValid(b) and b.mhj3_card then keepHp(b) end
                                 end
                             end end
                         end
@@ -312,17 +430,43 @@ function GameInit()
                     phases=config.frame_detail and {} or nil
                     local begin=watch:GetElapsed();local stop=frame();local elapsed=(watch:GetElapsed()-begin)*1000
                     local current=stage.current_stage
+                    if active and practiceEntered and ext.pause_menu and not ext.pause_menu:IsKilled() then
+                        result.ended_at=clock;result.end_reason='正式练习已进入结算/暂停菜单';save();return true
+                    end
                     if not active and current and current.stage_name=='menu' and current.timer>=45 then
-                        local index
-                        for _,row in ipairs(TH39.units()) do if row.unit.sc_group[1].card.card_id==39060 then index=row.index end end
-                        assert(index,'未注册天月祝鸣练习')
-                        lstg.var.player_name,lstg.var.rep_player='reimu_player','Reimu'
-                        lstg.var.sc_index,lstg.var.sc_group=index,{37,index}
-                        assert(stage.group.PracticeStart('Spell Practice@Spell Practice',true)~=false)
+                        local practice=dofile('mod/original_practice.lua')
+                        if config.case=='catalogue' then
+                            result.catalogue={}
+                            for _,game in ipairs(practice.stages) do
+                                local entry={code=game.code,level=game.level,title=game.title,cards={},machines={}}
+                                for _,m in ipairs(NativePlayers.machines(game.level) or {}) do entry.machines[#entry.machines+1]={id=m.id,name=m.name} end
+                                for _,row in ipairs(practice.cards(game.level)) do
+                                    local u=row.unit;local card=u.sc_group[1].card
+                                    entry.cards[#entry.cards+1]={index=row.index,id=card.card_id,name=card.name,title=u.CardName,
+                                        t1=card.t1,t2=card.t2,t3=card.t3,hp=card.hp,spell=card.is_sc,chapter=row.chapter,difficulty=row.difficulty}
+                                end
+                                result.catalogue[#result.catalogue+1]=entry
+                            end
+                            result.audio_bgm,result.audio_se=audioLevels();save();return true
+                        end
+                        if config.case=='sequence' then
+                            local route=assert(OriginalSequence.catalog.get(config.sequence))
+                            assert(route.level==targetLevel,'顺序路线与 level 不一致')
+                            targetStage=route.battle
+                            OriginalSequence.start(config.sequence,config.machine,nil,config.chapter)
+                        else
+                            local index
+                            for _,row in ipairs(practice.cards(targetLevel)) do if row.unit.sc_group[1].card.card_id==targetCard then index=row.index end end
+                            assert(index,'未注册练习 '..targetLevel..':'..targetCard)
+                            lstg.var.player_name,lstg.var.rep_player='reimu_player','Reimu'
+                            lstg.var.sc_index,lstg.var.sc_group=index,{targetLevel,index}
+                            assert(stage.group.PracticeStart(targetStage,true,config.machine)~=false)
+                        end
                         lstg.var.ran_seed=20261121
                         if lstg.nextvar then lstg.nextvar.ran_seed=20261121 end
                         active=true;SetFPS(config.fps)
-                    elseif active and current and current.stage_name=='Spell Practice@Spell Practice' then
+                    elseif active and current and current.stage_name==targetStage then
+                        practiceEntered=true
                         clock=clock+1
                         if config.sample and not profileStarted and clock>=300 then
                             local profiler=require('jit.profile');profileStarted=true
@@ -332,23 +476,42 @@ function GameInit()
                             end)
                         end
                         currentRow={frame=clock,stage_frame=current.timer,logic_ms=elapsed,
-                            bullets=TH39.runtime.bulletCount,fps=GetFPS()}
+                            bullets=targetLevel==37 and TH39.runtime.bulletCount or nil,objects=GetnObj(),fps=GetFPS(),
+                            level=targetLevel,card=config.case~='sequence' and targetCard or nil,
+                            native_machine=lstg.var.native_player_id,sequence_machine=lstg.var.sequence_player,
+                            sequence_resources=SequenceResources.enabled(),heap_kb=collectgarbage('count')}
                         currentRow.phases=phases
-                        currentRow.player_shoot=player and IsValid(player) and player._playersys.keyState.shoot or false
+                        currentRow.player_shoot=player and IsValid(player) and
+                            (player._playersys and player._playersys.keyState.shoot or KeyState.shoot) or false
                         local lantern=player and IsValid(player) and player.mhj_source and player.mhj_source.lantern
                         if lantern then
                             currentRow.lantern_status,currentRow.lantern_power,currentRow.lantern_energy=lantern.Status,lantern.Power,lantern.Energy
                         end
                         currentRow.score=lstg.var.score
+                        currentRow.audio_bgm,currentRow.audio_se=audioLevels()
                         if clock%300==0 then
                             currentRow.patterns={}
-                            for c in pairs(TH39.runtime.controllers) do
+                            for c in pairs(targetLevel==37 and TH39.runtime.controllers or {}) do
                                 local card=c.host and IsValid(c.host) and (c.host.current_card or c.host.owner and c.host.owner.current_card)
                                 currentRow.patterns[#currentRow.patterns+1]={id=c.pattern.id,time=c.time,
                                     card=card and card.card_id,card_clock=c.host and IsValid(c.host) and c.host.mhj3_card and c.host.mhj3_card.clock}
                             end
+                            if targetLevel==40 then
+                                local rt=GameContent.ports[40].source.runtime
+                                if rt then
+                                    currentRow.source_runtime={frame=rt.frame,complete=rt.complete,enemy_count=rt.enemyCount}
+                                    local b=rt.boss
+                                    if b and IsValid(b) then
+                                        currentRow.source_runtime.boss={kind=b.spawnType,phase=b.portPhase,age=b.age,
+                                            hp=b.hp,maxhp=b.maxhp,countdown=b.countdown,combat=b._bmCombat,targetable=b.targetable,active=b.active}
+                                    end
+                                end
+                            end
                         end
                         if clock>=config.frames then save();return true end
+                    elseif active and practiceEntered then
+                        result.ended_at=clock;result.end_stage=current and current.stage_name
+                        save();return true
                     end
                     return stop
                 end,debug.traceback)
@@ -361,6 +524,9 @@ function GameInit()
                 if not good then save(err);return end
                 local row=currentRow
                 if active and row then row.render_ms=(watch:GetElapsed()-begin)*1000 end
+                if config.capture and active and row and (clock==120 or clock%600==0) then
+                    Snapshot('snapshot/frame'..clock..'.png')
+                end
             end
             return
         end

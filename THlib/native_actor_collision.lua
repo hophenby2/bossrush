@@ -15,6 +15,7 @@ function C.bind(o,a,b,shape,ca,cb,contact,point)
     p.damage[1],p.damage[2],p.damage[3]=a,b,shape
     p.contact[1],p.contact[2],p.contact[3]=ca or a,cb or b,contact or shape;p.point=point
     o.a,o.b,o.rect=a,b,rect(shape,a,b)
+    if lstg and lstg.SetSourceActorDamageShape then lstg.SetSourceActorDamageShape(o,p,a,b) end
     return p
 end
 local function apply(o,s,p)
@@ -28,6 +29,7 @@ function C.begin()
                 local s=shape(o)
                 p.damage[1],p.damage[2],p.damage[3]=o.a,o.b,s
                 p.contact[1],p.contact[2],p.contact[3]=o.a,o.b,s
+                if lstg and lstg.SetSourceActorDamageShape then lstg.SetSourceActorDamageShape(o,p,o.a,o.b) end
             end
             active[#active+1]={o,p,o.rot};apply(o,p.contact,p)
         end

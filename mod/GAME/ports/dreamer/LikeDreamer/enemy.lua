@@ -1115,6 +1115,7 @@ function enemyClass:init(rt,typeId,hp,x,y,note,parent)
     self.group=GROUP_ENEMY;self.layer=LAYER_ENEMY;self.bound=false;self.rect=false
     setImage(self);sync(self)
     rt.enemiesById[self.entityId]=self;rt.enemyCount=rt.enemyCount+1
+    rt.enemyRevision=(rt.enemyRevision or 0)+1
 end
 
 function enemyClass:colli(other)
@@ -1133,7 +1134,10 @@ function enemyClass:release()
     if self._released then return end
     self._released=true
     local rt=self.runtime
-    if rt then rt.enemiesById[self.entityId]=nil;rt.enemyCount=max(0,rt.enemyCount-1) end
+    if rt then
+        rt.enemiesById[self.entityId]=nil;rt.enemyCount=max(0,rt.enemyCount-1)
+        rt.enemyRevision=(rt.enemyRevision or 0)+1
+    end
 end
 function enemyClass:del() enemyClass.release(self) end
 function enemyClass:kill() enemyClass.release(self) end

@@ -30,6 +30,7 @@ function M.start(rt,source)
     end
     local root=assert(objects[entry.root_id])
     rt.nextEntityId,rt.enemyCount=entry.next_id,alive
+    rt.enemyRevision=(rt.enemyRevision or 0)+1
     rt.boss,rt.gate,rt.complete=root,true,false
     rt.frame=source.first+entry.spawn_delay+entry.elapsed
     if entry.world then
