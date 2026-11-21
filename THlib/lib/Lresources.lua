@@ -106,6 +106,7 @@ function LoadAnimation(ani, tex, x, y, w, h, n, m, intv, a, b, rect)
 end
 
 local OriginalSetImageState = SetImageState
+local SourceSetImageStateRGBA = lstg.SetSourceImageStateRGBA
 function SetImageState(img, blend, a, r, g, b)
     local i = ImageColor[img]
     if a == nil then
@@ -122,13 +123,28 @@ function SetImageState(img, blend, a, r, g, b)
         end
     else
         if a ~= i[2] or r ~= i[3] or g ~= i[4] or b ~= i[5] or i[1] ~= blend then
-            OriginalSetImageState(img, blend, Color(a, r, g, b))
+            if SourceSetImageStateRGBA then
+                SourceSetImageStateRGBA(img, blend, a, r, g, b)
+            else
+                OriginalSetImageState(img, blend, Color(a, r, g, b))
+            end
             i[1] = blend
             i[2], i[3], i[4], i[5] = a, r, g, b
         end
     end
 end
 _G.OriginalSetImageState = OriginalSetImageState
+
+-- 共用颜色缓存仍按资源池维护；合并普通弹绘制调用，不另外建立一套图片状态。
+if lstg.RenderSourceObjectImage then
+    local renderObject = lstg.RenderSourceObjectImage
+    function RenderSourceObjectImage(img, object, blend, a, r, g, b)
+        local i = ImageColor[img]
+        local changed = a ~= i[2] or r ~= i[3] or g ~= i[4] or b ~= i[5] or i[1] ~= blend
+        renderObject(img, object, blend, a, r, g, b, changed)
+        if changed then i[1],i[2],i[3],i[4],i[5] = blend,a,r,g,b end
+    end
+end
 
 local OriginalSetFontState = SetFontState
 function SetFontState(font, blend, a, r, g, b)

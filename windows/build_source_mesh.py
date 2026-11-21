@@ -57,6 +57,9 @@ def main():
     source=source.replace(register,register+'\n'
         '\t\t{ "CopySourceTable", &source_mesh::copyTable },\n'
         '\t\t{ "SyncSourceBulletGeometry", &source_mesh::syncBulletGeometry },\n'
+        '\t\t{ "GetSourceFrameStatistics", &source_mesh::frameStatistics },\n'
+        '\t\t{ "SetSourceImageStateRGBA", &source_mesh::imageStateRGBA },\n'
+        '\t\t{ "RenderSourceObjectImage", &source_mesh::renderObjectImage },\n'
         '\t\t{ "CreateSourceModelMesh", &source_mesh::create },\n'
         '\t\t{ "RenderSourceModelMesh", &source_mesh::draw },\n'
         '\t\t{ "RenderSourceModelMeshes", &source_mesh::drawBatch },',1)
@@ -81,15 +84,57 @@ def main():
         raise RuntimeError('官方限帧器补丁上下文不匹配')
     pacer_source=pacer_source.replace(deadline,
         'const int64_t target = m_last + m_interval;')
+    # 将限帧等待与 DXGI 队列等待分开记录；读取上一完整帧，避免错配当前帧。
+    pacer_anchor='    double FrameRateController::update() noexcept {'
+    if pacer_source.count(pacer_anchor)!=1:
+        raise RuntimeError('官方限帧计时入口不匹配')
+    pacer_source=('namespace { double source_pacer_wait{}, source_previous_pacer_wait{}; }\n'
+        'extern "C" double GetSourcePacerWait() { return source_previous_pacer_wait; }\n'+pacer_source)
+    pacer_source=pacer_source.replace(pacer_anchor,pacer_anchor+'\n'
+        '        source_previous_pacer_wait = source_pacer_wait;\n'
+        '        const core::ScopeTimer source_wait_timer(&source_pacer_wait);',1)
     patched_pacer=output/'FrameRateController.cpp'
     patched_pacer.write_text(pacer_source,encoding='utf-8')
 
-    # 在刚完成的官方构建上接入渲染绑定和限帧补丁，不改写上游源码。
+    # 无垂直同步时先让 CPU 更新，再在 Present 必要时等待队列，避免前一画面的显示等待串行挡住逻辑。
+    app_original=engine/'LuaSTG/LuaSTG/AppFrame.cpp'
+    app_source=app_original.read_text(encoding='utf-8-sig')
+    wait_anchor='if (m_swap_chain) {\n\t\t\tm_swap_chain->waitFrameLatency();'
+    if app_source.count(wait_anchor)!=1:
+        raise RuntimeError('官方交换链等待入口不匹配')
+    app_source=app_source.replace(wait_anchor,
+        'if (m_swap_chain && m_swap_chain->getVSync()) {\n\t\t\tm_swap_chain->waitFrameLatency();',1)
+    patched_app=output/'AppFrame.cpp';patched_app.write_text(app_source,encoding='utf-8')
+    swap_original=engine/'engine/graphics/d3d11/SwapChain.cpp'
+    swap_source=swap_original.read_text(encoding='utf-8-sig')
+    present_flags='flags |= DXGI_PRESENT_DO_NOT_WAIT;'
+    present_call='const auto present_result = m_swap_chain->Present(interval, flags);'
+    if swap_source.count(present_flags)!=1 or swap_source.count(present_call)!=1:
+        raise RuntimeError('官方画面提交入口不匹配')
+    swap_source=swap_source.replace(present_flags,'if (m_vsync) flags |= DXGI_PRESENT_DO_NOT_WAIT;',1)
+    swap_source=('namespace { unsigned long long source_present_busy{}; }\n'
+        'extern "C" unsigned long long GetSourcePresentBusy() { return source_present_busy; }\n'+swap_source)
+    swap_source=swap_source.replace(present_call,present_call+'\n'
+        '        if (present_result == DXGI_ERROR_WAS_STILL_DRAWING) ++source_present_busy;',1)
+    patched_swap=output/'SwapChain.cpp';patched_swap.write_text(swap_source,encoding='utf-8')
+
+    # 保留单线程逻辑和原线程优先级，让系统选择运行核心，避免所有逻辑固定挤在 CPU 0。
+    application_original=engine/'engine/window-system/windows/ApplicationManager.cpp'
+    application_source=application_original.read_text(encoding='utf-8-sig')
+    affinity_anchor='        SetThreadAffinityMask(g_main_thread, 0x1);'
+    if application_source.count(affinity_anchor)!=1:
+        raise RuntimeError('官方主线程亲和性入口不匹配')
+    application_source=application_source.replace(affinity_anchor,
+        '        // 主线程保留系统默认亲和性，由调度器选择核心。',1)
+    patched_application=output/'ApplicationManager.cpp';patched_application.write_text(application_source,encoding='utf-8')
+
+    # 在刚完成的官方构建上接入独立补丁，不改写上游源码。
     objects=sorted(object_dir.rglob('*.obj'))
     old_renderer=[p for p in objects if p.name=='LW_Renderer.obj']
-    if len(old_renderer)!=1 or len(objects)<20:
+    old_app=[p for p in objects if p.name=='AppFrame.obj']
+    if len(old_renderer)!=1 or len(old_app)!=1 or len(objects)<20:
         raise RuntimeError('缺少完整的 Sub x64 Release 构建，请先在上游完成正常构建')
-    objects=[p for p in objects if p!=old_renderer[0]]
+    objects=[p for p in objects if p not in old_renderer+old_app]
     resources=list(object_dir.rglob('*.res'))
     if not resources: raise RuntimeError('缺少 Sub 已编译的程序资源')
     tree=ET.parse(project);root=tree.getroot()
@@ -121,11 +166,12 @@ def main():
         elif name in {'ProgramDataBaseFile','ImportLibrary'} and item.text:
             item.text=str(output/Path(item.text.replace('\\','/')).name)
     group=ET.SubElement(root,tag('ItemGroup'))
-    for source_file in (patched,patched_pacer):
+    for source_file in (patched,patched_pacer,patched_app,patched_swap,patched_application):
         item=ET.SubElement(group,tag('ClCompile'),{'Include':str(source_file)})
         ET.SubElement(item,tag('PrecompiledHeader')).text='NotUsing'
         ET.SubElement(item,tag('ForcedIncludeFiles')).text=str(project.parent/'CMakeFiles/LuaSTG.dir/Release/cmake_pch.hxx')
-        ET.SubElement(item,tag('AdditionalIncludeDirectories')).text=str(engine/'engine/window-system')+';%(AdditionalIncludeDirectories)'
+        ET.SubElement(item,tag('AdditionalIncludeDirectories')).text=(str(engine/'engine/window-system')+';'
+            +str(engine/'engine/graphics')+';%(AdditionalIncludeDirectories)')
     local_project=output/'SourceModelMesh.vcxproj'
     tree.write(local_project,encoding='utf-8',xml_declaration=True)
     vswhere=Path(os.environ.get('ProgramFiles(x86)','C:/Program Files (x86)'))/'Microsoft Visual Studio/Installer/vswhere.exe'
@@ -143,6 +189,14 @@ def main():
         'pacer_source_sha256':hashlib.sha256(pacer_original.read_bytes()).hexdigest(),
         'pacer_patch_sha256':hashlib.sha256(patched_pacer.read_bytes()).hexdigest(),
         'frame_pacing':'按上一帧实际起点限帧，不追赶旧截止时间',
+        'presentation':'无垂直同步时不在更新前等待 DXGI 队列；Present 必要时阻塞，保留画面提交',
+        'app_source_sha256':hashlib.sha256(app_original.read_bytes()).hexdigest(),
+        'app_patch_sha256':hashlib.sha256(patched_app.read_bytes()).hexdigest(),
+        'swap_source_sha256':hashlib.sha256(swap_original.read_bytes()).hexdigest(),
+        'swap_patch_sha256':hashlib.sha256(patched_swap.read_bytes()).hexdigest(),
+        'main_thread_affinity':'系统默认亲和性，不固定 CPU 0',
+        'application_source_sha256':hashlib.sha256(application_original.read_bytes()).hexdigest(),
+        'application_patch_sha256':hashlib.sha256(patched_application.read_bytes()).hexdigest(),
         'patch_sha256':hashlib.sha256(header.read_bytes()).hexdigest(),'exe_sha256':hashlib.sha256(built.read_bytes()).hexdigest()}
     (output/'build.json').write_text(json.dumps(record,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     if not args.no_install:

@@ -1,5 +1,21 @@
 # 六作原作自机校准
 
+## 2026-11-21：天月祝鸣集中发弹性能（Windows）
+
+完整符卡练习与孤立弹幕运行时的耗时不同：自机桥接原先每帧为全部敌弹重建代理、元表和闭包；即使灯笼关闭也会扫描弹幕。原作 `SpecialSystem.Update` 直接读取已有 `CSManager`。现复用代理和列表，在原 CLOSED 分支不读取弹幕且没有保护消弹时跳过扫描；其余状态保持 Update 前取视图的时机。退役对象、切卡和重新绑定均释放缓存。
+
+原生诊断还检出了 LuaJIT 默认 1000 条轨迹缓存反复耗尽：持续射击的 3600 逻辑帧中清空 20 次、编译约 21000 条轨迹；扩大缓存的同条件诊断清空 0 次、编译 3737 条。Windows 启动入口预留 8192 条轨迹和 16 MiB 机器码缓存。C# 兼容层用共享 float 槽完成相同单精度舍入、共用矩形元表，并用标准泛型迭代器替代 foreach 的捕获闭包，避免解释执行分配与不支持的 FNEW/UCLO 录制路径。未修改生成的自机脚本或发弹参数。
+
+Windows 引擎仍以 `windows/engine.lock.json` 的官方 master 提交为基础。独立补丁合并普通弹绘制所需的属性读取，保留共用图片颜色缓存及官方数值转换；公共弹型动画提前建立切片。主线程不再固定 CPU 0，无垂直同步时在画面提交处按需等待队列。限帧仍按上一帧实际起点计算，追帧保持禁用。两种绘制路径的 96 组颜色、混合、旋转、镜像、缩放和贴图中心专项截图逐像素一致。
+
+最终 Windows 960×720、原作灵梦、持续射击的 6000 帧练习夹具，排除前 299 帧和最后未绘制帧，平均帧率 59.47、最低 56.23，低于 55 的采样为 0；仍有短帧波动，不能称为完全锁定 60。夹具固定站位、保护玩家并恢复 Boss 血量，以覆盖后半段发弹，不改变正式游戏。前后弹数、灯笼状态、能量、得分和射击状态逐帧一致，画面提交忙失败计数为 0。此项是移植版前后对照及原作源码核对，未运行原作可执行文件，也不代表 Mac、Android 或其他机体的实测。完整条件与指纹见 `verification-2026-11-21-night-performance.json`。
+
+```sh
+luajit tools/native-player-tests/check_night_barrage_view.lua
+luajit tools/native-player-tests/check_source_csharp_values.lua
+python tools/profile_windows_cases.py --case th39-39060 --out windows/build/night-performance-new --full-game --frames 6000 --fps 60 --shoot --engine-stats
+```
+
 ## 2026-11-20：结界、绑定发射器与多受击目标
 
 春雪以原 `Character.Update` 的按下沿、正在执行的雷和 `SWudi` 条件处理 X。爆结界后继续按住 X 不会再放雷；结界与雷分别使用 `SWudi`、`BWudi`，不再把两者写成宿主估算的保护倒计时。早苗高速雷第 300 帧结束无敌而演出仍继续的边界也单独验证。

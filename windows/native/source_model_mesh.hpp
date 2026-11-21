@@ -8,6 +8,7 @@
 #include "AppFrame.h"
 #include <d3dcompiler.h>
 #include <wrl/client.h>
+#include <algorithm>
 #include <array>
 #include <cstring>
 #include <memory>
@@ -196,6 +197,48 @@ static int syncBulletGeometry(lua_State* L) {
 #endif
     object->rect=false;object->UpdateCollisionCircleRadius();
     object->rot=values[4]*L_DEG_TO_RAD;object->hscale=values[5];object->vscale=values[6];
+    return 0;
+}
+// 只读上一完整帧的引擎计时，包含 Lua 之外的提交与等待，不改变帧调度。
+extern "C" double GetSourcePacerWait();
+extern "C" unsigned long long GetSourcePresentBusy();
+static int frameStatistics(lua_State* L) {
+    auto const& s=LAPP.getFrameStatistics();
+    for (double v:{s.wait_time,s.update_time,s.render_time,s.present_time,s.total_time}) lua_pushnumber(L,v*1000);
+    lua_pushnumber(L,GetSourcePacerWait()*1000);
+    // FrameQuery 已在复用查询槽时取回数据，此处只读缓存，不额外等待 GPU。
+    lua_pushnumber(L,LAPP.getFrameRenderStatistics().render_time*1000);
+    lua_pushnumber(L,static_cast<lua_Number>(GetSourcePresentBusy()));
+    return 8;
+}
+// 与官方 Color(a,r,g,b) 的整数转换、截断和钳位一致，直接写图片颜色，免去逐弹临时 userdata。
+static core::Color4B imageColorRGBA(lua_State* L,int first) {
+    auto channel=[L](int i) { return static_cast<uint8_t>(std::clamp<lua_Integer>(luaL_checkinteger(L,i),0,255)); };
+    return core::Color4B(channel(first+1),channel(first+2),channel(first+3),channel(first));
+}
+static int imageStateRGBA(lua_State* L) {
+    const auto color=imageColorRGBA(L,3);
+    core::SmartReference<IResourceSprite> sprite=LRES.FindSprite(luaL_checkstring(L,1));
+    if (!sprite) return luaL_error(L,"image '%s' not found.",luaL_checkstring(L,1));
+    sprite->SetBlendMode(TranslateBlendMode(L,2));sprite->SetColor(color);
+    return 0;
+}
+// 按普通 Render 的数值转换绘制同一对象，省去逐弹六次属性跨界读取；顺序仍由 ObjRender 决定。
+static int renderObjectImage(lua_State* L) {
+    if (!LAPP.getRenderer2D()->isBatchScope()) return luaL_error(L,"invalid render operation");
+    auto* object=binding::GameObject::as(L,2);
+    core::SmartReference<IResourceSprite> sprite=LRES.FindSprite(luaL_checkstring(L,1));
+    if (!sprite) return luaL_error(L,"can't find sprite '%s'",luaL_checkstring(L,1));
+    if (lua_toboolean(L,8)) {
+        const auto color=imageColorRGBA(L,4);
+        sprite->SetBlendMode(TranslateBlendMode(L,3));sprite->SetColor(color);
+    }
+    // 保留 GetAttr(rot) 转为角度再由 Render 转回弧度的舍入过程。
+    volatile double degrees=object->rot*L_RAD_TO_DEG;
+    const auto scale=LRES.GetGlobalImageScaleFactor();
+    sprite->Render(static_cast<float>(object->x),static_cast<float>(object->y),
+        static_cast<float>(degrees*L_DEG_TO_RAD),static_cast<float>(object->hscale)*scale,
+        static_cast<float>(object->vscale)*scale,0.5f);
     return 0;
 }
 static int create(lua_State* L) {

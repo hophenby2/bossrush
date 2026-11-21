@@ -1,0 +1,634 @@
+{
+  "date": "2026-11-21",
+  "scope": "Windows 官方 Sub 0.21.129，永夜篇终焉「天月祝鸣」39060 完整符卡练习",
+  "source_reference": {
+    "root": "E:\\fork\\FDF3_re",
+    "read_only": true,
+    "native_original_executable_benchmarked": false,
+    "files": {
+      "src/THMHJ/THMHJ/SpecialSystem.cs": "3d2aca5869f2afd87a676b8c9fb969bb675a497319e040421ff9dfacbb35ad57",
+      "src/THMHJ/THMHJ/CSManager.cs": "9b0a09495512701092f84230bd7eaa41b2666527af5868f04e156e6198fe32c9",
+      "src/THMHJ/THMHJ/Layer.cs": "c2f77f97e27af715090e88be5befbc454dbac9e4df81878e9101dfcbaa591f38",
+      "src/THMHJ/THMHJ/NSpriteBatch.cs": "69fe46ffb7bee3fb506329860ca08b01988aa989440c0dd82185b0a1014c0949"
+    }
+  },
+  "findings": [
+    "原作 SpecialSystem.Update 读取既有 CSManager 列表；移植桥接原先每弹每帧建立两个表和两个闭包，关闭灯笼也全量扫描。",
+    "默认 1000 条 LuaJIT 轨迹缓存在完整自机/弹幕路径持续射击时反复清空；孤立弹幕运行时没有覆盖这项负担。",
+    "C# 值类型桥接的 float 标量 cdata、矩形元表和 foreach 捕获闭包产生额外分配，并触发 FNEW/UCLO 等录制失败。",
+    "原 CPU 计时没有覆盖 DXGI 队列等待；无垂直同步时提前等待会串行阻挡逻辑。Present 改为必要时阻塞并计数忙失败。",
+    "官方主线程固定 CPU 0，解除亲和性后的对照降低了 CPU 帧耗时；仍为单线程逻辑。"
+  ],
+  "implemented": [
+    "缓存弹体代理及控制器列表，显式释放退役和跨练习引用；CLOSED 且 protectTime<=61 时按原 Update 分支跳过无用视图。",
+    "Windows launch.lua 设置 maxtrace=8192、maxmcode=16384 KiB、maxside=1024。",
+    "兼容层共用 float[1] 舍入槽、矩形元表和泛型迭代函数；保留浮点精度、零基索引、实时 Count 和字典删除空位语义。",
+    "沿共用 ImageColor 缓存合并普通弹属性读取与绘制，保留官方 Color 截断钳位及 GetAttr(rot)→Render 的转换顺序。",
+    "公共 151 弹型覆盖的有效动画帧提前建立；发弹、运动、事件、碰撞、回收与原始生成脚本参数未改。",
+    "基于干净官方提交构建独立调度/呈现补丁，保留禁用追帧及窗口切换。"
+  ],
+  "measurement": {
+    "platform": "Windows，NVIDIA GeForce RTX 3050 Ti Laptop GPU，Intel i5-12500H",
+    "resolution": [
+      960,
+      720
+    ],
+    "target_fps": 60,
+    "vsync": false,
+    "entry": "正式符卡练习 39060，原作灵梦",
+    "seed": 20261121,
+    "fixture": "固定站位；每帧玩家 protect=120；持续射击时恢复 Boss 血量，防止提前击破漏测后半段。",
+    "sampling": "frame 300..5999，共 5700 条，排除前 299 帧及最后未绘制帧。FPS 是引擎 60 帧平均。Lua 耗时不等于完整 GPU/显示时间。",
+    "data_isolation": "每次独立 windows/build 目录；未访问或修改源码目录 User/replay。"
+  },
+  "controlled_view_allocation_comparison": [
+    {
+      "case_directory": "E:\\fork\\bossrush\\windows\\build\\th39-view-before",
+      "inputs": {
+        "case": "th39-39060",
+        "out": "E:\\fork\\bossrush\\windows\\build\\th39-view-before",
+        "frames": 2400,
+        "clock": 0,
+        "no_draw": false,
+        "sample": false,
+        "warm": false,
+        "cpu": false,
+        "capture": false,
+        "full_game": true,
+        "operations": false,
+        "frame_detail": false,
+        "trace": false,
+        "gc_probe": false,
+        "checkpoints": false,
+        "rich_checkpoints": false,
+        "checkpoint_step": 600,
+        "baseline_runtime": false,
+        "runtime_file": null,
+        "night_system_file": "windows\\build\\night-system-before-view.lua",
+        "lantern": false,
+        "fps": 60
+      },
+      "engine": {
+        "repository": "https://github.com/Legacy-LuaSTG-Engine/LuaSTG-Sub.git",
+        "ref": "master",
+        "commit": "8728b3f9e91e6cd577665a7f5777c6c7c23b5f31",
+        "version": "0.21.129",
+        "patch": "native/source_model_mesh.hpp",
+        "frame_rate_controller_patch": "build_source_mesh.py"
+      },
+      "sha256": {
+        "LuaSTGSub.exe": "af454d2627321b0dd77a90534b556feb1c4b7f1b2c92175c2d3b47172fd67402",
+        "mod/GAME/th37/background.lua": "96895ebcdb1de93e24f96d0362c080b17a932cb4987935487a3137666966c55c",
+        "mod/GAME/th37/source_mesh.lua": "e608f46ec76c6a3aae530ae6f0dfc1d82e2b7b17805ade1b27df3b2de0139425",
+        "mod/GAME/th39/runtime.lua": "463b535a44298234b21d49b11a08a29300658891833b600495e659a76d5728e7",
+        "mod/GAME/ports/binding_index.lua": "f784c69023adea321c26465f271d5089c5e5af7f1291b34799b6c77a9743b06a",
+        "mod/GAME/ports/mhj/native_players/night_system.lua": "8c138050e76a57028d21cedb80afd00580482c980bf13e5352e40696ee1aa88e",
+        "mod/GAME/ports/mhj/native_players/night_barrage_view.lua": "1271a5198789973a32fd1e1f570b8f81df3ee67fa36a5f544e11a04b4da4d4ce"
+      },
+      "sample_count": 2100,
+      "lua_logic_ms": {
+        "mean": 4.765791,
+        "min": 0.8287,
+        "p01": 1.166,
+        "p99": 12.5456,
+        "max": 17.2718
+      },
+      "lua_render_ms": {
+        "mean": 2.613725,
+        "min": 0.601,
+        "p01": 0.7233,
+        "p99": 5.0663,
+        "max": 8.5651
+      },
+      "lua_combined_ms": {
+        "mean": 7.379516,
+        "min": 1.5093,
+        "p01": 1.9106,
+        "p99": 16.7561,
+        "max": 22.0939
+      },
+      "fps_60_frame_average": {
+        "mean": 59.730339,
+        "min": 57.295427,
+        "p01": 57.742955,
+        "p99": 60.00024,
+        "max": 60.00024
+      },
+      "lua_combined_over_16_667_ms": 21,
+      "fps_below_55": 0,
+      "fps_below_50": 0
+    },
+    {
+      "case_directory": "E:\\fork\\bossrush\\windows\\build\\th39-view-after",
+      "inputs": {
+        "case": "th39-39060",
+        "out": "E:\\fork\\bossrush\\windows\\build\\th39-view-after",
+        "frames": 2400,
+        "clock": 0,
+        "no_draw": false,
+        "sample": false,
+        "warm": false,
+        "cpu": false,
+        "capture": false,
+        "full_game": true,
+        "operations": false,
+        "frame_detail": false,
+        "trace": false,
+        "gc_probe": false,
+        "checkpoints": false,
+        "rich_checkpoints": false,
+        "checkpoint_step": 600,
+        "baseline_runtime": false,
+        "runtime_file": null,
+        "night_system_file": null,
+        "lantern": false,
+        "fps": 60
+      },
+      "engine": {
+        "repository": "https://github.com/Legacy-LuaSTG-Engine/LuaSTG-Sub.git",
+        "ref": "master",
+        "commit": "8728b3f9e91e6cd577665a7f5777c6c7c23b5f31",
+        "version": "0.21.129",
+        "patch": "native/source_model_mesh.hpp",
+        "frame_rate_controller_patch": "build_source_mesh.py"
+      },
+      "sha256": {
+        "LuaSTGSub.exe": "af454d2627321b0dd77a90534b556feb1c4b7f1b2c92175c2d3b47172fd67402",
+        "mod/GAME/th37/background.lua": "96895ebcdb1de93e24f96d0362c080b17a932cb4987935487a3137666966c55c",
+        "mod/GAME/th37/source_mesh.lua": "e608f46ec76c6a3aae530ae6f0dfc1d82e2b7b17805ade1b27df3b2de0139425",
+        "mod/GAME/th39/runtime.lua": "463b535a44298234b21d49b11a08a29300658891833b600495e659a76d5728e7",
+        "mod/GAME/ports/binding_index.lua": "f784c69023adea321c26465f271d5089c5e5af7f1291b34799b6c77a9743b06a",
+        "mod/GAME/ports/mhj/native_players/night_system.lua": "aced9b429aad81e195a45ada7a171c70f74dc067e9d6ed0d24f0b46976348bf3",
+        "mod/GAME/ports/mhj/native_players/night_barrage_view.lua": "1271a5198789973a32fd1e1f570b8f81df3ee67fa36a5f544e11a04b4da4d4ce"
+      },
+      "sample_count": 2100,
+      "lua_logic_ms": {
+        "mean": 4.222452,
+        "min": 1.0621,
+        "p01": 1.4101,
+        "p99": 7.4608,
+        "max": 12.2293
+      },
+      "lua_render_ms": {
+        "mean": 2.634771,
+        "min": 0.7782,
+        "p01": 1.0061,
+        "p99": 5.4424,
+        "max": 10.8498
+      },
+      "lua_combined_ms": {
+        "mean": 6.857222,
+        "min": 1.9459,
+        "p01": 2.4144,
+        "p99": 12.5139,
+        "max": 16.7277
+      },
+      "fps_60_frame_average": {
+        "mean": 59.94779,
+        "min": 57.494372,
+        "p01": 59.540207,
+        "p99": 60.00024,
+        "max": 60.00024
+      },
+      "lua_combined_over_16_667_ms": 1,
+      "fps_below_55": 0,
+      "fps_below_50": 0
+    }
+  ],
+  "jit_capacity_diagnostics": {
+    "note": "两次均为 3600 逻辑帧、目标 240 FPS 的诊断夹具，启用编译跟踪；不得当成最终 60 FPS 实测或原作对照。其余条件相同，均在兼容层 float/foreach 后续修改之前。",
+    "cases": [
+      {
+        "case": "th39-jit-capacity-default",
+        "inputs": {
+          "case": "th39-39060",
+          "out": "E:\\fork\\bossrush\\windows\\build\\th39-jit-capacity-default",
+          "frames": 3600,
+          "clock": 0,
+          "no_draw": false,
+          "sample": false,
+          "warm": false,
+          "cpu": false,
+          "capture": false,
+          "full_game": true,
+          "operations": false,
+          "frame_detail": false,
+          "engine_stats": true,
+          "trace": true,
+          "jit_cache": false,
+          "gc_probe": false,
+          "checkpoints": false,
+          "rich_checkpoints": false,
+          "checkpoint_step": 600,
+          "baseline_runtime": false,
+          "runtime_file": null,
+          "night_system_file": null,
+          "engine_file": null,
+          "lantern": false,
+          "shoot": true,
+          "shield": false,
+          "fps": 240
+        },
+        "sha256": {
+          "LuaSTGSub.exe": "6d85ef9753a30c5323cd873e0512d7db38c845233dcf379434df9f2f3d54930e",
+          "mod/GAME/th37/background.lua": "96895ebcdb1de93e24f96d0362c080b17a932cb4987935487a3137666966c55c",
+          "mod/GAME/th37/source_mesh.lua": "e608f46ec76c6a3aae530ae6f0dfc1d82e2b7b17805ade1b27df3b2de0139425",
+          "mod/GAME/th39/runtime.lua": "0f623d111de42e6731247b3795b338fd17909faf0820f586bc264c30efa1c7b4",
+          "mod/GAME/ports/binding_index.lua": "f784c69023adea321c26465f271d5089c5e5af7f1291b34799b6c77a9743b06a",
+          "mod/GAME/ports/mhj/native_players/night_system.lua": "36125f3941ba859520d037303aad04696f0b7aed84405557b77c95a7c4bbad2e",
+          "mod/GAME/ports/mhj/native_players/night_barrage_view.lua": "2698a0df47ec589bbc7d178be1c026e80fa900b4a1d713b1abdb8acc759b0d09",
+          "THlib/lib/Lresources.lua": "2e24049e472a58e964525361ce6bacbb5470b112c11a961d2ff2deb944a160bb"
+        },
+        "events": {
+          "stop": 21000,
+          "abort": 32219,
+          "flush": 20
+        },
+        "flush_frames": [
+          10,
+          24,
+          351,
+          566,
+          847,
+          1111,
+          1392,
+          1652,
+          1810,
+          2048,
+          2359,
+          2498,
+          2631,
+          2767,
+          2853,
+          2965,
+          3109,
+          3229,
+          3295,
+          3400
+        ],
+        "maximum_trace_id": 1000,
+        "compiler_callback_ms": 1109.9111
+      },
+      {
+        "case": "th39-jit-capacity-expanded",
+        "inputs": {
+          "case": "th39-39060",
+          "out": "E:\\fork\\bossrush\\windows\\build\\th39-jit-capacity-expanded",
+          "frames": 3600,
+          "clock": 0,
+          "no_draw": false,
+          "sample": false,
+          "warm": false,
+          "cpu": false,
+          "capture": false,
+          "full_game": true,
+          "operations": false,
+          "frame_detail": false,
+          "engine_stats": true,
+          "trace": true,
+          "jit_cache": true,
+          "gc_probe": false,
+          "checkpoints": false,
+          "rich_checkpoints": false,
+          "checkpoint_step": 600,
+          "baseline_runtime": false,
+          "runtime_file": null,
+          "night_system_file": null,
+          "engine_file": null,
+          "lantern": false,
+          "shoot": true,
+          "shield": false,
+          "fps": 240
+        },
+        "sha256": {
+          "LuaSTGSub.exe": "6d85ef9753a30c5323cd873e0512d7db38c845233dcf379434df9f2f3d54930e",
+          "mod/GAME/th37/background.lua": "96895ebcdb1de93e24f96d0362c080b17a932cb4987935487a3137666966c55c",
+          "mod/GAME/th37/source_mesh.lua": "e608f46ec76c6a3aae530ae6f0dfc1d82e2b7b17805ade1b27df3b2de0139425",
+          "mod/GAME/th39/runtime.lua": "0f623d111de42e6731247b3795b338fd17909faf0820f586bc264c30efa1c7b4",
+          "mod/GAME/ports/binding_index.lua": "f784c69023adea321c26465f271d5089c5e5af7f1291b34799b6c77a9743b06a",
+          "mod/GAME/ports/mhj/native_players/night_system.lua": "36125f3941ba859520d037303aad04696f0b7aed84405557b77c95a7c4bbad2e",
+          "mod/GAME/ports/mhj/native_players/night_barrage_view.lua": "2698a0df47ec589bbc7d178be1c026e80fa900b4a1d713b1abdb8acc759b0d09",
+          "THlib/lib/Lresources.lua": "2e24049e472a58e964525361ce6bacbb5470b112c11a961d2ff2deb944a160bb"
+        },
+        "events": {
+          "stop": 3737,
+          "abort": 10512
+        },
+        "flush_frames": [],
+        "maximum_trace_id": 3737,
+        "compiler_callback_ms": 462.6963
+      }
+    ]
+  },
+  "continuous_fire_intermediate": {
+    "note": "本轮中间版本，已含部分缓存/颜色优化，主线程仍固定 CPU 0、JIT 缓存尚未扩大；用于显示本轮剩余问题，不代表用户最初版本。",
+    "measurement": {
+      "case_directory": "E:\\fork\\bossrush\\windows\\build\\th39-final-shoot-clean",
+      "inputs": {
+        "case": "th39-39060",
+        "out": "E:\\fork\\bossrush\\windows\\build\\th39-final-shoot-clean",
+        "frames": 6000,
+        "clock": 0,
+        "no_draw": false,
+        "sample": false,
+        "warm": false,
+        "cpu": false,
+        "capture": false,
+        "full_game": true,
+        "operations": false,
+        "frame_detail": false,
+        "engine_stats": true,
+        "trace": false,
+        "gc_probe": false,
+        "checkpoints": false,
+        "rich_checkpoints": false,
+        "checkpoint_step": 600,
+        "baseline_runtime": false,
+        "runtime_file": null,
+        "night_system_file": null,
+        "engine_file": null,
+        "lantern": false,
+        "shoot": true,
+        "fps": 60
+      },
+      "engine": {
+        "repository": "https://github.com/Legacy-LuaSTG-Engine/LuaSTG-Sub.git",
+        "ref": "master",
+        "commit": "8728b3f9e91e6cd577665a7f5777c6c7c23b5f31",
+        "version": "0.21.129",
+        "patch": "native/source_model_mesh.hpp",
+        "frame_rate_controller_patch": "build_source_mesh.py",
+        "presentation_patch": "build_source_mesh.py"
+      },
+      "sha256": {
+        "LuaSTGSub.exe": "46ee71b118627b3b5db23a9b1e8ad06139ce437d4a2012f67925a3e7e523518e",
+        "mod/GAME/th37/background.lua": "96895ebcdb1de93e24f96d0362c080b17a932cb4987935487a3137666966c55c",
+        "mod/GAME/th37/source_mesh.lua": "e608f46ec76c6a3aae530ae6f0dfc1d82e2b7b17805ade1b27df3b2de0139425",
+        "mod/GAME/th39/runtime.lua": "463b535a44298234b21d49b11a08a29300658891833b600495e659a76d5728e7",
+        "mod/GAME/ports/binding_index.lua": "f784c69023adea321c26465f271d5089c5e5af7f1291b34799b6c77a9743b06a",
+        "mod/GAME/ports/mhj/native_players/night_system.lua": "36125f3941ba859520d037303aad04696f0b7aed84405557b77c95a7c4bbad2e",
+        "mod/GAME/ports/mhj/native_players/night_barrage_view.lua": "2698a0df47ec589bbc7d178be1c026e80fa900b4a1d713b1abdb8acc759b0d09"
+      },
+      "sample_count": 5700,
+      "lua_logic_ms": {
+        "mean": 9.291065,
+        "min": 3.3394,
+        "p01": 4.2182,
+        "p99": 19.8307,
+        "max": 35.524
+      },
+      "lua_render_ms": {
+        "mean": 4.65027,
+        "min": 1.4716,
+        "p01": 1.8661,
+        "p99": 9.7246,
+        "max": 60.5191
+      },
+      "lua_combined_ms": {
+        "mean": 13.941335,
+        "min": 4.9753,
+        "p01": 6.1853,
+        "p99": 28.5542,
+        "max": 69.2225
+      },
+      "fps_60_frame_average": {
+        "mean": 57.095828,
+        "min": 44.677123,
+        "p01": 46.122632,
+        "p99": 60.00024,
+        "max": 60.00024
+      },
+      "lua_combined_over_16_667_ms": 1034,
+      "fps_below_55": 1202,
+      "fps_below_50": 217,
+      "present_busy_count": 0
+    }
+  },
+  "final_continuous_fire": {
+    "case_directory": "E:\\fork\\bossrush\\windows\\build\\th39-final-foreach",
+    "inputs": {
+      "case": "th39-39060",
+      "out": "E:\\fork\\bossrush\\windows\\build\\th39-final-foreach",
+      "frames": 6000,
+      "clock": 0,
+      "no_draw": false,
+      "sample": false,
+      "warm": false,
+      "cpu": false,
+      "capture": false,
+      "full_game": true,
+      "operations": false,
+      "frame_detail": false,
+      "engine_stats": true,
+      "trace": false,
+      "jit_cache": false,
+      "jit_default": false,
+      "gc_probe": false,
+      "checkpoints": false,
+      "rich_checkpoints": false,
+      "checkpoint_step": 600,
+      "baseline_runtime": false,
+      "runtime_file": null,
+      "night_system_file": null,
+      "engine_file": null,
+      "lantern": false,
+      "shoot": true,
+      "shield": false,
+      "fps": 60
+    },
+    "engine": {
+      "repository": "https://github.com/Legacy-LuaSTG-Engine/LuaSTG-Sub.git",
+      "ref": "master",
+      "commit": "8728b3f9e91e6cd577665a7f5777c6c7c23b5f31",
+      "version": "0.21.129",
+      "patch": "native/source_model_mesh.hpp",
+      "frame_rate_controller_patch": "build_source_mesh.py",
+      "presentation_patch": "build_source_mesh.py",
+      "main_thread_affinity_patch": "build_source_mesh.py"
+    },
+    "sha256": {
+      "LuaSTGSub.exe": "6d85ef9753a30c5323cd873e0512d7db38c845233dcf379434df9f2f3d54930e",
+      "mod/GAME/th37/background.lua": "96895ebcdb1de93e24f96d0362c080b17a932cb4987935487a3137666966c55c",
+      "mod/GAME/th37/source_mesh.lua": "e608f46ec76c6a3aae530ae6f0dfc1d82e2b7b17805ade1b27df3b2de0139425",
+      "mod/GAME/th39/runtime.lua": "0f623d111de42e6731247b3795b338fd17909faf0820f586bc264c30efa1c7b4",
+      "mod/GAME/ports/binding_index.lua": "f784c69023adea321c26465f271d5089c5e5af7f1291b34799b6c77a9743b06a",
+      "mod/GAME/ports/mhj/native_players/night_system.lua": "36125f3941ba859520d037303aad04696f0b7aed84405557b77c95a7c4bbad2e",
+      "mod/GAME/ports/mhj/native_players/night_barrage_view.lua": "2698a0df47ec589bbc7d178be1c026e80fa900b4a1d713b1abdb8acc759b0d09",
+      "THlib/lib/Lresources.lua": "2e24049e472a58e964525361ce6bacbb5470b112c11a961d2ff2deb944a160bb",
+      "mod/GAME/ports/source_csharp.lua": "3d764d35191871ad455a676b5449370ed3c8adc169a4090ef197b01af37f564a",
+      "launch.lua": "1d3a3f5b00f95858b3bc7b9e17927788e0efaa12e0b68f51b421b3894e00effa"
+    },
+    "sample_count": 5700,
+    "lua_logic_ms": {
+      "mean": 7.230824,
+      "min": 2.5532,
+      "p01": 3.2732,
+      "p99": 14.8132,
+      "max": 22.8263
+    },
+    "lua_render_ms": {
+      "mean": 3.460909,
+      "min": 1.0606,
+      "p01": 1.339,
+      "p99": 7.1653,
+      "max": 44.4347
+    },
+    "lua_combined_ms": {
+      "mean": 10.691733,
+      "min": 3.6253,
+      "p01": 4.6847,
+      "p99": 21.6843,
+      "max": 53.4518
+    },
+    "fps_60_frame_average": {
+      "mean": 59.472073,
+      "min": 56.228475,
+      "p01": 56.303083,
+      "p99": 60.00024,
+      "max": 60.00024
+    },
+    "lua_combined_over_16_667_ms": 222,
+    "fps_below_55": 0,
+    "fps_below_50": 0,
+    "present_busy_count": 0
+  },
+  "per_frame_equalities": [
+    {
+      "left": "th39-view-before",
+      "right": "th39-view-after",
+      "frames": 2400,
+      "mismatches": {
+        "stage_frame": 0,
+        "bullets": 0,
+        "lantern_status": 0,
+        "lantern_power": 0,
+        "lantern_energy": 0,
+        "score": 0
+      }
+    },
+    {
+      "left": "th39-lantern-before",
+      "right": "th39-lantern-final",
+      "frames": 2400,
+      "mismatches": {
+        "stage_frame": 0,
+        "bullets": 0,
+        "lantern_status": 0,
+        "lantern_power": 0,
+        "lantern_energy": 0,
+        "score": 0
+      }
+    },
+    {
+      "left": "th39-shield-before",
+      "right": "th39-shield-after",
+      "frames": 1200,
+      "mismatches": {
+        "stage_frame": 0,
+        "bullets": 0,
+        "lantern_status": 0,
+        "lantern_power": 0,
+        "lantern_energy": 0,
+        "score": 0
+      }
+    },
+    {
+      "left": "th39-final-optimized",
+      "right": "th39-final-foreach",
+      "frames": 6000,
+      "mismatches": {
+        "stage_frame": 0,
+        "bullets": 0,
+        "lantern_status": 0,
+        "lantern_power": 0,
+        "lantern_energy": 0,
+        "score": 0,
+        "player_shoot": 0
+      }
+    }
+  ],
+  "unit_checks": {
+    "barrage_view": "筛选、实时写回、重复 Del、缓存身份、失效对象、退役释放、休眠、复位；2002 弹体连续 1000 帧约 0.88 KiB 增量。",
+    "source_csharp_values": "float 边界、标准 NaN/Infinity、20000 组有限位模式；解释执行 100000 次转换 0.00 KiB 增量；矩形复制和集合嵌套/删除遍历。"
+  },
+  "native_pixels": {
+    "cases": [
+      "th39-image-state-same-position",
+      "th39-object-render-check"
+    ],
+    "case_pairs": 96,
+    "comparison": "同位置先用官方 Color/Render 绘制再用合并路径绘制，完整 960x720 截图逐像素相同；验证画面包含实际非背景颜色。",
+    "coverage": [
+      "分数及超界颜色",
+      "混合模式",
+      "缓存命中与更新",
+      "负缩放/镜像",
+      "大角度及负角度",
+      "非默认图片中心"
+    ],
+    "numeric_rgba_10000_calls_heap_kb": 0.546875
+  },
+  "no_catchup": {
+    "case": "th39-final-no-catchup",
+    "stalls_ms": [
+      90,
+      90,
+      240
+    ],
+    "recovery_min_ms": 16.6529,
+    "fast_recovery_frames": 0
+  },
+  "window_roundtrip": {
+    "case": "th39-final-window",
+    "states": [
+      {
+        "width": 480,
+        "height": 640,
+        "style": 2,
+        "label": "initial"
+      },
+      {
+        "width": 1280,
+        "height": 720,
+        "style": 2,
+        "label": "fullscreen"
+      },
+      {
+        "width": 480,
+        "height": 640,
+        "style": 1,
+        "label": "windowed"
+      }
+    ],
+    "fullscreen": true,
+    "windowed": true
+  },
+  "limitations": [
+    "最终仍有短帧波动，不能称为完全锁定 60。",
+    "原作只核对源码，没有运行原作 exe 做同场景计时。",
+    "固定站位及固定血量夹具不等于完整正常游玩；其他机体、Mac、Android 未原生实测。",
+    "逐帧等价检查只覆盖列出的标量，不声称已经逐弹比较完整轨迹。"
+  ],
+  "engine_build": {
+    "engine": "E:\\fork\\bossrush\\windows\\build\\official-sub",
+    "version": "0.21.129",
+    "repository": "https://github.com/Legacy-LuaSTG-Engine/LuaSTG-Sub.git",
+    "ref": "master",
+    "commit": "8728b3f9e91e6cd577665a7f5777c6c7c23b5f31",
+    "submodules": "b734d3bb5b05ca4c3859bb174b131139fc72bd4d external/beautiful-win32-api (heads/main)\n 019020993ce33bdf56c876004e8b27139a0d011f external/image.qoi (0190209)\n 91ca29db9a4a4fd0eedaebcd5d5f3ba2ace5ae63 external/lua-cjson (2.1.0.8-43-g91ca29d)\n fff48de34357e8e86197a45f5b4bc2b1b28cce53 external/luajit2 (luastg-sub-20251111)\n d63939b5b5cd69ffeaa908f2ec38708a62ad3139 external/xmath (d63939b)\n f1cc2ae15e53a861a874c3034aae6798fde194ab imgui/imgui (v1.62-5575-gf1cc2ae15)\n 7eeb9168d2e5e6b14e266d8782ecf7e649dfc3a4 imgui/implot (v1.0-8-g7eeb916)",
+    "renderer_sha256": "b61881e2d12539a8d6ff00d04aacfaf86f136cd5fdea788625a3983ef61ccc94",
+    "pacer_source_sha256": "481f7daad5524b0ec6e7000d9aa5510f9c7e2d0e5c92acec232ea800f4114086",
+    "pacer_patch_sha256": "c64a9dc6f7180dbc61ba4636804ebe7db2da67599ceb15c85968f3d5fb7ce2e3",
+    "frame_pacing": "按上一帧实际起点限帧，不追赶旧截止时间",
+    "presentation": "无垂直同步时不在更新前等待 DXGI 队列；Present 必要时阻塞，保留画面提交",
+    "app_source_sha256": "0c9e9a716d0161c643659946cbf75f3186d66198acd05919e7287b286dcb5eb1",
+    "app_patch_sha256": "fdc23f5d17940275c0ea8f86f8242ab1f2b45ba4a8981ebf5f70078183479db4",
+    "swap_source_sha256": "1028b6c31aaaae779725be8ed7cb4dd015a8cae075722007e05268a4cddbc4dd",
+    "swap_patch_sha256": "8de32216422a975a5fcbc6144a1221d3c16c5211298e73d7a8f717501315f346",
+    "main_thread_affinity": "系统默认亲和性，不固定 CPU 0",
+    "application_source_sha256": "eed00dc8760a9fce50482b0f8c64ba37bf64b9625db92bfe44b2ceacce9e5b24",
+    "application_patch_sha256": "1c7df76c8d1868f78da8b9289c5699effdbce5d9a28bbf807add1b455c3e3a0d",
+    "patch_sha256": "a36237b5bc7b411560fbc2f59bb05ba4d3fee6049d7d99c684e58cb0f9699534",
+    "exe_sha256": "6d85ef9753a30c5323cd873e0512d7db38c845233dcf379434df9f2f3d54930e"
+  }
+}

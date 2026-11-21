@@ -436,8 +436,11 @@ R.classes.projectile=Class(bullet,{
         if b._a<=0 then return end
         local s=b.mhj;local img=texture(s)
         if s.renderImage~=img then b.img=img;s.renderImage=img end
-        SetImageState(img,b._blend,b._a,b._r,b._g,b._b)
-        Render(img,b.x,b.y,b.rot,b.hscale,b.vscale)
+        if RenderSourceObjectImage then RenderSourceObjectImage(img,b,b._blend,b._a,b._r,b._g,b._b)
+        else
+            SetImageState(img,b._blend,b._a,b._r,b._g,b._b)
+            Render(img,b.x,b.y,b.rot,b.hscale,b.vscale)
+        end
     end,
     del=function(b)
         if not b.mhj.dis then b.mhj.cancelAlpha=b.mhj.alpha;b.mhj.dis=0 end
@@ -832,10 +835,18 @@ end
 function R.prepareFamiliars(configs)
     for _,config in pairs(configs) do loadTexture(D.enemyTypes[config[1]][1]) end
 end
+local sharedSpritesPrepared=false
 function R.preparePattern(id)
     prepareStates()
     local pattern=R.loadPattern(id);local context={}
     loadTexture('barrages');loadTexture('bosses')
+    -- 原作的公共弹型在战斗前已就绪，公共动画也提前建立切片，避免中途换型时卡住绘制。
+    if not sharedSpritesPrepared then
+        for i,p in ipairs(D.bulletTypes) do for frame=0,max(1,p[9] or 1)-1 do
+            texture({pattern=pattern,type=i,age=frame*(1+(p[10] or 0)),controller=context})
+        end end
+        sharedSpritesPrepared=true
+    end
     -- 原作进入战斗前载入自定义贴图；阶段切换和动画换帧不再临时读取 PNG、创建切片。
     for i,p in ipairs(pattern.types) do
         for frame=0,max(1,p[9] or 1)-1 do
@@ -1016,6 +1027,7 @@ function R.clearAll()
     for c in pairs(R.controllers) do R.clear(c) end
     for b in pairs(R.objects) do if valid(b) then clean(b) end end
     R.bulletCount=0
+    if R.sourceViewReset then R.sourceViewReset() end
 end
 -- 道中敌机的时钟、复制模板和目标标签来自 StageManager。
 local function range(value)

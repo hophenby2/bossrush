@@ -2,6 +2,11 @@
 _luastg_version = 0x1000
 _luastg_min_support = 0x1000
 
+-- Windows 完整练习的自机与弹幕会超过默认 1000 条 JIT 轨迹；保留热代码，避免战斗中反复清空重编译。
+if jit and jit.os == 'Windows' then
+    require('jit.opt').start('maxtrace=8192','maxmcode=16384','maxside=1024')
+end
+
 for k, v in pairs(lstg) do
     _G[k] = v
 end

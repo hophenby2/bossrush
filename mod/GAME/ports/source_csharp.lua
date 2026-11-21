@@ -1,8 +1,9 @@
 -- C# 自机逻辑的数据兼容层：零基数组、值类型、集合和数值转换。
 local M={}
 local ffi=require('ffi')
-local float=ffi.typeof('float')
-local function f(x) return tonumber(float(x)) end
+-- 与标量 float 构造器保持相同的单精度舍入；解释执行也不为每次数值转换分配 cdata。
+local floatSlot=ffi.new('float[1]')
+local function f(x) floatSlot[0]=x;return tonumber(floatSlot[0]) end
 local vector={}
 local axes={X=1,Y=2,Z=3,W=4,x=1,y=2,z=3,w=4}
 local vectorMeta={
@@ -69,6 +70,17 @@ local dictMeta={
     end,
     __newindex=function(o,k,v) if dictionary[k] then rawset(o,k,v) else dictionary.Add(o,k,v) end end,
 }
+-- foreach 使用标准泛型迭代器，不为每次遍历建立捕获集合和游标的闭包。
+-- 仍逐次读取实时 Count/keys，保持既有添加、移除与零基索引语义。
+local function nextList(o,index)
+    index=index+1
+    if index<o.count then return index,o[index] end
+end
+local function nextDictionary(o,index)
+    repeat index=index+1 until index>=#o.keys or o.items[o.keys[index+1]]~=nil
+    local key=o.keys[index+1]
+    if key~=nil then return index,{Key=key,Value=o.items[key]} end
+end
 function M.new(environment)
     local C={env=environment or {},f=f,Vector2=vec,Vector3=vec,Vector4=vec,List=list}
     C.env.float={MaxValue=3.4028234663852886e38,MinValue=-3.4028234663852886e38,PositiveInfinity=math.huge}
@@ -98,11 +110,12 @@ function M.new(environment)
     local rectangle={}
     function rectangle:Inflate(x,y) self.X,self.Y=self.X-x,self.Y-y;self.Width,self.Height=self.Width+2*x,self.Height+2*y end
     function rectangle:Contains(p) return p.X>=self.X and p.X<self.X+self.Width and p.Y>=self.Y and p.Y<self.Y+self.Height end
-    function C.Rectangle(x,y,w,h) return setmetatable({X=x or 0,Y=y or 0,Width=w or 0,Height=h or 0},{__index=function(o,k)
+    local rectangleMeta={__index=function(o,k)
         if k=='Top' then return o.Y elseif k=='Bottom' then return o.Y+o.Height
         elseif k=='Left' then return o.X elseif k=='Right' then return o.X+o.Width end
         return rectangle[k]
-    end}) end
+    end}
+    function C.Rectangle(x,y,w,h) return setmetatable({X=x or 0,Y=y or 0,Width=w or 0,Height=h or 0},rectangleMeta) end
     local colorMeta={}
     function C.Colors(r,g,b,a)
         if type(r)=='table' then return setmetatable({r=r.r,g=r.g,b=r.b,a=g or r.a},colorMeta) end
@@ -145,12 +158,7 @@ function M.new(environment)
     end
     function C.Dictionary() return setmetatable({items={},keys={}},dictMeta) end
     function C.each(o)
-        local index=-1
-        if getmetatable(o)==dictMeta then return function()
-            repeat index=index+1 until index>=#o.keys or o.items[o.keys[index+1]]~=nil
-            local key=o.keys[index+1];if key~=nil then return index,{Key=key,Value=o.items[key]} end
-        end end
-        return function() index=index+1;if index<o.count then return index,o[index] end end
+        return getmetatable(o)==dictMeta and nextDictionary or nextList,o,-1
     end
     function C.invoke(o,key,...)
         if key=='ToString' then return tostring(o) end

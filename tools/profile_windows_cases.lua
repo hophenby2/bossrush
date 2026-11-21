@@ -9,7 +9,15 @@ local frameFile=assert(io.open('frames.jsonl','wb'));frameFile:setvbuf('full',26
 local checkpointFile=assert(io.open('checkpoints.jsonl','wb'));checkpointFile:setvbuf('full',262144)
 local currentRow
 local function flushRow()
-    if currentRow then frameFile:write(Serialize(currentRow),'\n');currentRow=nil end
+    if currentRow then
+        if config.engine_stats then
+            assert(lstg.GetSourceFrameStatistics,'引擎缺少完整帧计时接口')
+            currentRow.engine_wait_ms,currentRow.engine_update_ms,currentRow.engine_render_ms,
+                currentRow.engine_present_ms,currentRow.engine_total_ms,currentRow.engine_pacer_ms,
+                currentRow.engine_gpu_render_ms,currentRow.engine_present_busy=lstg.GetSourceFrameStatistics()
+        end
+        frameFile:write(Serialize(currentRow),'\n');currentRow=nil
+    end
 end
 local function save(err)
     finished=true;result.error=err;flushRow();frameFile:close();checkpointFile:close()
@@ -34,6 +42,70 @@ if config.case=='frame-pacing' then
         BeginScene();RenderClear(Color(255,30,40,60));EndScene()
         if clock==60 or clock==100 then ffi.C.Sleep(90) end
         if clock==140 then ffi.C.Sleep(240) end
+    end
+    function GameExit() end
+    function FocusLoseFunc() end
+    function FocusGainFunc() end
+    return
+end
+if config.case=='image-state' or config.case=='object-image-state' then
+    local native=assert(lstg.SetSourceImageStateRGBA,'缺少数字颜色接口')
+    result.rgba_calls=0
+    lstg.SetSourceImageStateRGBA=function(...)
+        result.rgba_calls=result.rgba_calls+1;return native(...)
+    end
+    dofile('THlib/lib/Lresources.lua')
+    local probeObject
+    local colors={{255,255,255,255},{255,255,178.5,178.5},{0,0,0,0},{127.9,90.2,166.7,211.3},
+        {-1,300,99.99,33.4},{300,-40,256,128.8},{1,1,1,1},{254.99,222.8,18.7,70.1}}
+    function GameInit()
+        SetFPS(config.fps);SetResourceStatus('global')
+        LoadTexture('probe','Resources/th43/effect/white.png')
+        local w,h=GetTextureSize('probe')
+        for _,name in ipairs({'old','new'}) do LoadImage(name,'probe',0,0,w,h) end
+        if config.case=='object-image-state' then
+            assert(RenderSourceObjectImage,'缺少对象绘制接口')
+            local noop=function() end
+            local class={is_class=true,noop,noop,noop,noop,noop,noop}
+            probeObject=New(class);probeObject.bound=false;probeObject.colli=false;probeObject.group=0
+            SetImageCenter('old',5,11);SetImageCenter('new',5,11)
+        end
+        for i=1,2000 do SetImageState('new','',127+i%100,123.4,201.8,77.9) end
+        collectgarbage('collect');collectgarbage('stop')
+        local before=collectgarbage('count')
+        for i=1,10000 do SetImageState('new','',127+i%100,123.4,201.8,77.9) end
+        result.rgba_heap_kb=collectgarbage('count')-before;collectgarbage('restart')
+        assert(result.rgba_heap_kb<32,'数字颜色接口仍逐次创建临时对象')
+    end
+    function FrameFunc() clock=clock+1;if clock>=config.frames then save();return true end;return false end
+    function RenderFunc()
+        BeginScene();SetViewport(0,960,0,720);SetScissorRect(0,960,0,720);SetOrtho(0,960,0,720)
+        SetZBufferEnable(0);RenderClear(Color(255,25,39,55))
+        for i=0,95 do
+            local c=colors[i%#colors+1];local blend=({'','mul+add','add+alpha'})[math.floor(i/8)%3+1]
+            OriginalSetImageState('old',blend,Color(unpack(c)))
+            if not probeObject then
+                if math.floor(i/24)%2==0 then SetImageState('new',blend,unpack(c))
+                else SetImageState('new',blend,Color(unpack(c)));SetImageState('new',blend,unpack(c)) end
+            end
+            local x,y=224+(i%8)*64,72+math.floor(i/8)*48
+            if probeObject then
+                probeObject.x,probeObject.y=x+12,y+12
+                probeObject.rot=({0,13.3333333,-180.2,359.999,2532.1234567})[i%5+1]
+                probeObject.hscale=(i%2==0 and 1 or -1)*(0.8+i%4*.07)
+                probeObject.vscale=(i%3==0 and -1 or 1)*(.9+i%4*.04)
+                for side=0,1 do
+                    if clock==3 then Render('old',probeObject.x,probeObject.y,probeObject.rot,probeObject.hscale,probeObject.vscale)
+                    else RenderSourceObjectImage('new',probeObject,blend,unpack(c)) end
+                    probeObject.x=probeObject.x+32
+                end
+            else
+                RenderRect(clock==3 and 'old' or 'new',x,x+24,y,y+24);RenderRect('new',x+32,x+56,y,y+24)
+            end
+        end
+        EndScene()
+        if clock==3 then Snapshot('snapshot/image-state-old.png')
+        elseif clock==4 then Snapshot('snapshot/image-state-new.png') end
     end
     function GameExit() end
     function FocusLoseFunc() end
@@ -149,13 +221,34 @@ local function start()
 end
 function GameInit()
     local ok,err=xpcall(function()
+        if config.jit_default then require('jit.opt').start('maxtrace=1000','maxmcode=2048','maxside=100')
+        elseif config.jit_cache then require('jit.opt').start('maxtrace=8192','maxmcode=16384','maxside=1024') end
+        if config.full_game and config.trace then
+            result.traces={};local pending={};local util=require('jit.util')
+            jit.attach(function(event,id,fn,pc,reason,detail)
+                if event=='flush' then result.traces[#result.traces+1]={frame=clock,event='flush'}
+                elseif event=='start' then
+                    local info=util.funcinfo(fn)
+                    pending[id]={frame=clock,begin=watch:GetElapsed(),source=info.source,line=info.linedefined,id=id}
+                elseif event=='stop' or event=='abort' then
+                    local row=pending[id]
+                    if row then
+                        row.event=event;row.ms=(watch:GetElapsed()-row.begin)*1000;row.begin=nil
+                        if event=='abort' then row.reason=reason;row.detail=type(detail)=='number' and detail or nil
+                        else local info=util.traceinfo(id);row.linktype=info and info.linktype end
+                        result.traces[#result.traces+1]=row;pending[id]=nil
+                    end
+                end
+            end,'trace')
+        end
         initialize()
         setting.mod='Boss Rush HD';cur_setting=DeSerialize(Serialize(setting))
         Include('mod/root.lua');InitAllClass();InitGameSaveData();stage.next_stage=stage.stages.init
         local frame,render=FrameFunc,RenderFunc
         if config.full_game then
             assert(config.case=='th39-39060','完整练习采样目前只对应天月祝鸣')
-            local phases,hookRuntime
+            local phases,hookRuntime,profileStarted,lanternHooked
+            local shootingKeys={shoot=true}
             if config.frame_detail then
                 local function wrap(owner,key,label)
                     local fn=owner and owner[key];if type(fn)~='function' then return end
@@ -184,7 +277,37 @@ function GameInit()
                 if finished then return true end
                 flushRow()
                 local good,quit=xpcall(function()
-                    if player and IsValid(player) then player.protect=120 end
+                    if player and IsValid(player) then
+                        player.protect=120
+                        if config.shield and clock==600 then
+                            -- 原 Protect 将计时设为 90；隔离夹具只固定触发时刻，不改消弹算法。
+                            player.mhj_source.lantern.protectTime=90
+                        end
+                        if config.shoot then
+                            player.key=shootingKeys
+                            if TH39 and TH39.runtime then for c in pairs(TH39.runtime.controllers) do
+                                local o=c.host
+                                if o and IsValid(o) then
+                                    local b=o.owner or o
+                                    if IsValid(b) and b.mhj3_card then b.hp=b.maxhp end
+                                end
+                            end end
+                        end
+                    end
+                    if config.lantern and not lanternHooked and NativePlayers and NativePlayers.adapters[37] then
+                        local bridge
+                        for i=1,20 do
+                            local key,value=debug.getupvalue(NativePlayers.adapters[37].frame,i)
+                            if not key then break end;if key=='B' then bridge=value;break end
+                        end
+                        if bridge then
+                            local main=bridge.CS.env.Main;local charge=bridge.CS.env.InputKeys.Charge
+                            local pressed,up=main.IsKeyPressed,main.IsKeyUp
+                            main.IsKeyPressed=function(key) if key==charge and clock>=600 and clock<604 then return true end;return pressed(key) end
+                            main.IsKeyUp=function(key) if key==charge and clock>=600 and clock<604 then return false end;return up(key) end
+                            lanternHooked=true
+                        end
+                    end
                     if hookRuntime then hookRuntime() end
                     phases=config.frame_detail and {} or nil
                     local begin=watch:GetElapsed();local stop=frame();local elapsed=(watch:GetElapsed()-begin)*1000
@@ -201,9 +324,30 @@ function GameInit()
                         active=true;SetFPS(config.fps)
                     elseif active and current and current.stage_name=='Spell Practice@Spell Practice' then
                         clock=clock+1
+                        if config.sample and not profileStarted and clock>=300 then
+                            local profiler=require('jit.profile');profileStarted=true
+                            profiler.start('li1',function(thread,samples,state)
+                                local stack=state..' '..profiler.dumpstack(thread,'pl',12)
+                                result.stacks[stack]=(result.stacks[stack] or 0)+samples
+                            end)
+                        end
                         currentRow={frame=clock,stage_frame=current.timer,logic_ms=elapsed,
                             bullets=TH39.runtime.bulletCount,fps=GetFPS()}
                         currentRow.phases=phases
+                        currentRow.player_shoot=player and IsValid(player) and player._playersys.keyState.shoot or false
+                        local lantern=player and IsValid(player) and player.mhj_source and player.mhj_source.lantern
+                        if lantern then
+                            currentRow.lantern_status,currentRow.lantern_power,currentRow.lantern_energy=lantern.Status,lantern.Power,lantern.Energy
+                        end
+                        currentRow.score=lstg.var.score
+                        if clock%300==0 then
+                            currentRow.patterns={}
+                            for c in pairs(TH39.runtime.controllers) do
+                                local card=c.host and IsValid(c.host) and (c.host.current_card or c.host.owner and c.host.owner.current_card)
+                                currentRow.patterns[#currentRow.patterns+1]={id=c.pattern.id,time=c.time,
+                                    card=card and card.card_id,card_clock=c.host and IsValid(c.host) and c.host.mhj3_card and c.host.mhj3_card.clock}
+                            end
+                        end
                         if clock>=config.frames then save();return true end
                     end
                     return stop

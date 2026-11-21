@@ -68,35 +68,10 @@ E.Character.__new=function(...)
     if select('#',...)==1 then return {body=(...)} end
     local c=setmetatable({},character);character.defaults(c);c.SelfDisplaySizeType,c.SelfPowerDisplayType=2,2;c:ctor(...);return c
 end
-local function view()
-    local csm={csc=CS.List()}
-    local groups={}
-    for o in pairs(R.objects) do
-        local b=o.mhj
-        if IsValid(o) and b and b.is_projectile and not b.controller.effectLayer and not b.familiar then
-            local owner=groups[b.controller]
-            if not owner then
-                owner={highlightDispel=true,layerm={LayerArray=CS.List()}}
-                owner.layerm.LayerArray:Add({Barrages=CS.List()});groups[b.controller]=owner;csm.csc:Add(owner)
-            end
-            local particle=setmetatable({}, {
-                __index=function(_,k)
-                    if k=='Dis' then return b.dis~=nil elseif k=='NeedDelete' then return 0 elseif k=='time' then return b.age
-                    elseif k=='x' then return b.fx elseif k=='y' then return b.fy elseif k=='add' then return 0
-                    elseif k=='centerMasked' then return false end
-                    return b[k]
-                end,
-                __newindex=function(_,k,v)
-                    if k=='Dis' then if v and not b.dis then Del(o) end
-                    elseif k=='time' then b.age=v else b[k]=v end
-                end,
-            })
-            owner.layerm.LayerArray[0].Barrages:Add(particle)
-        end
-    end
-    return csm
-end
+local view,resetView=dofile('mod/GAME/ports/mhj/native_players/night_barrage_view.lua')(CS,R)
+R.sourceViewReset=resetView
 function S.bind(p)
+    resetView()
     E.Main.Character=p.mhj_source.type;E.Main.Level=stage.current_stage.group.difficulty or 4
     local raw=dofile('mod/GAME/ports/mhj/native_players/night_settings.lua');local settings=CS.List()
     for _,row in ipairs(raw) do local a=CS.List();for _,v in ipairs(row) do a:Add(v) end;settings:Add(a) end
@@ -147,7 +122,10 @@ function S.frame(p,s)
     c.slowingTime=p.slow==1 and (c.slowingTime or 0)+1 or 0
     c.noSlowTime=p.slow==0 and (c.noSlowTime or 0)+1 or 0
     game.StmStage=tonumber(s.chapter) or 1
-    S.system:Update(view(),c)
+    -- 原 Update 的 CLOSED 分支不访问 csm；保护消弹先将 protectTime 减一，再判断 >60。
+    -- 其余状态仍在 Update 之前按原时机取视图，避免改变消弹遍历与属性写回。
+    local needsBarrages=S.system.Status~=E.LanternStatus.CLOSED or S.system.protectTime>61
+    S.system:Update(view(needsBarrages),c)
     S.system:UpdateTeammate(c,{HasValue=false})
     if c.SWudi or c.PWudi then p.protect=math.max(p.protect,2) end
     s.lanternPower,s.lanternMax,s.lanternStatus,s.lanternEnergy=S.system.Power,S.system.setting.HiPower,S.system.Status,S.system.Energy

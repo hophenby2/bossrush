@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--case', choices=['th37-stage6', 'th39-39060', 'window', 'frame-pacing'], required=True)
+    parser.add_argument('--case', choices=['th37-stage6', 'th39-39060', 'window', 'frame-pacing', 'image-state', 'object-image-state'], required=True)
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--frames', type=int, default=6000)
     parser.add_argument('--clock', type=int, default=0)
@@ -26,13 +26,21 @@ def main():
     parser.add_argument('--full-game', action='store_true', help='通过正式符卡练习入口运行天月祝鸣，保留界面与碰撞流程')
     parser.add_argument('--operations', action='store_true', help='只用于分解出生尖峰，不与无探针耗时直接比较')
     parser.add_argument('--frame-detail', action='store_true', help='分解正式练习的框架、对象和碰撞耗时，仅用于定位')
+    parser.add_argument('--engine-stats', action='store_true', help='采集引擎整帧等待、更新、绘制与提交计时')
     parser.add_argument('--trace', action='store_true', help='记录 LuaJIT 轨迹编译时间')
+    parser.add_argument('--jit-cache', action='store_true', help='隔离对照较大的 LuaJIT 轨迹缓存，不改弹幕参数')
+    parser.add_argument('--jit-default', action='store_true', help='隔离对照 LuaJIT 官方默认缓存容量')
     parser.add_argument('--gc-probe', action='store_true', help='仅用于诊断：在集中发弹窗口暂停自动 GC，结束后恢复，不用于正式性能结论')
     parser.add_argument('--checkpoints', action='store_true', help='保存弹体检查点；轨迹核对与纯耗时采样分开')
     parser.add_argument('--rich-checkpoints', action='store_true', help='检查外观、判定、插值执行器及发弹尖峰前后状态')
     parser.add_argument('--checkpoint-step', type=int, default=600)
     parser.add_argument('--baseline-runtime', action='store_true', help='仅在隔离目录使用 HEAD 中的永夜运行时作对照')
     parser.add_argument('--runtime-file', type=Path, help='仅在隔离目录载入指定的对照运行时')
+    parser.add_argument('--night-system-file', type=Path, help='仅在隔离目录载入指定的永夜自机系统桥接作对照')
+    parser.add_argument('--engine-file', type=Path, help='仅在隔离目录使用指定引擎作对照')
+    parser.add_argument('--lantern', action='store_true', help='正式练习中按原作输入开启灯笼，核对消弹路径')
+    parser.add_argument('--shoot', action='store_true', help='正式练习持续射击；采样夹具恢复 Boss 血量以覆盖完整集中发弹阶段')
+    parser.add_argument('--shield', action='store_true', help='覆盖闭灯保护消弹分支及其 61/60 帧边界')
     parser.add_argument('--fps', type=int, default=60)
     args = parser.parse_args()
     if args.checkpoint_step < 1:
@@ -44,8 +52,9 @@ def main():
     for directory in ['THlib', 'Resources', 'mod', 'music', 'shader', 'tools']:
         # 引擎校验路径的真实大小写，目录 junction 会被识别成源目录而拒绝加载。
         shutil.copytree(ROOT / directory, out / directory, copy_function=os.link)
-    for name in ['LuaSTGSub.exe', 'd3dcompiler_47.dll', 'xaudio2_9redist.dll', 'launch.lua', 'launcher.lua']:
+    for name in ['d3dcompiler_47.dll', 'xaudio2_9redist.dll', 'launch.lua', 'launcher.lua']:
         shutil.copy2(ROOT / name, out / name)
+    shutil.copy2(args.engine_file or ROOT/'LuaSTGSub.exe',out/'LuaSTGSub.exe')
     shutil.copy2(ROOT / 'core.lua', out / 'game-core.lua')
     shutil.copy2(ROOT / 'tools/profile_windows_cases.lua', out / 'core.lua')
     for directory in ['User', 'replay', 'snapshot', 'userdata']:
@@ -55,6 +64,10 @@ def main():
         target.unlink()  # 只解除隔离目录中的硬链接，随后写入独立副本。
         target.write_bytes(args.runtime_file.read_bytes() if args.runtime_file else
             subprocess.check_output(['git','show','HEAD:mod/GAME/th39/runtime.lua'],cwd=ROOT))
+    if args.night_system_file:
+        target=out/'mod/GAME/ports/mhj/native_players/night_system.lua'
+        target.unlink()
+        target.write_bytes(args.night_system_file.read_bytes())
     configuration = json.loads((ROOT / 'config.json').read_text(encoding='utf-8'))
     (out / 'config.json').write_text(json.dumps(configuration), encoding='utf-8')
     (out / 'case.json').write_text(json.dumps(vars(args), default=str), encoding='utf-8')
@@ -82,7 +95,12 @@ def main():
     result['engine'] = json.loads((ROOT / 'windows/engine.lock.json').read_text(encoding='utf-8'))
     result['sha256'] = {name: hashlib.sha256((out / name).read_bytes()).hexdigest() for name in
         ['LuaSTGSub.exe', 'mod/GAME/th37/background.lua', 'mod/GAME/th37/source_mesh.lua',
-         'mod/GAME/th39/runtime.lua', 'mod/GAME/ports/binding_index.lua']}
+         'mod/GAME/th39/runtime.lua', 'mod/GAME/ports/binding_index.lua',
+         'mod/GAME/ports/mhj/native_players/night_system.lua',
+         'mod/GAME/ports/mhj/native_players/night_barrage_view.lua','THlib/lib/Lresources.lua',
+         'mod/GAME/ports/source_csharp.lua','launch.lua']}
+    if args.engine_file:
+        result['engine']['override_note']='版本锁来自当前工作区；覆盖引擎的补丁以该文件指纹及其构建记录为准'
     result['wall_seconds'] = time.monotonic() - started
     report.write_text(json.dumps(result, ensure_ascii=False, default=str), encoding='utf-8')
     if result.get('error'):
