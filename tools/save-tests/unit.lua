@@ -89,7 +89,7 @@ lstg={var={timeslow=1},quit_flag=false};setting={keysys={menu=27}}
 local noop=function() end;ChangeGameTitle,CheckMoney=noop,noop;GetLastKey=function() return 0 end
 ext={pause_menu={IsKilled=function() return true end},manual={IsKilled=function() return true end},StageIsMenu=function() return true end,
     achievement={frame=noop},MusicChange={frame=noop},Debugging=noop,InputDuration=noop,DurationAchievement=noop}
-local exercise=assert(loadstring('local offset=99;local before,after,differ=0,0,1;local time=1000;local played;local stopWatch={GetElapsed=function() return time end};local DoFrameEx=function(count) played=count end;\n'..frame..
+local exercise=assert(loadstring('local offset=99;local before,after,differ=0,0,1;local time=1000;local played;local stopWatch={GetElapsed=function() return time end};local DoFrameEx=function() played=(played or 0)+1 end;\n'..frame..
     '\nreturn function() FrameFunc();SaveSync.visible=false;time=time+1/60;FrameFunc();return played end'))()
 check(exercise()==1,'关闭同步页后不会补跑暂停时长')
 print('存档单元回归通过：'..total..' 项（仅使用临时用户目录）')

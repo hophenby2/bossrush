@@ -15,6 +15,31 @@ local function save(err)
     finished=true;result.error=err;flushRow();frameFile:close();checkpointFile:close()
     local out=assert(io.open('result.json','wb'));out:write(Serialize(result));out:close()
 end
+if config.case=='frame-pacing' then
+    local ffi=require('ffi');ffi.cdef('void __stdcall Sleep(unsigned long);')
+    result.recovery_min_ms,result.fast_recovery_frames=1e9,0
+    function GameInit() SetFPS(config.fps);previous=watch:GetElapsed() end
+    function FrameFunc()
+        flushRow();clock=clock+1
+        local now=watch:GetElapsed();local elapsed=(now-previous)*1000;previous=now
+        currentRow={frame=clock,interval_ms=elapsed}
+        if clock>=62 and clock<=67 or clock>=102 and clock<=107 or clock>=142 and clock<=147 then
+            result.recovery_min_ms=math.min(result.recovery_min_ms,elapsed)
+            if elapsed<12 then result.fast_recovery_frames=result.fast_recovery_frames+1 end
+        end
+        if clock>=config.frames then save();return true end
+        return false
+    end
+    function RenderFunc()
+        BeginScene();RenderClear(Color(255,30,40,60));EndScene()
+        if clock==60 or clock==100 then ffi.C.Sleep(90) end
+        if clock==140 then ffi.C.Sleep(240) end
+    end
+    function GameExit() end
+    function FocusLoseFunc() end
+    function FocusGainFunc() end
+    return
+end
 if config.case=='window' then
     local input=assert(io.open('launcher.lua','rb'));local source=input:read('*a');input:close()
     local first=assert(source:find('function ChangeVideoMode2(set)',1,true))

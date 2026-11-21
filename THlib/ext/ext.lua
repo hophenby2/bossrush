@@ -294,7 +294,7 @@ local function DoFrame()
 end
 _G.DoFrame = DoFrame
 ---缓速和加速
-local function DoFrameEx(differ)
+local function DoFrameEx()
     local Count = ext.GetFakeFPS()
     local setting = setting
     if ext.replay.IsReplay() then
@@ -318,13 +318,6 @@ local function DoFrameEx(differ)
     end
     --键盘映射
 
-    local music_frame = differ
-    if cur_setting and cur_setting.frameskip and differ < 2 then
-        if ext.replay.IsRecording() or ext.replay.IsReplay() then
-            ext.FrameCounter = ext.FrameCounter * differ
-        end
-        music_frame = nil
-    end
     if ext.sc_pr then
         for _ = 1, ext.FrameCounter do
             DoFrame()
@@ -340,7 +333,7 @@ local function DoFrameEx(differ)
             ext.FrameCounter = ext.FrameCounter - 1
             ext.pause_menu_order = nil
         end
-        ext.MusicFrame("faketimer", music_frame)
+        ext.MusicFrame("faketimer")
     end
 
     ext.FastMusic()
@@ -348,10 +341,6 @@ end
 
 ----------------------------------------
 ---extra game call-back function
-local differ = 1
-local offset = 0
-local stopWatch = lstg.StopWatch()
-local before, after = 0, 0
 local mask_fader = mask_fader
 local ui_drawing = ui_drawing
 local setting = setting
@@ -359,33 +348,25 @@ function FrameFunc()
     if GameNet then GameNet.poll();GameNet.controls() end
     if SaveSync then SaveSync.frame() end
     if SaveSync and SaveSync.visible and not SaveProfiles.pending then
-        -- 同步页暂停期间仍更新计时基准，避免返回时补跑数分钟的战斗帧。
-        before=stopWatch:GetElapsed(); after=before; offset=0
+        -- 同步页只暂停战斗，不累计等待期间的逻辑帧。
         return false
     end
 
     if GameNet and GameNet.client() then
-        before=stopWatch:GetElapsed();after=before;offset=0
         if stage.next_stage then DoFrame() end
         GameNet.clientFrame();return false
     end
     -- 预载仅占显示帧，不消费录像输入或推进战斗时钟；缓存命中不会改变录像帧序。
     if RogueEncounter and RogueEncounter.preloadFrame() then
-        before=stopWatch:GetElapsed();after=before;offset=0;return false
+        return false
     end
     if GameNet and not GameNet.readyForLogic() then
-        before=stopWatch:GetElapsed();after=before;offset=0;return false
+        return false
     end
     if SaveResume and SaveResume.recovering then
-        before=stopWatch:GetElapsed();after=before;offset=0
         SaveResume.pump(DoFrame)
         return false
     end
-    after = stopWatch:GetElapsed()
-    differ = (after - before) * 60
-    before = stopWatch:GetElapsed()
-    --Print(differ)
-
     --标题设置
     ChangeGameTitle()
 
@@ -406,22 +387,14 @@ function FrameFunc()
         else
             ext.FRAMECOUNT = 0
         end
-        local add = 0
         local loading = (stage.current_stage and stage.current_stage.stage_name == 'init')
             or (stage.next_stage and stage.next_stage.stage_name == 'init')
         if loading then
-            -- 资源加载本身占用墙钟时间，补跑只会在下一帧加载更多资源，形成卡顿循环。
-            -- 首帧还要丢弃 GameInit 花费的时间，保证原有加载画面能先呈现。
-            offset = 0
+            -- 加载入口清空上一场景的倍率余数，不补跑初始化期间的帧。
             ext.FrameCounter = 0
-        else
-            offset = offset + (differ - 1)
-            if offset > 1 then
-                add = int(offset)
-                offset = offset - add
-            end
         end
-        DoFrameEx(1 + add)
+        -- 每次显示回调只推进当前倍率对应的逻辑帧，不按墙钟时间追帧。
+        DoFrameEx()
         --按键弹出菜单
         if not (GameNet and GameNet.active()) and (GetLastKey() == setting.keysys.menu and not lstg.tmpvar.noPause or ext.pop_pause_menu) and not ext.StageIsMenu() then
             ext.pause_menu:FlyIn()

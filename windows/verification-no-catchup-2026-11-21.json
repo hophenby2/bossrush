@@ -1,0 +1,74 @@
+{
+  "date": "2026-11-21",
+  "platform": "Windows x64 / Direct3D 11",
+  "engine": {
+    "repository": "https://github.com/Legacy-LuaSTG-Engine/LuaSTG-Sub.git",
+    "ref": "master",
+    "commit": "8728b3f9e91e6cd577665a7f5777c6c7c23b5f31",
+    "version": "0.21.129",
+    "patch": "native/source_model_mesh.hpp",
+    "frame_rate_controller_patch": "build_source_mesh.py"
+  },
+  "changes": [
+    "Lua 不再按墙钟累计欠帧，也不再将欠帧补偿到音乐时钟；旧 frameskip 配置不再参与调度，移除跳帧选项入口。",
+    "Windows 官方 master 基底上，将 arrived/update 两处限帧目标统一改为 m_last + m_interval；从上一帧真实起点计时，不追赶旧截止时间。",
+    "原作时缓与录像手动快进保留；不改写玩家设置文件。"
+  ],
+  "checks": {
+    "lua": "tools/check_android_startup.lua：旧 frameskip=true、加载慢帧、战斗慢帧、长暂停恢复、0.5 倍时缓和手动录像 2 倍速全部通过。",
+    "native": {
+      "fps_limit": 60,
+      "frames": 180,
+      "short_pause_ms": [
+        90,
+        90
+      ],
+      "long_pause_ms": 240,
+      "old_short_pause_recovery_min_ms": 0.16079999999996,
+      "old_short_pause_fast_frames": 10,
+      "final_all_pause_recovery_min_ms": 16.6483,
+      "final_fast_frames": 0,
+      "recovery_windows": [
+        [
+          62,
+          67
+        ],
+        [
+          102,
+          107
+        ],
+        [
+          142,
+          147
+        ]
+      ],
+      "fast_threshold_ms": 12
+    },
+    "scope": "原生检查使用独立 User/replay；只证明 Windows 限帧，不外推移动端引擎实测。"
+  },
+  "sha256": {
+    "THlib/ext/ext.lua": "79779c42ab40fe834bda624ab674ffb2dcdad5bc6ace01cf329f6c817a826072",
+    "THlib/UI/menus/game_setting.lua": "c1ae7a5852fc6aff8fff7f483dc7f34da28eb4b316a9ee48e96f96b419b4212f",
+    "windows/build_source_mesh.py": "b290aa9b3bd42da8f05a74becdfbb97ac57e32f4a40dbcbaa6fad3273edafb7e",
+    "windows/engine.lock.json": "8616fbca19cfbe0df66159e88f94cd3ddb7bc192b39ddc48e0408ff7b5829b53",
+    "LuaSTGSub.exe": "af454d2627321b0dd77a90534b556feb1c4b7f1b2c92175c2d3b47172fd67402"
+  },
+  "build": {
+    "engine": "E:\\fork\\bossrush\\windows\\build\\official-sub",
+    "version": "0.21.129",
+    "repository": "https://github.com/Legacy-LuaSTG-Engine/LuaSTG-Sub.git",
+    "ref": "master",
+    "commit": "8728b3f9e91e6cd577665a7f5777c6c7c23b5f31",
+    "submodules": "b734d3bb5b05ca4c3859bb174b131139fc72bd4d external/beautiful-win32-api (heads/main)\n 019020993ce33bdf56c876004e8b27139a0d011f external/image.qoi (0190209)\n 91ca29db9a4a4fd0eedaebcd5d5f3ba2ace5ae63 external/lua-cjson (2.1.0.8-43-g91ca29d)\n fff48de34357e8e86197a45f5b4bc2b1b28cce53 external/luajit2 (luastg-sub-20251111)\n d63939b5b5cd69ffeaa908f2ec38708a62ad3139 external/xmath (d63939b)\n f1cc2ae15e53a861a874c3034aae6798fde194ab imgui/imgui (v1.62-5575-gf1cc2ae15)\n 7eeb9168d2e5e6b14e266d8782ecf7e649dfc3a4 imgui/implot (v1.0-8-g7eeb916)",
+    "renderer_sha256": "b61881e2d12539a8d6ff00d04aacfaf86f136cd5fdea788625a3983ef61ccc94",
+    "pacer_source_sha256": "481f7daad5524b0ec6e7000d9aa5510f9c7e2d0e5c92acec232ea800f4114086",
+    "pacer_patch_sha256": "ca8eaf8a7ae5dae43609544cbf11a0f33b3b9cefc8751b57ddd3033cac47e5fb",
+    "frame_pacing": "按上一帧实际起点限帧，不追赶旧截止时间",
+    "patch_sha256": "8bb26652c377f6f2d3bc62a423bd0a65135a20570f9765f973df0696ac705b61",
+    "exe_sha256": "af454d2627321b0dd77a90534b556feb1c4b7f1b2c92175c2d3b47172fd67402"
+  },
+  "raw_reports": [
+    "windows/build/no-catchup-before/result.json",
+    "windows/build/no-catchup-final/result.json"
+  ]
+}

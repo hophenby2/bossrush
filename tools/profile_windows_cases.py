@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--case', choices=['th37-stage6', 'th39-39060', 'window'], required=True)
+    parser.add_argument('--case', choices=['th37-stage6', 'th39-39060', 'window', 'frame-pacing'], required=True)
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--frames', type=int, default=6000)
     parser.add_argument('--clock', type=int, default=0)

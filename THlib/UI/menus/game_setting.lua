@@ -335,7 +335,6 @@ function game_setting:init(exit)
                     nil, function()
                         ChangeVideoMode2(cur_setting)
                     end),
-            Newsetting_button("跳帧模式(游玩时)", "frameskip", _line, x2, y2 - h2 * 4, y2 - h2 * 3),
         }),
         Newsmall_menu("其他", x1, _line, y2 - h1 * 4, y2 - h1 * 3, {
             Newsetting_button("符卡练习自动重开", "SCAutoRetry", _line, x2, y2 - h2 * 1, y2 - h2 * 0),

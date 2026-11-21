@@ -3,5 +3,6 @@
   "ref": "master",
   "commit": "8728b3f9e91e6cd577665a7f5777c6c7c23b5f31",
   "version": "0.21.129",
-  "patch": "native/source_model_mesh.hpp"
+  "patch": "native/source_model_mesh.hpp",
+  "frame_rate_controller_patch": "build_source_mesh.py"
 }

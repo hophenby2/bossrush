@@ -73,7 +73,18 @@ def main():
         subprocess.run([str(compilers[-1]),'/nologo','/T',stage+'_4_0','/E',stage+'_main','/O3',
             '/Fo',str(output/(stage+'.cso')),str(shader_path)],check=True)
 
-    # 在刚完成的官方构建上只替换渲染绑定，不改写上游源码。
+    # 官方限帧器沿旧截止时间追赶十帧以内的延迟；项目暂时改为按上一帧实际起点限帧。
+    pacer_original=engine/'engine/window-system/windows/FrameRateController.cpp'
+    pacer_source=pacer_original.read_text(encoding='utf-8-sig')
+    deadline='const int64_t target = m_baseline + m_frame_count * m_interval;'
+    if pacer_source.count(deadline)!=2:
+        raise RuntimeError('官方限帧器补丁上下文不匹配')
+    pacer_source=pacer_source.replace(deadline,
+        'const int64_t target = m_last + m_interval;')
+    patched_pacer=output/'FrameRateController.cpp'
+    patched_pacer.write_text(pacer_source,encoding='utf-8')
+
+    # 在刚完成的官方构建上接入渲染绑定和限帧补丁，不改写上游源码。
     objects=sorted(object_dir.rglob('*.obj'))
     old_renderer=[p for p in objects if p.name=='LW_Renderer.obj']
     if len(old_renderer)!=1 or len(objects)<20:
@@ -110,9 +121,11 @@ def main():
         elif name in {'ProgramDataBaseFile','ImportLibrary'} and item.text:
             item.text=str(output/Path(item.text.replace('\\','/')).name)
     group=ET.SubElement(root,tag('ItemGroup'))
-    item=ET.SubElement(group,tag('ClCompile'),{'Include':str(patched)})
-    ET.SubElement(item,tag('PrecompiledHeader')).text='NotUsing'
-    ET.SubElement(item,tag('ForcedIncludeFiles')).text=str(project.parent/'CMakeFiles/LuaSTG.dir/Release/cmake_pch.hxx')
+    for source_file in (patched,patched_pacer):
+        item=ET.SubElement(group,tag('ClCompile'),{'Include':str(source_file)})
+        ET.SubElement(item,tag('PrecompiledHeader')).text='NotUsing'
+        ET.SubElement(item,tag('ForcedIncludeFiles')).text=str(project.parent/'CMakeFiles/LuaSTG.dir/Release/cmake_pch.hxx')
+        ET.SubElement(item,tag('AdditionalIncludeDirectories')).text=str(engine/'engine/window-system')+';%(AdditionalIncludeDirectories)'
     local_project=output/'SourceModelMesh.vcxproj'
     tree.write(local_project,encoding='utf-8',xml_declaration=True)
     vswhere=Path(os.environ.get('ProgramFiles(x86)','C:/Program Files (x86)'))/'Microsoft Visual Studio/Installer/vswhere.exe'
@@ -127,6 +140,9 @@ def main():
         raise RuntimeError('构建后官方源码或子模块出现修改，拒绝安装引擎')
     record={'engine':str(engine),'version':'0.21.129','repository':lock['repository'],'ref':lock['ref'],
         'commit':lock['commit'],'submodules':modules,'renderer_sha256':hashlib.sha256(original.read_bytes()).hexdigest(),
+        'pacer_source_sha256':hashlib.sha256(pacer_original.read_bytes()).hexdigest(),
+        'pacer_patch_sha256':hashlib.sha256(patched_pacer.read_bytes()).hexdigest(),
+        'frame_pacing':'按上一帧实际起点限帧，不追赶旧截止时间',
         'patch_sha256':hashlib.sha256(header.read_bytes()).hexdigest(),'exe_sha256':hashlib.sha256(built.read_bytes()).hexdigest()}
     (output/'build.json').write_text(json.dumps(record,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     if not args.no_install:
