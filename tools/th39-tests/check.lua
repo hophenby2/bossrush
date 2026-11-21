@@ -94,6 +94,72 @@ if mode=='motion' then
     return
 end
 
+if mode=='cover-order' then
+    loader()
+    local R=TH39.runtime
+    local c=R.controller({_live=true,x=0,y=100},'1420',true)
+    local emitter
+    for _,candidate in ipairs(c.emitters) do if candidate.kind=='batch' then emitter=candidate;break end end
+    emitter.bindid,emitter.Deepbind,emitter.tiao,emitter.type=-1,false,1,4
+    emitter.Mist,emitter.Sonevents=false,nil
+    R.fire(emitter)
+    local object,state=next(c.bullets)
+    state.fx,state.fy,state.Cover,state.Mist=481,360,true,false
+    c.pattern={total=100,centerAvailable=false,centerEvents=function() end}
+    local function cover(id,value)
+        return {controller=c,kind='cover',id=id,parentid=state.layerid,begin=1,life=100,
+            x=481,y=360,fx=481,fy=360,speed=0,speedd=0,aspeed=0,aspeedd=0,
+            changes={},limits={},bindid=-1,type=0,halfw=10000,halfh=10000,
+            Sonevents=function(s) R.change(s,'alpha',value,0,0,'正比',1) end}
+    end
+    local first,second=cover(0,50),cover(1,70)
+    c.emitters={first,second}
+    R.tick(c);R.classes.projectile.frame(object)
+    assert(state.alpha==70,'重叠覆盖未按原作 Events.Add 顺序执行')
+    first.x=1e9
+    R.tick(c);R.classes.projectile.frame(object)
+    assert(state.alpha==70,'离开覆盖区后旧事件没有移除')
+    first.x=481
+    R.tick(c);R.classes.projectile.frame(object)
+    assert(state.alpha==50,'重入覆盖区没有把事件追加到列表末尾')
+    R.clear(c)
+    print('重叠覆盖按进入顺序执行、离开移除、重入追加通过')
+    return
+end
+
+if mode=='allocation' then
+    loader()
+    local R=TH39.runtime
+    local host={_live=true,x=0,y=100}
+    local function run(count)
+        local c=R.controller(host,'1420',true)
+        local emitter
+        for _,candidate in ipairs(c.emitters) do if candidate.kind=='batch' then emitter=candidate;break end end
+        assert(emitter,'缺少测试用发射器')
+        emitter.bindid,emitter.Deepbind,emitter.tiao,emitter.type=-1,false,count,4
+        emitter.Mist,emitter.Sonevents=false,nil
+        R.fire(emitter)
+        local states,changes,limits,objects={},{},{},{}
+        for object,state in pairs(c.bullets) do
+            assert(not states[state] and not changes[state.changes] and not limits[state.limits],'弹体之间共享了可变状态')
+            states[state],changes[state.changes],limits[state.limits]=true,true,true
+            objects[#objects+1]=object
+            R.change(state,'colorR',31,0,0,'正比',1)
+            R.classes.projectile.frame(object)
+            assert(state.colorR==31 and #state.changes==0,'变化执行器复用后未按原时钟完成')
+            R.change(state,'colorG',47,0,0,'无缝正弦',60)
+        end
+        assert(#objects==count and R.bulletCount==count,'储备容量截断发弹')
+        R.clear(c)
+        assert(R.bulletCount==0,'清场后弹数未归零')
+        for _,object in ipairs(objects) do assert(not IsValid(object),'清场后弹体仍有效') end
+    end
+    run(1100) -- 超过 1024 个预置容器，仍须在原帧完整生成。
+    run(2) -- 清场后重用执行器，不能继承上一轮的字段和插值。
+    print('1100 发独立状态、储备不足完整发弹、执行器复用及清场重试通过')
+    return
+end
+
 if mode=='transitions' then
     loader()
     local runtime=TH39.runtime

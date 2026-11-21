@@ -130,11 +130,38 @@ function GameInit()
         local frame,render=FrameFunc,RenderFunc
         if config.full_game then
             assert(config.case=='th39-39060','完整练习采样目前只对应天月祝鸣')
+            local phases,hookRuntime
+            if config.frame_detail then
+                local function wrap(owner,key,label)
+                    local fn=owner and owner[key];if type(fn)~='function' then return end
+                    owner[key]=function(...)
+                        local begin=watch:GetElapsed();local a,b=fn(...)
+                        if phases then phases[label]=(phases[label] or 0)+(watch:GetElapsed()-begin)*1000 end
+                        return a,b
+                    end
+                end
+                for _,key in ipairs({'ObjFrame','CollisionCheck','BoundCheck','UpdateXY','AfterFrame'}) do wrap(_G,key,key) end
+                for _,key in ipairs({'beforeLogic','afterLogic'}) do wrap(SaveResume,key,'resume.'..key) end
+                for _,key in ipairs({'beforeObjects','afterObjects'}) do wrap(GameRank,key,'rank.'..key) end
+                for _,key in ipairs({'begin','shots','finish'}) do wrap(NativeActorCollision,key,'actor.'..key) end
+                local attached37,attached39
+                hookRuntime=function()
+                    if TH37 and TH37.runtime and not attached37 then
+                        wrap(TH37.runtime,'beginCollisions','th37.begin');wrap(TH37.runtime,'finishCollisions','th37.finish');attached37=true
+                    end
+                    if TH39 and TH39.runtime and not attached39 then
+                        wrap(TH39.runtime,'tick','th39.tick');wrap(TH39.runtime,'tickBackground','th39.background');attached39=true
+                    end
+                end
+                wrap(GameDrops,'frame','drops')
+            end
             FrameFunc=function()
                 if finished then return true end
                 flushRow()
                 local good,quit=xpcall(function()
                     if player and IsValid(player) then player.protect=120 end
+                    if hookRuntime then hookRuntime() end
+                    phases=config.frame_detail and {} or nil
                     local begin=watch:GetElapsed();local stop=frame();local elapsed=(watch:GetElapsed()-begin)*1000
                     local current=stage.current_stage
                     if not active and current and current.stage_name=='menu' and current.timer>=45 then
@@ -144,11 +171,14 @@ function GameInit()
                         lstg.var.player_name,lstg.var.rep_player='reimu_player','Reimu'
                         lstg.var.sc_index,lstg.var.sc_group=index,{37,index}
                         assert(stage.group.PracticeStart('Spell Practice@Spell Practice',true)~=false)
+                        lstg.var.ran_seed=20261121
+                        if lstg.nextvar then lstg.nextvar.ran_seed=20261121 end
                         active=true;SetFPS(config.fps)
                     elseif active and current and current.stage_name=='Spell Practice@Spell Practice' then
                         clock=clock+1
                         currentRow={frame=clock,stage_frame=current.timer,logic_ms=elapsed,
                             bullets=TH39.runtime.bulletCount,fps=GetFPS()}
+                        currentRow.phases=phases
                         if clock>=config.frames then save();return true end
                     end
                     return stop
@@ -180,6 +210,11 @@ function GameInit()
                 local row={frame=clock,wall_ms=(now-previous)*1000};previous=now
                 currentRow=row
                 local begin=watch:GetElapsed()
+                if config.gc_probe then
+                    if clock==1300 or clock==3230 or clock==5150 then collectgarbage('stop') end
+                    if clock==1340 or clock==3260 or clock==5180 then collectgarbage('restart') end
+                    row.heap_kb=collectgarbage('count')
+                end
                 if BG then
                     BG.State.step(scene.state,false)
                     if scene.state.mode=='music' then scene.state.mode='boss' end
@@ -193,13 +228,29 @@ function GameInit()
                 elseif clock==90 then result.fullscreen=ChangeVideoMode(960,720,false,false)
                 elseif clock==150 then result.windowed=ChangeVideoMode(960,720,true,false) end
                 row.logic_ms=(watch:GetElapsed()-begin)*1000
-                if R and config.checkpoints and clock%600==0 then
+                local burstCheckpoint=config.rich_checkpoints and
+                    (clock>=1320 and clock<=1323 or clock>=3239 and clock<=3242 or clock>=5159 and clock<=5162)
+                if R and config.checkpoints and (clock%(config.checkpoint_step or 600)==0 or burstCheckpoint) then
                     local states={}
                     local function rounded(n) return math.floor(n*1000000+.5)/1000000 end
                     for object,s in pairs(controller.bullets) do
                         if IsValid(object) then
-                            states[#states+1]={s.serial,s.type,s.age,rounded(s.fx),rounded(s.fy),
+                            local entry={s.serial,s.type,s.age,rounded(s.fx),rounded(s.fy),
                                 rounded(s.sonspeed or 0),rounded(s.sonspeedd or 0)}
+                            if config.rich_checkpoints then
+                                local state={}
+                                for _,key in ipairs({'parentid','layerid','life','mx','my','ax','ay','head','wscale','hscale',
+                                    'colorR','colorG','colorB','alpha','sonaspeed','sonaspeedd','xscale','yscale',
+                                    'Mist','Dispel','Blend','Afterimage','Outdispel','Invincible','status','statusFrame','dis','typeChanged'}) do
+                                    local value=s[key];state[key]=type(value)=='number' and rounded(value) or value
+                                end
+                                local attributes={}
+                                for _,key in ipairs({'x','y','vx','vy','a','b','rot','hscale','vscale','group','layer','rect','colli','_a','_r','_g','_b','_blend','img'}) do
+                                    local value=object[key];attributes[key]=type(value)=='number' and rounded(value) or value
+                                end
+                                entry.state,entry.attributes,entry.changes,entry.limits=state,attributes,s.changes,s.limits
+                            end
+                            states[#states+1]=entry
                         end
                     end
                     table.sort(states,function(a,b) return a[1]<b[1] end)
@@ -227,7 +278,7 @@ function GameInit()
             if not good then save(message) end
         end
     end,debug.traceback)
-    if not ok then save(err) end
+    if not ok then save(err);FrameFunc=function() return true end end
 end
 function GameExit() end
 function FocusLoseFunc() end

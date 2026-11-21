@@ -4,6 +4,7 @@
 #include <d3d11.h>
 #include "core/Graphics/Direct3D11/Mesh.hpp"
 #include "LuaBinding/LuaWrapper.hpp"
+#include "LuaBinding/modern/GameObject.hpp"
 #include "AppFrame.h"
 #include <d3dcompiler.h>
 #include <wrl/client.h>
@@ -171,13 +172,31 @@ static int copyTable(lua_State* L) {
     luaL_checktype(L,1,LUA_TTABLE);
     const auto capacity=luaL_optinteger(L,2,128);
     luaL_argcheck(L,capacity>=0 && capacity<=0x7fffffff,2,"状态表预分配容量无效");
-    lua_createtable(L,0,static_cast<int>(capacity));const int output=lua_gettop(L);
+    // 第三参只能传入调用方准备的全新容器；不回收、清空或复用已发射弹体的状态。
+    if (lua_isnoneornil(L,3)) lua_createtable(L,0,static_cast<int>(capacity));
+    else { luaL_checktype(L,3,LUA_TTABLE);lua_pushvalue(L,3); }
+    const int output=lua_gettop(L);
     lua_Integer count=0;lua_pushnil(L);
     while (lua_next(L,1)) {
         lua_pushvalue(L,-2);lua_pushvalue(L,-2);lua_rawset(L,output);
         lua_pop(L,1);++count;
     }
     lua_pushinteger(L,count);return 2;
+}
+// 等价于普通弹 projected 中的几何属性赋值；事件、计时、分组与回收仍由原 Lua 路径处理。
+static int syncBulletGeometry(lua_State* L) {
+    auto* object=binding::GameObject::as(L,1);
+    std::array<double,7> values;
+    for (int i=0;i<7;++i) values[i]=luaL_checknumber(L,i+2);
+    object->x=values[0];object->y=values[1];object->vx=object->vy=0;
+#ifdef GLOBAL_SCALE_COLLI_SHAPE
+    object->a=values[2]*LRES.GetGlobalImageScaleFactor();object->b=values[3]*LRES.GetGlobalImageScaleFactor();
+#else
+    object->a=values[2];object->b=values[3];
+#endif
+    object->rect=false;object->UpdateCollisionCircleRadius();
+    object->rot=values[4]*L_DEG_TO_RAD;object->hscale=values[5];object->vscale=values[6];
+    return 0;
 }
 static int create(lua_State* L) {
     const char* texture=lua_isnoneornil(L,1) ? nullptr:luaL_checkstring(L,1);luaL_checktype(L,2,LUA_TTABLE);

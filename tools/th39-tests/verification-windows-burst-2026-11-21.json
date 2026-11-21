@@ -1,0 +1,255 @@
+{
+  "date": "2026-11-21",
+  "platform": "Windows x64 / Direct3D 11",
+  "case": "天月祝鸣 / TH39 card39060 / 64991 → 64992",
+  "engine": {
+    "repository": "https://github.com/Legacy-LuaSTG-Engine/LuaSTG-Sub.git",
+    "ref": "master",
+    "commit": "8728b3f9e91e6cd577665a7f5777c6c7c23b5f31",
+    "version": "0.21.129",
+    "patch": "native/source_model_mesh.hpp"
+  },
+  "baseline_commit": "45c059ed7ae4452484367196cd800e2c83a85789",
+  "sha256": {
+    "mod/GAME/th39/runtime.lua": "d9e8c70c2567c7f3a620e0ce795de74c37ecb71b53774a84e94331bde907bf44",
+    "windows/native/source_model_mesh.hpp": "8bb26652c377f6f2d3bc62a423bd0a65135a20570f9765f973df0696ac705b61",
+    "windows/build_source_mesh.py": "44d3c90e57ccb25c1e5043beb99595042ef7b4c330dfeaecebded203f7dfe68b",
+    "tools/profile_windows_cases.py": "53dce3d28577d5e7c425aaf0c7b8e69d88ab9535be61ce7e65cab7b3a9648ea5",
+    "tools/profile_windows_cases.lua": "1204b082972e781ad077781936504d73a0b2c39ff0bd536f92dda332385b5981",
+    "tools/th39-tests/check.lua": "2e694deb7dd999bb250e8f6185ee8be394a63338b78e48622efb7410aa03d47a",
+    "LuaSTGSub.exe": "9a169a3e9b557bf417862d97c9343b682e907ed4204c3dde02b9fb3085b33545"
+  },
+  "source_evidence": [
+    {
+      "file": "E:/fork/FDF3_re/src/THMHJ/THMHJ/Game.cs",
+      "method": "ResetPool",
+      "finding": "集中准备弹体、Batch、事件执行器池。来源文件保持只读。"
+    },
+    {
+      "file": "E:/fork/FDF3_re/src/THMHJ/THMHJ/Barrage.cs",
+      "method": "ResetPool / Get / Return / Update",
+      "finding": "10000 个弹体容器，直接更新运动字段，并按 Events 列表顺序执行事件。"
+    },
+    {
+      "file": "E:/fork/FDF3_re/src/THMHJ/THMHJ/BExecution.cs",
+      "method": "Get / Return",
+      "finding": "执行器完成后可回池，而不是每次分配新的记录。"
+    },
+    {
+      "file": "E:/fork/FDF3_re/src/THMHJ/THMHJ/Cover.cs",
+      "method": "Update",
+      "finding": "进入覆盖区时 Events.Add，离开时 RemoveAt；重入追加到列表末尾。"
+    }
+  ],
+  "changes": [
+    "复用已结束或随宿主销毁的变化执行器；保留插值公式及完成帧。",
+    "预先准备 1024 个全新弹体状态，每普通 tick 最多补充 16 个；集中生成时不补分配，储备不足仍按原规则完整发弹。旧弹体状态不回池，保留深度绑定引用。",
+    "合并位置、速度清零、判定尺寸、旋转、缩放的 Windows 属性同步；公式仍由 Lua 计算，使用官方同一个碰撞半径更新函数。",
+    "覆盖事件由无序表遍历改为原作的进入顺序，避免内存地址改变同帧覆盖结果。"
+  ],
+  "diagnostics": {
+    "gc_probe": "仅诊断采样在集中发弹窗口暂停自动 GC：第 1321 帧控制器耗时 15.8087 → 3.6631 ms。正式代码没有暂停或调整全局 GC。",
+    "full_game_phase_sample": "th39-practice-frame-detail2：背景更新均值约 0.128 ms，碰撞约 0.036 ms；最大逻辑帧 ObjFrame 约 20.30 ms，弹幕控制器约 0.44 ms。此探针只用于定位。"
+  },
+  "isolated_patterns": {
+    "before": {
+      "sample": "th39-burst-baseline",
+      "frames": 5101,
+      "first_frame": 300,
+      "logic": {
+        "mean_ms": 3.3661,
+        "p99_ms": 6.6528,
+        "max_ms": 20.5212
+      },
+      "render_submission": {
+        "mean_ms": 2.2913,
+        "p99_ms": 4.993,
+        "max_ms": 15.192
+      },
+      "combined_cpu": {
+        "mean_ms": 5.6573,
+        "p99_ms": 11.0754,
+        "max_ms": 24.6436
+      },
+      "cpu_frames_over_16_667ms": 5,
+      "sha256": {
+        "LuaSTGSub.exe": "6491f3820f605c4490aff525f6460655763ff37a7cba2fac4640f1fc4bd6a33a",
+        "mod/GAME/th37/background.lua": "96895ebcdb1de93e24f96d0362c080b17a932cb4987935487a3137666966c55c",
+        "mod/GAME/th37/source_mesh.lua": "e608f46ec76c6a3aae530ae6f0dfc1d82e2b7b17805ade1b27df3b2de0139425",
+        "mod/GAME/th39/runtime.lua": "e416c176137bf66251981a58ea4093465fc01e1030b8f11e3a44dc8e85da4fee",
+        "mod/GAME/ports/binding_index.lua": "f784c69023adea321c26465f271d5089c5e5af7f1291b34799b6c77a9743b06a"
+      }
+    },
+    "after": {
+      "sample": "th39-burst-ordered-final",
+      "frames": 5101,
+      "first_frame": 300,
+      "logic": {
+        "mean_ms": 2.3651,
+        "p99_ms": 4.4817,
+        "max_ms": 16.781
+      },
+      "render_submission": {
+        "mean_ms": 2.1632,
+        "p99_ms": 4.2651,
+        "max_ms": 16.7199
+      },
+      "combined_cpu": {
+        "mean_ms": 4.5283,
+        "p99_ms": 8.2815,
+        "max_ms": 22.3887
+      },
+      "cpu_frames_over_16_667ms": 2,
+      "sha256": {
+        "LuaSTGSub.exe": "9a169a3e9b557bf417862d97c9343b682e907ed4204c3dde02b9fb3085b33545",
+        "mod/GAME/th37/background.lua": "96895ebcdb1de93e24f96d0362c080b17a932cb4987935487a3137666966c55c",
+        "mod/GAME/th37/source_mesh.lua": "e608f46ec76c6a3aae530ae6f0dfc1d82e2b7b17805ade1b27df3b2de0139425",
+        "mod/GAME/th39/runtime.lua": "d9e8c70c2567c7f3a620e0ce795de74c37ecb71b53774a84e94331bde907bf44",
+        "mod/GAME/ports/binding_index.lua": "f784c69023adea321c26465f271d5089c5e5af7f1291b34799b6c77a9743b06a"
+      }
+    },
+    "burst_frames": [
+      {
+        "frame": 1321,
+        "before": {
+          "controller_ms": 15.8087,
+          "logic_ms": 19.5199,
+          "render_ms": 5.1237,
+          "bullets": 1930
+        },
+        "after": {
+          "controller_ms": 3.296,
+          "logic_ms": 5.2095,
+          "render_ms": 4.6925,
+          "bullets": 1930
+        }
+      },
+      {
+        "frame": 3240,
+        "before": {
+          "controller_ms": 15.3699,
+          "logic_ms": 20.5212,
+          "render_ms": 4.0171,
+          "bullets": 2444
+        },
+        "after": {
+          "controller_ms": 2.5404,
+          "logic_ms": 4.949,
+          "render_ms": 3.4114,
+          "bullets": 2444
+        }
+      },
+      {
+        "frame": 5160,
+        "before": {
+          "controller_ms": 5.1449,
+          "logic_ms": 10.3572,
+          "render_ms": 4.5247,
+          "bullets": 2704
+        },
+        "after": {
+          "controller_ms": 4.9881,
+          "logic_ms": 7.8114,
+          "render_ms": 4.1615,
+          "bullets": 2704
+        }
+      }
+    ]
+  },
+  "formal_spell_practice": {
+    "seed": 20261121,
+    "fps_limit": 60,
+    "input": "灵梦固定位置，不射击，保护计时避免死亡中断；保留正式自机、背景、碰撞、HUD。",
+    "before": {
+      "sample": "th39-practice-burst-before",
+      "frames": 3300,
+      "first_frame": 300,
+      "logic": {
+        "mean_ms": 6.554,
+        "p99_ms": 15.4545,
+        "max_ms": 20.2431
+      },
+      "render_submission": {
+        "mean_ms": 2.8622,
+        "p99_ms": 5.0525,
+        "max_ms": 6.7901
+      },
+      "combined_cpu": {
+        "mean_ms": 9.4162,
+        "p99_ms": 20.0013,
+        "max_ms": 26.2792
+      },
+      "cpu_frames_over_16_667ms": 105,
+      "sha256": {
+        "LuaSTGSub.exe": "c5cd901e2a71e5510edf899af950a60877dfbabae18024f613b1b9e9e55c5c57",
+        "mod/GAME/th37/background.lua": "96895ebcdb1de93e24f96d0362c080b17a932cb4987935487a3137666966c55c",
+        "mod/GAME/th37/source_mesh.lua": "e608f46ec76c6a3aae530ae6f0dfc1d82e2b7b17805ade1b27df3b2de0139425",
+        "mod/GAME/th39/runtime.lua": "e416c176137bf66251981a58ea4093465fc01e1030b8f11e3a44dc8e85da4fee",
+        "mod/GAME/ports/binding_index.lua": "f784c69023adea321c26465f271d5089c5e5af7f1291b34799b6c77a9743b06a"
+      }
+    },
+    "after": {
+      "sample": "th39-practice-ordered-final",
+      "frames": 3300,
+      "first_frame": 300,
+      "logic": {
+        "mean_ms": 5.6717,
+        "p99_ms": 13.6005,
+        "max_ms": 20.0771
+      },
+      "render_submission": {
+        "mean_ms": 2.9533,
+        "p99_ms": 5.7032,
+        "max_ms": 11.0169
+      },
+      "combined_cpu": {
+        "mean_ms": 8.625,
+        "p99_ms": 18.8572,
+        "max_ms": 25.8074
+      },
+      "cpu_frames_over_16_667ms": 78,
+      "sha256": {
+        "LuaSTGSub.exe": "9a169a3e9b557bf417862d97c9343b682e907ed4204c3dde02b9fb3085b33545",
+        "mod/GAME/th37/background.lua": "96895ebcdb1de93e24f96d0362c080b17a932cb4987935487a3137666966c55c",
+        "mod/GAME/th37/source_mesh.lua": "e608f46ec76c6a3aae530ae6f0dfc1d82e2b7b17805ade1b27df3b2de0139425",
+        "mod/GAME/th39/runtime.lua": "d9e8c70c2567c7f3a620e0ce795de74c37ecb71b53774a84e94331bde907bf44",
+        "mod/GAME/ports/binding_index.lua": "f784c69023adea321c26465f271d5089c5e5af7f1291b34799b6c77a9743b06a"
+      }
+    },
+    "all_3600_frame_counts_and_stage_ticks_equal": true
+  },
+  "parity": {
+    "frames": 6000,
+    "seed": 20261121,
+    "checkpoints": 32,
+    "all_source_order_states_equal": true,
+    "old_unordered_runtime_counts_positions_velocities_equal": true,
+    "numeric_precision": 1e-06,
+    "fields": [
+      "弹数、出生序号、弹型、年龄、位置、速度、方向",
+      "颜色、透明度、缩放、寿命、状态帧",
+      "引擎位置、速度、旋转、判定尺寸、分组、碰撞开关、图像",
+      "未结束的变化执行器及次数限制"
+    ],
+    "source_order_baseline": {
+      "file": "windows/build/th39-source-order-baseline.lua",
+      "sha256": "d0214869371b166e83818e4755e6f0b7d6f0f61c6ad9fec23300e2f443931de4",
+      "construction": "HEAD 原运行时仅应用本次覆盖事件入列/退出/重入顺序修正，关闭全部性能优化；与优化版比较完整状态。",
+      "reason": "原版移植用 pairs 执行覆盖事件，地址布局会影响透明度叠加次序，因此不能把任意一次无序结果当原作规范。"
+    }
+  },
+  "functional_checks": [
+    "tools/th39-tests/check.lua allocation：1100 发超过储备容量仍完整生成，状态/limits/changes 相互独立，清场重试通过。",
+    "tools/th39-tests/check.lua cover-order：重叠覆盖顺序、离开移除、重入追加通过。",
+    "tools/th39-tests/check.lua motion：首轮 2 发、15 帧雾化及源速度投影通过。",
+    "tools/th39-tests/check.lua transitions：11 个分段切换通过。",
+    "tools/th39-tests/check_control.lua：使魔自然结束、同卡控制保持、整卡解除控制通过。"
+  ],
+  "limits": [
+    "耗时为 CPU 逻辑与绘制提交，不是 GPU 耗时或显示器实测 FPS。",
+    "正式练习采样为 3600 帧，独立原生弹幕覆盖 6000 帧；不是 FDF3 原版可执行程序的轨迹对拍。",
+    "集中发弹尖峰降低，正式练习仍有少量超过 16.667 ms 的帧，未证明全程稳定 60 帧。",
+    "仅 Windows 原生运行；Mac / Android 未实测。"
+  ],
+  "raw_reports": "windows/build/th39-{burst-baseline,burst-ordered-final,ordered-before,ordered-after,practice-burst-before,practice-ordered-final}/result.json；这些临时日志不纳入源码提交。"
+}

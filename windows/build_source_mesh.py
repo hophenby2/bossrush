@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""从锁定的官方 Sub 干净源码完整构建，再接入独立维护的背景网格接口。"""
+"""从锁定的官方 Sub 干净源码完整构建，再接入独立维护的背景网格与原作对象接口。"""
 from pathlib import Path
 import argparse
 import hashlib
@@ -56,6 +56,7 @@ def main():
     # Lua 桥接使用 lstg.*；lib_func 注册到 lstg.Renderer，不能把接口插在那里。
     source=source.replace(register,register+'\n'
         '\t\t{ "CopySourceTable", &source_mesh::copyTable },\n'
+        '\t\t{ "SyncSourceBulletGeometry", &source_mesh::syncBulletGeometry },\n'
         '\t\t{ "CreateSourceModelMesh", &source_mesh::create },\n'
         '\t\t{ "RenderSourceModelMesh", &source_mesh::draw },\n'
         '\t\t{ "RenderSourceModelMeshes", &source_mesh::drawBatch },',1)

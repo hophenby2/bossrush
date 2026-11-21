@@ -35,17 +35,54 @@ local function live(c,b)
 end
 local copySizes=setmetatable({},{__mode='k'})
 local nativeCopy=lstg.CopySourceTable
-local function copy(s)
+local nativeGeometry=lstg.SyncSourceBulletGeometry
+local stateReserve={}
+local reserveReady=false
+local RESERVE_LIMIT,RESERVE_REFILL=1024,16
+local function refillStates(limit)
+    for _=1,min(limit,RESERVE_LIMIT-#stateReserve) do
+        local state=allocateTable(0,128)
+        state.changes,state.limits={},{}
+        stateReserve[#stateReserve+1]=state
+    end
+end
+local function prepareStates()
+    if not reserveReady then refillStates(RESERVE_LIMIT);reserveReady=true end
+end
+local function copy(s,projectile)
     -- 原作 Barrage.Get 复用容器。Lua 状态仍可能被绑定快照引用，不能直接回池复用；
     -- 按源表的实际字段数预分配哈希区，保持浅拷贝语义并避免同一帧大量重复扩容。
+    local storage,changes,limits
+    if projectile then
+        local count=#stateReserve
+        storage=stateReserve[count];stateReserve[count]=nil
+        if storage then changes,limits=storage.changes,storage.limits end
+    end
     local o,count
-    if nativeCopy then o,count=nativeCopy(s,copySizes[s] or 128)
+    if nativeCopy then o,count=nativeCopy(s,copySizes[s] or 128,storage)
     else
-        o,count=allocateTable(0,copySizes[s] or 128),0
+        o,count=storage or allocateTable(0,copySizes[s] or 128),0
         for k,v in pairs(s) do o[k]=v;count=count+1 end
     end
     copySizes[s]=count+8
-    o.changes={};o.limits={};return o
+    o.changes=changes or {};o.limits=limits or {};return o
+end
+local changePool={}
+local function takeChange()
+    local count=#changePool
+    if count==0 then return allocateTable(0,12) end
+    local change=changePool[count];changePool[count]=nil
+    return change
+end
+local function returnChange(change)
+    -- 对应原作 BExecution/Execution.Return；仅在本次插值结束或宿主销毁后归还。
+    for key in pairs(change) do change[key]=nil end
+    if #changePool<100000 then changePool[#changePool+1]=change end
+end
+local function clearChanges(o)
+    local changes=o.changes
+    if not changes then o.changes={};return end
+    for i=#changes,1,-1 do returnChange(changes[i]);changes[i]=nil end
 end
 function R.player(context)
     local c=context and (context.controller or context);local t=c and c.weaponTarget
@@ -97,13 +134,19 @@ function R.change(o,key,value,random,op,mode,duration)
         else value=angle(bx+ox,by+oy,x,y) end
     elseif value=='自身' then value=initial end
     value=value+rnd(random,o)
-    o.changes[#o.changes+1]={key=key,value=value,initial=initial,op=op,mode=mode,duration=max(1,duration),left=max(1,duration)}
+    local change=takeChange()
+    change.key,change.value,change.initial,change.op,change.mode=key,value,initial,op,mode
+    change.duration,change.left=max(1,duration),max(1,duration)
+    o.changes[#o.changes+1]=change
 end
 local function centerMove(o,x,y,slow,duration)
     if not o.is_center or not valid(o.host) or o.controller.road then return end
     local x0,y0=o.ox,o.oy
     duration=duration or (slow and max(10,floor(math.sqrt((x-x0)^2+(y-y0)^2)/1.5)) or 60)
-    o.changes[#o.changes+1]={mode='move',x=x,y=y,x0=x0,y0=y0,slow=slow,left=duration,duration=duration}
+    local change=takeChange()
+    change.mode,change.x,change.y,change.x0,change.y0,change.slow='move',x,y,x0,y0,slow
+    change.left,change.duration=duration,duration
+    o.changes[#o.changes+1]=change
 end
 function R.move(o,slow,x1,x2,y1,y2)
     centerMove(o,x1+(x2-x1)*ran:Float(0,1),y1+(y2-y1)*ran:Float(0,1),slow)
@@ -209,7 +252,9 @@ local function interpolate(o)
             set(o,c.key,v)
         end
         c.left=c.left-1
-        if c.left<=((c.mode=='正弦' or c.mode=='无缝正弦') and -1 or 0) then table.remove(o.changes,i) else i=i+1 end
+        if c.left<=((c.mode=='正弦' or c.mode=='无缝正弦') and -1 or 0) then
+            table.remove(o.changes,i);returnChange(c)
+        else i=i+1 end
     end
 end
 local function motion(o,son,scale)
@@ -305,24 +350,30 @@ local function targetable(c,pair)
 end
 local function projected(b)
     local s=b.mhj
-    b.x,b.y=projectBullet(s.fx,s.fy);b.vx,b.vy=0,0
+    local x,y=projectBullet(s.fx,s.fy)
     local p=profile(s.pattern,s.type)
     local r=p and p[7] or 0
-    b.a,b.b=r*abs(s.wscale)*SCALE,r*abs(s.hscale)*SCALE
-    b.rect=false;b.rot=-((s.Withspeedd and math.deg(math.atan2(s.my or 0,s.mx or 0)) or s.head or 0)+90)
-    b.hscale,b.vscale=s.wscale*SCALE,s.hscale*SCALE
+    local a,bb=r*abs(s.wscale)*SCALE,r*abs(s.hscale)*SCALE
+    local rot=-((s.Withspeedd and math.deg(math.atan2(s.my or 0,s.mx or 0)) or s.head or 0)+90)
+    local hscale,vscale=s.wscale*SCALE,s.hscale*SCALE
+    if nativeGeometry then nativeGeometry(b,x,y,a,bb,rot,hscale,vscale)
+    else
+        b.x,b.y=x,y;b.vx,b.vy=0,0;b.a,b.b=a,bb
+        b.rect,b.rot=false,rot;b.hscale,b.vscale=hscale,vscale
+    end
     local born=s.Mist and min(1,s.age/15) or 1
     b._a=max(0,min(255,(s.alpha or 100)*2.55*born*(s.controller.friendlyAlpha or 1)));b._r,b._g,b._b=s.colorR or 255,s.colorG or 255,s.colorB or 255
     b._blend=s.Blend and 'mul+add' or ''
     local layer=(s.controller.effectLayer or LAYER.ENEMY_BULLET)+(s.controller.pattern.order==1 and .1 or 0)
     local group=s.controller.effectLayer and GROUP.GHOST or (s.Invincible or p and p.invincible) and GROUP.INDES or GROUP.ENEMY_BULLET
-    -- Sub 即使值没变也会从渲染树/碰撞链表中移除后重插；每帧只同步真正变化的状态。
+    -- 按实际引擎属性确认层与分组，仅在变化时同步。
     if b.layer~=layer then b.layer=layer end
     if b.group~=group then b.group=group end
     b.colli=not s.controller.effectLayer and s.age>(s.Mist and 15 or 0) and s.type>1 and r>0 and (s.alpha or 100)>99 and s.wscale~=0 and s.hscale~=0
 end
 local function clean(b)
     local s=b.mhj
+    if s then clearChanges(s) end
     if s and s.controller and s.controller.host==b then R.stopEmitter(s.controller) end
     if s and s.controller and s.controller.bullets then
         s.controller.bullets[b]=nil
@@ -347,7 +398,8 @@ local function updateParticle(s)
         if s.Sonevents then s.Sonevents(s,t,R) end
         if s.covers then
             -- 原作复制到 Barrage.Events 的覆盖事件在 Cover 停止更新后继续生效。
-            for _,events in pairs(s.covers) do events(s,s.controller.time,R) end
+            -- Cover 按进入顺序把事件追加到 Barrage.Events；不能让表地址决定同帧覆盖顺序。
+            for _,source in ipairs(s.coverOrder) do s.covers[source](s,s.controller.time,R) end
         end
         s.maskEntered=0
         interpolate(s)
@@ -363,7 +415,7 @@ R.classes.projectile=Class(bullet,{
         -- 不经过通用雾化类；CrazyStorm自己有15帧出生与事件时钟。
         -- projected 会一次写入完整位置、分组、层次和颜色，避免出生时先写默认值再重复改写。
         s.is_projectile=true;b.mhj=s;b.bound=false
-        s.age=0;s.changes={};s.limits=s.limits or {};s.object=nil;s.renderImage=nil
+        s.age=0;clearChanges(s);s.limits=s.limits or {};s.object=nil;s.renderImage=nil
         R.objects[b]=true;s.controller.bullets[b]=s;projected(b)
     end,
     frame=function(b)
@@ -406,7 +458,7 @@ local function laserColor(s)
 end
 local function laserInit(b,s)
     s.is_projectile=true;b.mhj=s;b.bound=false;b.vx,b.vy=0,0
-    s.age=0;s.changes={};R.objects[b]=true;s.controller.bullets[b]=s
+    s.age=0;clearChanges(s);R.objects[b]=true;s.controller.bullets[b]=s
 end
 local function laserStep(b)
     local s=b.mhj;s.age=s.age+1
@@ -518,10 +570,11 @@ local function emit(o,bound)
     local slot=shotType-147
     local config=c.configs[slot]
     local bucket=o.bucket
+    local origin={x=o.x+ox,y=o.y+oy,previewPlayer=c.visual and c.previewPlayer or nil}
     for i=0,n-1 do
         local fan=(i-(n-1)/2)*spread/n
         if not c.visual and R.bulletCount>=SOURCE_BULLET_CAP then R.overflow=R.overflow+1;return end
-        local s=copy(o)
+        local s=copy(o,not c.visual)
         s.type=shotType
         s.controller,s.pattern,s.bucket=c,p,bucket
         s.parentid,s.layerid=o.id,o.parentid
@@ -534,7 +587,6 @@ local function emit(o,bound)
         s.mx,s.my,s.ax,s.ay=nil,nil,nil,nil
         s.sonmotion_dirty,s.sonaccel_dirty=true,true
         s.sonspeed,s.sonaspeed=speed,accel
-        local origin={x=o.x+ox,y=o.y+oy,previewPlayer=c.visual and c.previewPlayer or nil}
         s.sonaspeedd=direction(o.sonaspeedd,origin,s.fx,s.fy,o.sonaspeedds)+accelRandom
         s.sonspeedd=direction(o.fdirection,origin,s.fx,s.fy,o.fdirections)+baseRandom+fan+(o.Bindwithspeedd and bound and bound.sonspeedd or 0)
         s.wscale=(s.wscale or 1)+ws;s.hscale=o.syncScale and s.wscale or (s.hscale or 1)+hs
@@ -623,11 +675,15 @@ local function field(o,c,t)
         for b,s in pairs(targets) do
             if live(c,b) and s.Cover and (not s.Mist or s.age>15) and s.layerid==o.parentid then
                 if s.kind~='laser' and contains(s) then
-                    s.covers=s.covers or {}
+                    if not s.covers then s.covers,s.coverOrder={},{} end
                     local enter=s.covers[o]==nil
                     s.covers[o]=o.Sonevents
+                    if enter then s.coverOrder[#s.coverOrder+1]=o end
                     if enter then s.maskEntered=1 end
-                elseif s.covers then s.covers[o]=nil end
+                elseif s.covers and s.covers[o] then
+                    s.covers[o]=nil
+                    for i=#s.coverOrder,1,-1 do if s.coverOrder[i]==o then table.remove(s.coverOrder,i);break end end
+                end
             end
         end
     elseif o.kind=='rebound' then
@@ -656,6 +712,7 @@ local function reset(c)
 end
 function R.controller(host,id,road,configs)
     local p=R.loadPattern(id)
+    prepareStates()
     local c={host=host,pattern=p,road=road,time=0,offsetx=0,offsety=0,bullets=setmetatable(allocateTable(0,road and 128 or SOURCE_BULLET_CAP),{__mode='k'}),jumps={},eventLimits={},serial=0,status=0,statusFrame=0,configs=configs or {},familiars={},deadFamiliars={},parents={}}
     reset(c);R.controllers[c]=true;return c
 end
@@ -674,6 +731,7 @@ function R.backgroundEffect(id,x,y,seed,textureHeights,resources,previewPlayer)
 end
 function R.tick(c)
     if c.closed then return end
+    local reserved=#stateReserve
     c.time=c.time+1;c.statusFrame=c.statusFrame+1
     if c.time>c.pattern.total then c.time=1;reset(c) end
     local t=c.time;local center=c.center
@@ -731,6 +789,9 @@ function R.tick(c)
             end end
         else step(o,t-(o.begin or 1)+1) end
     end
+    -- 原作预置 BarragePool。这里分帧补充尚未使用的新状态，绝不复用仍可能被绑定引用的旧弹体。
+    -- 集中生成帧只消耗储备，不在同帧补分配；储备不足仍按原规则完整发弹。
+    if not c.visual and reserved-#stateReserve<RESERVE_REFILL*2 then refillStates(RESERVE_REFILL) end
 end
 function R.tickBackground(c)
     if not c.closing then R.tick(c) end
@@ -772,6 +833,7 @@ function R.prepareFamiliars(configs)
     for _,config in pairs(configs) do loadTexture(D.enemyTypes[config[1]][1]) end
 end
 function R.preparePattern(id)
+    prepareStates()
     local pattern=R.loadPattern(id);local context={}
     loadTexture('barrages');loadTexture('bosses')
     -- 原作进入战斗前载入自定义贴图；阶段切换和动画换帧不再临时读取 PNG、创建切片。
