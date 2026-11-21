@@ -78,7 +78,7 @@ local RetryCountToUnlockAchievement = 0
 
 function stg.frame(self)
     ext.sc_pr = false
-    cheat = false--符卡练习之外不给自机无敌（符卡练习走 frame_sc_pr）
+    cheat = lstg.var.cheat or false--读取本局开关，保留调试模式 F8 的切换结果。
     if not lstg.var.init_player_data then
         error('玩家数据加载失败')
     end

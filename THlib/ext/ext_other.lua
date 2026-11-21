@@ -49,6 +49,7 @@ function ext.DurationAchievement()
     end--1天，一个成就
 end
 do
+    local cheatKeyDown = false
     local t, err = io.open("testing.lua", "r")
     local now
     if not err then
@@ -58,6 +59,14 @@ do
     end
     ---开发者模式
     function ext.Debugging()
+        -- 调试模式下按 F8 切换本局无敌；只认按下沿，长按不会重复切换。
+        local down = GetKeyState(KEY.F8)
+        if down and not cheatKeyDown and GameDebug and GameDebug.enabled
+            and not ext.StageIsMenu() and not ext.replay.IsReplay() then
+            cheat = not cheat
+            lstg.var.cheat = cheat
+        end
+        cheatKeyDown = down
         --DEBUGGER
         if DEBUG then
             local key, KEY = GetLastKey(), KEY
