@@ -76,12 +76,23 @@ local function draw(m,frame,particle)
 end
 local snapshot,ready
 local spellObject
+local function prepareScene(state)
+    local seen={}
+    -- 六面楼阁等模型到时间轴中途才出现；在准备阶段上传，避免战斗中第一次解析并创建网格。
+    for _,command in ipairs(state.commands) do
+        if command[2]=='SetModel' or command[2]=='SetPraticleLauncher' then
+            local name=tostring(command[3])
+            if not seen[name] then prepare(name);seen[name]=true end
+        end
+    end
+end
 function B.prepare(chapter,clock)
     if not setting or not setting.displayBG then return end
     if not snapshot or snapshot.chapter~=chapter or snapshot.clock~=clock then
         snapshot={chapter=chapter,clock=clock,state=State.new(chapter,clock,B.musicFrames and B.musicFrames[chapter])}
     end
     local state=RogueEncounter.copyPrepared(snapshot.state)
+    prepareScene(state)
     for _,m in ipairs(state.models) do prepare(m.name) end
     for _,p in ipairs(state.particles) do prepare(p.model.name) end
     ready={chapter=chapter,clock=clock,state=state}
@@ -93,6 +104,7 @@ local Scene=Class(background,{
         o.layer,o.group,o.bound,o.colli=LAYER.BG-.1,GROUP.GHOST,false,false
         if ready and ready.chapter==chapter and ready.clock==(clock or 0) then o.state=ready.state;ready=nil
         else o.state=State.new(chapter,clock or 0,B.musicFrames and B.musicFrames[chapter]) end
+        prepareScene(o.state)
         o.chapter=chapter
     end,
     frame=function(o) State.step(o.state,o.boss and IsValid(o.boss)) end,

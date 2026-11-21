@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""复用 Sub 已构建的 Release 对象，编译原作网格接口；不改写上游工程或运行游戏。"""
+"""从锁定的官方 Sub 干净源码完整构建，再接入独立维护的背景网格接口。"""
 from pathlib import Path
 import argparse
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -18,13 +19,28 @@ def tag(name): return '{'+NS+'}'+name
 
 def main():
     ap=argparse.ArgumentParser(description=__doc__)
-    ap.add_argument('--engine',type=Path,default=ROOT.parent/'LuaSTG-Sub')
+    ap.add_argument('--engine',type=Path,default=ROOT/'windows/build/official-sub')
     ap.add_argument('--no-install',action='store_true')
     args=ap.parse_args()
     engine=args.engine.resolve()
+    lock=json.loads((ROOT/'windows/engine.lock.json').read_text(encoding='utf-8'))
+    def git(*commands):
+        return subprocess.check_output(['git','-C',str(engine),*commands],text=True,encoding='utf-8').strip()
+    if git('remote','get-url','origin')!=lock['repository']:
+        raise RuntimeError('引擎 origin 必须对应 windows/engine.lock.json 中的官方仓库')
+    if git('rev-parse','HEAD')!=lock['commit']:
+        raise RuntimeError('引擎提交与 windows/engine.lock.json 不一致')
+    if git('status','--porcelain','--untracked-files=no','--ignore-submodules=none'):
+        raise RuntimeError('引擎或子模块存在本地修改，拒绝混入构建')
+    modules=git('submodule','status','--recursive')
+    if any(line.startswith(('-', '+', 'U')) for line in modules.splitlines()):
+        raise RuntimeError('官方引擎的子模块未按锁定版本初始化')
     version=json.loads((engine/'version.json').read_text(encoding='utf-8'))
     if (version['major'],version['minor'],version['patch'])!=(0,21,129):
         raise RuntimeError('此补丁对应 Sub 0.21.129，请先核对其他版本的接口和对象文件')
+    # 先从该工作区构建全部引擎目标，不读取其他目录的历史对象文件。
+    subprocess.run(['cmake','--preset','vs2022-amd64'],check=True,cwd=engine)
+    subprocess.run(['cmake','--build','--preset','windows-amd64-release','--parallel','6'],check=True,cwd=engine)
     project=engine/'build/amd64/LuaSTG/LuaSTG.vcxproj'
     object_dir=project.parent/'LuaSTG.dir/Release'
     original=engine/'LuaSTG/LuaSTG/LuaBinding/LW_Renderer.cpp'
@@ -33,18 +49,30 @@ def main():
     output.mkdir(parents=True,exist_ok=True)
     source=original.read_text(encoding='utf-8-sig')
     anchor='namespace luastg {'
-    register='\t\tMKFUNC(beginScene),'
+    register='\tstatic luaL_Reg const lib_compat[] = {'
     if source.count(anchor)!=1 or source.count(register)!=1:
         raise RuntimeError('Sub 渲染绑定的补丁上下文不匹配')
     source=source.replace(anchor,'#include "'+header.as_posix()+'"\n\n'+anchor,1)
-    source=source.replace(register,
+    # Lua 桥接使用 lstg.*；lib_func 注册到 lstg.Renderer，不能把接口插在那里。
+    source=source.replace(register,register+'\n'
+        '\t\t{ "CopySourceTable", &source_mesh::copyTable },\n'
         '\t\t{ "CreateSourceModelMesh", &source_mesh::create },\n'
-        '\t\t{ "RenderSourceModelMesh", &source_mesh::draw },\n'+register,1)
-    source=source.replace(register,'\t\t{ "RenderSourceModelMeshes", &source_mesh::drawBatch },\n'+register,1)
+        '\t\t{ "RenderSourceModelMesh", &source_mesh::draw },\n'
+        '\t\t{ "RenderSourceModelMeshes", &source_mesh::drawBatch },',1)
     patched=output/'LW_Renderer.cpp'
     patched.write_text(source,encoding='utf-8')
+    # 着色器原先到第一次画模型时才编译；构建时也编译两入口，避免把语法错误带进游戏。
+    sdk=Path(os.environ.get('ProgramFiles(x86)','C:/Program Files (x86)'))/'Windows Kits/10/bin'
+    compilers=sorted(sdk.glob('*/x64/fxc.exe'),key=lambda p:tuple(int(n) for n in p.parents[1].name.split('.')))
+    if not compilers: raise RuntimeError('缺少 Windows SDK 的 x64 fxc.exe')
+    shader=re.search(r'shader\[\]=R"\((.*?)\)";',header.read_text(encoding='utf-8'),re.S)
+    if not shader: raise RuntimeError('未找到背景网格着色器源码')
+    shader_path=output/'source_model_mesh.hlsl';shader_path.write_text(shader[1],encoding='utf-8')
+    for stage in ('vs','ps'):
+        subprocess.run([str(compilers[-1]),'/nologo','/T',stage+'_4_0','/E',stage+'_main','/O3',
+            '/Fo',str(output/(stage+'.cso')),str(shader_path)],check=True)
 
-    # 仅重编译被补丁影响的翻译单元，其余对象和依赖库以只读方式复用。
+    # 在刚完成的官方构建上只替换渲染绑定，不改写上游源码。
     objects=sorted(object_dir.rglob('*.obj'))
     old_renderer=[p for p in objects if p.name=='LW_Renderer.obj']
     if len(old_renderer)!=1 or len(objects)<20:
@@ -94,7 +122,10 @@ def main():
         '/p:BuildProjectReferences=false','/verbosity:minimal','/nologo'],check=True,cwd=output)
     built=output/'bin/LuaSTGSub.exe'
     if not built.is_file(): raise RuntimeError('编译未生成 Windows 引擎')
-    record={'engine':str(engine),'version':'0.21.129','renderer_sha256':hashlib.sha256(original.read_bytes()).hexdigest(),
+    if git('status','--porcelain','--untracked-files=no','--ignore-submodules=none'):
+        raise RuntimeError('构建后官方源码或子模块出现修改，拒绝安装引擎')
+    record={'engine':str(engine),'version':'0.21.129','repository':lock['repository'],'ref':lock['ref'],
+        'commit':lock['commit'],'submodules':modules,'renderer_sha256':hashlib.sha256(original.read_bytes()).hexdigest(),
         'patch_sha256':hashlib.sha256(header.read_bytes()).hexdigest(),'exe_sha256':hashlib.sha256(built.read_bytes()).hexdigest()}
     (output/'build.json').write_text(json.dumps(record,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     if not args.no_install:

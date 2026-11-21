@@ -39,8 +39,8 @@ struct Output { float4 position:SV_POSITION; float2 uv:TEXCOORD0; float4 color:C
 Output vs_main(Input v) {
     Parameters p=models[v.instance];
     Output o;
-    float4 point=mul(p.world,float4(v.position,1));
-    o.position=mul(view_proj,point);o.world_position=point.xyz;o.instance=v.instance;
+    float4 world_position=mul(p.world,float4(v.position,1));
+    o.position=mul(view_proj,world_position);o.world_position=world_position.xyz;o.instance=v.instance;
     o.uv=v.uv*p.uv_transform.xy+p.uv_transform.zw;
     o.color=v.color*p.tint;
     return o;
@@ -165,6 +165,19 @@ static float number(lua_State* L,int table,size_t i) {
     lua_rawgeti(L,table,static_cast<int>(i));
     if (!lua_isnumber(L,-1)) { lua_pop(L,1);throw std::runtime_error("原作网格参数不是数字"); }
     const auto n=static_cast<float>(lua_tonumber(L,-1));lua_pop(L,1);return n;
+}
+// 原作状态的等价浅拷贝：不复用仍被绑定对象持有的表，也不改变字段值或生命周期。
+static int copyTable(lua_State* L) {
+    luaL_checktype(L,1,LUA_TTABLE);
+    const auto capacity=luaL_optinteger(L,2,128);
+    luaL_argcheck(L,capacity>=0 && capacity<=0x7fffffff,2,"状态表预分配容量无效");
+    lua_createtable(L,0,static_cast<int>(capacity));const int output=lua_gettop(L);
+    lua_Integer count=0;lua_pushnil(L);
+    while (lua_next(L,1)) {
+        lua_pushvalue(L,-2);lua_pushvalue(L,-2);lua_rawset(L,output);
+        lua_pop(L,1);++count;
+    }
+    lua_pushinteger(L,count);return 2;
 }
 static int create(lua_State* L) {
     const char* texture=lua_isnoneornil(L,1) ? nullptr:luaL_checkstring(L,1);luaL_checktype(L,2,LUA_TTABLE);

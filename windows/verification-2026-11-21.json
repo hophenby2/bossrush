@@ -1,0 +1,206 @@
+{
+  "date": "2026-11-21",
+  "platform": "Windows x64 / Direct3D 11",
+  "engine": {
+    "repository": "https://github.com/Legacy-LuaSTG-Engine/LuaSTG-Sub.git",
+    "ref": "master",
+    "commit": "8728b3f9e91e6cd577665a7f5777c6c7c23b5f31",
+    "version": "0.21.129",
+    "patch": "native/source_model_mesh.hpp"
+  },
+  "sha256": {
+    "LuaSTGSub.exe": "6491f3820f605c4490aff525f6460655763ff37a7cba2fac4640f1fc4bd6a33a",
+    "launcher.lua": "9541d81c3db84866f05ad4eca26501d3b2fa4340b2fe30d9a4266c205b789452",
+    "mod/GAME/th37/background.lua": "96895ebcdb1de93e24f96d0362c080b17a932cb4987935487a3137666966c55c",
+    "mod/GAME/th37/source_mesh.lua": "e608f46ec76c6a3aae530ae6f0dfc1d82e2b7b17805ade1b27df3b2de0139425",
+    "mod/GAME/th39.lua": "3ab9b06191937ae2dae685ec2dee3389d5ce4cafbd7a87fc0711bd75500971c9",
+    "mod/GAME/th39/runtime.lua": "e416c176137bf66251981a58ea4093465fc01e1030b8f11e3a44dc8e85da4fee",
+    "windows/native/source_model_mesh.hpp": "3b27fb65dc6b7fc5eafe005c201d5f661434cb249ef3dc9f9a701449af5dede5",
+    "windows/build_source_mesh.py": "875d75d478e0fd3153859fc4fb2a82c6586daeec885afec69659a6cd5bdd63da"
+  },
+  "说明": [
+    "仅官方 master 锁定提交与项目独立网格/状态拷贝接口参与构建，官方工作区保持干净。",
+    "所有原生运行使用独立 User/replay，不改写玩家存档。",
+    "这里的绘制耗时是 CPU 提交时间，不是 GPU 时间或屏幕帧率。",
+    "固定靶位检查点只比较移植版本修改前后，不等同于原版可执行程序轨迹验证。"
+  ],
+  "window": {
+    "states": [
+      {
+        "label": "initial",
+        "width": 480,
+        "height": 640,
+        "style": 2
+      },
+      {
+        "label": "fullscreen",
+        "width": 1280,
+        "height": 720,
+        "style": 2
+      },
+      {
+        "label": "windowed",
+        "width": 480,
+        "height": 640,
+        "style": 1
+      }
+    ],
+    "passed": true
+  },
+  "th37_stage6": {
+    "after": {
+      "frames": 8000,
+      "first_frame": 1,
+      "logic": {
+        "mean_ms": 0.0198,
+        "p99_ms": 0.0954,
+        "max_ms": 1.6607
+      },
+      "render_submission": {
+        "mean_ms": 0.1118,
+        "p99_ms": 0.3662,
+        "max_ms": 1.8613
+      },
+      "combined_cpu": {
+        "mean_ms": 0.1316,
+        "p99_ms": 0.4287,
+        "max_ms": 1.8763
+      },
+      "cpu_frames_over_16_667ms": 0
+    },
+    "native_mesh_calls": 8000,
+    "mesh_commands": 373205,
+    "last_background_time": 7161,
+    "before_cpu_fallback": {
+      "frames": 3600,
+      "first_frame": 1,
+      "logic": {
+        "mean_ms": 0.0234,
+        "p99_ms": 0.399,
+        "max_ms": 1.3526
+      },
+      "render_submission": {
+        "mean_ms": 33.1004,
+        "p99_ms": 60.3522,
+        "max_ms": 273.6594
+      },
+      "combined_cpu": {
+        "mean_ms": 33.1238,
+        "p99_ms": 60.3618,
+        "max_ms": 273.7488
+      },
+      "cpu_frames_over_16_667ms": 3600
+    },
+    "snapshot": "windows/build/th37-final-warm/snapshot/frame120.png"
+  },
+  "th39_39060": {
+    "source_evidence": [
+      "E:/fork/FDF3_re/src/THMHJ/THMHJ/Barrage.cs:226",
+      "E:/fork/FDF3_re/src/THMHJ/THMHJ/Batch.cs"
+    ],
+    "isolated_pattern_before": {
+      "frames": 3001,
+      "first_frame": 300,
+      "logic": {
+        "mean_ms": 2.7922,
+        "p99_ms": 5.3258,
+        "max_ms": 15.9195
+      },
+      "render_submission": {
+        "mean_ms": 1.7539,
+        "p99_ms": 3.777,
+        "max_ms": 14.5222
+      },
+      "combined_cpu": {
+        "mean_ms": 4.5461,
+        "p99_ms": 8.7046,
+        "max_ms": 21.3298
+      },
+      "cpu_frames_over_16_667ms": 2
+    },
+    "isolated_pattern_after": {
+      "frames": 3001,
+      "first_frame": 300,
+      "logic": {
+        "mean_ms": 2.6884,
+        "p99_ms": 5.1008,
+        "max_ms": 17.4936
+      },
+      "render_submission": {
+        "mean_ms": 1.637,
+        "p99_ms": 3.495,
+        "max_ms": 15.7796
+      },
+      "combined_cpu": {
+        "mean_ms": 4.3254,
+        "p99_ms": 8.2526,
+        "max_ms": 22.1879
+      },
+      "cpu_frames_over_16_667ms": 3
+    },
+    "formal_practice_before_resource_preload": {
+      "frames": 1500,
+      "first_frame": 300,
+      "logic": {
+        "mean_ms": 4.6742,
+        "p99_ms": 12.5657,
+        "max_ms": 20.9831
+      },
+      "render_submission": {
+        "mean_ms": 2.2157,
+        "p99_ms": 4.8552,
+        "max_ms": 17.6213
+      },
+      "combined_cpu": {
+        "mean_ms": 6.8899,
+        "p99_ms": 17.372,
+        "max_ms": 27.3924
+      },
+      "cpu_frames_over_16_667ms": 17
+    },
+    "formal_practice_after_resource_preload": {
+      "frames": 1500,
+      "first_frame": 300,
+      "logic": {
+        "mean_ms": 4.8197,
+        "p99_ms": 12.2146,
+        "max_ms": 18.8587
+      },
+      "render_submission": {
+        "mean_ms": 2.2806,
+        "p99_ms": 4.4573,
+        "max_ms": 7.7836
+      },
+      "combined_cpu": {
+        "mean_ms": 7.1004,
+        "p99_ms": 16.2779,
+        "max_ms": 23.316
+      },
+      "cpu_frames_over_16_667ms": 11
+    },
+    "parity": {
+      "frames": 6000,
+      "seed": 20261121,
+      "checkpoints": 10,
+      "equal": true,
+      "fields": [
+        "serial",
+        "type",
+        "age",
+        "fx",
+        "fy",
+        "sonspeed",
+        "sonspeedd"
+      ],
+      "position_precision": 1e-06
+    },
+    "限制": "集中生成 434 发弹体时仍有 CPU 尖峰；当前采样不能证明全程稳定 60 帧。正式练习采样 1800 帧，完整模式尚未覆盖整张符卡。"
+  },
+  "commands": [
+    "python windows/build_source_mesh.py",
+    "python tools/profile_windows_cases.py --case window --frames 180 --out windows/build/window-fixed-size",
+    "python tools/profile_windows_cases.py --case th37-stage6 --frames 8000 --fps 240 --warm --capture --out windows/build/th37-final-warm",
+    "python tools/profile_windows_cases.py --case th39-39060 --frames 6000 --fps 240 --checkpoints --out windows/build/th39-final-parity",
+    "python tools/profile_windows_cases.py --case th39-39060 --frames 1800 --fps 60 --full-game --out windows/build/th39-practice-preloaded"
+  ]
+}

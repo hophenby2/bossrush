@@ -128,9 +128,15 @@ local function setupCard(meta,group,chapter)
     local card=boss.card.New(meta.kind~=0 and meta.title or '',immune/60,immune/60,timeout/60,meta.hp)
     card.phase_name,card.phase_kind=meta.title,group.role
     card.mhj3_source=meta
+    local function preparePatterns()
+        for i=1,#group.hosts do
+            for _,phase in ipairs(meta.tracks[tostring(i)] or {}) do R.preparePattern(phase.pattern) end
+        end
+        R.prepareFamiliars(meta.familiars)
+    end
     function card.prepareRogue()
         BG.prepare(R,chapter,group.time,group,meta)
-        R.prepareFamiliars(meta.familiars)
+        preparePatterns()
     end
     card.nativeBombFactor=group.extraBoss and (meta.kind==0 and .5 or 0) or 1
     local start=60+(flag(meta,'DELAY') and 150 or 0)+(flag(meta,'TRANS') and 100 or 0)
@@ -140,6 +146,7 @@ local function setupCard(meta,group,chapter)
     end
     function card:before()
         self.mhj3_card=nil
+        preparePatterns()
         BG.show(R,chapter,group.time)
         BG.tick(group.time)
     end

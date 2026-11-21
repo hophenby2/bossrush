@@ -101,8 +101,13 @@ end
 
 local curresx, curresy
 function ChangeVideoMode2(set)
-    return ChangeVideoMode(setting.resx, setting.resy, set.windowed, set.vsync)
-
+    local width,height=set.resx or setting.resx,set.resy or setting.resy
+    local ok=ChangeVideoMode(width,height,set.windowed,set.vsync)
+    if ok and set.windowed and lstg.Window and lstg.Window.FrameStyle then
+        -- 使用官方窗口接口恢复固定客户区尺寸，避免从全屏退回后沿用最大化尺寸。
+        lstg.Window.getMain():setWindowed(width,height,lstg.Window.FrameStyle.fixed)
+    end
+    return ok
 end
 
 local function start_game()

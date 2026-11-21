@@ -1,0 +1,7 @@
+{
+  "repository": "https://github.com/Legacy-LuaSTG-Engine/LuaSTG-Sub.git",
+  "ref": "master",
+  "commit": "8728b3f9e91e6cd577665a7f5777c6c7c23b5f31",
+  "version": "0.21.129",
+  "patch": "native/source_model_mesh.hpp"
+}

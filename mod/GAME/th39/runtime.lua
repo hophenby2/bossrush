@@ -1,5 +1,12 @@
 -- 永夜篇的原生对象。逻辑使用原坐标，渲染和碰撞按 2/3 投影到项目场地。
-local R={patterns={},classes={},assets={},objects=setmetatable({},{__mode='k'}),bulletCount=0,overflow=0,controllers=setmetatable({},{__mode='k'})}
+local SOURCE_BULLET_CAP=10000
+local allocateTable
+do
+    local available,factory=pcall(require,'table.new')
+    allocateTable=available and factory or function() return {} end
+end
+-- 原作在载入时建立 10000 格 BarragePool；热路径索引也提前预留，避免集中生成时重哈希。
+local R={patterns={},classes={},assets={},objects=setmetatable(allocateTable(0,SOURCE_BULLET_CAP),{__mode='k'}),bulletCount=0,overflow=0,controllers=setmetatable({},{__mode='k'})}
 local D=dofile('mod/GAME/th39/catalogue.lua')
 local Mask=dofile('mod/GAME/th39/background_mask.lua')
 local Bindings=dofile('mod/GAME/ports/binding_index.lua')
@@ -26,8 +33,18 @@ local function live(c,b)
     if c.visual then return b.alive end
     return valid(b)
 end
+local copySizes=setmetatable({},{__mode='k'})
+local nativeCopy=lstg.CopySourceTable
 local function copy(s)
-    local o={};for k,v in pairs(s) do o[k]=v end
+    -- 原作 Barrage.Get 复用容器。Lua 状态仍可能被绑定快照引用，不能直接回池复用；
+    -- 按源表的实际字段数预分配哈希区，保持浅拷贝语义并避免同一帧大量重复扩容。
+    local o,count
+    if nativeCopy then o,count=nativeCopy(s,copySizes[s] or 128)
+    else
+        o,count=allocateTable(0,copySizes[s] or 128),0
+        for k,v in pairs(s) do o[k]=v;count=count+1 end
+    end
+    copySizes[s]=count+8
     o.changes={};o.limits={};return o
 end
 function R.player(context)
@@ -297,8 +314,11 @@ local function projected(b)
     local born=s.Mist and min(1,s.age/15) or 1
     b._a=max(0,min(255,(s.alpha or 100)*2.55*born*(s.controller.friendlyAlpha or 1)));b._r,b._g,b._b=s.colorR or 255,s.colorG or 255,s.colorB or 255
     b._blend=s.Blend and 'mul+add' or ''
-    b.layer=(s.controller.effectLayer or LAYER.ENEMY_BULLET)+(s.controller.pattern.order==1 and .1 or 0)
-    b.group=s.controller.effectLayer and GROUP.GHOST or (s.Invincible or p and p.invincible) and GROUP.INDES or GROUP.ENEMY_BULLET
+    local layer=(s.controller.effectLayer or LAYER.ENEMY_BULLET)+(s.controller.pattern.order==1 and .1 or 0)
+    local group=s.controller.effectLayer and GROUP.GHOST or (s.Invincible or p and p.invincible) and GROUP.INDES or GROUP.ENEMY_BULLET
+    -- Sub 即使值没变也会从渲染树/碰撞链表中移除后重插；每帧只同步真正变化的状态。
+    if b.layer~=layer then b.layer=layer end
+    if b.group~=group then b.group=group end
     b.colli=not s.controller.effectLayer and s.age>(s.Mist and 15 or 0) and s.type>1 and r>0 and (s.alpha or 100)>99 and s.wscale~=0 and s.hscale~=0
 end
 local function clean(b)
@@ -341,8 +361,9 @@ end
 R.classes.projectile=Class(bullet,{
     init=function(b,s)
         -- 不经过通用雾化类；CrazyStorm自己有15帧出生与事件时钟。
-        s.is_projectile=true;b.mhj=s;b.bound=false;b.group=GROUP.ENEMY_BULLET;b.layer=LAYER.ENEMY_BULLET;b.vx,b.vy=0,0
-        b._a,b._r,b._g,b._b=255,255,255,255;b._blend='';s.age=0;s.changes={};s.limits=s.limits or {};s.object=nil
+        -- projected 会一次写入完整位置、分组、层次和颜色，避免出生时先写默认值再重复改写。
+        s.is_projectile=true;b.mhj=s;b.bound=false
+        s.age=0;s.changes={};s.limits=s.limits or {};s.object=nil;s.renderImage=nil
         R.objects[b]=true;s.controller.bullets[b]=s;projected(b)
     end,
     frame=function(b)
@@ -361,7 +382,8 @@ R.classes.projectile=Class(bullet,{
     end,
     render=function(b)
         if b._a<=0 then return end
-        local img=texture(b.mhj);b.img=img
+        local s=b.mhj;local img=texture(s)
+        if s.renderImage~=img then b.img=img;s.renderImage=img end
         SetImageState(img,b._blend,b._a,b._r,b._g,b._b)
         Render(img,b.x,b.y,b.rot,b.hscale,b.vscale)
     end,
@@ -498,10 +520,9 @@ local function emit(o,bound)
     local bucket=o.bucket
     for i=0,n-1 do
         local fan=(i-(n-1)/2)*spread/n
-        if not c.visual and R.bulletCount>=10000 then R.overflow=R.overflow+1;return end
+        if not c.visual and R.bulletCount>=SOURCE_BULLET_CAP then R.overflow=R.overflow+1;return end
         local s=copy(o)
         s.type=shotType
-        s.changes,s.limits={},{}
         s.controller,s.pattern,s.bucket=c,p,bucket
         s.parentid,s.layerid=o.id,o.parentid
         if not c.visual then
@@ -547,8 +568,11 @@ function R.recover(o)
         if spec[key]~=nil and (key~='fx' and key~='fy' or spec[key]>-99998) then set(o,key,spec[key]) end
     end
 end
-local function emitter(spec,c)
-    local o=copy(spec);o.spec=spec.spec or spec;o.controller=c;o.host=c.host;o.pattern=c.pattern;o.children=setmetatable({},{__mode='k'})
+local bindingChildrenMode={__mode='k'}
+local function emitter(spec,c,boundChild)
+    local o=copy(spec);o.spec=spec.spec or spec;o.controller=c;o.host=c.host;o.pattern=c.pattern
+    -- 深绑定副本只由 step 推进，不再管理下一层 children；保留根发射器的绑定索引即可。
+    o.children=not boundChild and setmetatable({},bindingChildrenMode) or nil
     -- Batch.Copy是浅拷贝，原EventRead的次数限制跨Totalframe循环保留。
     -- 只重置运动/插值状态；不能每轮重新启用括号(1)的开场事件。
     local key=spec.kind..':'..spec.parentid..':'..spec.id
@@ -632,7 +656,7 @@ local function reset(c)
 end
 function R.controller(host,id,road,configs)
     local p=R.loadPattern(id)
-    local c={host=host,pattern=p,road=road,time=0,offsetx=0,offsety=0,bullets=setmetatable({},{__mode='k'}),jumps={},eventLimits={},serial=0,status=0,statusFrame=0,configs=configs or {},familiars={},deadFamiliars={},parents={}}
+    local c={host=host,pattern=p,road=road,time=0,offsetx=0,offsety=0,bullets=setmetatable(allocateTable(0,road and 128 or SOURCE_BULLET_CAP),{__mode='k'}),jumps={},eventLimits={},serial=0,status=0,statusFrame=0,configs=configs or {},familiars={},deadFamiliars={},parents={}}
     reset(c);R.controllers[c]=true;return c
 end
 function R.backgroundEffect(id,x,y,seed,textureHeights,resources,previewPlayer)
@@ -696,7 +720,7 @@ function R.tick(c)
             for _,pair in ipairs(bindingTargets(o)) do if targetable(c,pair) then
                 local child=o.children[pair[1]]
                 if not child then
-                    child=emitter(o,c);child.bindid=-1;child.Deepbind=false;child.limits={};child.localTime=0
+                    child=emitter(o,c,true);child.bindid=-1;child.Deepbind=false;child.limits={};child.localTime=0
                     o.children[pair[1]]=child
                 else
                     child.localTime=child.localTime+1
@@ -746,6 +770,16 @@ function R.prepareBackground(c)
 end
 function R.prepareFamiliars(configs)
     for _,config in pairs(configs) do loadTexture(D.enemyTypes[config[1]][1]) end
+end
+function R.preparePattern(id)
+    local pattern=R.loadPattern(id);local context={}
+    loadTexture('barrages');loadTexture('bosses')
+    -- 原作进入战斗前载入自定义贴图；阶段切换和动画换帧不再临时读取 PNG、创建切片。
+    for i,p in ipairs(pattern.types) do
+        for frame=0,max(1,p[9] or 1)-1 do
+            texture({pattern=pattern,type=#D.bulletTypes+i,age=frame*(1+(p[10] or 0)),controller=context})
+        end
+    end
 end
 local function visualOrder(a,b)
     if a.layerid~=b.layerid then return a.layerid<b.layerid end
