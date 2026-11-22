@@ -1,5 +1,5 @@
 -- 栖霞园脚本的全局量、资源名和对象生命周期归此模块管理。
-local R={root='mod/GAME/th43/source/',objects=setmetatable({},{__mode='k'})}
+local R={root='mod/GAME/th43/source/',objects=setmetatable({},{__mode='k'}),visualClasses=setmetatable({},{__mode='k'})}
 local E=setmetatable({}, {__index=_G})
 R.env=E
 E._G=E
@@ -99,6 +99,7 @@ function E.New(class,...)
     if o.group==GROUP.ENEMY_BULLET or o.group==GROUP.INDES then o.th43_bullet=true end
     if o.native_pickup then return o end
     local owner=task.stack[#task.stack]
+    if R.visualClasses[class] or owner and owner.th43_source_visual then o.th43_source_visual=true end
     if owner and owner.IsBoss and owner.class.StageLevel==41 and not owner._sequence_road_carrier then
         R.objects[o]=owner
     else
@@ -112,8 +113,13 @@ function R.clear(scope)
     local objects={}
     for o,owner in pairs(R.objects) do
         if not scope or owner==scope then
-            objects[#objects+1]=o
-            R.objects[o]=nil
+            if scope and valid(o) and o.th43_source_visual and o.group==GROUP.GHOST then
+                -- 原作视觉对象自行按寿命结束，换卡只取消攻击协程；退出作品仍完整回收。
+                R.objects[o]=false
+            else
+                objects[#objects+1]=o
+                R.objects[o]=nil
+            end
         end
     end
     for _,o in ipairs(objects) do
@@ -318,19 +324,35 @@ function R.stopMusic()
     if R.music and has('bgm',R.music) then StopMusic(R.music) end
     R.music=nil
 end
-function E.PlaySound(name,...)
+local sourceSounds=dofile('mod/GAME/th43/release_sounds.lua')
+local function prepareSound(name,cue)
     local id='th43/se/'..name
     if not has('snd',id) then
-        local path='Resources/th43/soundeffect/se_'..name..'.wav'
-        if not FileExist(path) then return end
+        assert(FileExist(cue.path),'缺少栖霞园原音效：'..cue.path)
         local pool=GetResourceStatus();SetResourceStatus('global')
-        LoadSound(id,path);SetResourceStatus(pool)
+        LoadSound(id,cue.path);SetResourceStatus(pool)
     end
-    return PlaySound(id,...)
+    return id
+end
+function R.prepareSound(name) return prepareSound(name,assert(sourceSounds[name],'未注册的栖霞园音效：'..tostring(name))) end
+function E.PlaySound(name,volume,pan,usevol)
+    -- 原 src/basic/audio.lua 只播放注册表中的名称；例如 power02 原本没有注册，不编造替代音。
+    local cue=sourceSounds[name]
+    if not cue then return end
+    return PlaySound(prepareSound(name,cue),usevol and (volume or 1) or cue.volume,(pan or 0)/768)
 end
 function E.StopSound(name)
     local id='th43/se/'..name
     if has('snd',id) then StopSound(id) end
+end
+function R.prepareSounds()
+    for name in pairs(sourceSounds) do
+        R.prepareSound(name)
+        if RogueEncounter then RogueEncounter.checkpoint() end
+    end
+end
+function R.stopSounds()
+    for name in pairs(sourceSounds) do E.StopSound(name) end
 end
 stg.StopSound=E.StopSound
 E.audio={playMusic=function(key,_,time) R.playMusic(key,time) end,stopMusic=R.stopMusic,playSound=E.PlaySound}
@@ -536,6 +558,11 @@ run('EISlib/enemy/enemy_effect.lua')
 run('EISlib/EGGlib/Particle.lua')
 run('EISlib/effect/effect_draw.lua')
 run('EISlib/effect/encounters.lua')
+for _,library in ipairs({E.EGGlib.RenderEffect,E.effect}) do
+    for _,class in pairs(library) do
+        if type(class)=='table' and class.is_class then R.visualClasses[class]=true end
+    end
+end
 for _,color in ipairs({'green','blue','purple','orange'}) do
     local key='boom_'..color
     loadTexture(key,'res/effect/'..key..'.png')
@@ -562,6 +589,7 @@ E.system.spellcard={auxiliary={setChainBonusBase=noop}}
 
 
 function R.reset(diff,practice)
+    R.prepareSounds()
     R.sourceScale=nil
     E.difficulty=diff
     R.practice=practice

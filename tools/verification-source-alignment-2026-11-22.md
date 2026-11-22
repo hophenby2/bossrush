@@ -65,7 +65,7 @@
 | 幕华祭永夜 | 原 e1111–e7777 等标题/警告；一面第 900 帧标题可见 |
 | 夏夜祭 | 原曲名图片与 MusicTitle 运动/透明度；原开卡和 MBG 蓄力/放能入口，使用 Effect-1/2 原图、源数量和三维旋转/透视参数；补接阶段音效调用。未把原作没有调用的 StageTitle3D 类强行加入流程 |
 | 祈华梦 | 现有源标题与特效路径核对，一面第 1750 帧标题正常；THEIS 仓库 code/data 与此作脚本匹配 |
-| 栖霞园 | 修正源音效资源同名冲突，使用独立资源名；一面正式运行。通用 Boss 蓄力/开符等源实现尚缺，见下面的未完成项 |
+| 栖霞园 | 修正源音效同名冲突；从 Steam 发行包补导通用 Boss 回调，恢复开符、蓄力、放能和符卡击碎；保留换卡时尚未结束的原作视觉粒子，退出作品仍全部回收 |
 
 春雪/永夜的 XACT 分别补导 44/204 个波形、44/205 个 cue。FLAC 回读 PCM 与源波形解码结果逐样本一致，来源、音高、分类、增益与循环记录在各作 `sound_sources.json`。循环通过逻辑帧重播，不能声称样本级无缝。
 
@@ -73,9 +73,19 @@ Windows 保持官方 Sub master 锁定提交 `8728b3f9e91e6cd577665a7f5777c6c7c2
 
 原生接口检查、音效去重/分类/淡入淡出/循环/停止专项通过，混音器保持零。所有检查均静音，未进行听感、响度或全作品全部音效逐一核听，不能把加载与调用成功写成听感完全一致。
 
-## 未完成项
+## 栖霞园发行包补齐
 
-栖霞园当前 `combat.lua` 的通用开符、吸收与破碎特效仍有只等待/空函数实现。Steam `Keiwaamung-THBDB` 的相应发行脚本包加密；现有 THEIS 仓库对应祈华梦，不能拿其中不同代的代码替代。已询问栖霞园完整源码或解包目录，在取得对应源实现前，此部分不能标记完成。
+已按用户提供的方式，从 Steam `Keiwaamung-THBDB/game.exe` 的启动解包调用定位密码生成函数，只读解释其字节跳转表，通过 ZIP AES 密码校验和 HMAC 后读取对应原脚本。提取器不执行原 EXE，不保留密钥文件，运行包不依赖本机原作目录。
+
+`tools/th43-tests/export_release_effects.py` 保存 EXE、资源包、原回调和产物的哈希，核对 12 份相关原脚本及四张原贴图与现有资源一致；运动助手只保留三处已有的判定尺寸非负适配，未修改特效运动函数。回调来自发行包 `EISlib/boss/common/boss_class.lua`，取代原移植中的等待/空函数。默认开卡恢复源 90 帧等待后执行 absorbAction；符卡击碎按原 BossCard 的模式转换覆盖 spellcard、extra、finalspell、extrafinal，normal 和 timespell 不额外调用。
+
+同时读取 `sound.res` 的原 `soundeffect.info`：恢复 85 个注册音效，补入 64 个缺失文件，21 个旧文件更新为当前发行包原数据。波形与包内数据逐字节一致，未重编码。恢复原 `src/basic/audio.lua` 的注册名、默认音量、`usevol` 及 `pan / 768` 换算。原作未注册的 `power02` 保持不播放，不添加近似替代音；注册音效缺少文件时直接报出资源错误。声音使用独立资源名，进入作品时预载，退出时停止，避免首发时读取波形和返回标题后继续播放长音效。
+
+补回击碎回调，并将已识别的纯视觉对象与攻击协程分开清理：换卡保留其源寿命，返回标题或退出作品仍清理全部对象。专项通过 90 帧开卡、90/60/120 粒子数量、六种卡型的回调规则、换卡存活、自然回收和退出清理；曲线激光现有专项同时通过。
+
+Windows 正式练习 `81402` 连续运行 1600 帧，开卡立绘与蓄力实际绘制正常。最终隔离探针 `reported-th43-source-complete` 成功原生加载 85 个音效，在正式练习中额外调用通用特效并模拟换卡清理：第 640 帧生成 122 个击碎视觉对象，第 645 帧清理攻击后、第 660 帧仍有 122 个，第 780 帧按原寿命归零；第 900 帧播放长音效，第 950 帧经正式入口返回标题后确认已停止；950 个采样帧的 BGM/SE 均为零。该探针验证实际原生解码、绘制和清理边界，不等同于自然击破每张符卡或听感核对。音效专项另核对了全部 85 个名称、文件、默认音量、显式音量、声像、缓存与停止。
+
+## 验证边界
 
 本次检查没有逐卡覆盖所有作品、角色、随机输入和长时间运行；也未宣称消除全部性能长帧。原始存档、录像、编号与 Like Dreamer 均未修改。
 
@@ -89,6 +99,8 @@ Windows 保持官方 Sub master 锁定提交 `8728b3f9e91e6cd577665a7f5777c6c7c2
 & windows/build/official-sub/tool/luajit/luajit.exe tools/th39-tests/check_presentation.lua
 & windows/build/official-sub/tool/luajit/luajit.exe tools/th38-tests/check_particles.lua
 & windows/build/official-sub/tool/luajit/luajit.exe tools/th38-tests/check_background.lua
+& windows/build/official-sub/tool/luajit/luajit.exe tools/th43-tests/check_effects.lua
+& windows/build/official-sub/tool/luajit/luajit.exe tools/th43-tests/check_audio.lua
 ```
 
-原生采样沿用 `tools/profile_windows_cases.py`；本次新增 `--capture-at` 和 `--return-menu-at`，独立数据目录与静音设置由工具建立。完整临时日志和截图不纳入源码提交。
+原生采样沿用 `tools/profile_windows_cases.py`；本次新增 `--capture-at`、`--return-menu-at` 和栖霞园专用的 `--th43-effects` 探针，独立数据目录与静音设置由工具建立。完整临时日志和截图不纳入源码提交。

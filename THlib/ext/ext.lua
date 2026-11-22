@@ -182,6 +182,7 @@ local function DoFrame()
             if TH37 then TH37.runtime.clearAll() end
             if TH38 then TH38.runtime.presentation.clearAudio() end
             if TH39 then TH39.runtime.clearAll() end
+            if TH43 then TH43.stop() end
             task.Clear(stage.current_stage)
             if stage.preserve_res then
                 stage.preserve_res = nil

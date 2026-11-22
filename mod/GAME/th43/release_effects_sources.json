@@ -1,0 +1,475 @@
+{
+  "origin": {
+    "exe_sha256": "cc11258fd46bb1daabda2f9f903c477e6bbd29ca1e844f9f8c19eceab042154a",
+    "getter_rva": 276320,
+    "table_bytes": 293,
+    "key_bytes": 32
+  },
+  "archive_sha256": "46949229482c608b9b128ae897a9a433ea437134f3a515f7906b6999e9785ab5",
+  "source": "EISlib/boss/common/boss_class.lua",
+  "source_sha256": "a70e28eb00bcedf67364569ac19d9e62d6fe50bc92000969e9c0514a2b725775",
+  "output_sha256": "3b4ad187f71018ddde171b5959635a96bae31274e5914418233795f19c4c2372",
+  "checked_dependencies": {
+    "EISlib/EGGlib/RenderEffect.lua": "06be26396abf45bf05e58edbb3349249157acaac4c3a2edffb55a25c259c2754",
+    "EISlib/boss/boss_type.lua": "590ca16b08e1afb19ee271bb23bb7a222ce15250b43f0f25d78e12e7e4bda925",
+    "EISlib/boss/definition/Artemina.lua": "186670543787a63f5ce6d46fcb5d70e66fe362674ef98b546b38e70ae6f9018c",
+    "EISlib/boss/definition/Cirno.lua": "d8d9e6f9eab2051e6708367326bc0344703e820eb428ff7f8dc432f36a62ee2a",
+    "EISlib/boss/definition/Eliphia.lua": "5065a2555bd5f1bda869aea618eed56250820e734d0510e32cdd0e346ce70a3a",
+    "EISlib/boss/definition/Gluttony.lua": "530fef3d7cba15b410c83907a7c6b77fbef004b0fd8d57e06de8dab8bda21b7c",
+    "EISlib/boss/definition/LilyWhite.lua": "0350be2bc9520a7faa7a2851fa99ab544689c853535aa2da9d73f6b2525c1811",
+    "EISlib/boss/definition/Lycaropia.lua": "e3d95ed708c44faf30ba713ccf434a7c9a7d8e510f71b21d848299bad89a3dd1",
+    "EISlib/boss/definition/Marguerite.lua": "b2f44e69c0ad00b7346a8f16601ac471c0c6c188eaf531252c8829cb3b3af669",
+    "EISlib/boss/definition/Remilia.lua": "aea7be32a251259fcbb5ccf95c38f50459a9a6cfa95f4b82e4497178be819891",
+    "EISlib/boss/definition/Sonia.lua": "e3e653959ed4c37038a298eb65c28559c6fdd30680740d2a8722f5ac8ba5f331",
+    "EISlib/EGGlib/BossCard.lua": "ac2c7e216590e6690bc22211499eb4029b0985983b26d90ea5619cf2e3fed761"
+  },
+  "checked_assets": {
+    "res/effect/item_eff.png": "e77fe8c1ecc56240238feef62beabe2d053ae6c33ef8f83eb12d191487d1f647",
+    "res/effect/Cherry_eff.png": "a437446a9870b43c9c66d0aff6408b24f73576482a5544a0bc5f9a62390e47bf",
+    "res/effect/circle_eff.png": "bc0265eaf71bb6b4f2aa700abcae3af03cf2d84837396928162c80e7cc00f150",
+    "res/effect/boss_aura.png": "ee2449022ae11cd43e41d89217708450f280f60064f423db51b7457e1a315e3f"
+  },
+  "sounds": {
+    "info_sha256": "663d47ba82a5ba8b8195c0c67a0137a30254d9028f3b947cd1193e5b2edb38b7",
+    "archive_sha256": "d10967bbfb152749cea8578a2a1d848d45e01bba3f144ea157e16b44c471a789",
+    "entries": {
+      "achievement": {
+        "path": "Resources/th43/soundeffect/se_achievement.wav",
+        "volume": 1.0
+      },
+      "alert": {
+        "path": "Resources/th43/soundeffect/se_alert.wav",
+        "volume": 1.0
+      },
+      "bonus": {
+        "path": "Resources/th43/soundeffect/se_bonus.wav",
+        "volume": 1.0
+      },
+      "bonus2": {
+        "path": "Resources/th43/soundeffect/se_bonus2.wav",
+        "volume": 1.0
+      },
+      "bonus4": {
+        "path": "Resources/th43/soundeffect/se_bonus4.wav",
+        "volume": 1.0
+      },
+      "broken1": {
+        "path": "Resources/th43/soundeffect/se_broken1.wav",
+        "volume": 1.0
+      },
+      "cancel00": {
+        "path": "Resources/th43/soundeffect/se_cancel00.wav",
+        "volume": 1.0
+      },
+      "cardget": {
+        "path": "Resources/th43/soundeffect/se_cardget.wav",
+        "volume": 1.0
+      },
+      "cat00": {
+        "path": "Resources/th43/soundeffect/se_cat00.wav",
+        "volume": 1.0
+      },
+      "ch00": {
+        "path": "Resources/th43/soundeffect/se_ch00.wav",
+        "volume": 1.0
+      },
+      "ch02": {
+        "path": "Resources/th43/soundeffect/se_ch02.wav",
+        "volume": 1.0
+      },
+      "damage00": {
+        "path": "Resources/th43/soundeffect/se_damage00.wav",
+        "volume": 1.0
+      },
+      "damage01": {
+        "path": "Resources/th43/soundeffect/se_damage01.wav",
+        "volume": 1.0
+      },
+      "dialog": {
+        "path": "Resources/th43/soundeffect/se_dialog.wav",
+        "volume": 1.0
+      },
+      "enep00": {
+        "path": "Resources/th43/soundeffect/se_enep00.wav",
+        "volume": 1.0
+      },
+      "enep01": {
+        "path": "Resources/th43/soundeffect/se_enep01.wav",
+        "volume": 1.0
+      },
+      "enep02": {
+        "path": "Resources/th43/soundeffect/se_enep02.wav",
+        "volume": 1.0
+      },
+      "extend": {
+        "path": "Resources/th43/soundeffect/se_extend.wav",
+        "volume": 1.0
+      },
+      "graze": {
+        "path": "Resources/th43/soundeffect/se_graze.wav",
+        "volume": 1.0
+      },
+      "gun00": {
+        "path": "Resources/th43/soundeffect/se_gun00.wav",
+        "volume": 1.0
+      },
+      "invalid": {
+        "path": "Resources/th43/soundeffect/se_invalid.wav",
+        "volume": 1.0
+      },
+      "item00": {
+        "path": "Resources/th43/soundeffect/se_item00.wav",
+        "volume": 1.0
+      },
+      "item01": {
+        "path": "Resources/th43/soundeffect/se_item01.wav",
+        "volume": 1.0
+      },
+      "kira00": {
+        "path": "Resources/th43/soundeffect/se_kira00.wav",
+        "volume": 1.0
+      },
+      "kira01": {
+        "path": "Resources/th43/soundeffect/se_kira01.wav",
+        "volume": 1.0
+      },
+      "kira02": {
+        "path": "Resources/th43/soundeffect/se_kira02.wav",
+        "volume": 1.0
+      },
+      "lazer00": {
+        "path": "Resources/th43/soundeffect/se_lazer00.wav",
+        "volume": 1.0
+      },
+      "lazer01": {
+        "path": "Resources/th43/soundeffect/se_lazer01.wav",
+        "volume": 1.0
+      },
+      "msl": {
+        "path": "Resources/th43/soundeffect/se_msl.wav",
+        "volume": 0.4
+      },
+      "nep00": {
+        "path": "Resources/th43/soundeffect/se_nep00.wav",
+        "volume": 1.0
+      },
+      "ok00": {
+        "path": "Resources/th43/soundeffect/se_ok00.wav",
+        "volume": 1.0
+      },
+      "pause": {
+        "path": "Resources/th43/soundeffect/se_pause.wav",
+        "volume": 1.0
+      },
+      "pldead00": {
+        "path": "Resources/th43/soundeffect/se_pldead00.wav",
+        "volume": 1.0
+      },
+      "plst00": {
+        "path": "Resources/th43/soundeffect/se_plst00.wav",
+        "volume": 1.0
+      },
+      "select00": {
+        "path": "Resources/th43/soundeffect/se_select00.wav",
+        "volume": 0.5
+      },
+      "switch1": {
+        "path": "Resources/th43/soundeffect/se_switch.wav",
+        "volume": 1.0
+      },
+      "switch2": {
+        "path": "Resources/th43/soundeffect/se_switch2.wav",
+        "volume": 1.0
+      },
+      "tan00": {
+        "path": "Resources/th43/soundeffect/se_tan00.wav",
+        "volume": 1.0
+      },
+      "tan01": {
+        "path": "Resources/th43/soundeffect/se_tan01.wav",
+        "volume": 1.0
+      },
+      "tan02": {
+        "path": "Resources/th43/soundeffect/se_tan02.wav",
+        "volume": 1.0
+      },
+      "tan03": {
+        "path": "Resources/th43/soundeffect/se_tan03.wav",
+        "volume": 1.0
+      },
+      "timeout": {
+        "path": "Resources/th43/soundeffect/se_timeout.wav",
+        "volume": 1.0
+      },
+      "timeout2": {
+        "path": "Resources/th43/soundeffect/se_timeout2.wav",
+        "volume": 1.0
+      },
+      "timeout3": {
+        "path": "Resources/th43/soundeffect/se_timeout3.wav",
+        "volume": 1.0
+      },
+      "ding0": {
+        "path": "Resources/th43/soundeffect/se_getpiece(0-1).wav",
+        "volume": 1.0
+      },
+      "ding1": {
+        "path": "Resources/th43/soundeffect/se_getpiece(1-2).wav",
+        "volume": 1.0
+      },
+      "ding2": {
+        "path": "Resources/th43/soundeffect/se_getpiece(2-3).wav",
+        "volume": 1.0
+      },
+      "ding3": {
+        "path": "Resources/th43/soundeffect/se_getpiece(3-4).wav",
+        "volume": 1.0
+      },
+      "ding4": {
+        "path": "Resources/th43/soundeffect/se_getpiece(4-5).wav",
+        "volume": 1.0
+      },
+      "hyperpiece": {
+        "path": "Resources/th43/soundeffect/se_hyperpiece.wav",
+        "volume": 1.0
+      },
+      "ch01": {
+        "path": "Resources/th43/soundeffect/se_ch01.wav",
+        "volume": 1.0
+      },
+      "spark": {
+        "path": "Resources/th43/soundeffect/se_spark.wav",
+        "volume": 1.0
+      },
+      "extend02": {
+        "path": "Resources/th43/soundeffect/se_extend02.wav",
+        "volume": 1.0
+      },
+      "cast00": {
+        "path": "Resources/th43/soundeffect/se_cast00.wav",
+        "volume": 1.0
+      },
+      "sword": {
+        "path": "Resources/th43/soundeffect/se_sword.wav",
+        "volume": 1.0
+      },
+      "sword02": {
+        "path": "Resources/th43/soundeffect/se_sword02.wav",
+        "volume": 1.0
+      },
+      "hell": {
+        "path": "Resources/th43/soundeffect/se_hell.wav",
+        "volume": 1.0
+      },
+      "warning1": {
+        "path": "Resources/th43/soundeffect/se_warning1.wav",
+        "volume": 1.0
+      },
+      "warning2": {
+        "path": "Resources/th43/soundeffect/se_warning2.wav",
+        "volume": 1.0
+      },
+      "bomb": {
+        "path": "Resources/th43/soundeffect/se_bomb.wav",
+        "volume": 1.0
+      },
+      "explode": {
+        "path": "Resources/th43/soundeffect/se_explode.wav",
+        "volume": 1.0
+      },
+      "blade": {
+        "path": "Resources/th43/soundeffect/se_blade.wav",
+        "volume": 1.0
+      },
+      "blade2": {
+        "path": "Resources/th43/soundeffect/se_blade2.wav",
+        "volume": 1.0
+      },
+      "enep04": {
+        "path": "Resources/th43/soundeffect/se_enep04.wav",
+        "volume": 1.0
+      },
+      "cat01": {
+        "path": "Resources/th43/soundeffect/se_cat01.wav",
+        "volume": 1.0
+      },
+      "cat02": {
+        "path": "Resources/th43/soundeffect/se_cat02.wav",
+        "volume": 1.0
+      },
+      "cat03": {
+        "path": "Resources/th43/soundeffect/se_cat03.wav",
+        "volume": 1.0
+      },
+      "gluttony00": {
+        "path": "Resources/th43/soundeffect/se_gluttony00.wav",
+        "volume": 1.0
+      },
+      "gluttony01": {
+        "path": "Resources/th43/soundeffect/se_gluttony01.wav",
+        "volume": 1.0
+      },
+      "gluttony02": {
+        "path": "Resources/th43/soundeffect/se_gluttony02.wav",
+        "volume": 1.0
+      },
+      "pop": {
+        "path": "Resources/th43/soundeffect/se_pop.wav",
+        "volume": 1.0
+      },
+      "wind": {
+        "path": "Resources/th43/soundeffect/se_wind.wav",
+        "volume": 1.0
+      },
+      "wind02": {
+        "path": "Resources/th43/soundeffect/se_wind02.wav",
+        "volume": 1.0
+      },
+      "drop01": {
+        "path": "Resources/th43/soundeffect/se_drop01.wav",
+        "volume": 1.0
+      },
+      "fire": {
+        "path": "Resources/th43/soundeffect/se_fire.wav",
+        "volume": 1.0
+      },
+      "stone": {
+        "path": "Resources/th43/soundeffect/se_stone.wav",
+        "volume": 1.0
+      },
+      "enep05": {
+        "path": "Resources/th43/soundeffect/se_enep05.wav",
+        "volume": 1.0
+      },
+      "thunder": {
+        "path": "Resources/th43/soundeffect/se_thunder.wav",
+        "volume": 1.0
+      },
+      "wolf": {
+        "path": "Resources/th43/soundeffect/se_wolf.wav",
+        "volume": 1.0
+      },
+      "wolf02": {
+        "path": "Resources/th43/soundeffect/se_wolf02.wav",
+        "volume": 1.0
+      },
+      "wolf03": {
+        "path": "Resources/th43/soundeffect/se_wolf03.wav",
+        "volume": 1.0
+      },
+      "hyper1": {
+        "path": "Resources/th43/soundeffect/se_hyper1.wav",
+        "volume": 1.0
+      },
+      "hyper2": {
+        "path": "Resources/th43/soundeffect/se_hyper2.wav",
+        "volume": 1.0
+      },
+      "hyper3": {
+        "path": "Resources/th43/soundeffect/se_hyper3.wav",
+        "volume": 1.0
+      },
+      "lamp": {
+        "path": "Resources/th43/soundeffect/se_lamp.wav",
+        "volume": 1.0
+      }
+    },
+    "wave_sha256": {
+      "se_achievement.wav": "6f3f529a3695d659b54e5bb57b1ff67112a9d9f8723355be3e8d81256a214332",
+      "se_alert.wav": "1e296eb7d2cfb2d500e97b3d40aeeb86484e47f6c32c96b2d00fba8c8bc52378",
+      "se_bonus.wav": "bb8771f7f685143ee497eb0ee645ec022368b3c231dd0469913a69dcb4640567",
+      "se_bonus2.wav": "bb8771f7f685143ee497eb0ee645ec022368b3c231dd0469913a69dcb4640567",
+      "se_bonus4.wav": "bb8771f7f685143ee497eb0ee645ec022368b3c231dd0469913a69dcb4640567",
+      "se_broken1.wav": "937dd6e998b7366272e7f43e2b2ff61969b33501d1ae27495b440d5cc87791fa",
+      "se_cancel00.wav": "ca65ee216af32c9a9a0d37c68a198af5ceb8c47e495aa0a65291ff4485a836f2",
+      "se_cardget.wav": "e6b1c6832a63ea60c7f53f54365281405a32f8c53ca7a317a5bbb4f72af33aaf",
+      "se_cat00.wav": "fe1ca04414b6c6077b8ab1d0704036d8e5d9726ff0847a642c600e41d552cd7b",
+      "se_ch00.wav": "8569e4da7e3779c53283697154773572948a9bdd8a83c2bef9cb441ef108bf8c",
+      "se_ch02.wav": "8569e4da7e3779c53283697154773572948a9bdd8a83c2bef9cb441ef108bf8c",
+      "se_damage00.wav": "aa1d101fbd8b633c3079bf082fd64797ae7e28f67d3f6a9deb5acacfdf1f40e0",
+      "se_damage01.wav": "2da900362ca7adb298b99d3acec83699e5a847f3d55083873920e13647b086fd",
+      "se_dialog.wav": "bf36101ec59806d7eb1c852fd5b42e34acdb770696f717f2aaa1fc7592ffd1f8",
+      "se_enep00.wav": "9f11e6821d01ee3a36a15238c3c52262a880cb00db208c4512eb1b07c0722390",
+      "se_enep01.wav": "e03ca2dfd31fb8cffe308132e771135491006e79508c7b8c6ffcb7f1d77ce19e",
+      "se_enep02.wav": "9f11e6821d01ee3a36a15238c3c52262a880cb00db208c4512eb1b07c0722390",
+      "se_extend.wav": "2942df31fa03345591ecea7ba276f4aa9f65852d76870ce56970f4aacc356355",
+      "se_graze.wav": "68d372c169401eb8197ca6ce90d5822aaf33032ade1c52328b5c4d79e37c5bef",
+      "se_gun00.wav": "77e9158e1e6a1b867db8174669339120c232eb14ecb2852878aecbb43ac5f915",
+      "se_invalid.wav": "bcec61d05e27bd623a9d87ae2cdeba4de84f78ed9f8b2a2c25ae305b4fb16475",
+      "se_item00.wav": "219daf5649a4f7016366b6cb31b84edcecbdb12a502ece5d13d1f8e0765518e6",
+      "se_item01.wav": "aae29983db512845cad0ef264a1d19b4de8041f84b9ad01bf1d73576673f5545",
+      "se_kira00.wav": "9bd35c72f4188ad92ea74b1353b5064b863218bf7417113718d9092cdd369d6d",
+      "se_kira01.wav": "7890a3baccb1451a9e18de407566ca25a04970e84d3c8351a19ff1582676570a",
+      "se_kira02.wav": "7890a3baccb1451a9e18de407566ca25a04970e84d3c8351a19ff1582676570a",
+      "se_lazer00.wav": "e220e369d7d56dd35fc7f4d8479667ba7e8d16a63c94798a1d3ba95723d289e9",
+      "se_lazer01.wav": "e0827b8f2c562d9a13ec559ec0ee7cc161490ef0b2686bde42f349bb3e6954b2",
+      "se_msl.wav": "95cfcfa6df3524ffcf3737054e09c73b8cb8e564806e2ba9bbb73a2fa6c32ee4",
+      "se_nep00.wav": "94064814dbf022cba9ffc2138b4eb32aac7d0bac36ca191e733cee8548df9ea3",
+      "se_ok00.wav": "1830353ec6b3c9a15bde55d66cb961dd5c4bdec79ddc76174c895b431d022e52",
+      "se_pause.wav": "ddfdb8f57de8e1eafe3ad30a5e9e252cef72710ad07dcdbc27eb4a38a986e74a",
+      "se_pldead00.wav": "74763b092427b744f8e8d60825b68faf9622d5202d25d09066b62b39ff42e346",
+      "se_plst00.wav": "63eda94534be80933ecd9a12e5d43df40265a90053d32b3b8aeae8afcf9c853a",
+      "se_select00.wav": "34dc7eabbeacba17434ada22adfcdf5a4585984793484adc0ea305bca65162cc",
+      "se_switch.wav": "4ae5e36938dc186e89960c11ba0c713239bd122937099850999a0a5a223cb892",
+      "se_switch2.wav": "b2230829d96f32a89387d20d857a49f9764560995931c8a7ad6a7dfc17b38390",
+      "se_tan00.wav": "98f280a622a0897515fbe8ffce80aa16748daf1419f49c292e3a8a77d9868821",
+      "se_tan01.wav": "3469f87ee026d698ab4f0444ed678a1f9128e512c6305f7921de861f50a80263",
+      "se_tan02.wav": "d958b803a1886f1f0890ecb99d225501e3144b3a1cc8bda17491250d808e57c7",
+      "se_tan03.wav": "9a7f26d7753c33383d835ec522fcb4535e4d435d6d9dcee96b50ec63ea83ef1c",
+      "se_timeout.wav": "1993c127adb33903b6966e747ea0fb56cbe7d0dd3f52031332aaff8427952119",
+      "se_timeout2.wav": "2a677883b584fc0e96e58f2c2494c82c85371344dfb9019b0ede132419da8b59",
+      "se_timeout3.wav": "077f7db573a7783911bd4049012ff05cf9bf05e87b50547b371265944ba182bd",
+      "se_getpiece(0-1).wav": "0d320f4aeab6c9a823faebba14f3040bc579b4902f0b8e926640570dda3a5bb5",
+      "se_getpiece(1-2).wav": "1101025f8ebedc0f065649481a9b6d39c49932a4e2af0319d9853c3f3744a028",
+      "se_getpiece(2-3).wav": "d688a2832a9de02ef865cc413104d1800a9d3078e4b5020823a90979065b7f8d",
+      "se_getpiece(3-4).wav": "827944a47e08a4318f4a45b95268e17f6c57711064bdfba87dc0c23399204a08",
+      "se_getpiece(4-5).wav": "ac7d99255d5a3a89659814b8267bd4cddaa8406bf0c0d02089e21ec7f33494ca",
+      "se_hyperpiece.wav": "5f2a35a68d46e1016362a70c86c24108a7ea1aca6a820e3e9d520875104bfce2",
+      "se_ch01.wav": "44e17f961b6dc29f41dd2c4c0f043a44c1d76272976f0ed1ee36e0c0aef862e5",
+      "se_spark.wav": "3c7748cb6b31b6ac4c2809197fb338532d609f62e4318e62ca4869d641fcadf5",
+      "se_extend02.wav": "1da1f1dbc33000c67e62356916fd14f7e883f7c591589ee7fba1b60ce5803e98",
+      "se_cast00.wav": "2fcbff41fd4f3309918f4d824049c8841fce2871e9d18842bf8dbd18f9848e3d",
+      "se_sword.wav": "998e7a71a31cd865daedea07136bef641adb92dde9a9970adc780b6928311207",
+      "se_sword02.wav": "aa99cab020932d0245ddc1131cb4cb4f994460edce3c3b4e3cd02b35396f0d9b",
+      "se_hell.wav": "0f648eb4a5b932003779e6eec930ca15c377c2d2e4a712349a3e182ee9214f15",
+      "se_warning1.wav": "8b9ea872081f783e63f7b3496d79b9cf9a21a7f428fbfb40605fa33594e7a8c9",
+      "se_warning2.wav": "4796c21c3dd35ffd52f2bc5c26ff31c58dbf743b25ce0580c6cfd3494fd64df6",
+      "se_bomb.wav": "4659b99a21aa44236a068729f6f85645359b1061899fa1cb02b1b808fc1034df",
+      "se_explode.wav": "8d361e8fd34b88f6c84b376813c2253a4a154334c20b0a1a0c0ad18b60baf337",
+      "se_blade.wav": "2c1fa4f5207c6a0901aad40a75cadf509bfd244c434db36a74b846fd33b6f1a4",
+      "se_blade2.wav": "a426e28116db57da741aa9d8e598bc3d80ec7db4747ed2759d40b7964e794d6e",
+      "se_enep04.wav": "40fda297a9009e9a4a679911b2ad40d15ecc664c40f409e1e747a5bdd4786cd8",
+      "se_cat01.wav": "7e04c81a387eead9f8f334b9b728dd09cfd019bcd5911fdea48792bb47f20a62",
+      "se_cat02.wav": "de5dfe678715d3c03a062ede86f1d0414190f49b90e8ffc2c910ad42002f1421",
+      "se_cat03.wav": "c604366b056e5401b85f446b1ba27c4d658bf5530472d01c80a9fc796288d093",
+      "se_gluttony00.wav": "d3bb8bd2118f876efaf689018b22738212f80ef027305d85f1bf0b0161cc169b",
+      "se_gluttony01.wav": "e08fd4561e678cbe5cbb8fbb7c8e1fed8425bab507f0ea99ee44602d229acf25",
+      "se_gluttony02.wav": "e2b98ac03063cee822fb57f33d0b2500ce6935390254fb0f2c25a76a10ad585c",
+      "se_pop.wav": "c883286d11861d8b6345837273c2c69546975268538bea3e1a41664ac16c77da",
+      "se_wind.wav": "f6877149c4b8869c630d386c83ca5d8a50068317ad782f0ab580483d517ba0ec",
+      "se_wind02.wav": "ca608b635c52305e75d8117a34b5d77d1dcc406d3f3cce585471c79661908b21",
+      "se_drop01.wav": "5ebfc867b2af8880997a94d933311cf6356b96a9df8e50087790ef3b276bc00f",
+      "se_fire.wav": "13cacbe87703a3837839beeee321020c69e56d8939748eda8cedbadf4a7c8f76",
+      "se_stone.wav": "fcb2be0c06717d133a995a9fc87dad907c4b7afbf723f1731016e40dc294b9fc",
+      "se_enep05.wav": "ff348d5c0cda49258d0d121a906c29f0b37697829da0444734e951b2ed5ce941",
+      "se_thunder.wav": "94fb0287e98f4a10e0f36e2c6abe00cf65306b0271eca3f57d6dc1c11923183b",
+      "se_wolf.wav": "7e98147a3ab6a2be3c2b757de5cba106521f5deb665d597c77640a99edbc546e",
+      "se_wolf02.wav": "ab49096d273cca27493ab8095e2418d341fd257ba78a8207493c2cc195e199ef",
+      "se_wolf03.wav": "9a39da955c05a0389d48b2e5d52d4ea49c24e7feb42f77c9b324e9f995d23763",
+      "se_hyper1.wav": "6a451e3b62f70ac9140b197215b5795775d4bb61b2307b41f7e1d357e1129eb7",
+      "se_hyper2.wav": "adf03c9c96d0691dcd6560040c13463c09d5f85f453a0acd9fc718ca4bb0036a",
+      "se_hyper3.wav": "5d4c80d5a27b522edec3ef6bdef279b4ef44e54580b734869d91896755fe3b48",
+      "se_lamp.wav": "75fabe9df5f37752eaed8770b9826515b5f9328e09a7b0e003ce29182558c17b"
+    },
+    "semantics_source": "src/basic/audio.lua",
+    "semantics_sha256": "a78f36deb7e636b8ae33619f841e570bef626de5e0ff676fa72d7703a9d2f683"
+  },
+  "checked_adapter": {
+    "EISlib/EGGlib/ObjectEvent.lua": {
+      "source_sha256": "656f36ad6956b473973233e13aaca699dd6075419d816186f05a520308563a1d",
+      "local_sha256": "7ec681ca430cdc0dfa27e47104c5ae4b068494eda7b35b748aa0571de66c6054",
+      "differences": "仅三处已有的判定尺寸非负适配；本次未修改运动函数"
+    }
+  },
+  "authentication": "WinZip AES 密码校验、HMAC、文件大小及非零 CRC"
+}

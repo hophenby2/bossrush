@@ -45,6 +45,7 @@ function Card.createFullCardBoss(editor,res,diff,paths,hidden)
     local class=_editor_boss[band..LEVEL]
     local init,render=class.init,class.render
     function class.prepareRogue()
+        R.prepareSounds()
         E.EISlib.Bullet.Laser.init()
         if res.bossLoadRes then res.bossLoadRes({}) end
         if res.background.prepareRogueResources then res.background.prepareRogueResources() end
@@ -189,6 +190,7 @@ function C.units()
 end
 function C.stop()
     R.clear()
+    R.stopSounds()
     R.stopMusic()
     R.scope,R.chapterScope,R.chapterRunner,R.practiceBoss=nil,nil,nil,nil
 end

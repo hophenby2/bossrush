@@ -32,6 +32,7 @@ def main():
     parser.add_argument('--capture', action='store_true')
     parser.add_argument('--capture-at', type=int, action='append', default=[], help='额外截图的正式逻辑帧，可重复指定')
     parser.add_argument('--return-menu-at', type=int, help='在指定逻辑帧经正式入口返回标题，检查切关清理')
+    parser.add_argument('--th43-effects', action='store_true', help='在隔离练习中触发栖霞园通用蓄力、放能和击碎，并检查换卡清理边界')
     parser.add_argument('--full-game', action='store_true', help='通过正式符卡练习入口运行天月祝鸣，保留界面与碰撞流程')
     parser.add_argument('--operations', action='store_true', help='只用于分解出生尖峰，不与无探针耗时直接比较')
     parser.add_argument('--frame-detail', action='store_true', help='分解正式练习的框架、对象和碰撞耗时，仅用于定位')

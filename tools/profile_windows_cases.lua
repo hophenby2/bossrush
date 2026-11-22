@@ -526,6 +526,31 @@ function GameInit()
                         end
                         currentRow.score=lstg.var.score
                         currentRow.audio_bgm,currentRow.audio_se=audioLevels()
+                        if config.th43_effects then
+                            assert(targetLevel==41,'特效探针仅用于栖霞园')
+                            local rt=TH43.runtime;local b=_boss
+                            if clock==1 then
+                                local sounds=dofile('mod/GAME/th43/release_sounds.lua');local count=0
+                                for name in pairs(sounds) do rt.prepareSound(name);count=count+1 end
+                                assert(count==85);result.th43_sounds_loaded=count
+                            end
+                            if not b or not IsValid(b) then
+                                for _,candidate in ipairs(boss_group) do if IsValid(candidate) then b=candidate;break end end
+                            end
+                            if clock>=240 and clock<=645 then assert(b and IsValid(b),'特效探针缺少 Boss') end
+                            if clock==240 then rt.env.boss.defaultAbsorbEffect(b)
+                            elseif clock==440 then rt.env.boss.defaultBreakEffect(b)
+                            elseif clock==640 then rt.env.boss.defaultScBreakEffect(b)
+                            elseif clock==645 then task.Clear(b);rt.clear(b) end
+                            if clock==900 then rt.env.PlaySound('fire') end
+                            local visuals=0
+                            for o in pairs(rt.objects) do
+                                if IsValid(o) and o.th43_source_visual then visuals=visuals+1 end
+                            end
+                            currentRow.th43_visuals=visuals
+                            if clock==660 then assert(visuals>=122,'换卡清理提前删掉击碎特效') end
+                            if clock==780 then assert(visuals==0,'击碎特效未自然回收') end
+                        end
                         if clock%300==0 then
                             currentRow.patterns={}
                             for c in pairs(targetLevel==37 and TH39.runtime.controllers or {}) do
@@ -551,6 +576,10 @@ function GameInit()
                         elseif clock>=config.frames then save();return true end
                     elseif active and practiceEntered then
                         result.ended_at=clock;result.end_stage=current and current.stage_name
+                        if config.th43_effects and config.return_menu_at then
+                            assert(GetSoundState('th43/se/fire')=='stopped','返回标题后栖霞园长音效仍在播放')
+                            result.th43_sound_stopped=true
+                        end
                         if config.return_menu_at and TH38 then
                             for i=1,20 do
                                 local name,voices=debug.getupvalue(TH38.runtime.presentation.clearAudio,i)

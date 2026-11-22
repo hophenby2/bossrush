@@ -128,11 +128,7 @@ function E.boss.show_aura(o,show)
     o.aura_alpha=show and 255 or 0
     if o._bosssys then boss.show_aura(o,show) end
 end
-function E.boss.defaultScOpenEffect() task.Wait(120) end
-function E.boss.defaultAbsorbEffect(_,t) if t then task.Wait(t) end end
-E.boss.defaultAbsorbAction=E.boss.defaultAbsorbEffect
-E.boss.defaultBreakEffect=E.boss.defaultAbsorbEffect
-E.boss.defaultScBreakEffect=noop
+R.load('EISlib/boss/common/default_effects.lua')
 function R.renderAura(o)
     if o.th43_render_aura then o.th43_render_aura(o)
     elseif o.th43_aura_image and o.aura_alpha>0 then
@@ -199,6 +195,8 @@ function Card.createFullCard(name,kind,times,hp,drop,prepare,practice,main,finis
             E.EGGlib.ObjectEvent.clearAllAndGetBonus(not cleared)
         end
         R.clear(self)
+        -- 原 EGGlib.BossCard 在 finish 之后执行击碎；先清理本卡攻击对象，再生成可自然结束的画面特效。
+        if kind=='spellcard' or kind=='extra' or kind=='finalspell' or kind=='extrafinal' then self.scBreakEffect(self) end
         self.th43_card,self.th43_open_bomb,self.protect=nil,nil,false
         self.th43_spell_visual=false
         if lstg.tmpvar.th43_hide_hud==self then lstg.tmpvar.th43_hide_hud=nil end
