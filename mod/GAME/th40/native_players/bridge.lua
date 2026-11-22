@@ -48,7 +48,7 @@ local function bind(p)
     p.summerTime=270
     local name=ids[p.machine.id]
     local q={player=p,name=name,OriginalPosition=CS.Vector2(p.x,-p.y),Position=CS.Vector2(p.x,-p.y),KClass={Key_Shift=false},PowerLevel=4,BoundRect={Width=384},SpellList=CS.List(),SubPlanePoint=CS.array(4,CS.Vector2),SubPlaneList=CS.List()}
-    q.StageData={SoundPlay=function() PlaySound('plst00',.16,p.x/384) end}
+    q.StageData={SoundPlay=function(_,name) _editor_class.TH40.native.sound(name) end}
     for i=0,3 do
         local sub={Position=CS.Vector2(p.x,-p.y),OriginalPosition=CS.Vector2(p.x,-p.y),ShootDirection=-math.pi/2,KClass=q.KClass,StageData=q.StageData,Mirrored=false,Ctrl=subCtrl}
         sub.Shoot=model['SubPlane_'..name].Shoot;q.SubPlaneList:Add(sub)

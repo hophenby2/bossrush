@@ -180,6 +180,7 @@ local function DoFrame()
         if stage.current_stage then
             stage.current_stage:del()
             if TH37 then TH37.runtime.clearAll() end
+            if TH38 then TH38.runtime.presentation.clearAudio() end
             if TH39 then TH39.runtime.clearAll() end
             task.Clear(stage.current_stage)
             if stage.preserve_res then

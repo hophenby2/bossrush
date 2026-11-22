@@ -359,8 +359,8 @@ class Source:
                 asset = self.path(sr['m_Sprite'])
                 if asset:
                     key,w,h,ppu,pivot = self.sprite_info(asset)
-                    # SpriteRenderer 的 m_Size 来自 Unity 导入尺寸，保留原作单位。
-                    size = sr['m_Size']
+                    # Simple 使用精灵像素/PPU；m_Size 只对 Sliced/Tiled 生效。
+                    size = sr['m_Size'] if sr.get('m_DrawMode',0) else {'x':w/ppu,'y':h/ppu}
                     mat = self.material(self.path(sr['m_Materials'][0]))
                     node['sprite'] = dict(tex=mat.get('sky',key), size=[size['x'] or w/ppu,size['y'] or h/ppu],
                         pivot=[pivot['x'],pivot['y']], flip=[sr['m_FlipX'],sr['m_FlipY']],

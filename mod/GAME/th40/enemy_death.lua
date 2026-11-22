@@ -24,7 +24,7 @@ local Effect=Class(object,{
             o.parts[i]={speed=integer(0,40)/10,direction=math.rad(integer(0,360)),angle=math.rad(integer(0,360)),
                 spin=integer(10,30)/100,scale=integer(12,18)/10,axis=axis}
         end
-        PlaySound('enep00',.3,o.x/192)
+        N.sound('se_enep00.wav')
     end,
     frame=function(o) if o.timer>40 then object.RawDel(o) end end,
     render=function(o)

@@ -4,6 +4,8 @@ local Source=dofile('mod/GAME/ports/source_mesh.lua')
 local path='mod/GAME/th38/scenes/'
 local assets='Resources/th38/background/unity/'
 local scenes={}
+local releaseGeometry=dofile(path..'release_geometry.lua')
+local Presentation=dofile('mod/GAME/th38/presentation.lua')
 local meshes
 local ready
 local floor,min,max=math.floor,math.min,math.max
@@ -110,6 +112,10 @@ end
 local function sceneData(key)
     if not scenes[key] then
         local raw=dofile(path..key..'.lua')
+        for index,geometry in pairs(releaseGeometry[key] or {}) do
+            local sprite=assert(raw.nodes[tonumber(index)].sprite)
+            sprite.size,sprite.pivot=geometry.size,geometry.pivot
+        end
         local names={}
         for i,d in ipairs(raw.nodes) do
             names[d.name]=names[d.name] or i
@@ -693,7 +699,10 @@ local Scene=Class(background,{
     end,
     frame=function(o)
         o.clock=o.clock+2
-        if not o.sequence then o.story=o.story+2 end
+        if not o.sequence then
+            if o.variant=='' then Presentation.title(o.chapter,o.story+1,o.story+2) end
+            o.story=o.story+2
+        end
         stageChanges(o)
     end,
     render=function(o)
@@ -771,7 +780,10 @@ function B.show(chapter,variant,start,sequence)
 end
 function B.story(t)
     local o=current()
-    if o then o.story=t;stageChanges(o) end
+    if o then
+        Presentation.title(o.chapter,t,t)
+        o.story=t;stageChanges(o)
+    end
 end
 function B.card(chapter,spell)
     local o=current()

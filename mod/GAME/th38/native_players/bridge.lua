@@ -1,5 +1,7 @@
 -- 雪莲华的 Unity 自机行为兼容层。每个宿主帧执行两次原始 FixedUpdate。
 local M={lateFrame=true,ownBomb=true}
+local Presentation=(...).presentation
+local Particles=dofile('mod/GAME/th38/particles.lua')
 local P=NativePlayers
 local D=dofile('mod/GAME/th38/native_players/data.lua')
 local CS=dofile('mod/GAME/ports/source_csharp.lua').new()
@@ -60,7 +62,10 @@ end
 local function get(go,kind)
     if kind=='Transform' then return go.transform end
     for _,c in ipairs(go.components) do if c.__type==kind and not c._dead then return c end end
-    if kind=='AudioSource' or kind=='ParticleSystem' then local c=media();c.gameObject,c.transform,c.__type=go,go.transform,kind;go.components[#go.components+1]=c;return c end
+    if kind=='ParticleSystemRenderer' then
+        local ps=get(go,'ParticleSystem');return ps and {material=ps.material}
+    end
+    if kind=='AudioSource' then local c=media();c.gameObject,c.transform,c.__type=go,go.transform,kind;go.components[#go.components+1]=c;return c end
 end
 function transform:GetComponent(kind) return get(self.gameObject,kind) end
 function transform:GetComponentsInChildren(kind)
@@ -114,16 +119,56 @@ instantiate=function(asset,where,rotation)
         nodes[#nodes+1]=go
         if d.parent=='0' then root=go end
     end
+    local function nodePath(go)
+        local parent=go.transform.parent
+        return parent and nodePath(parent.gameObject)..'/'..go.name or go.name
+    end
+    -- 父子引用全部建立后再取完整节点路径，对应发行包中的同名组件。
+    for i,d in ipairs(defs) do
+        local t=nodes[i].transform
+        if d.parent~='0' then rawset(t,'_parent',refs[d.parent]);t.parent.children[#t.parent.children+1]=t end
+    end
     for i,d in ipairs(defs) do
         local go=nodes[i];local t=go.transform
-        if d.parent~='0' then rawset(t,'_parent',refs[d.parent]);t.parent.children[#t.parent.children+1]=t end
         for _,cd in ipairs(d.components) do
             local c
             if E[cd.type] then c=add(go,cd.type)
             elseif cd.type=='SpriteRenderer' then c={__type=cd.type,material=material(),enabled=true};go.components[#go.components+1]=c
             elseif cd.type=='Animator' then c={__type=cd.type,enabled=true,Play=function() end,SetBool=function() end};go.components[#go.components+1]=c
-            elseif cd.type=='ParticleSystem' then c=media();c.__type=cd.type;go.components[#go.components+1]=c end
+            elseif cd.type=='ParticleSystem' then
+                local cfg=assert(Particles.data.prefabs[asset.prefab][nodePath(go)],'发行包缺少粒子组件：'..nodePath(go))
+                c=Particles.new(cfg,t);c.__type=cd.type;c.playOnAwake=cfg.playOnAwake
+                c.material=material();go.components[#go.components+1]=c;components[#components+1]=c
+                for _,method in ipairs({'Play','Stop','Clear'}) do
+                    local action=c[method]
+                    c[method]=function(self,withChildren)
+                        action(self)
+                        if withChildren~=false then
+                            local function visit(parent)
+                                for _,child in ipairs(parent.children) do
+                                    local ps=get(child.gameObject,'ParticleSystem')
+                                    if ps then ps[method](ps,false) end
+                                    visit(child)
+                                end
+                            end
+                            visit(t)
+                        end
+                    end
+                end
+            end
             if c then c.gameObject,c.transform=go,t;refs[cd.id]=c;c._definition=cd;c.enabled=cd.enabled~=0 end
+        end
+    end
+    local audio=Presentation.data.audioPrefabs[asset.prefab]
+    if audio then
+        for _,go in ipairs(nodes) do
+            local cfg=audio[nodePath(go)]
+            if cfg then
+                local c=Presentation.audioSource(cfg,function() return go.transform.position.x end)
+                c.gameObject,c.transform,c.__type,c.enabled=go,go.transform,'AudioSource',true
+                c.playOnAwake=cfg.awake
+                go.components[#go.components+1]=c;components[#components+1]=c
+            end
         end
     end
     for _,go in ipairs(nodes) do for _,c in ipairs(go.components) do if c._definition then
@@ -136,6 +181,9 @@ instantiate=function(asset,where,rotation)
     end end end
     root.transform.position=where or root.transform.position
     if rotation then root.transform.rotation=rotation end
+    for _,go in ipairs(nodes) do for _,c in ipairs(go.components) do
+        if (c.__type=='AudioSource' or c.__type=='ParticleSystem') and c.playOnAwake and active(go) then c:Play() end
+    end end
     local unit={root=root,nodes=nodes,prefab=asset.prefab,age=0};root.unit=unit
     units[#units+1]=unit
     return root
@@ -145,7 +193,10 @@ destroy=function(o)
     if o.components then
         o._dead=true
         for _,t in ipairs(o.transform.children) do destroy(t.gameObject) end
-        for _,c in ipairs(o.components) do c._dead=true end
+        for _,c in ipairs(o.components) do
+            if c.__type=='AudioSource' or c.__type=='ParticleSystem' then c:Dispose() end
+            c._dead=true
+        end
     elseif o.gameObject then o._dead=true end
 end
 E.Object={__static=true,Instantiate=instantiate,Destroy=destroy,DestroyImmediate=destroy}
@@ -230,6 +281,7 @@ local Unit=Class(object,{
         local u=o.unit
         if u.root._dead or u.attached and p.native_body_hidden then return end
         for _,go in ipairs(u.nodes) do if active(go) and not (u.center and go.name=='anim') then
+            local particles=get(go,'ParticleSystem');if particles and particles.enabled then particles:Render() end
             local sr=get(go,'SpriteRenderer')
             if sr and sr.enabled and sr.sprite then
                 local img=image(sr.sprite)
@@ -254,6 +306,7 @@ local function resetForm()
     S.ziji_ziji_now=form;alternate=p.altForm
 end
 function M.bind(player)
+    for _,unit in ipairs(units) do destroy(unit.root) end
     clearTargets()
     p=player;units,components,mainShots={},{},{};clock=0
     p.unity_body_image=function(key)

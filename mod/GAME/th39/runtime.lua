@@ -8,10 +8,17 @@ end
 -- 原作在载入时建立 10000 格 BarragePool；热路径索引也提前预留，避免集中生成时重哈希。
 local R={patterns={},classes={},assets={},objects=setmetatable(allocateTable(0,SOURCE_BULLET_CAP),{__mode='k'}),bulletCount=0,overflow=0,controllers=setmetatable({},{__mode='k'})}
 local D=dofile('mod/GAME/th39/catalogue.lua')
+local patternAudio=dofile('mod/GAME/th39/pattern_audio.lua')
 local Mask=dofile('mod/GAME/th39/background_mask.lua')
 local Bindings=dofile('mod/GAME/ports/binding_index.lua')
 local floor,abs,min,max=math.floor,math.abs,math.min,math.max
 local SCALE=2/3
+-- Rebound.cs 的交点和反射使用单精度，不改变其他弹幕的现有积分路径。
+local floatBox=require('ffi').new('float[1]')
+local function f32(x) floatBox[0]=x;return floatBox[0] end
+local radians=f32(math.pi/180)
+local function sourceCos(a) return f32(math.cos(f32(a*radians))) end
+local function sourceSin(a) return f32(math.sin(f32(a*radians))) end
 function R.project(x,y) return (x-336)*SCALE,(360-y)*SCALE end
 local function projectBullet(x,y) return R.project(x-145,y) end
 local function unproject(o) return o.x/SCALE+481,360-o.y/SCALE end
@@ -219,8 +226,13 @@ function R.select(o,layer,kind,...)
         end
     end
 end
-function R.sound(name)
-    if name:find('kira',1,true) then PlaySound('kira00',.2) end
+local audio=dofile('mod/GAME/ports/mhj/source_audio.lua').new(39)
+function R.sound(name,x) audio.play(name,x) end
+function R.stopSound(name) audio.stop(name) end
+function R.fadeEnvironment(seconds,fadeIn) audio.fadeEnvironment(seconds,fadeIn) end
+function R.playEventSound(o,name)
+    local c=o.controller
+    if not (c.ownerScene and c.ownerScene.seeking) then R.sound(name,(o.fx or c.center.ox)-145) end
 end
 local function interpolate(o)
     local i=1
@@ -263,10 +275,10 @@ local function motion(o,son,scale)
     local a=son and 'sonaspeed' or 'aspeed';local ad=son and 'sonaspeedd' or 'aspeedd'
     local dirty=son and 'sonmotion_dirty' or 'motion_dirty';local accel=son and 'sonaccel_dirty' or 'accel_dirty'
     if o[dirty] or o.mx==nil then
-        o.mx=(o.xscale or 1)*(o[s] or 0)*cos(o[d] or 0);o.my=(o.yscale or 1)*(o[s] or 0)*sin(o[d] or 0);o[dirty]=false
+        o.mx=(son and o.xscale or 1)*(o[s] or 0)*cos(o[d] or 0);o.my=(son and o.yscale or 1)*(o[s] or 0)*sin(o[d] or 0);o[dirty]=false
     end
     if o[accel] or o.ax==nil then
-        o.ax=(o.xscale or 1)*(o[a] or 0)*cos(o[ad] or 0);o.ay=(o.yscale or 1)*(o[a] or 0)*sin(o[ad] or 0);o[accel]=false
+        o.ax=(son and o.xscale or 1)*(o[a] or 0)*cos(o[ad] or 0);o.ay=(son and o.yscale or 1)*(o[a] or 0)*sin(o[ad] or 0);o[accel]=false
     end
     o.mx=o.mx+o.ax*scale;o.my=o.my+o.ay*scale
     return o.mx*scale,o.my*scale
@@ -338,6 +350,7 @@ local function texture(s)
 end
 function R.loadPattern(id)
     if not R.patterns[id] then R.patterns[id]=dofile('mod/GAME/th39/'..(id:sub(1,1)=='e' and 'player_patterns/' or 'patterns/')..id..'.lua') end
+    R.patterns[id].audio=patternAudio[id:sub(1,1)=='e' and id or 'b'..id]
     return R.patterns[id]
 end
 local function bindingTargets(o)
@@ -392,6 +405,12 @@ local function updateParticle(s)
     local t=s.age-(s.Mist and 15 or 0)
     s.status,s.statusFrame=s.controller.status,s.controller.statusFrame
     if t>0 then
+        if t==1 and not s.controller.visual and not s.controller.effectLayer and not s.banSound and s.life>2 and s.alpha>60 then
+            local sounds=s.pattern.audio and s.pattern.audio.sounds
+            local name=sounds and sounds[tostring(s.type)]
+            if not name and s.type<=#D.bulletTypes then name=s.controller.usekira and 'kira' or 'tan' end
+            if name and name~='' then R.sound(name,s.fx-145) end
+        end
         -- 原Barrage.Update先积分，再更新事件；速度变化从下一运动帧生效。
         local dx,dy=motion(s,true,s.controller.slow or 1)
         s.fx,s.fy=s.fx+dx,s.fy+dy
@@ -461,10 +480,41 @@ local function laserColor(s)
 end
 local function laserInit(b,s)
     s.is_projectile=true;b.mhj=s;b.bound=false;b.vx,b.vy=0,0
-    s.age=0;clearChanges(s);R.objects[b]=true;s.controller.bullets[b]=s
+    s.age=0;s.rlongs=0;s.rwscale=s.wscale;s.laserGraze={count=0,grazed={}}
+    b.IsLaser,b._inf_graze=true,true
+    clearChanges(s);R.objects[b]=true;s.controller.bullets[b]=s
+end
+local function laserBirthSound(s)
+    if s.age==1 and not s.controller.effectLayer and not s.controller.banLaser then
+        R.sound((s.Ray=='Ray' or s.Ray==true) and s.type==8 and 'lazerwarning' or s.controller.laserSound or 'lazer00',s.fx-145)
+    end
+end
+local function beamGrazeGrid(s)
+    if s.life<=10 then return end
+    local g=s.laserGraze
+    if s.rlongs-g.count*5>0 then g.count=math.ceil(s.rlongs/5)
+    else g.x,g.y,g.direction,g.ready=s.fx,s.fy,s.sonspeedd,g.count end
+end
+local function grazeBeam(b,s)
+    if s.life<=2 or s.Invincible and s.age<20 or not valid(player.grazer) then return end
+    local g=s.laserGraze
+    if not g.ready or g.ready==0 then return end
+    local px,py=R.player();local ca,sa=cos(g.direction),sin(g.direction)
+    local dx,dy=px-g.x,py-g.y
+    local along,across=dx*ca+dy*sa,dy*ca-dx*sa
+    if across*across>980 then return end
+    local reach=math.sqrt(980-across*across)
+    for i=max(1,math.ceil((along-reach)/5)),min(g.ready,floor((along+reach)/5)) do
+        if not g.grazed[i] then
+            g.grazed[i]=true
+            local x,y=projectBullet(g.x+i*5*ca,g.y+i*5*sa)
+            player.grazer.class.colli(player.grazer,b,true,x,y)
+        end
+    end
 end
 local function laserStep(b)
     local s=b.mhj;s.age=s.age+1
+    laserBirthSound(s)
     if s.age>s.life then clean(b);return end
     s.status,s.statusFrame=s.controller.status,s.controller.statusFrame
     if s.Sonevents then s.Sonevents(s,s.age,R) end
@@ -476,6 +526,12 @@ local function laserStep(b)
     if s.Outdispel and (s.fx<118-s.longs or s.fx>844+s.longs or s.fy< -51-s.longs or s.fy>771+s.longs) then clean(b);return end
     return s
 end
+local advanceStraight=dofile('mod/GAME/ports/mhj/straight_laser.lua')(R,interpolate,{
+    firstType=1,tailFrames=10,fadeEventsFirst=true,
+    outside=function(s)
+        return s.Outdispel and (s.fx<118-s.longs or s.fx>844+s.longs or s.fy< -51-s.longs or s.fy>771+s.longs)
+    end,
+})
 R.classes.beam=Class(laser,{
     init=function(b,s)
         local x,y=projectBullet(s.fx,s.fy)
@@ -483,25 +539,69 @@ R.classes.beam=Class(laser,{
         laserInit(b,s)
     end,
     frame=function(b)
-        local s=laserStep(b);if not s then return end
-        if s.Ray=='Ray' or s.Ray==true then
-            b.rot=-s.sonspeedd;b.l2=792*SCALE
-        else
-            b.rot=180-math.deg(math.atan2(s.my or 0,s.mx or 0))
-            s.reached=min(max(0,s.longs),(s.reached or 0)+math.sqrt((s.mx or 0)^2+(s.my or 0)^2))
-            b.l2=s.reached*SCALE
+        local s=b.mhj;s.age=s.age+1
+        beamGrazeGrid(s)
+        s.status,s.statusFrame=s.controller.status,s.controller.statusFrame
+        laserBirthSound(s)
+        if advanceStraight(s) then clean(b);return end
+        b.x,b.y=projectBullet(s.fx,s.fy);b.vx,b.vy=0,0
+        b.rot,b.l2,b.w=-(s.head or s.sonspeedd),s.rlongs*SCALE,laserWidth(s)
+        b.alpha=math.max(0,math.min(1,s.alpha/100));b.colli=false
+        if s.controller.effectLayer then b.group,b.layer=GROUP.GHOST,s.controller.effectLayer end
+        if not s.controller.effectLayer and not s.dis and s.age<=s.life and s.wscale>=.5 and s.alpha>99 and valid(player) then
+            local px,py=R.player();local dir=s.sonspeedd
+            local cx,cy=s.fx+s.rlongs*cos(dir)/2,s.fy+s.rlongs*sin(dir)/2
+            local dx,dy=px-cx,py-cy;local ca,sa=cos(s.head),sin(s.head)
+            local along,across=dx*ca+dy*sa,dy*ca-dx*sa
+            local character=player.mhj_source and player.mhj_source.character
+            local vulnerable=not cheat and player.protect<=0 and not player.hit and player.death<=0
+                and not (character and character.Wudi)
+            if vulnerable and s.rlongs>0 and along^2/(s.rlongs*3/8)^2+across^2/(s.wscale*1.5)^2<=1 then
+                player.class.colli(player,b)
+                if not s.Invincible then s.dis=true;s.age=s.life+1 end
+            else
+                grazeBeam(b,s)
+            end
+        elseif not s.controller.effectLayer and not s.dis and s.age<=s.life and s.alpha>99 and valid(player) then
+            grazeBeam(b,s)
         end
-        laser.frame(b)
     end,
     render=function(b)
         local s=b.mhj;local img,_,_,_,p=texture(s)
         if not p then return end
+        local ray=s.Ray=='Ray' or s.Ray==true
+        if ray and s.type==8 then
+            loadTexture('warning')
+            SetTextureSamplerState('mhj3_tex_warning','linear+wrap')
+            local scale=.23076923;local from=(s.vspeed or 0)==0 and trunc(-s.age/scale) or -trunc(s.age*s.vspeed)
+            local to=from+trunc(s.rlongs/scale)
+            local co,si=cos(s.head),sin(s.head);local width=scale*s.wscale*SCALE
+            local color=Color(s.alpha*2.55,s.colorR or 255,s.colorG or 255,s.colorB or 255)
+            local function vertex(u,v)
+                local side=(u-39.5)*width;local along=(v-from)*scale*SCALE
+                return {b.x+co*along+si*side,b.y-si*along+co*side,.5,u,v,color}
+            end
+            RenderTexture('mhj3_tex_warning',s.Blend and 'mul+add' or '',vertex(0,from),vertex(78,from),vertex(78,to),vertex(0,to))
+            return
+        end
+        if s.age<=s.life and (s.rlongs<s.longs and not s.alreadyLong or ray) then
+            local mist=R.sprite('mhj3_laser_mist_'..p[8],'mist',p[8]*32,0,32,30,16,15)
+            SetImageState(mist,'',204,s.colorR or 255,s.colorG or 255,s.colorB or 255)
+            Render(mist,b.x,b.y,-s.age*5*(180/math.pi)^2,1.5*SCALE)
+        end
+        if ray then
+            img=R.sprite('mhj3_ray_'..s.type,'barrages',(s.type-1)*18,1100,18,18,9,0)
+            SetImageState(img,s.Blend and 'mul+add' or '',s.alpha*2.55,s.colorR or 255,s.colorG or 255,s.colorB or 255)
+            Render(img,b.x,b.y,90-s.head,s.wscale*SCALE,s.rlongs/9*SCALE)
+            return
+        end
         SetImageCenter(img,p[3]/2,p[4])
         SetImageState(img,s.Blend and 'mul+add' or '',(s.alpha or 100)*2.55,s.colorR or 255,s.colorG or 255,s.colorB or 255)
-        Render(img,b.x,b.y,90-(s.head or s.sonspeedd),s.wscale*SCALE,(b.l2 or 0)/p[4])
+        Render(img,b.x,b.y,-90-s.head,s.wscale*SCALE,s.rlongs*SCALE/p[4])
         SetImageCenter(img,p[5],p[6])
     end,
-    del=clean,kill=clean,
+    del=function(b) b.mhj.dis=true;b.mhj.age=b.mhj.life+1;object.Preserve(b) end,
+    kill=function(b) R.classes.beam.del(b) end,
 })
 R.classes.curve=Class(bent_laser,{
     init=function(b,s)
@@ -590,11 +690,14 @@ local function emit(o,bound)
         s.mx,s.my,s.ax,s.ay=nil,nil,nil,nil
         s.sonmotion_dirty,s.sonaccel_dirty=true,true
         s.sonspeed,s.sonaspeed=speed,accel
-        s.sonaspeedd=direction(o.sonaspeedd,origin,s.fx,s.fy,o.sonaspeedds)+accelRandom
-        s.sonspeedd=direction(o.fdirection,origin,s.fx,s.fy,o.fdirections)+baseRandom+fan+(o.Bindwithspeedd and bound and bound.sonspeedd or 0)
+        local fd=o.sourceFdirection and o.sourceFdirection< -99997 and o.sourceFdirection or o.fdirection
+        local ad=o.sourceAdirection and o.sourceAdirection< -99997 and o.sourceAdirection or o.sonaspeedd
+        s.sonaspeedd=direction(ad,origin,s.fx,s.fy,o.sonaspeedds)+accelRandom
+        s.sonspeedd=direction(fd,origin,s.fx,s.fy,o.fdirections)+baseRandom+fan+(o.Bindwithspeedd and bound and bound.sonspeedd or 0)
         s.wscale=(s.wscale or 1)+ws;s.hscale=o.syncScale and s.wscale or (s.hscale or 1)+hs
         c.serial=c.serial+1;s.serial=c.serial
         s.life=o.sonlife;s.age=0;s.head=(o.head or 0)+trunc(rnd(rr.head or 0,o))
+        s.banSound=c.banSound or o.life<20 and o.shot
         local b
         if c.visual then
             b=s
@@ -606,11 +709,12 @@ local function emit(o,bound)
         elseif config then b=New(R.classes.familiar,s,slot,config)
         else b=New(R.classes.projectile,s) end
         if bucket then Bindings.add(bucket,b,s) end
+        o.shot=true
     end
 end
 function R.fire(o)
     if o.bound_source then emit(o,o.bound_source)
-    elseif o.bindid and o.bindid>=0 and o.bindid~=o.id then
+    elseif o.bindid and o.bindid>=0 and (o.kind~='batch' or o.bindid~=o.id) then
         for _,pair in ipairs(bindingTargets(o)) do
             if targetable(o.controller,pair) then emit(o,pair[2]) end
         end
@@ -626,6 +730,8 @@ end
 local bindingChildrenMode={__mode='k'}
 local function emitter(spec,c,boundChild)
     local o=copy(spec);o.spec=spec.spec or spec;o.controller=c;o.host=c.host;o.pattern=c.pattern
+    o.sourceFdirection=spec.sourceFdirection or spec.fdirection
+    o.sourceAdirection=spec.sourceAdirection or spec.sonaspeedd
     -- 深绑定副本只由 step 推进，不再管理下一层 children；保留根发射器的绑定索引即可。
     o.children=not boundChild and setmetatable({},bindingChildrenMode) or nil
     -- Batch.Copy是浅拷贝，原EventRead的次数限制跨Totalframe循环保留。
@@ -690,13 +796,40 @@ local function field(o,c,t)
             end
         end
     elseif o.kind=='rebound' then
-        local ox,oy=o.x+c.offsetx,o.y+c.offsety;local ca,sa=cos(o.angle),sin(o.angle)
-        for b,s in pairs(c.bullets) do if live(c,b) and s.Rebound and (not s.Mist or s.age>15) then
-            local dx,dy=s.fx-ox,s.fy-oy;local side=-dx*sa+dy*ca
-            local last=s.rebound_side or {};s.rebound_side=last;local previous=last[o];last[o]=side
-            if previous and previous*side<0 and abs(dx*ca+dy*sa)<=o.longs/2 then
-                s.sonspeedd=2*o.angle-s.sonspeedd;s.sonmotion_dirty=true
-                if o.Parentevents then o.Parentevents(s,t,R) end
+        -- Rebound 从端点出发，按下一帧相对位移检查交点；oneSide 取法线与位移的点积。
+        local x,y=f32(o.x),f32(o.y)
+        local ex,ey=f32(x+f32(o.longs*sourceCos(o.angle))),f32(y+f32(o.longs*sourceSin(o.angle)))
+        local rx,ry=f32(ex-x),f32(ey-y)
+        for b,s in pairs(c.bullets) do
+          if s and s.layerid==o.parentid and s.Rebound and not s.dis and (not s.Mist or s.age>15) and ((s.reboundCount or 0)<o.time or o.time==0) and live(c,b) then
+            local mx,my=s.mx or 0,s.my or 0;local ax,ay=s.ax or 0,s.ay or 0
+            local nx=f32(s.fx+f32(f32(mx+ax)-(o.mx or 0)))
+            local ny=f32(s.fy+f32(f32(my+ay)-(o.my or 0)))
+            local dx,dy=f32(s.fx-nx),f32(s.fy-ny)
+            local den=f32(f32(rx*dy)-f32(ry*dx))
+            if den~=0 and (not o.oneSide or f32(f32(ry*f32(nx-s.fx))-f32(rx*f32(ny-s.fy)))<0) then
+                local qx,qy=f32(nx-x),f32(ny-y)
+                local u=f32(f32(f32(qx*dy)-f32(qy*dx))/den)
+                local v=f32(f32(f32(qx*ry)-f32(qy*rx))/den)
+                if u>=0 and u<=1 and v>=0 and v<=1 then
+                    -- 按 Rebound.cs 原式逐项舍入；改用参数方程会改变近水平交点的原作轨迹。
+                    local denominator=f32(f32(ry*dx)-f32(dy*rx))
+                    local ix=f32(f32(f32(f32(f32(rx*dx)*f32(ny-y))+f32(f32(ry*dx)*x))-f32(f32(dy*rx)*nx))/denominator)
+                    local iy=f32(f32(f32(f32(f32(ry*dy)*f32(nx-x))+f32(f32(rx*dy)*y))-f32(f32(dx*ry)*ny))/f32(-denominator))
+                    s.sonspeedd=f32(2*o.angle-s.sonspeedd)
+                    local distance=math.sqrt(f32(f32(f32(ix-nx)^2)+f32(f32(iy-ny)^2)))
+                    local radiansValue=f32(f32(s.sonspeedd)*radians)
+                    s.fx=f32(ix+f32((s.xscale or 1)*f32(distance*math.cos(radiansValue))))
+                    s.fy=f32(iy+f32((s.yscale or 1)*f32(distance*math.sin(radiansValue))))
+                    s.mx=f32((s.xscale or 1)*f32((s.sonspeed or 0)*sourceCos(s.sonspeedd)))
+                    s.my=f32((s.yscale or 1)*f32((s.sonspeed or 0)*sourceSin(s.sonspeedd)));s.sonmotion_dirty=false
+                    s.reboundCount=(s.reboundCount or 0)+1
+                    if o.Parentevents then
+                        o.Parentevents(s,t,R)
+                        -- 原作反弹事件在碰撞处立即写入，不延迟到弹体积分后。
+                        interpolate(s)
+                    end
+                end
             end
         end end
     elseif o.kind=='force' then
@@ -717,6 +850,7 @@ function R.controller(host,id,road,configs)
     local p=R.loadPattern(id)
     prepareStates()
     local c={host=host,pattern=p,road=road,time=0,offsetx=0,offsety=0,bullets=setmetatable(allocateTable(0,road and 128 or SOURCE_BULLET_CAP),{__mode='k'}),jumps={},eventLimits={},serial=0,status=0,statusFrame=0,configs=configs or {},familiars={},deadFamiliars={},parents={}}
+    c.usekira,c.banSound,c.banLaser,c.laserSound=p.audio and p.audio.useKira,p.audio and p.audio.banSound,p.audio and p.audio.banLaser,p.audio and p.audio.laserSound
     reset(c);R.controllers[c]=true;return c
 end
 function R.backgroundEffect(id,x,y,seed,textureHeights,resources,previewPlayer)
@@ -725,6 +859,7 @@ function R.backgroundEffect(id,x,y,seed,textureHeights,resources,previewPlayer)
         p=dofile('mod/GAME/th39/scenes/'..id..'.lua')
         R.patterns[id]=p
     end
+    p.audio=patternAudio[id]
     local c={pattern=p,visual=true,road=true,originX=x,originY=y,seed=seed,previewPlayer=previewPlayer,
         textureHeights=textureHeights,resources=resources,time=0,offsetx=0,offsety=0,
         bullets={},particles={},jumps={},eventLimits={},serial=0,status=0,statusFrame=0,
@@ -749,7 +884,9 @@ function R.tick(c)
         local dx,dy=motion(center,false)
         center.ox,center.oy=center.ox+dx,center.oy+dy
     end
-    c.pattern.centerEvents(center,t,R);interpolate(center)
+    c.pattern.centerEvents(center,t,R)
+    if c.pattern.audio then c.pattern.audio.centerEvents(center,t,R) end
+    interpolate(center)
     stepControl(c)
     if c.pattern.centerAvailable then
         if valid(c.host) and not c.road then c.host.x,c.host.y=projectBullet(center.ox,center.oy) end
@@ -759,7 +896,8 @@ function R.tick(c)
     local function step(o,ot,bound)
         o.active=ot>=1 and ot<=o.life
         if not o.active then return end
-        o.time=ot;o.status,o.statusFrame=c.status,c.statusFrame
+        if o.kind~='rebound' then o.time=ot end
+        o.status,o.statusFrame=c.status,c.statusFrame
         local mx,my=motion(o,false);o.x,o.y=o.x+mx,o.y+my
         if o.fx then o.fx=o.fx+mx end;if o.fy then o.fy=o.fy+my end
         o.bound_source=bound
@@ -768,7 +906,7 @@ function R.tick(c)
         if o.kind=='batch' or o.kind=='laser' then
             if o.t>0 and ot%o.t+trunc(rnd(o.rand.t or 0,o))==0 then
                 if bound then emit(o,bound)
-                elseif o.bindid and o.bindid>=0 and o.bindid~=o.id then
+                elseif o.bindid and o.bindid>=0 and (o.kind~='batch' or o.bindid~=o.id) then
                     for _,pair in ipairs(bindingTargets(o)) do
                         if targetable(c,pair) then emit(o,pair[2]) end
                     end
@@ -777,7 +915,7 @@ function R.tick(c)
         else field(o,c,ot) end
     end
     for _,o in ipairs(c.emitters) do
-        if o.Deepbind and o.bindid and o.bindid>=0 and o.bindid~=o.id then
+        if o.Deepbind and o.bindid and o.bindid>=0 and (o.kind~='batch' or o.bindid~=o.id) then
             for _,pair in ipairs(bindingTargets(o)) do if targetable(c,pair) then
                 local child=o.children[pair[1]]
                 if not child then
@@ -839,6 +977,11 @@ local sharedSpritesPrepared=false
 function R.preparePattern(id)
     prepareStates()
     local pattern=R.loadPattern(id);local context={}
+    for _,name in ipairs({'kira','tan','lazer00','ch02','cat'}) do audio.prepare(name) end
+    if pattern.audio then
+        for _,name in pairs(pattern.audio.sounds) do audio.prepare(name) end
+        if pattern.audio.laserSound then audio.prepare(pattern.audio.laserSound) end
+    end
     loadTexture('barrages');loadTexture('bosses')
     -- 原作的公共弹型在战斗前已就绪，公共动画也提前建立切片，避免中途换型时卡住绘制。
     if not sharedSpritesPrepared then
@@ -1010,6 +1153,61 @@ local EnemyDeathEffect=Class(object,{
     render=function(o) R.drawBackground(o.effect,1,o.motionX*SCALE,o.motionY*SCALE) end,
 },true)
 function R.enemyDeathEffect(p,type,effect) return New(EnemyDeathEffect,p,type,effect) end
+local sourceEffectHeights=dofile('mod/GAME/th39/scenes/pattern_effect_textures.lua')
+for name,height in pairs(dofile('mod/GAME/th39/scenes/presentation.lua').textureHeights) do sourceEffectHeights[name]=height end
+local SourceEffect=Class(object,{
+    init=function(o,host,id,background,stick)
+        o.owner,o.stick,o.startX,o.startY=host,stick,host.x,host.y
+        o.group,o.bound,o.colli=GROUP.GHOST,false,false
+        o.layer=background and LAYER.PLAYER_BULLET+.01 or LAYER.ENEMY_BULLET-.01
+        local x,y=unproject(host)
+        o.effect=R.backgroundEffect('e'..id,x,y,7919,sourceEffectHeights,{tex={},img={}})
+        o.effect.gatherHost=host
+        o.motionX,o.motionY=0,0;R.objects[o]=true
+    end,
+    frame=function(o)
+        local c=o.effect
+        if not o.fixed and valid(o.owner) then
+            if o.stick then o.motionX,o.motionY=o.owner.x-o.startX,o.owner.y-o.startY
+            else c.originX,c.originY=unproject(o.owner);c.center.ox,c.center.oy=c.originX,c.originY end
+        end
+        if c.time>=c.pattern.total then c.closing=true end
+        R.tickBackground(c)
+        if c.closing and #c.particles==0 then R.objects[o]=nil;object.RawDel(o) end
+    end,
+    render=function(o) R.drawBackground(o.effect,1,o.motionX,o.motionY) end,
+},true)
+function R.gather(center,...)
+    local host=center.host or center.controller.gatherHost
+    assert(valid(host),'原作 Gather 缺少 Boss 实例')
+    local n=select('#',...);local a={...}
+    local animation,effect,background,stick,sound,frames=nil,nil,false,true,nil,0
+    if n==0 then effect,sound='100','ch02'
+    elseif n==2 then animation,frames=a[1],a[2]
+    elseif n==3 then effect,background,stick=a[1],a[2],a[3]
+    elseif n==5 then animation,effect,background,stick,frames=a[1],a[2],a[3],a[4],a[5]
+    elseif n==6 then animation,effect,background,stick,sound,frames=unpack(a)
+    else error('原作 Gather 参数数量不支持：'..n) end
+    local state={animation=animation,frames=frames,left=frames,sound=sound,pending=true}
+    if effect and effect~='' then state.effect=New(SourceEffect,host,effect,background,stick) end
+    host.mhj3_gather=state
+    if sound and sound~='' then R.sound(sound,host.x/SCALE+336) end
+end
+function R.spellWarning(host)
+    local o=New(SourceEffect,host,'901',false,false)
+    o.fixed=true
+    local c=o.effect
+    c.originX,c.originY=481,350;c.center.ox,c.center.oy=481,350
+    c.status,c.statusFrame=5,0
+    return o
+end
+function R.endGather(host)
+    local g=host.mhj3_gather
+    if not g then return end
+    if valid(g.effect) then g.effect.effect.closing=true end
+    if g.sound and g.sound~='' and g.frames>0 then R.stopSound(g.sound) end
+    host.mhj3_gather=nil
+end
 function R.deathClear(x,y,r)
     for b in pairs(R.objects) do
         local s=b.mhj
@@ -1024,6 +1222,7 @@ function R.deathDamage(x,y,r,damage)
     end
 end
 function R.clearAll()
+    audio.clear()
     for c in pairs(R.controllers) do R.clear(c) end
     for b in pairs(R.objects) do if valid(b) then clean(b) end end
     R.bulletCount=0
@@ -1093,10 +1292,13 @@ R.classes.fairy=Class(enemy,{
     kill=function(o)
         local s=o.mhj;R.stopEmitter(s.controller)
         R.enemyDeathEffect(o)
-        if s.items and not s.mana then PlaySound('enep00',.3,o.x/192) end
-        if NativePlayers and NativePlayers.enabled(nil,37) then
-            NativePlayers.drop(37,o.x,o.y,s.items)
-        elseif s.items and item and item.DropItem then item.DropItem(o.x,o.y,{tonumber(s.items[2]),tonumber(s.items[4]),0}) end
+        if s.items and not s.mana then R.sound('enep00',o.x*1.5+336) end
+        if not s.mana then
+            local config=D.enemyTypes[s.type]
+            if NativePlayers and NativePlayers.enabled(nil,37) then
+                NativePlayers.drop(37,o.x,o.y,s.items,false,false,max(config[14],config[15]))
+            elseif s.items and item and item.DropItem then item.DropItem(o.x,o.y,{tonumber(s.items[2]),tonumber(s.items[4]),0}) end
+        end
         clean(o)
     end,
     del=function(o) R.stopEmitter(o.mhj.controller);clean(o) end,

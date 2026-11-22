@@ -1,0 +1,438 @@
+{
+  "source_sha256": {
+    "level3": "5775bf00611d97830b871656ec2a17fc2bf6fc133a425c3f6076359ec71b54d9",
+    "level4": "43e07fd008d3855008f6c16df88a12119df86bba9dd3791f0a1acbadda0a0efe",
+    "level5": "d90df6114032c13cf5588651d341ce75ad94f22046ff4514d36520557d3c85bf",
+    "level6": "e585fb22f18b2ea8d405b8067c06c87a8d84ee2f0d5b2a55585cb10d41857fde",
+    "level7": "25a6ae3b9c0699257d26ab455392cd3b653209e4dd79c8265616833fd1c5875f",
+    "level8": "3d96a7043f19027612d85934e8b1ebaaf4e208ad7fb95a981674c1f427466e5a",
+    "level21": "4f5e0b8d47add0278e0e91bcd153b070d83bb8ec1241a6e687865d2eb75f3fa2",
+    "globalgamemanagers": "8e64279df1ed55ab702aedabf40fc04c8eb5e0a40bd0751055f924570f18c4ee",
+    "resources.assets": "99df11eb0b282fefe4f9dc877e9d57ee5f6e4df4a75c0b412166dbe3b4b5f46c",
+    "Managed\\Assembly-CSharp.dll": "93a96cffffb0edebec41d248c680666221dfd34f70499d9cfe6ea3931ab2d699"
+  },
+  "titles": 7,
+  "sprites": 35,
+  "sounds": {
+    "battle09_enemy_death": {
+      "file": "Resources/th38/presentation/battle09_enemy_death.flac",
+      "resource": "xuelianhua/sound/new/battle09_enemy_death",
+      "rate": 48000,
+      "samples": 19184,
+      "pcm_sha256": "69c272ef683b7e4da441c5a2622b256a8deeaa3c2dce03020efaab2bafa2adbf"
+    },
+    "don15_mengxiangfengyin": {
+      "file": "Resources/th38/presentation/don15_mengxiangfengyin.flac",
+      "resource": "xuelianhua/sound/new/don15_mengxiangfengyin",
+      "rate": 22050,
+      "samples": 18524,
+      "pcm_sha256": "4905f8e63852e26de590fcaef59aaac07ed780131b90ed4046784fc2bb4d407a"
+    },
+    "don20_gongji": {
+      "file": "Resources/th38/presentation/don20_gongji.flac",
+      "resource": "xuelianhua/sound/new/don20_gongji",
+      "rate": 44100,
+      "samples": 43542,
+      "pcm_sha256": "35c082c722c2f4bea1c9b6274775a6ed8fecc90867a213bc95507325c535f6a3"
+    },
+    "effect03_change": {
+      "file": "Resources/th38/presentation/effect03_change.flac",
+      "resource": "xuelianhua/sound/new/effect03_change",
+      "rate": 44100,
+      "samples": 26496,
+      "pcm_sha256": "bce0e653de8fd47ea1743a945700f9419f3f37308b59e439b4c75904dc032f75"
+    },
+    "element_wind01_laser": {
+      "file": "Resources/th38/presentation/element_wind01_laser.flac",
+      "resource": "xuelianhua/sound/new/element_wind01_laser",
+      "rate": 44100,
+      "samples": 52832,
+      "pcm_sha256": "240f218cb8d6b526a3cd65116564d69e9f0af1da3edb81cb4bca7a71d91221d3"
+    },
+    "element_wind01_xuli": {
+      "file": "Resources/th38/presentation/element_wind01_xuli.flac",
+      "resource": "xuelianhua/sound/new/element_wind01_xuli",
+      "rate": 44100,
+      "samples": 102528,
+      "pcm_sha256": "fd602e5c245a620828b170ceca66d240ad829df905e990f3a35ab27ccd95f8f9"
+    },
+    "element_wind01_xuli2": {
+      "file": "Resources/th38/presentation/element_wind01_xuli2.flac",
+      "resource": "xuelianhua/sound/new/element_wind01_xuli2",
+      "rate": 44100,
+      "samples": 48661,
+      "pcm_sha256": "84da0b5361941319612b44970244f8372951ac942245dd9c3faf9fa60088d4f8"
+    },
+    "gwv10B7": {
+      "file": "Resources/th38/presentation/gwv10B7.flac",
+      "resource": "xuelianhua/sound/new/gwv10b7",
+      "rate": 44100,
+      "samples": 3623,
+      "pcm_sha256": "83b9f990f7a6694d5896aa3515dbbec3f5d7571c16a226e9f79f995d1c2fa24d"
+    },
+    "magical25_dam_ice": {
+      "file": "Resources/th38/presentation/magical25_dam_ice.flac",
+      "resource": "xuelianhua/sound/new/magical25_dam_ice",
+      "rate": 44100,
+      "samples": 63487,
+      "pcm_sha256": "543aa2f26e5e11455ddba174e85b86e29503f5ffd7be799e97f6472c0d9b09ee"
+    },
+    "magical25_dam_ice2": {
+      "file": "Resources/th38/presentation/magical25_dam_ice2.flac",
+      "resource": "xuelianhua/sound/new/magical25_dam_ice2",
+      "rate": 44100,
+      "samples": 33013,
+      "pcm_sha256": "7351f097edc80d724dffcd2c9716eece9bed3723d8f5de035b7199b56ebdeb16"
+    },
+    "mecha04": {
+      "file": "Resources/th38/presentation/mecha04.flac",
+      "resource": "xuelianhua/sound/new/other/mecha04",
+      "rate": 22050,
+      "samples": 20012,
+      "pcm_sha256": "03e5f695a6efa09d73afd3f2b442ac169e1f5110d15e6f808fb39ee24503beb7"
+    },
+    "onepoint09_ok": {
+      "file": "Resources/th38/presentation/onepoint09_ok.flac",
+      "resource": "xuelianhua/sound/new/onepoint09_ok",
+      "rate": 44100,
+      "samples": 39434,
+      "pcm_sha256": "16d5685aaefe3daf8afca216a89610eea0865baf0962e5ae2f9c65f6d0fdc8d8"
+    },
+    "onepoint24_zanting": {
+      "file": "Resources/th38/presentation/onepoint24_zanting.flac",
+      "resource": "xuelianhua/sound/new/onepoint24_zanting",
+      "rate": 44100,
+      "samples": 49536,
+      "pcm_sha256": "36bb18c7ae8d94388d7d72cc90f2fb58513b996527fd78a9bd06419c480f0cd3"
+    },
+    "arrow01": {
+      "file": "Resources/th38/presentation/arrow01.flac",
+      "resource": "xuelianhua/sound/new/other/arrow01",
+      "rate": 44100,
+      "samples": 12050,
+      "pcm_sha256": "13a51a130d037ad375541535d8c56f10ca454f69d17cb7b933148847e41cff77"
+    },
+    "chari15_b": {
+      "file": "Resources/th38/presentation/chari15_b.flac",
+      "resource": "xuelianhua/sound/new/other/chari15_b",
+      "rate": 44100,
+      "samples": 29547,
+      "pcm_sha256": "a6a53566f5343f150a79d842ea914c3f40ddc1b6c9b0104b2a7e715cd2c09958"
+    },
+    "crash13": {
+      "file": "Resources/th38/presentation/crash13.flac",
+      "resource": "xuelianhua/sound/new/other/crash13",
+      "rate": 22050,
+      "samples": 27528,
+      "pcm_sha256": "af526f01672b80c57021d536b3d247d8f4a446dbbad35d3037199b89813721a3"
+    },
+    "crash14": {
+      "file": "Resources/th38/presentation/crash14.flac",
+      "resource": "xuelianhua/sound/new/other/crash14",
+      "rate": 22050,
+      "samples": 12381,
+      "pcm_sha256": "58c52871b982d461b33740e2381105f0309b2f72fe76361c8c541ed6b0cf0cfe"
+    },
+    "crash16_c": {
+      "file": "Resources/th38/presentation/crash16_c.flac",
+      "resource": "xuelianhua/sound/new/other/crash16_c",
+      "rate": 44100,
+      "samples": 45056,
+      "pcm_sha256": "1626e58ce5ce137700b300e14d9600adcd5743d43f208971aff327c60e43bb1d"
+    },
+    "crash26_jiejiebaozha": {
+      "file": "Resources/th38/presentation/crash26_jiejiebaozha.flac",
+      "resource": "xuelianhua/sound/new/other/crash26_jiejiebaozha",
+      "rate": 44100,
+      "samples": 34782,
+      "pcm_sha256": "f09678b4b74f62d3788e18fa93278147b70916e4a8af6be648204297c5e8cc7c"
+    },
+    "cursor25": {
+      "file": "Resources/th38/presentation/cursor25.flac",
+      "resource": "xuelianhua/sound/new/other/cursor25",
+      "rate": 44100,
+      "samples": 14020,
+      "pcm_sha256": "63958a983bd097890ec6d7ea2e888745d84c0c09f2cfe1edeeae20cc8a2e459e"
+    },
+    "don20_boss_start": {
+      "file": "Resources/th38/presentation/don20_boss_start.flac",
+      "resource": "xuelianhua/sound/new/other/don20_boss_start",
+      "rate": 44100,
+      "samples": 60470,
+      "pcm_sha256": "c2d6f7583f9219c1519f58ef537a67a2131cc7df1db10c5d26e8f29677734608"
+    },
+    "eco00_r_bayunlan": {
+      "file": "Resources/th38/presentation/eco00_r_bayunlan.flac",
+      "resource": "xuelianhua/sound/new/other/eco00_r_bayunlan",
+      "rate": 44100,
+      "samples": 47570,
+      "pcm_sha256": "486eed2f31b6025649cf73fb7c43d857615edef23af65177b7d009ae7c99f32d"
+    },
+    "freeze02": {
+      "file": "Resources/th38/presentation/freeze02.flac",
+      "resource": "xuelianhua/sound/new/other/freeze02",
+      "rate": 22050,
+      "samples": 26576,
+      "pcm_sha256": "4b09f988455fc35df2a61c255005c40fd62a22ec933973944e9df8fbf458cd68"
+    },
+    "freeze04_jiejieopen": {
+      "file": "Resources/th38/presentation/freeze04_jiejieopen.flac",
+      "resource": "xuelianhua/sound/new/other/freeze04_jiejieopen",
+      "rate": 44100,
+      "samples": 33045,
+      "pcm_sha256": "25b1f2f72d376bb5b546874e3d3db4c44bfa9c417a37ddc2d93155cff3fb24be"
+    },
+    "gun10": {
+      "file": "Resources/th38/presentation/gun10.flac",
+      "resource": "xuelianhua/sound/new/other/gun10",
+      "rate": 22050,
+      "samples": 7749,
+      "pcm_sha256": "1896c46df93d49f1256b5de6648a3b8728f8a500b192f5ea1832d130786fd683"
+    },
+    "gun10_3_22": {
+      "file": "Resources/th38/presentation/gun10_3_22.flac",
+      "resource": "xuelianhua/sound/new/other/gun10_3_22",
+      "rate": 22050,
+      "samples": 17739,
+      "pcm_sha256": "39315c1c9bc31ed25d0ad9b89c52e34a9e85ac9738b4e1c3a3145f0b53e956bf"
+    },
+    "gun10_big": {
+      "file": "Resources/th38/presentation/gun10_big.flac",
+      "resource": "xuelianhua/sound/new/other/gun10_big",
+      "rate": 22050,
+      "samples": 9683,
+      "pcm_sha256": "a0c8c2893453c7ec6946f71661dc2aed9326c3bfb3abe635a6f0a8d8a4c4f3f0"
+    },
+    "gun10_small": {
+      "file": "Resources/th38/presentation/gun10_small.flac",
+      "resource": "xuelianhua/sound/new/other/gun10_small",
+      "rate": 22050,
+      "samples": 7749,
+      "pcm_sha256": "bd737c336f952ded724c397aa7408b56c170414c3b730d6489037979bc5aa46b"
+    },
+    "mecha07_b": {
+      "file": "Resources/th38/presentation/mecha07_b.flac",
+      "resource": "xuelianhua/sound/new/other/mecha07_b",
+      "rate": 44100,
+      "samples": 24056,
+      "pcm_sha256": "87e56f9b057680ac9d90522d7dc493b59fed04a32f7a4053505dc078075820da"
+    },
+    "pyoro57_a_savereplay": {
+      "file": "Resources/th38/presentation/pyoro57_a_savereplay.flac",
+      "resource": "xuelianhua/sound/new/other/pyoro57_a_savereplay",
+      "rate": 22050,
+      "samples": 15733,
+      "pcm_sha256": "55c672817aad5fa5d14cf91e486c24ad50846726d93e5ce87d0ff84b2ab259fd"
+    },
+    "se_get_item": {
+      "file": "Resources/th38/presentation/se_get_item.flac",
+      "resource": "xuelianhua/sound/new/other/se_get_item",
+      "rate": 44100,
+      "samples": 5594,
+      "pcm_sha256": "6f983f764b4536b57c4e44d737d369a41d0727e0ec05019e0c828781403d2d23"
+    },
+    "se_laser": {
+      "file": "Resources/th38/presentation/se_laser.flac",
+      "resource": "xuelianhua/sound/new/other/se_laser",
+      "rate": 22050,
+      "samples": 3153,
+      "pcm_sha256": "3acb65dfaceb2e8c649db7acecc64bed8a0128e4a2ea21804019bac013167913"
+    },
+    "se_pl_powerup": {
+      "file": "Resources/th38/presentation/se_pl_powerup.flac",
+      "resource": "xuelianhua/sound/new/other/se_pl_powerup",
+      "rate": 44100,
+      "samples": 67968,
+      "pcm_sha256": "5128edd524d41bfaee4347e4f4c91c059a6f75e6f3660772f02cf6faae8a2b0e"
+    },
+    "shoot21": {
+      "file": "Resources/th38/presentation/shoot21.flac",
+      "resource": "xuelianhua/sound/new/other/shoot21",
+      "rate": 44100,
+      "samples": 26722,
+      "pcm_sha256": "81d3d6f7740f21727c4c406aeb4a23573e58ae37c63029effea6f0154cde3120"
+    },
+    "tm2_bom000": {
+      "file": "Resources/th38/presentation/tm2_bom000.flac",
+      "resource": "xuelianhua/sound/new/other/tm2_bom000",
+      "rate": 44100,
+      "samples": 12513,
+      "pcm_sha256": "95f7326d92a6d9784f19d3d47c44ab86b0f3ba19255e8afbf0f8f584dbc147e7"
+    },
+    "tm2_bom003": {
+      "file": "Resources/th38/presentation/tm2_bom003.flac",
+      "resource": "xuelianhua/sound/new/other/tm2_bom003",
+      "rate": 44100,
+      "samples": 114517,
+      "pcm_sha256": "f6f686fdec9b1ccff2a4684e8be32fc56e39fbb5e7049d15092d962d298500d7"
+    },
+    "tm2_bom003_baozha": {
+      "file": "Resources/th38/presentation/tm2_bom003_baozha.flac",
+      "resource": "xuelianhua/sound/new/other/tm2_bom003_baozha",
+      "rate": 44100,
+      "samples": 37158,
+      "pcm_sha256": "40deb91ad75b42d2ddd8e6003d75d7ab01f0d75f68524d55dd35a2ad494dd41a"
+    },
+    "tm2_bom003_hedan": {
+      "file": "Resources/th38/presentation/tm2_bom003_hedan.flac",
+      "resource": "xuelianhua/sound/new/other/tm2_bom003_hedan",
+      "rate": 44100,
+      "samples": 35922,
+      "pcm_sha256": "425880e32aba162a1315ac66f63265fdd7b158cddd19d3f17db4b9d8f2f6d515"
+    },
+    "tm2_death000": {
+      "file": "Resources/th38/presentation/tm2_death000.flac",
+      "resource": "xuelianhua/sound/new/other/tm2_death000",
+      "rate": 44100,
+      "samples": 37515,
+      "pcm_sha256": "1f9eee7f2d83d9b9f067da0ed9c61b9f18c93e8841a36e7d8486c93c3086a66f"
+    },
+    "tm2_gun002": {
+      "file": "Resources/th38/presentation/tm2_gun002.flac",
+      "resource": "xuelianhua/sound/new/other/tm2_gun002",
+      "rate": 44100,
+      "samples": 51354,
+      "pcm_sha256": "6bf498c1ea255306b78b771162fa9d3af30e5c0e36f95b87033e82aa2d01cf59"
+    },
+    "tm2_power000_jiejiechange": {
+      "file": "Resources/th38/presentation/tm2_power000_jiejiechange.flac",
+      "resource": "xuelianhua/sound/new/other/tm2_power000_jiejiechange",
+      "rate": 44100,
+      "samples": 76797,
+      "pcm_sha256": "aee5f537d1df4eebd1d611eb664d34fca22c4aa77146431a19a8947fc915e50d"
+    },
+    "00": {
+      "file": "Resources/th38/presentation/00.flac",
+      "resource": "xuelianhua/sound/new/other/yinliangxiugai/00",
+      "rate": 44100,
+      "samples": 46018,
+      "pcm_sha256": "066b12ec3d0636e4eafb6b34d5ec4d7069eda17df1aeab533ea55974f69033ee"
+    },
+    "01": {
+      "file": "Resources/th38/presentation/01.flac",
+      "resource": "xuelianhua/sound/new/other/yinliangxiugai/01",
+      "rate": 44100,
+      "samples": 30136,
+      "pcm_sha256": "cbc4a504084c0e304bc275a1fbbdcd2145908af7f2aa1ddf57cdb22eae45e4cb"
+    },
+    "02": {
+      "file": "Resources/th38/presentation/02.flac",
+      "resource": "xuelianhua/sound/new/other/yinliangxiugai/02",
+      "rate": 44100,
+      "samples": 33786,
+      "pcm_sha256": "16c1786638d48000fe3e428c9ba46ba99f82dfeaddf9f7be7609b08ae0041482"
+    },
+    "03": {
+      "file": "Resources/th38/presentation/03.flac",
+      "resource": "xuelianhua/sound/new/other/yinliangxiugai/03",
+      "rate": 44100,
+      "samples": 26158,
+      "pcm_sha256": "f3f5cfb79a82dff77422cc1e4aa426fca82c840eed44126d847bc964de76ddbe"
+    },
+    "power24_zer": {
+      "file": "Resources/th38/presentation/power24_zer.flac",
+      "resource": "xuelianhua/sound/new/power24_zer",
+      "rate": 22050,
+      "samples": 10586,
+      "pcm_sha256": "5ac40681a286f5c74072c7e574125c6821f08bbe4039b25116625e9638854520"
+    },
+    "retro29_damage": {
+      "file": "Resources/th38/presentation/retro29_damage.flac",
+      "resource": "xuelianhua/sound/new/retro29_damage",
+      "rate": 44100,
+      "samples": 6358,
+      "pcm_sha256": "db332a67a59461da37b6ae438b119d8b7866969a829176829df7654983442f0d"
+    },
+    "se_maoudamashii_element_fire06": {
+      "file": "Resources/th38/presentation/se_maoudamashii_element_fire06.flac",
+      "resource": "xuelianhua/sound/new/se_maoudamashii_element_fire06",
+      "rate": 44100,
+      "samples": 133632,
+      "pcm_sha256": "dfccad2ca26f295b26ddfad4214dda5f5d02d8dd4452347e6381b15fe732d469"
+    },
+    "se_maoudamashii_onepoint10": {
+      "file": "Resources/th38/presentation/se_maoudamashii_onepoint10.flac",
+      "resource": "xuelianhua/sound/new/se_maoudamashii_onepoint10",
+      "rate": 44100,
+      "samples": 157824,
+      "pcm_sha256": "ec656c15eddf880f5884e1b30b4f5e684d9e079d2b03b9571d79882536d70a4f"
+    },
+    "se_maoudamashii_system40": {
+      "file": "Resources/th38/presentation/se_maoudamashii_system40.flac",
+      "resource": "xuelianhua/sound/new/se_maoudamashii_system40",
+      "rate": 44100,
+      "samples": 41472,
+      "pcm_sha256": "2ead46b82f016ab6c56ff71736ebdc7390fe9809f63c8ec7067bc78f1e5175b2"
+    },
+    "se_sound13_select": {
+      "file": "Resources/th38/presentation/se_sound13_select.flac",
+      "resource": "xuelianhua/sound/new/se_sound13_select",
+      "rate": 44100,
+      "samples": 27648,
+      "pcm_sha256": "8a20a48bfdaad6e47dd0b29a51cb8cf0bcb57767e2a3f90dcb07f936994129c4"
+    },
+    "se_sound15_lianhua": {
+      "file": "Resources/th38/presentation/se_sound15_lianhua.flac",
+      "resource": "xuelianhua/sound/new/se_sound15_lianhua",
+      "rate": 44100,
+      "samples": 48920,
+      "pcm_sha256": "4f0b244da1131466536c7552e362ac8308a5376f3cb9b463d13c09348a06e1b1"
+    },
+    "se_sound15_xuli2": {
+      "file": "Resources/th38/presentation/se_sound15_xuli2.flac",
+      "resource": "xuelianhua/sound/new/se_sound15_xuli2",
+      "rate": 44100,
+      "samples": 39168,
+      "pcm_sha256": "c0753a198022445cca120642155c046bf6609cbff8ea3a1e7c8adbfc3ad13bf5"
+    },
+    "se_switch01_plst": {
+      "file": "Resources/th38/presentation/se_switch01_plst.flac",
+      "resource": "xuelianhua/sound/new/se_switch01_plst",
+      "rate": 44100,
+      "samples": 7063,
+      "pcm_sha256": "40d40ddfff3f275fdb4687346c06ff185343a4b32a01f9dac496e5eee40e33fe"
+    },
+    "system08_cancel": {
+      "file": "Resources/th38/presentation/system08_cancel.flac",
+      "resource": "xuelianhua/sound/new/system08_cancel",
+      "rate": 44100,
+      "samples": 14311,
+      "pcm_sha256": "907abb17bc58ea8b98e6c97b769339f9541f9163683bc088dbcdaba538646598"
+    },
+    "system18_locked": {
+      "file": "Resources/th38/presentation/system18_locked.flac",
+      "resource": "xuelianhua/sound/new/system18_locked",
+      "rate": 48000,
+      "samples": 12672,
+      "pcm_sha256": "2ee72f1861d7c34652857e7050e1469550951db0651cf002fe2380d8f5c9f18c"
+    },
+    "system27_daojishi": {
+      "file": "Resources/th38/presentation/system27_daojishi.flac",
+      "resource": "xuelianhua/sound/new/system27_daojishi",
+      "rate": 48000,
+      "samples": 36864,
+      "pcm_sha256": "ee5d83bb2b8edef20e0ffc073abbcf3560b125482ec980a142a7587beb91992c"
+    },
+    "system46_getpice": {
+      "file": "Resources/th38/presentation/system46_getpice.flac",
+      "resource": "xuelianhua/sound/new/system46_getpice",
+      "rate": 44100,
+      "samples": 35426,
+      "pcm_sha256": "2265efa2f54139eed5bfc2947862efc1492a8ce9670a9e827335ee1275a45602"
+    },
+    "tm2_power001_1up": {
+      "file": "Resources/th38/presentation/tm2_power001_1up.flac",
+      "resource": "xuelianhua/sound/new/tm2_power001_1up",
+      "rate": 44100,
+      "samples": 49668,
+      "pcm_sha256": "1a48a90373b2382521fb22fc5728e9361398aa281e9feb18fe75ba4c09d190f0"
+    },
+    "tm2_shake000": {
+      "file": "Resources/th38/presentation/tm2_shake000.flac",
+      "resource": "xuelianhua/sound/new/tm2_shake000",
+      "rate": 44100,
+      "samples": 4783,
+      "pcm_sha256": "f8f848e8db6c2aa2f7e9730a5e6aa5a3eade5aed4d4c3e18df69dad52894f2c6"
+    }
+  }
+}

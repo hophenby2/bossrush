@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def main():
     sys.stdout.reconfigure(encoding='utf-8')
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--case', choices=['th37-stage6', 'th39-39060', 'window', 'frame-pacing', 'image-state', 'object-image-state', 'target-query', 'catalogue', 'practice', 'sequence'], required=True)
+    parser.add_argument('--case', choices=['th37-stage6', 'th39-39060', 'window', 'frame-pacing', 'image-state', 'object-image-state', 'target-query', 'source-audio', 'catalogue', 'practice', 'sequence'], required=True)
     parser.add_argument('--level', type=int, help='正式练习的内部 level，保留原编号')
     parser.add_argument('--card', type=int, help='正式练习 card_id')
     parser.add_argument('--machine', help='原作机体 ID；省略时使用该作默认机体')
@@ -30,6 +30,8 @@ def main():
     parser.add_argument('--warm', action='store_true', help='沿正式关卡准备入口预载背景模型')
     parser.add_argument('--cpu', action='store_true', help='关闭原生网格，仅用于画面对照')
     parser.add_argument('--capture', action='store_true')
+    parser.add_argument('--capture-at', type=int, action='append', default=[], help='额外截图的正式逻辑帧，可重复指定')
+    parser.add_argument('--return-menu-at', type=int, help='在指定逻辑帧经正式入口返回标题，检查切关清理')
     parser.add_argument('--full-game', action='store_true', help='通过正式符卡练习入口运行天月祝鸣，保留界面与碰撞流程')
     parser.add_argument('--operations', action='store_true', help='只用于分解出生尖峰，不与无探针耗时直接比较')
     parser.add_argument('--frame-detail', action='store_true', help='分解正式练习的框架、对象和碰撞耗时，仅用于定位')

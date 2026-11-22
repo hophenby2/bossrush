@@ -1,0 +1,978 @@
+{
+  "source_sha256": {
+    "E:\\fork\\FDF2_re\\src\\THMHJ\\bin\\x86\\Debug\\net461\\Content\\Sound\\02.xna": "e35fafa22bfe0d95ab2afb3ed703a215e73a602d960c9043323a62d41dafdaa6",
+    "E:\\fork\\FDF2_re\\src\\THMHJ\\bin\\x86\\Debug\\net461\\Content\\Sound\\03.xna": "cbf4070f4d40beb415b505ef62557f52e979ae95c5fe5885ddcefbdbd6d70267"
+  },
+  "waves": [
+    {
+      "path": "Resources/th37/sound/000.flac",
+      "duration": 3.576927438927575,
+      "samples": 157696,
+      "rate": 44087,
+      "channels": 2,
+      "pcm_sha256": "11a52350fb69d77c081633c1d945d0a174066501e097f3cbcc85204a9775c965",
+      "loop": [
+        0,
+        157696
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/001.flac",
+      "duration": 5.206720631249575,
+      "samples": 229632,
+      "rate": 44103,
+      "channels": 2,
+      "pcm_sha256": "b1a343a12fa84525295544cf733d5140e55946c8582c553b6ca4f26e8f210913",
+      "loop": [
+        0,
+        229632
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/002.flac",
+      "duration": 2.028847677920431,
+      "samples": 89600,
+      "rate": 44163,
+      "channels": 2,
+      "pcm_sha256": "c62c7e54bac39deb2c510ff48d79a46d0f954b3e5c8c984124deebaefac59138",
+      "loop": [
+        0,
+        89600
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/003.flac",
+      "duration": 3.697107100752698,
+      "samples": 163072,
+      "rate": 44108,
+      "channels": 2,
+      "pcm_sha256": "e235f3145573315c52e71380303bc008c9c32b4939a2a0c1296b4b9bfc3b88a2",
+      "loop": [
+        0,
+        163072
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/004.flac",
+      "duration": 0.11213057310157222,
+      "samples": 4864,
+      "rate": 43378,
+      "channels": 2,
+      "pcm_sha256": "54172956d1d2a1f10cca0990fe96df49377a210643f4c3ae02ead4f55caf2360",
+      "loop": [
+        0,
+        4864
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/005.flac",
+      "duration": 0.2599981944569829,
+      "samples": 11520,
+      "rate": 44308,
+      "channels": 2,
+      "pcm_sha256": "80ec31fd90f801d21218e63277f5f445f461b0869456c66bfa4869da78f9f884",
+      "loop": [
+        0,
+        11520
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/006.flac",
+      "duration": 1.4182825484764543,
+      "samples": 62464,
+      "rate": 44042,
+      "channels": 2,
+      "pcm_sha256": "359b0dc47b9cb7b93d021b19e4539b94c08450b243b419381e4e9eca9b8bf516",
+      "loop": [
+        0,
+        62464
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/007.flac",
+      "duration": 3.697107100752698,
+      "samples": 163072,
+      "rate": 44108,
+      "channels": 2,
+      "pcm_sha256": "dce4b99c98acb7318a6fe4950c9ef5d43e5e45a22864f760be49da0577b50600",
+      "loop": [
+        0,
+        163072
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/008.flac",
+      "duration": 1.8509519492293744,
+      "samples": 81664,
+      "rate": 44120,
+      "channels": 2,
+      "pcm_sha256": "b5ea8c7e396d9c997dbe51e8dbf28a7af3d141480b5929fa4033c6b52c4095e6",
+      "loop": [
+        0,
+        81664
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/009.flac",
+      "duration": 1.1221976370392017,
+      "samples": 53760,
+      "rate": 47906,
+      "channels": 2,
+      "pcm_sha256": "4e892d23cd1bfc8da6215e82a0ca11a3873bb8631183789e51a058905ab1a367",
+      "loop": [
+        0,
+        53760
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/010.flac",
+      "duration": 3.697107100752698,
+      "samples": 163072,
+      "rate": 44108,
+      "channels": 2,
+      "pcm_sha256": "a7fff9bdaf7db96bdf2ddb7d3e1eca8b1c5345d96863115e13cffe530620a9e5",
+      "loop": [
+        0,
+        163072
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/011.flac",
+      "duration": 0.21634955802745484,
+      "samples": 9472,
+      "rate": 43781,
+      "channels": 2,
+      "pcm_sha256": "268fb0255a5bfc9be6f8c259986861c33fbb9e12b444d92717280b4476d1d36f",
+      "loop": [
+        0,
+        9472
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/012.flac",
+      "duration": 0.2403865973478689,
+      "samples": 10496,
+      "rate": 43663,
+      "channels": 2,
+      "pcm_sha256": "7dca25cacfbefd602de050234696a11e033f695950be723140632fa82f6ba20d",
+      "loop": [
+        0,
+        10496
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/013.flac",
+      "duration": 4.490413814984363,
+      "samples": 198144,
+      "rate": 44126,
+      "channels": 2,
+      "pcm_sha256": "d0b3e4343435290126ee84cdb6941817e002fa4e0e76e560fe9cac85afed7948",
+      "loop": [
+        0,
+        198144
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/014.flac",
+      "duration": 1.8509519492293744,
+      "samples": 81664,
+      "rate": 44120,
+      "channels": 2,
+      "pcm_sha256": "9e99d791befd4fe57597e924209a1227b9122d6ddbaccbe7fd0af0e78336cc98",
+      "loop": [
+        0,
+        81664
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/015.flac",
+      "duration": 7.389415446011519,
+      "samples": 325888,
+      "rate": 44102,
+      "channels": 2,
+      "pcm_sha256": "bb07d68da88d678d675594299103d66fb8a3efaf7281660f91c99ca0aebf7288",
+      "loop": [
+        0,
+        325888
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/016.flac",
+      "duration": 2.3798294939234537,
+      "samples": 104960,
+      "rate": 44104,
+      "channels": 2,
+      "pcm_sha256": "39a1f8b76481fe30be2faf2ea7b8147a89c136fb877d99e963b144333c4a589b",
+      "loop": [
+        0,
+        104960
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/017.flac",
+      "duration": 2.4807552650689906,
+      "samples": 109312,
+      "rate": 44064,
+      "channels": 2,
+      "pcm_sha256": "b5c547ed06eabd3e74fabc542841d87141a0edba35c8b4e50e818812c7deb2a5",
+      "loop": [
+        0,
+        109312
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/018.flac",
+      "duration": 1.8509519492293744,
+      "samples": 81664,
+      "rate": 44120,
+      "channels": 2,
+      "pcm_sha256": "8e94e632c9ca526107d3673ec983496f9ea720671b95d1128375139d2f510f57",
+      "loop": [
+        0,
+        81664
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/019.flac",
+      "duration": 1.8509519492293744,
+      "samples": 81664,
+      "rate": 44120,
+      "channels": 2,
+      "pcm_sha256": "ed99820b4988268fb74784d8b367b99ee6c85b0bb2be6aa9d6be805d5569a327",
+      "loop": [
+        0,
+        81664
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/020.flac",
+      "duration": 3.4038845525503723,
+      "samples": 150016,
+      "rate": 44072,
+      "channels": 2,
+      "pcm_sha256": "c557e928d7a2b008f15285dfbc0d8a66caea083347b2d674ec265391a6184e69",
+      "loop": [
+        0,
+        150016
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/021.flac",
+      "duration": 3.052870227623107,
+      "samples": 134656,
+      "rate": 44108,
+      "channels": 2,
+      "pcm_sha256": "769461cadc6d595ffd9add8baf0decbc82cc1b1ab6ffa2b086309d50560fe9e2",
+      "loop": [
+        0,
+        134656
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/022.flac",
+      "duration": 1.9759812935594452,
+      "samples": 87040,
+      "rate": 44049,
+      "channels": 2,
+      "pcm_sha256": "97e7bf75e689315335fe42ca008ab8157911819cc8452c891d6ca1f616c345bc",
+      "loop": [
+        0,
+        87040
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/023.flac",
+      "duration": 4.125008498583569,
+      "samples": 182016,
+      "rate": 44125,
+      "channels": 2,
+      "pcm_sha256": "f48727caed2539231259a61905fbc23e076b2bc17ebc88ef4eb55949a6d01910",
+      "loop": [
+        0,
+        182016
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/024.flac",
+      "duration": 3.697107100752698,
+      "samples": 163072,
+      "rate": 44108,
+      "channels": 2,
+      "pcm_sha256": "6ef8e75cdc8186aed53939b5fa9c9537c7279b99c9b8b2f709fb3cdd45367aa4",
+      "loop": [
+        0,
+        163072
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/025.flac",
+      "duration": 79.97351533978821,
+      "samples": 3526912,
+      "rate": 44101,
+      "channels": 2,
+      "pcm_sha256": "06032fdd2fbdb4326d7d0c7be1714c0e804f0d7f96bfee876e558c515fd35f73",
+      "loop": [
+        0,
+        3526912
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/026.flac",
+      "duration": 2.0052219321148823,
+      "samples": 88320,
+      "rate": 44045,
+      "channels": 2,
+      "pcm_sha256": "c39c31cb47058e265565f6ec8adbd067ceb2a244211b30163802243df75b243d",
+      "loop": [
+        0,
+        88320
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/027.flac",
+      "duration": 1.4312034585002602,
+      "samples": 63232,
+      "rate": 44181,
+      "channels": 2,
+      "pcm_sha256": "681e53b5e4be5ec04729ef8a38ee2980061068631f3b662a6d86be8f216d1d85",
+      "loop": [
+        0,
+        63232
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/028.flac",
+      "duration": 0.969521044992743,
+      "samples": 42752,
+      "rate": 44096,
+      "channels": 2,
+      "pcm_sha256": "7fdc48ee3431ca75e090d7dc13fb9a77eb38c4afaa1f86f790b6013945823129",
+      "loop": [
+        0,
+        42752
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/029.flac",
+      "duration": 1.8466982737109543,
+      "samples": 81408,
+      "rate": 44083,
+      "channels": 2,
+      "pcm_sha256": "fa166329ff21c34790286bfd08731db2ccef142d55a8f90323f19de3708d1435",
+      "loop": [
+        0,
+        81408
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/030.flac",
+      "duration": 0.7848480719444066,
+      "samples": 34560,
+      "rate": 44034,
+      "channels": 2,
+      "pcm_sha256": "aae01ad31abc836c69a858c2c3f4f435b636622500b07e529f4d18be9d859210",
+      "loop": [
+        0,
+        34560
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/031.flac",
+      "duration": 7.218786834708496,
+      "samples": 318464,
+      "rate": 44116,
+      "channels": 2,
+      "pcm_sha256": "daed13633bd75566f6857e90713aac32baf045101697c7f9608437dee46dc2f4",
+      "loop": [
+        0,
+        318464
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/032.flac",
+      "duration": 1.8509519492293744,
+      "samples": 81664,
+      "rate": 44120,
+      "channels": 2,
+      "pcm_sha256": "464d30dc8dc61e2116bac4bf0c15ebd37b086c5f3506fd69f80ca4c24086dd9a",
+      "loop": [
+        0,
+        81664
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/033.flac",
+      "duration": 2.5576801087449024,
+      "samples": 112896,
+      "rate": 44140,
+      "channels": 2,
+      "pcm_sha256": "05046cdb0bf7abc0af0b9372ef96df91cc75e44bc70704258fd969c7e8e35890",
+      "loop": [
+        0,
+        112896
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/034.flac",
+      "duration": 0.6153706601356101,
+      "samples": 27136,
+      "rate": 44097,
+      "channels": 2,
+      "pcm_sha256": "37003fad2e1df12710a406d6d3405f66247362d2648e04e315f84d0301542f38",
+      "loop": [
+        0,
+        27136
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/035.flac",
+      "duration": 1.9567248809253799,
+      "samples": 86272,
+      "rate": 44090,
+      "channels": 2,
+      "pcm_sha256": "cc87d94ab43b56f1cd46d4a389e56d858195d46299c35cea996470421c203e54",
+      "loop": [
+        0,
+        86272
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/036.flac",
+      "duration": 4.1153636858334846,
+      "samples": 181504,
+      "rate": 44104,
+      "channels": 2,
+      "pcm_sha256": "81820644318d8c4a442958e54ad120d1766b3e9beb94ccbcce40da4d14725bbe",
+      "loop": [
+        0,
+        181504
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/037.flac",
+      "duration": 10.837422339122941,
+      "samples": 477952,
+      "rate": 44102,
+      "channels": 2,
+      "pcm_sha256": "c6a841cd67ab02fd40019d3fb6a7f740276c03f84ba18816cf6f6b8faff83aa6",
+      "loop": [
+        0,
+        477952
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/038.flac",
+      "duration": 7.432745089143946,
+      "samples": 327680,
+      "rate": 44086,
+      "channels": 2,
+      "pcm_sha256": "8c38cee7096a36ad4562a4750615b946b85cb5da2b9e233644ffa9b964b048c2",
+      "loop": [
+        0,
+        327680
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/039.flac",
+      "duration": 2.0576722219699377,
+      "samples": 90624,
+      "rate": 44042,
+      "channels": 2,
+      "pcm_sha256": "0425e6b8b7fe7f4a258d068b3bce1c2f6f722b1034aac43735751a09ab4e1313",
+      "loop": [
+        0,
+        90624
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/040.flac",
+      "duration": 1.1374940491033982,
+      "samples": 50176,
+      "rate": 44111,
+      "channels": 2,
+      "pcm_sha256": "670396575f90ac8b2a7ef63e1b7ecfcf8b2ec6bd36c048a58fc345f39313e048",
+      "loop": [
+        0,
+        50176
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/041.flac",
+      "duration": 1.8509519492293744,
+      "samples": 81664,
+      "rate": 44120,
+      "channels": 2,
+      "pcm_sha256": "eb183687d8e87bd086b317d9287c44bff1a344462732766e81c0a44c5a5dfdad",
+      "loop": [
+        0,
+        81664
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/042.flac",
+      "duration": 1.8509519492293744,
+      "samples": 81664,
+      "rate": 44120,
+      "channels": 2,
+      "pcm_sha256": "14a07a0cd9fc24df018f4027619061e5d6bd19fa21fec45976c49f11e309a2e3",
+      "loop": [
+        0,
+        81664
+      ]
+    },
+    {
+      "path": "Resources/th37/sound/043.flac",
+      "duration": 1.9086726947220523,
+      "samples": 84224,
+      "rate": 44127,
+      "channels": 2,
+      "pcm_sha256": "f4e68e8cafa65dfbe1a826bb6e0f11ba9a51fa4244e9a7c68c6763182bf8178c",
+      "loop": [
+        0,
+        84224
+      ]
+    }
+  ],
+  "cues": {
+    "bonus": {
+      "wave": 0,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "cat": {
+      "wave": 1,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "ch00": {
+      "wave": 2,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "ch02": {
+      "wave": 3,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "damage00": {
+      "wave": 4,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "damage01": {
+      "wave": 5,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "enep00": {
+      "wave": 6,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "enep01": {
+      "wave": 7,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "enep02": {
+      "wave": 8,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "explo": {
+      "wave": 9,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "extend": {
+      "wave": 10,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "graze": {
+      "wave": 11,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "item": {
+      "wave": 12,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "kira": {
+      "wave": 13,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "lazer00": {
+      "wave": 14,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "nep00": {
+      "wave": 15,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "pldead00": {
+      "wave": 16,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "pldead01": {
+      "wave": 17,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "plst": {
+      "wave": 18,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "powerup": {
+      "wave": 19,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "slash": {
+      "wave": 20,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "tan": {
+      "wave": 21,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 3
+    },
+    "timeout": {
+      "wave": 22,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "fault": {
+      "wave": 23,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "cardget": {
+      "wave": 24,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "Result bank": {
+      "wave": 25,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "invalid": {
+      "wave": 26,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "ok": {
+      "wave": 27,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "cancel": {
+      "wave": 28,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "pause": {
+      "wave": 29,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "select": {
+      "wave": 30,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "achivget": {
+      "wave": 31,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "break": {
+      "wave": 32,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "iainuki": {
+      "wave": 33,
+      "volume": 0.3965435139472041,
+      "pitch": [
+        -0.1,
+        0.1
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "lazer02": {
+      "wave": 34,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "boon01": {
+      "wave": 36,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "boon00": {
+      "wave": 35,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "sakura00": {
+      "wave": 37,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "sakura01": {
+      "wave": 38,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "ch000": {
+      "wave": 39,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "battou": {
+      "wave": 40,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "enep03": {
+      "wave": 41,
+      "volume": 0.5001197021426502,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "boon02": {
+      "wave": 42,
+      "volume": 0.5001197021426502,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    },
+    "metal": {
+      "wave": 43,
+      "volume": 0.4020419267277662,
+      "pitch": [
+        0.0,
+        0.0
+      ],
+      "repeat": 0,
+      "category": 1
+    }
+  }
+}

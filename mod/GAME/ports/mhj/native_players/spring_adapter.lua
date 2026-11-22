@@ -32,6 +32,14 @@ function M.beforeHit()
 end
 function M.graze(...) S.graze(...) end
 function M.collect(s,kind,amount) return S.collect(s,kind,amount) end
+function M.collectSound(s,kind,amount,previousPower)
+    local x=player.x+224
+    R.sound('item',x)
+    if kind=='life' and (amount>=5 or s.life%5==0) then R.sound('extend',x)
+    elseif kind=='bombs' and (amount>=5 or s.bombs%5==0) then R.sound('cardget',x)
+    elseif kind=='power' and previousPower<400 and (amount>=400 or s.power%100==0) then R.sound('powerup',x) end
+end
+function M.dropSound(x) R.sound('bonus',x+224) end
 function M.miss(_,s)
     s.pointrate=s.pointrate-math.min(math.floor(s.pointrate*.15),300000);s.pointrate=s.pointrate-s.pointrate%10
 end

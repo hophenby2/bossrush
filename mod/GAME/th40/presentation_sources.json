@@ -1,0 +1,169 @@
+{
+  "source_sha256": {
+    "Boss_Ami01.cs": "9342eab0b278d1af269ee4288c58a9205935288b25541509cfe8c50ea8aadb67",
+    "SpellCard_SSS01_01.cs": "db27ac590e02927489b33d18a2ec4259fcc58ff169db842f13a8a141b1e05218",
+    "Boss_Ami02.cs": "6fa6e9c8221db154864c9c2c63d05dbb628743a6dfed92a1d720e93f1277764d",
+    "SpellCard_SSS01_02.cs": "0aa3d619c8e688fb35f6ec03aaf2f91d11392105a4133c13feaaca2a2312ded4",
+    "SpellCard_SSS01_03.cs": "efa4607c672a18a80502122a73f9bc986dd92fb6e6f420c94422526d99607140",
+    "SpellCard_SSS01_FSC.cs": "1f7c2c153d33da9d2693727af9556e0d9023db87bbef12dc8a8439bac495232f",
+    "Boss_Rakuki01.cs": "22cb34e1b4daa8cc59bd1967e8bfeb9812b20e3bceb270bafb30eb5cb252e8db",
+    "SpellCard_SSS02_01.cs": "5ad7edc0b61ea3c013dfef1aab9a7e9a6ca2775aa79d09e2a6db6c5976f69dc0",
+    "Boss_Rakuki02.cs": "d74a472b1c86652183b6dcd00f797367a5ab8c4b46b62372df9d6386d335fd42",
+    "SpellCard_SSS02_02.cs": "de49d6aa4cb672666d719173ece879a455b98d4bd662b1f74907cc8ef5751133",
+    "SpellCard_SSS02_03.cs": "cccdec8dac1e00ba02cf0648a3f792ae3d3aca0e7f4cb09f05ac8596d6178779",
+    "SpellCard_SSS02_04.cs": "892f01edea9208d827b8ac81a1668960504446533dccf48d60f98843faf8f9f0",
+    "SpellCard_SSS02_FSC.cs": "c3e72ea706b1884d96d9020045d31bdf769f34e0f4ffc6afb40a5ab0d8ccc73a",
+    "SpellCard_SSS03_01.cs": "055a0f9175867922768b9fd504cf48ec78e7d872f52a3d95d62d159da1a038fe",
+    "SpellCard_SSS03_02.cs": "b38186d6ec1c210c86e6544c5ee9077add814934cdfda83f625c114dcdfd4539",
+    "Boss_Seiryuu01.cs": "914801dbec76e245e1749e55b9efb543d344835e72b219d0110e0df0f9a1b843",
+    "SpellCard_SSS03_03.cs": "2e346a2bc1fcf29456799bf539845a9c657467dbb45e7e660f4d1f5d70e1eeb8",
+    "SpellCard_SSS03_04.cs": "985856f95b71e4bbd33f02fa63b27068c07f4b9310a840976a0d25fb3f9521be",
+    "SpellCard_SSS03_05.cs": "040e2f45dad1d0ff19ca3aaee4e70b611220a454af83bb7ba5455243b8790b6f",
+    "SpellCard_SSS03_FSC.cs": "99b2ba3ab06d73393f0529ffeb41303be2b65f6cae81782f7bef021d2de8b4e0",
+    "Boss_Kage01.cs": "eed9d686f42142afff1925a78384c34961db8c05ee064c3a992a56ccde4d45d2",
+    "SpellCard_SSS04_01.cs": "7a180ca01eea59845f57763346830b3b1fb203a5ca61599c237ddb1e88bfddb1",
+    "SpellCard_SSS04_02A.cs": "fc78c35ccc142ccc6b83ba50e4a5a60a8dd5dcc28894b2c0ee5bbea02b448d05",
+    "SpellCard_SSS04_02B.cs": "a2176d4c48c91b9a864fc932cabb34aef44a2327bdcb8734318b811daac196c2",
+    "SpellCard_SSS04_02C.cs": "a0870c102f0f7797a7804ce707a6e373937087b988913a61198d0af7999c2d5e",
+    "SpellCard_SSS04_02D.cs": "cd4f35a39c5b1e19370ad2b5786e3a5d1e6a1cd1832f0f9e4bd49d185d3703ae",
+    "SpellCard_SSS04_03A.cs": "828630262d24bd982e7f2f613a06a8661504c3a01d2d90dbbb7be438b3d007e4",
+    "SpellCard_SSS04_03B.cs": "ead93a6c26a25de92edeb2c5218faacc077e9c0907bb88758c0c79c5bdf177f0",
+    "SpellCard_SSS04_03C.cs": "b12128f7328407ae10813db49453c703a812297ff34069f290b04c2b1c452458",
+    "SpellCard_SSS04_03D.cs": "33cb4311455194ed1dc6ea1ed9bfbd6290c0a1d9dbab9d11ca458fa9108c8793",
+    "SpellCard_SSS04_04A.cs": "7bf20d44d31e94d45b977ace84c9e285fb0d5ce77b11f3c1066129a35939448b",
+    "SpellCard_SSS04_04B.cs": "a3c95a6530c8e06f84c044b35848e88d0920fe11f32dc8990e2c8fd26ad27ce9",
+    "SpellCard_SSS04_04C.cs": "f20c409f9900a5bcbc3336428947ae9775f425bd0942b00b73f8a18c23171d44",
+    "SpellCard_SSS04_04D.cs": "592359f18dc1a862809225d93b103a2b7e88cb559b692791bac4379fbf35f7cf",
+    "SpellCard_SSS04_05.cs": "503a1b07010c6f48c8b52883013b1796fd902b6876fc1bddd70e651131c0567a",
+    "SpellCard_SSS04_FSC.cs": "aaa55755e9c16a26eb5cc0c6bfb024fbfe08f549ca306979f7b88521b8e8e9f6",
+    "Boss_Rakuki04.cs": "8c0fc2ad72b7a8705cdc2e5e6294628277a7fc1291f01b9f4d8391334ec046d7",
+    "SpellCard_SSS05_00.cs": "8779bcfa723adb6fe2f40aa8e7d61216a141c4b25074e358880492a41827a45c",
+    "Boss_Rakukun01.cs": "4ac5f3460ea7654a2400bc57a9c722388fc138c72ce80861a8df13c8b1e72c62",
+    "SpellCard_SSS05_01.cs": "598909ef0b18cd6f163656643bbf144a0a2ee67183d9b03d6c653495078f1318",
+    "SpellCard_SSS05_02.cs": "0e594f21c704f09418b365137bbbbbb919141b3f32459df705589e9c6135d1f7",
+    "SpellCard_SSS05_03.cs": "e61cd34e6142faa0f52dfd3d38c5a1a8efa73da5881e02117f1b8563a9f0d0fd",
+    "SpellCard_SSS05_04.cs": "bfe9e15860cb5397bc821866ca852125690ff964414f0124e312b0c6f12a49a9",
+    "SpellCard_SSS05_05.cs": "74543aa48c93ba1b8ef07d42307463680656870a474b25b5147406afe9008a89",
+    "SpellCard_SSS05_FSC.cs": "a910f35bc9e3c34aa8f75ee444b47a59acaac6720e68cc76df9771d75dee913c",
+    "Boss_Tensei01.cs": "846390d41f70f02f09e405c21e802972c9429c45b9e4f295443298472eb7690a",
+    "SpellCard_SSS06_01.cs": "34dfd7e1fadf58ae61f3acaf8412a77c1eee1f3636cc1cd61c057ae965f200cf",
+    "SpellCard_SSS06_02.cs": "fa722fe968eb73b7756ca6bd696c276aae33473aec90ba9c22e001b23c5aae7c",
+    "SpellCard_SSS06_03.cs": "62e64db400c4c0147afe15d20f055088a17d29ca04666832bbe5b6df0dd09d62",
+    "SpellCard_SSS06_04.cs": "e1f3760cd02f587989ae94d05b837b029aa8cb851ae87eb9f36a7fbd6173c13d",
+    "SpellCard_SSS06_05.cs": "ad5179eb7036360f31506638bc0324c0dcf29f357313ae57bbf2c1d84af42f5b",
+    "SpellCard_SSS06_06.cs": "99b0bfdc85473a6f54ab3584384d56a72af01ed7e3a39df5c5f7890a5b31d4d5",
+    "SpellCard_SSS06_FSC01.cs": "4e8bf4e4448c53f420923ed95985860507da3c6736f92bdb72e0511c1e627df3",
+    "SpellCard_SSS06_FSC02.cs": "81ea1c0fd9627f7c66fe5fffeff9f531554fac2a201425dbbf6e35fe5ff23478",
+    "SpellCard_SSS06_FSC03.cs": "5df7684986de28ee039476f5829bb2010ae94c4aadd06c3c2f5a9890a4252207",
+    "SpellCard_SSSEx_01.cs": "b65afafcb8a1d49b94120f847cbfde01c5d2171921c00907506dc56d7823a0dc",
+    "SpellCard_SSSEx_02.cs": "b1a8b24d56fe135a7efc40b400fd41659a9ac94ed4c59c687f3210e4dd05b7f9",
+    "SpellCard_SSSEx_03.cs": "827f4e31da58779b7ed33e90b208bef69379d6f97c4923db30237a3573c3fd46",
+    "Boss_Rika01.cs": "f57d136a4b5a1710ccbc95daa70f5f6de19cdfa941dc2d467cf3318c8c035c48",
+    "SpellCard_SSSEx_01A.cs": "0a34856f9405d1cddf9046256f885a896e22e5053943da9d671977273dc27fa0",
+    "SpellCard_SSSEx_01B.cs": "8d2df7a8eb3b28696e547168d8e59f6e861dfbc61b04f783d8937de1f9150123",
+    "SpellCard_SSSEx_01C.cs": "fa4e3f3fc5dd56cb9b68f877a898f378a9807a710eea727f73796b374417bbb1",
+    "SpellCard_SSSEx_01D.cs": "0eb5e9db1d5f9d5f29dc0a38879c5e1ce38bb38e1e7ea8eb2fef4806342dea0d",
+    "SpellCard_SSSEx_02A.cs": "f71ee4e23958768167d9f5f357c741ce0f3077387ecb957a8000b697f96c5443",
+    "SpellCard_SSSEx_02B.cs": "d9510f07d8dbc52d6f1261dc38b3f092a4c3e7132ed93e2f99fffa6bd13f82c7",
+    "SpellCard_SSSEx_02C.cs": "2582e5be3c3e00bdcb0f7075324887e4f0c22c233582216b5b2c5b21f0fa6aa7",
+    "SpellCard_SSSEx_02D.cs": "9dd24b2aa306e0cacbee0a4d57808324f040e238c0aa20ee4004ba002141049c",
+    "SpellCard_SSSEx_03A.cs": "6d3dab0cdc7cf769471440ab0b765f097f5dd70f3ebe08bdb39d6e216ff6de0e",
+    "SpellCard_SSSEx_03B.cs": "191337b2f64d1aabb4cc991db060aba06c19c0a3d0f4ca1a1716e5ba20050833",
+    "SpellCard_SSSEx_03C.cs": "8d92f7dfe8f782f395740958a62b2eded1e0fd81b26c0eeddae91be31eedea15",
+    "SpellCard_SSSEx_03D.cs": "33fdac640646d0ed7db6c67c2595ad9504df7754cabf432b4620068d9f6555b1",
+    "SpellCard_SSSEx_04A.cs": "3f0d72313e6bfc1067c9f9d7054994dd3942e72aca40b4d4cc7a33efd1810c54",
+    "SpellCard_SSSEx_04B.cs": "f8f1a8ac14e38484ffb0fe5489635997fa9cb8a4878caac6f02fa906a7370109",
+    "SpellCard_SSSEx_04C.cs": "8112728d52a7adaa119c1ce412a419544d40bad05241d7550ba90e00648b002d",
+    "SpellCard_SSSEx_04D.cs": "9211ced7e1b2971762c02341e746672ea75aecd90ff84a1ea877091995194ea4",
+    "SpellCard_SSSEx_05A.cs": "0d286ff236ff91cf10645eedcf16900038361d347b6d2b0e7b9f357cf27521ff",
+    "SpellCard_SSSEx_05B.cs": "597a756c917d66610c4760f07c80439777b1677dc24d63109069c659eac569f6",
+    "SpellCard_SSSEx_05C.cs": "56a5951fb2cee2a1b60dc67e2fce0af5f4a65a12e8e73c1dae2b32bf72eef3a3",
+    "SpellCard_SSSEx_05D.cs": "c02671928097e70bced9b98088839dfb76e710b64c4c18d26b6a462b68b0e1c7",
+    "SpellCard_SSSEx_06A.cs": "7fef27ce221c59185869914e1eb7efdc7e48351566c8e32eaba8bd6e0b0157ef",
+    "SpellCard_SSSEx_06B.cs": "d7c82b6ddfa12cdb59c10883d631714ed0e38af14c40c11aa2dff0e58253abc5",
+    "SpellCard_SSSEx_06C.cs": "82981da5da258ea5645795fa38ff66e626c4eafcc36c6f7bd43e1cf0a89ec456",
+    "SpellCard_SSSEx_06D.cs": "d7f1e6531ca9d488b414b19466c444f124593fcfab77fa7e813ef3f927fa38d8",
+    "SpellCard_SSSEx_07A.cs": "543a10e23874d9318be7123ef541b100e917a2a385efd24a6604457052a35784",
+    "SpellCard_SSSEx_07B.cs": "3133ef2a13056524ee63db16190ecbfdde1be35db499eb7dd837030cb826d95a",
+    "SpellCard_SSSEx_07C.cs": "bed4d39475bfeed440742fb063136c918d57bacb9bec254a88f9a5cccd26692e",
+    "SpellCard_SSSEx_07D.cs": "0c3ee0f5fbe8b87fe0dbe684fe236b1b5981f82e43accc986bdb1627a83f788f",
+    "SpellCard_SSSEx_08.cs": "b2e5d6067029e3f94dd69a0d20ca7584c7c1f3c78d5a2ff6d7ed156934ca1580",
+    "SpellCard_SSSEx_09.cs": "a2b3cd98a9d9693d321cc1f5371cd4700e5abfda6704a47767fd70ebf5b281d4",
+    "SpellCard_SSSEx_10.cs": "0bd66be1908e14ab2934241821dcc1bcfa43119cf534677210ce4960dfe02fd3",
+    "SpellCard_SSSEx_FSC.cs": "206a3a91a8093bae509faff63ae742c754124a40128fe88525e282dacd207ddb",
+    "GameState_SSS01.cs": "a9f0e7131ee64e7cc4a817caa1dadb7ed79ddc2a8fd496225507b0ea0da5c06f",
+    "Image\\Menu\\MusicName.txt": "a1ff963e82fa1147b26176455ed9a6d7d16157e146ffbc37bd385ad90625cc41",
+    "Image\\Menu\\MusicName.png": "1c8035594378174dc896fa11e18e16e08b12fa405de5893b5e5527711c71682e",
+    "GameState_SSS02.cs": "3dba1a2a357d2bdf504edd2440fce9af80437a917d0af054066d0c288b166038",
+    "GameState_SSS03.cs": "5b769f5553efcea65a53d6b496687728b27ecf79ef07511fbe4c851928690b8f",
+    "GameState_SSS04.cs": "6b83e4d83ca1e2cff998e03adec9522f7ac0f7cc3fa15da1669230d862de4a47",
+    "GameState_SSS05.cs": "9f648be4df452a85abcf6a041a445b9bebe7dd301e45ea3f84a86b80fed7e163",
+    "GameState_SSS06.cs": "f263a6f573261ba7a2fa8e94b560a2be03a2ef547731095c4da4416e90f28176",
+    "GameState_SSSEx.cs": "a458d86c41330dad692f3149e5a59a2cf030814ceda5b02351913c148584759c",
+    "MusicTitle.cs": "8c77dd635cb13f0b9fef9a85ea19285f5540e30d134a6bf2b24e2099d1fdbb87",
+    "EmitterSaveEnegy3D.cs": "d273ac99e2ffccee25a642a4104a12e2e6d141e6bec21531d2345696edac0cf6",
+    "EmitterGiveOutEnegy3D.cs": "35697260ac2e0c404e9deee9762e7df7b9c89fc0c7c9681e7756ef0191f0f817",
+    "Particle3D1.cs": "2d49bc1ddd50ee878b5d50646121c218506a197b1eb4a3394698583d6ec7d91c",
+    "BaseParticle3D.cs": "82decd24928bc34a98d0e68e6b44aca5086c036ae27275d7476b37b10ed8d766"
+  },
+  "callbacks": 108,
+  "openings": 81,
+  "titles": {
+    "1": {
+      "file": "Resources/th40/presentation/music01.png",
+      "size": [
+        210,
+        34
+      ],
+      "name": "宁静夏夜的微风"
+    },
+    "2": {
+      "file": "Resources/th40/presentation/music02.png",
+      "size": [
+        135,
+        34
+      ],
+      "name": "灯火竹林"
+    },
+    "3": {
+      "file": "Resources/th40/presentation/music03.png",
+      "size": [
+        208,
+        34
+      ],
+      "name": "木灵们的夏夜祭"
+    },
+    "4": {
+      "file": "Resources/th40/presentation/music04.png",
+      "size": [
+        234,
+        34
+      ],
+      "name": "万花世界的光与影"
+    },
+    "5": {
+      "file": "Resources/th40/presentation/music05.png",
+      "size": [
+        234,
+        34
+      ],
+      "name": "记忆中遥远的星星"
+    },
+    "6": {
+      "file": "Resources/th40/presentation/music06.png",
+      "size": [
+        158,
+        34
+      ],
+      "name": "银河的彼方"
+    },
+    "EX": {
+      "file": "Resources/th40/presentation/musicEx.png",
+      "size": [
+        208,
+        34
+      ],
+      "name": "来自仙界的新风"
+    }
+  }
+}

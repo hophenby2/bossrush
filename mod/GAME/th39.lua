@@ -4,6 +4,7 @@ assert(loadfile('mod/GAME/ports/mhj/native_players/night_adapter.lua'))(R)
 local D=R.data
 local Media=dofile('mod/GAME/th39/media.lua')
 local BG=dofile('mod/GAME/th39/background.lua')
+local Presentation=dofile('mod/GAME/th39/scenes/presentation.lua')
 local Collision=NativeActorCollision or dofile('THlib/native_actor_collision.lua')
 local function collider(o,p) Collision.bind(o,35*2/3,50*2/3,'box',p.size[1]/3,p.size[2]/3,'box',true) end
 local LEVEL=37
@@ -55,8 +56,36 @@ local function animate(o,actor)
     s.auraRotation=(s.auraRotation+(o.mhj3_spell and 6 or 3))%360
     s.auraScale=s.auraScale+((o.mhj3_spell and .5 or .35)-s.auraScale)/8
     local function play(name) if all[name] then s.clip,s.clock=name,0 end end
-    if math.abs(dx)>=.5 and not s.turned then s.turned=true;play(dx>0 and 'turnright' or 'turnleft')
-    elseif math.abs(dx)<.5 and s.turned then s.turned=false;play(dx>0 and 'backright' or 'backleft') end
+    local gather=o.mhj3_gather
+    local held=false
+    if gather then
+        local name=gather.animation
+        if gather.pending then
+            gather.pending=false
+            if name then
+                local base=name:gsub('%(pingpong%)$','')
+                if all[base] then
+                    if base~=name and not all[name] then
+                        local original=all[base];local frames={}
+                        for i=#original.frames,1,-1 do frames[#frames+1]=original.frames[i] end
+                        all[name]={data=original.data,frames=frames,interval=original.interval,wrap=original.wrap,loop=false,nextClip='idle'}
+                    end
+                    play(base)
+                end
+            end
+        else gather.left=gather.left-1 end
+        held=gather.frames>0 and gather.left>0
+        if gather.frames>0 and gather.left==0 then
+            if name then
+                local base=name:gsub('%(pingpong%)$','')
+                play(all[base..'(pingpong)'] and base..'(pingpong)' or 'idle')
+            end
+            if valid(gather.effect) then gather.effect.effect.status,gather.effect.effect.statusFrame=1,0 end
+            if gather.sound and gather.sound~='' then R.stopSound(gather.sound) end
+        end
+    end
+    if not held and math.abs(dx)>=.5 and not s.turned then s.turned=true;play(dx>0 and 'turnright' or 'turnleft')
+    elseif not held and math.abs(dx)<.5 and s.turned then s.turned=false;play(dx>0 and 'backright' or 'backleft') end
     local c=all[s.clip] or all.idle
     s.clock=s.clock+1
     if not c.loop and s.clock>=#c.frames*c.interval and c.nextClip then play(c.nextClip) end
@@ -128,6 +157,7 @@ local function setupCard(meta,group,chapter)
     local card=boss.card.New(meta.kind~=0 and meta.title or '',immune/60,immune/60,timeout/60,meta.hp)
     card.phase_name,card.phase_kind=meta.title,group.role
     card.mhj3_source=meta
+    if meta.kind~=0 then card.own_phase_display=true end
     local function preparePatterns()
         for i=1,#group.hosts do
             for _,phase in ipairs(meta.tracks[tostring(i)] or {}) do R.preparePattern(phase.pattern) end
@@ -141,8 +171,9 @@ local function setupCard(meta,group,chapter)
     card.nativeBombFactor=group.extraBoss and (meta.kind==0 and .5 or 0) or 1
     local start=60+(flag(meta,'DELAY') and 150 or 0)+(flag(meta,'TRANS') and 100 or 0)
     function card:nativeDamage(timer)
-        if endurance or timer<=start+meta.immune then return 0 end
-        return timer<=start+90 and (timer-start)/180 or 1
+        local damageStart=self.mhj3_card and self.mhj3_card.damageStart or start
+        if endurance or timer<=damageStart+meta.immune then return 0 end
+        return timer<=damageStart+90 and (timer-damageStart)/180 or 1
     end
     function card:before()
         self.mhj3_card=nil
@@ -156,6 +187,13 @@ local function setupCard(meta,group,chapter)
         self.mhj3_card={clock=0,actors={},configs={}}
         self.mhj3_hidden=false
         local ctx=self.mhj3_card
+        local timing=Presentation.timings[chapter.script][group.index][tostring(meta.number)]
+        local practice=ext.sc_pr or RogueEncounter and RogueEncounter.enabled(37)
+        ctx.delay=timing[practice and 'practice' or 'sequence']
+        ctx.opening=30+ctx.delay+timing.open;ctx.damageStart=60+ctx.delay+timing.open
+        ctx.special=meta.kind>=2 and not practice
+        local difference=ctx.opening-opening
+        if difference~=0 then self.t1,self.t2,self.t3=self.t1+difference,self.t2+difference,self.t3+difference end
         for id,config in pairs(meta.familiars) do ctx.configs[tonumber(id)]=config end
         for i,host in ipairs(group.hosts) do
             local x,y=R.project(host.x,host.y)
@@ -184,11 +222,30 @@ local function setupCard(meta,group,chapter)
     function card:frame()
         local ctx=self.mhj3_card;if not ctx then return end
         ctx.clock=ctx.clock+1
-        if meta.kind~=0 and ctx.clock==40+(flag(meta,'DELAY') and 150 or 0) then
-            BG.card(chapter,group,meta)
+        if ctx.special and ctx.clock==1 then
+            for _,a in ipairs(ctx.actors) do if valid(a.object) then
+                R.gather({host=a.object},nil,'99'..chapter.stage,false,true,'ch000',150)
+            end end
+            local final=false
+            for _,id in ipairs(Presentation.finalLSC) do if id==tostring(chapter.stage)..meta.number then final=true end end
+            if not final then ctx.warning=R.spellWarning(self) end
+        elseif meta.kind~=0 and not ctx.special and ctx.clock==1+ctx.delay then
+            for _,a in ipairs(ctx.actors) do if valid(a.object) then R.gather({host=a.object}) end end
         end
-        local running=ctx.clock>opening
-        local remaining=feast and meta.seconds or meta.seconds-math.floor((ctx.clock-opening)/60)
+        if ctx.special and ctx.clock%3==0 and ctx.clock<1+ctx.delay and NativePlayers and NativePlayers.enabled(nil,37) then
+            local x,y=R.project(ran:Float(136,536),ran:Float(0,200))
+            NativePlayers.pickup(x,y,'points',1)
+        end
+        if meta.kind~=0 and ctx.clock==40+ctx.delay then
+            BG.card(chapter,group,meta)
+            if not flag(meta,'INFINITE') then
+                R.sound('cat',336)
+                self._sc_name_obj=New(boss.sc_name,self,meta.title)
+                object.Connect(self,self._sc_name_obj,0,true)
+            end
+        end
+        local running=ctx.clock>ctx.opening
+        local remaining=feast and meta.seconds or meta.seconds-math.floor((ctx.clock-ctx.opening)/60)
         for _,a in ipairs(ctx.actors) do
             local o=a.object
             if not running then
@@ -216,7 +273,9 @@ local function setupCard(meta,group,chapter)
         BG.endCard(group,meta)
         local ctx=self.mhj3_card
         if ctx then
+            if valid(ctx.warning) then ctx.warning.effect.closing=true end
             for i,a in ipairs(ctx.actors) do
+                R.endGather(a.object)
                 R.clear(a.controller)
                 if NativePlayers and NativePlayers.enabled(nil,37) and self.hp<=0 and not self.timeout then
                     local state=NativePlayers.state()

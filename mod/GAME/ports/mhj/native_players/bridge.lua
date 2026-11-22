@@ -378,8 +378,8 @@ local function refreshEffects()
 end
 game.LanternStatus,game.LanternLighting,game.ProtectChance=0,false,0
 E.Program={main={game=game}}
-function game:PlaySound(name,_,x) R.sound(name) end
-function game:StopSound() end
+function game:PlaySound(name,_,x) R.sound(name,x) end
+function game:StopSound(name) if R.stopSound then R.stopSound(name) end end
 function game:Quake(t,n) if misc.ShakeScreen then misc.ShakeScreen(t,n) end end
 function game:Rand() return ran:Float(0,1) end
 function game:RandRange(a,b) return ran:Float(a,b) end

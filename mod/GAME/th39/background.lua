@@ -1,6 +1,8 @@
 -- 关卡背景与符卡背景由原作 CrazyStorm 发射器分别驱动。
 local B={}
 local D=dofile('mod/GAME/th39/scenes/index.lua')
+local presentation=dofile('mod/GAME/th39/scenes/presentation.lua')
+for key,height in pairs(presentation.textureHeights) do D.textureHeights[key]=height end
 local R
 local snapshot,ready
 local applyCard,applyEnd
@@ -8,6 +10,7 @@ local shake={{-1,0},{0,1},{0,-1},{1,0},{-1,1},{1,-1},{-1,-1},{1,1},{0,0}}
 local function track(scene,id,x,y,order,number)
     scene.serial=scene.serial+1
     local c=R.backgroundEffect(id,x,y,scene.serial,D.textureHeights,scene.resources,scene.seekPlayer)
+    c.ownerScene=scene
     c.order,c.number=order,number
     c.onQuake=function(duration,strength)
         if not scene.quake then scene.quake={time=0,duration=duration,strength=strength*2/3} end
@@ -16,9 +19,26 @@ local function track(scene,id,x,y,order,number)
 end
 local function change(scene,event)
     local op,number=event[1],event[2]
+    if op=='RaiseEffect' then
+        local c=track(scene,number,event[3],event[4],event[5])
+        c.once=true;c.presentation=true;scene.effects[#scene.effects+1]=c
+        return
+    elseif op=='PlaySound' or op=='FadeinEnvSound' then
+        if not scene.seeking then
+            if op=='FadeinEnvSound' then R.fadeEnvironment(event[3],true) end
+            R.sound(number,op=='PlaySound' and event[3] or nil)
+        end
+        return
+    elseif op=='FadeoutEnvSound' then
+        if not scene.seeking then R.fadeEnvironment(number) end
+        return
+    end
     if op=='SetBackgroundEffect' or op=='ReplaceBackgroundEffect' then
-        if op=='ReplaceBackgroundEffect' then scene.effects={} end
-        scene.effects[#scene.effects+1]=track(scene,event[6],event[3],event[4],event[5],number)
+        if op=='ReplaceBackgroundEffect' then
+            local kept={};for _,c in ipairs(scene.effects) do if c.presentation then kept[#kept+1]=c end end
+            scene.effects=kept
+        end
+        if setting and setting.displayBG then scene.effects[#scene.effects+1]=track(scene,event[6],event[3],event[4],event[5],number) end
         return
     end
     if op=='FadeinBackground' then scene.fade=1;return end
@@ -33,9 +53,10 @@ local function change(scene,event)
         end
     end
 end
-local function tickEffects(list)
+local function tickEffects(list,presentationOnly)
     for i=#list,1,-1 do
         local c=list[i]
+        if not presentationOnly or c.presentation then
         local tint=c.tint
         if tint then
             tint.time=tint.time+1
@@ -53,10 +74,11 @@ local function tickEffects(list)
         if c.breakAge and c.breakAge>=15 or c.closing and #c.particles==0 then
             table.remove(list,i)
         end
+        end
     end
 end
 local function update(o)
-    if not o.spell or o.spell.keep then tickEffects(o.effects) end
+    tickEffects(o.effects,o.spell and not o.spell.keep)
     if o.spell then tickEffects(o.spell.effects) end
     if o.portrait then tickEffects(o.portrait) end
     if o.fade>0 then o.fade=math.max(0,o.fade-.01) end
@@ -72,13 +94,13 @@ end
 local function apply(o,t)
     local events=o.script.timeline[tostring(t)]
     for _,event in ipairs(events or {}) do change(o,event) end
+    local extra=presentation.stages[o.chapter.script]
+    for _,event in ipairs(extra and extra[tostring(t)] or {}) do change(o,event) end
 end
 local function draw(o,order)
-    if not setting or not setting.displayBG then return end
-    if o.spell and not o.spell.keep then return end
     SetViewMode('world')
     for _,c in ipairs(o.effects) do
-        if c.order==order then R.drawBackground(c,1-(c.breakAge or 0)/15,o.shakeX,o.shakeY) end
+        if c.order==order and (c.presentation or setting and setting.displayBG and (not o.spell or o.spell.keep)) then R.drawBackground(c,1-(c.breakAge or 0)/15,o.shakeX,o.shakeY) end
     end
 end
 local Pass=Class(object,{
@@ -141,7 +163,7 @@ local Scene=Class(background,{
     render=function(o)
         o=o.state
         if not o then return end
-        if not setting or not setting.displayBG then return end
+        if not setting or not setting.displayBG then draw(o,4);draw(o,3);return end
         SetViewMode('world')
         local w=lstg.world
         SetImageState('white','',255,0,0,0)
@@ -171,7 +193,7 @@ local function current()
     if IsValid(o) and o.class==Scene then return o end
 end
 function B.seek(chapter,start,point,resources)
-    local o={chapter=chapter,script=D.stages[chapter.script],effects={},serial=0,fade=0,seekPlayer=point,resources=resources or {tex={},img={}}}
+    local o={chapter=chapter,script=D.stages[chapter.script],effects={},serial=0,fade=0,seekPlayer=point,resources=resources or {tex={},img={}},seeking=true}
     local t=0
     while t<start do
         apply(o,t);update(o)
@@ -180,6 +202,7 @@ function B.seek(chapter,start,point,resources)
         if RogueEncounter then RogueEncounter.checkpoint() end
     end
     o.seekPlayer=nil
+    o.seeking=false
     for _,c in ipairs(o.effects) do c.previewPlayer=nil end
     return o
 end
@@ -208,7 +231,6 @@ end
 function B.clearPrepared() snapshot,ready=nil,nil end
 function B.show(runtime,chapter,start)
     R=runtime
-    if not setting or not setting.displayBG then return end
     local o=current()
     if not o or o.chapter~=chapter then o=New(Scene,chapter,start or 0) end
     return o
@@ -236,7 +258,7 @@ applyCard=function(o,group,meta)
         o.portrait={track(o,card.portrait,481,360)}
         o.portrait[1].once=true
     end
-    if meta.kind~=0 then
+    if meta.kind~=0 and setting and setting.displayBG then
         local effects=D.spells[tostring(chapter.stage)][tostring(variant)]
         if effects then
             o.spell={keep=card.keep,effects={}}

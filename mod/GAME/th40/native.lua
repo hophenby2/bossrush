@@ -1,6 +1,6 @@
 -- 夏夜祭原生对象：参数和事件条件由离线编译器展开为Lua函数。
 -- 差异1：原Direct3D曲线网格由LuaSTG原生laser/bent_laser代理，沿用采样数、长度与宽度参数。
--- 差异2：3D蓄力/放能特效以无判定原图粒子代理；不增加原作没有的攻击。
+-- 蓄力/放能由 presentation.lua 按原作粒子参数、三维旋转和透视绘制，不参与弹幕判定。
 local N={patterns={},images={},regions={},loaded=false,runs=setmetatable({},{__mode='k'})}
 N.actorHit=dofile('mod/GAME/th40/collision.lua')
 local paths=dofile('mod/GAME/th40/patterns.lua')
@@ -277,9 +277,9 @@ function N.emit(o)
     local spread=o.spread+r(o,'spread');if o.radius_follows then radius_angle=radius_angle+direction end
     local step=ways>0 and spread/ways or 0;direction=direction-(ways-1)*step/2;radius_angle=radius_angle-(ways-1)*step/2
     if o.effect==2 or o.effect==3 then
-        -- 原3D能量特效以原图无判定粒子代理，保留触发时刻。
-        local e=spawn(run,{mode='effect',texture=o.effect==2 and '光点' or 'FY_Particle4_0',cx=fx,cy=fy,life=60,width=1,height=1,alpha=180,blend=true},false)
-        e.events=function(v,t) v.width=1+t/30;v.height=v.width;v.alpha=max(0,180-t*3) end
+        N.presentation.energy(fx-320,240-fy,o.effect==2,{o.p.red,o.p.green,o.p.blue})
+        if o.effect==2 then N.sound('se_ch02.wav')
+        else N.sound('se_cat00.wav');N.sound('se_enep02.wav') end
         return
     end
     for i=1,ways do
@@ -503,6 +503,7 @@ function N.new(owner,meta)
     local host={run=run,th38_host=true,owner=owner,cx=(owner.x or 0)+320,cy=240-(owner.y or 100),speed=4,direction=0,accel=0,accel_angle=0,scale_x=1,scale_y=1,width=1,height=1,region=20,angle=90,follow=false,age=0,flag=1,hp=meta.hp,maxhp=meta.maxhp or meta.hp,dest={320,136},loopy={},once={},tweens={}}
     if meta.dest then host.dest={meta.dest[1]+128,meta.dest[2]+16} end
     host.loops={};run.host=host;owner.th38_run=run
+    if N.presentation then N.presentation.open(host,meta) end
     return run
 end
 function N.tick(owner,meta)
@@ -512,6 +513,7 @@ function N.tick(owner,meta)
         o.maxhp=owner.maxhp or o.maxhp
         motion(o)
         if meta.step then meta.step(o,o.age,N) end
+        if N.presentation then N.presentation.tick(o,o.age,meta) end
         if meta.kind~='road' then
             owner.x,owner.y=o.cx-320,240-o.cy
             if N.visual then N.visual.tickBoss(owner,o) end

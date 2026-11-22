@@ -14,6 +14,7 @@ if NativePlayers then dofile("mod/GAME/th40/player.lua") end
 if rawget(_G,'DefineAchievement') then DefineAchievement(170,'夏夜祭','完成夏夜祭关卡练习','击破本次练习中的全部阶段',false,2) end
 N.load()
 local Visual=assert(loadfile('mod/GAME/th40/visual.lua'))(N);N.visual=Visual
+N.presentation=assert(loadfile('mod/GAME/th40/presentation.lua'))(N)
 for source,path in pairs(dofile('mod/GAME/th40/sounds.lua')) do
     local id='th38.snd.'..source;LoadSound(id,path);N.sounds[source]=id
 end
@@ -114,6 +115,7 @@ function class.runChapter(scene,chapter,spawn,alive,media)
         if m then for _,path in ipairs(m.patterns) do N.road_controller(run.host,path,clock+source.offset) end end
     end
     for t=1,source.clock[3] do
+        N.presentation.stage(chapter.name,t)
         class.background.story(t)
         if t==2 then startRoad(source.road_a_id,t) end
         if #source.bosses>1 and t==source.clock[1] then

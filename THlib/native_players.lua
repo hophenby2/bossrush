@@ -180,7 +180,12 @@ end
 function ResourceItem:colli(other)
     local r=self.native_pickup_rect
     if r and (math.abs(self.x-other.x)>r[1] or math.abs(self.y-other.y)>r[2]) then return end
-    item.colli(self,other)
+    local s=P.state();local adapter=s and P.adapters[s.level]
+    if other==player and adapter and adapter.collectSound then
+        local kind,amount,power=self.kind,self.amount,s.power
+        self.class.collect(self,other);object.Kill(self)
+        adapter.collectSound(s,kind,amount,power)
+    else item.colli(self,other) end
 end
 function ResourceItem:collect()
     local s=P.state()
@@ -212,33 +217,59 @@ local function barrierAdd(s,n)
         if p and IsValid(p) then New(ResourceItem,p.x,p.y+28.8,'fragments',1) end
     end
 end
-function P.drop(level,x,y,items,boss,nonspell)
+function P.drop(level,x,y,items,boss,nonspell,sourceSize)
     if not items or not P.enabled(nil,level) then return end
     local function value(i) return tonumber(items[i]) or 0 end
-    local function drop(kind,amount,count)
-        for _=1,count do
-            New(ResourceItem,x+ran:Float(-16,16),y+ran:Float(-16,16),kind,amount)
+    local scale=level==37 and 2/3 or 1
+    local size=(sourceSize or (boss and 70 or 0))*scale
+    local function drop(kind,amount,count,spread)
+        for _=1,math.ceil(count) do
+            local dx,dy=0,0
+            if spread~=0 then dx,dy=ran:Float(-spread,spread),ran:Float(-spread,spread) end
+            New(ResourceItem,x+dx,y-dy,kind,amount)
         end
     end
     local up,bomb=value(boss and 7 or 5),value(boss and 9 or 6)
     local bigUp,bigBomb=0,0
+    local difficulty=stage.current_stage.group.difficulty
+    local springLimited=level==35 and difficulty~=1 and difficulty~=5 and difficulty~=6
+    if springLimited then up,bomb=0,0 end
     if boss then
-        if level==35 and stage.current_stage.group.difficulty==4 then up,bomb=0,0 end
         bigUp,bigBomb=value(6),value(8)
         if nonspell then
             bomb,up=bomb+up,0
             if level==37 then bigUp,bigBomb=0,0 end
         end
     end
-    drop('life',1,up)
-    drop('bombs',1,bomb)
-    if bigUp>0 and ran:Float(0,100)<=bigUp then drop('life',5,1) end
-    if bigBomb>0 and ran:Float(0,100)<=bigBomb then drop('bombs',5,1) end
-    if level==35 and P.state().power<400 then
-        drop('power',5,value(4))
-        if value(3)>0 and ran:Float(0,100)<=value(3) then drop('power',20,1) end
-        if boss then drop('power',400,value(5)) end
+    -- 保留 ItemManager / ItemMass 的随机调用与生成顺序，大点和大 P 分别判定。
+    if value(1)>0 and ran:Float(0,100)<=value(1) then drop('bigPoints',1,1,level==37 and size/4 or size) end
+    drop('points',1,value(2)+(level==37 and value(4) or 0),level==37 and size or size/2)
+    if level==35 then
+        local full=P.state().power>=400
+        if value(3)>0 and ran:Float(0,100)<=value(3) then drop(full and 'bigPoints' or 'power',full and 1 or 100,1,size) end
+        drop(full and 'points' or 'power',full and 1 or 5,value(4),size/2)
+        if boss and not springLimited then drop('power',400,value(5),size/2) end
+        if bigUp>0 and ran:Float(0,100)<=bigUp then drop('life',5,1,size) end
+        drop('life',1,up,size/2)
+        if bigBomb>0 and ran:Float(0,100)<=bigBomb then drop('bombs',5,1,size) end
+        drop('bombs',1,bomb,size/2)
+    else
+        -- 永夜的库存道具按原作在半径 44 的圆周散布，和点道具的矩形散布分开。
+        local function ring(kind,amount,count)
+            if count<=0 then return end
+            local angle=270+ran:Float(0,360)
+            for i=0,math.ceil(count)-1 do
+                local a=angle+i*360/count
+                New(ResourceItem,x+44*scale*cos(a),y-44*scale*sin(a),kind,amount)
+            end
+        end
+        if bigUp>0 and ran:Float(0,100)<=bigUp then ring('life',5,1) end
+        ring('life',1,up)
+        if bigBomb>0 and ran:Float(0,100)<=bigBomb then ring('bombs',5,1) end
+        ring('bombs',1,bomb)
     end
+    local adapter=P.adapters[level]
+    if boss and adapter and adapter.dropSound then adapter.dropSound(x) end
 end
 function P.hitShot(target)
     if not target.protect and target.dmg_factor~=0 then

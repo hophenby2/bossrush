@@ -6,6 +6,7 @@
 #include "LuaBinding/LuaWrapper.hpp"
 #include "LuaBinding/modern/GameObject.hpp"
 #include "AppFrame.h"
+#include "GameResource/Implement/ResourceSoundEffectImpl.hpp"
 #include <d3dcompiler.h>
 #include <wrl/client.h>
 #include <algorithm>
@@ -19,6 +20,15 @@
 
 namespace luastg::source_mesh {
 using Microsoft::WRL::ComPtr;
+static int soundVolume(lua_State* L) {
+    const char* name=luaL_checkstring(L,1);
+    const float volume=std::clamp(static_cast<float>(luaL_checknumber(L,2)),0.0f,1.0f);
+    auto sound=LRES.FindSound(name);
+    if (!sound) return luaL_error(L,"sound '%s' not found.",name);
+    // 锁定的官方 ResourcePool 仅创建此实现；方法不改变资源布局和混音通道。
+    static_cast<ResourceSoundEffectImpl*>(sound.get())->SetSourceVolume(volume);
+    return 0;
+}
 static constexpr char type_name[]="BossRush.SourceModelMesh";
 static void check(HRESULT hr,char const* message) {
     if (FAILED(hr)) throw std::runtime_error(message);

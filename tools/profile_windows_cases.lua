@@ -1,5 +1,10 @@
 -- Windows 原生定点采样。目录由 Python 驱动隔离，不读取源码目录的玩家数据。
 local f=assert(io.open('case.json','rb'));local config=DeSerialize(f:read('*a'));f:close()
+local function captureAt(clock)
+    if clock==120 or clock%600==0 then return true end
+    for _,frame in ipairs(config.capture_at or {}) do if frame==clock then return true end end
+    return false
+end
 -- JSON null 代表未指定选项，不能把 cjson.null 当成机体 ID 或关卡编号传给正式入口。
 for key,value in pairs(config) do if value==cjson.null then config[key]=nil end end
 local result={case=config.case,frames={},stacks={}}
@@ -32,6 +37,38 @@ end
 local function save(err)
     finished=true;result.error=err;flushRow();frameFile:close();checkpointFile:close()
     local out=assert(io.open('result.json','wb'));out:write(Serialize(result));out:close()
+end
+if config.case=='source-audio' then
+    function GameInit()
+        local ok,err=xpcall(function()
+            SetResourceStatus('global')
+            LoadSound('source_audio_probe','Resources/th39/sound/000.flac')
+            local gain=assert(lstg.SetSourceSoundVolume,'缺少独立音效音量接口')
+            PlaySound('source_audio_probe',.4,0)
+            gain('source_audio_probe',.125)
+            assert(lstg.GetSoundState('source_audio_probe')=='playing')
+            result.audio_bgm,result.audio_se=audioLevels()
+            result.source_audio_checks=1
+        end,debug.traceback)
+        if not ok then save(err) end
+    end
+    function FrameFunc()
+        if finished then return true end
+        clock=clock+1
+        if clock==10 then
+            PauseSound('source_audio_probe');ResumeSound('source_audio_probe')
+            lstg.SetSourceSoundVolume('source_audio_probe',.75)
+            result.audio_bgm,result.audio_se=audioLevels()
+            result.source_audio_checks=result.source_audio_checks+1
+        end
+        if clock>=config.frames then StopSound('source_audio_probe');save();return true end
+        return false
+    end
+    function RenderFunc() BeginScene();RenderClear(Color(255,20,30,40));EndScene() end
+    function GameExit() end
+    function FocusLoseFunc() end
+    function FocusGainFunc() end
+    return
 end
 if config.case=='target-query' then
     local C=dofile('mod/GAME/ports/source_csharp.lua').new()
@@ -508,9 +545,23 @@ function GameInit()
                                 end
                             end
                         end
-                        if clock>=config.frames then save();return true end
+                        if config.return_menu_at and clock==config.return_menu_at then
+                            result.return_menu_requested=clock
+                            stage.group.ReturnToTitle(false,0)
+                        elseif clock>=config.frames then save();return true end
                     elseif active and practiceEntered then
                         result.ended_at=clock;result.end_stage=current and current.stage_name
+                        if config.return_menu_at and TH38 then
+                            for i=1,20 do
+                                local name,voices=debug.getupvalue(TH38.runtime.presentation.clearAudio,i)
+                                if not name then break end
+                                if name=='voices' then
+                                    local count=0;for _ in pairs(voices) do count=count+1 end
+                                    assert(count==0,'切关后雪莲华仍保留音源')
+                                    result.snow_audio_voices_after=count
+                                end
+                            end
+                        end
                         save();return true
                     end
                     return stop
@@ -524,7 +575,7 @@ function GameInit()
                 if not good then save(err);return end
                 local row=currentRow
                 if active and row then row.render_ms=(watch:GetElapsed()-begin)*1000 end
-                if config.capture and active and row and (clock==120 or clock%600==0) then
+                if config.capture and active and row and captureAt(clock) then
                     Snapshot('snapshot/frame'..clock..'.png')
                 end
             end

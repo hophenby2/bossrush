@@ -209,11 +209,18 @@ function V.item(o,level,kind,amount)
     if (kind=='life' or kind=='bombs') and amount>=5 then name=kind..'Big'
     elseif kind=='power' then name=amount>=400 and 'powerFull' or amount>=20 and 'powerBig' or kind end
     local r=cfg.rects[name]
-    if level==35 and name=='sakuraGreen' then r={178,16,11,11}
+    if level==35 and name=='bigPoints' then r={0,10,18,18}
+    elseif level==35 and name=='sakuraGreen' then r={178,16,11,11}
+    elseif level==37 and name=='bigPoints' then r={944,304,80,80}
     elseif level==37 and name=='lanternEnergy' then r={1,416,96,96}
     elseif level==37 and name=='lanternGreen' then r={507+ran:Int(0,2)*50,221,50,50} end
     if not r then return end
-    o.img=V.image(cfg.tex,unpack(r));o.imgup=nil;o.native_item_visual={config=cfg,name=name}
+    o.img=V.image(cfg.tex,unpack(r));o.imgup=nil;o.native_item_visual={config=cfg,name=name,level=level}
+    if level==37 and (name=='points' or name=='bigPoints') then
+        local frame=ran:Int(0,8)
+        o.native_item_visual.frame=frame
+        o.native_item_visual.scale=(name=='bigPoints' and 1 or frame<=3 and .6 or .4)*2/3
+    end
     o.hscale,o.vscale=cfg.scale,cfg.scale;o.native_item_rotation=0
     -- 原作拾取判定独立于图集切片，换图不能继承LoadImage的零半径。
     local a,b=level==35 and 4 or 16*2/3,level==35 and 4 or 32*2/3
@@ -226,8 +233,13 @@ function V.itemRender(o)
         local img=V.image(cfg.tex,unpack(halo));SetImageState(img,'',255,255,255,255)
         Render(img,o.x,o.y,-o.timer*.04*180/math.pi,math.min(1,math.max(0,o.timer-50)/60)*.8*cfg.scale)
     end
-    SetImageState(o.img,'',255,255,255,255)
-    Render(o.img,o.x,o.y,v.level==36 and 0 or o.native_item_rotation or 0,cfg.scale)
+    local img,rotation=o.img,v.level==36 and 0 or o.native_item_rotation or 0
+    if v.level==37 and v.frame then
+        img=V.image(cfg.tex,944,304+(v.frame+math.floor(o.timer/4))%9*80,80,80)
+        rotation=-o.timer*.005*180/math.pi
+    end
+    SetImageState(img,'',255,255,255,255)
+    Render(img,o.x,o.y,rotation,v.scale or cfg.scale)
     return true
 end
 function V.focus(p)

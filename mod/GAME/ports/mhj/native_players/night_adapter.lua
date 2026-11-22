@@ -27,6 +27,13 @@ end
 function M.beforeHit(p,other) return S.beforeHit(p,other) end
 function M.graze(...) return S.graze(...) end
 function M.collect(s,kind,amount) return S.collect(s,kind,amount) end
+function M.collectSound(s,kind,amount)
+    local x=player.x*1.5+336
+    R.sound('item',x)
+    if kind=='life' and (amount>=5 or s.life%5==0) then R.sound('extend',x)
+    elseif kind=='bombs' and (amount>=5 or s.bombs%5==0) then R.sound('cardget',x) end
+end
+function M.dropSound(x) R.sound('bonus',x*1.5+336) end
 function M.speeds(p) return B.speeds(p) end
 function M.move(p)
     local c=B.character

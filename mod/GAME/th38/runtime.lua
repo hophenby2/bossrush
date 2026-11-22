@@ -4,6 +4,8 @@
 local R={classes={},patterns={},objects=setmetatable({},{__mode='k'}),controllers=setmetatable({},{__mode='k'}),bulletCount=0,bulletLimit=1500}
 local Time=NativeTime or dofile('THlib/native_time.lua')
 local FixedLaser=dofile('mod/GAME/th38/fixed_laser.lua')
+local Presentation=dofile('mod/GAME/th38/presentation.lua')
+R.presentation=Presentation
 local float=require('ffi').typeof('float')
 local function f32(x) return tonumber(float(x)) end
 R.data=dofile('mod/GAME/th38/catalogue.lua')
@@ -30,6 +32,7 @@ end
 local assets=false
 function R.loadAssets()
     if assets then return end
+    Presentation.prepare()
     globalResource(function()
         LoadTexture('asl_bullet','Resources/th38/bullet.png')
         if RogueEncounter then RogueEncounter.checkpoint() end
@@ -448,8 +451,8 @@ emit=function(e)
     e.extra=false
     if e.a47==2 then return end
     if e.bound then
-        for host,kind in pairs(e.boundHosts) do if host.alive then fan(e,host.x,host.y,host,kind==4);e.count=e.count+1 else e.boundHosts[host]=nil end end
-    else fan(e,e.x,e.y,e.host,e.relative);e.count=e.count+1 end
+        for host,kind in pairs(e.boundHosts) do if host.alive then fan(e,host.x,host.y,host,kind==4);Presentation.shot(e,host.x);e.count=e.count+1 else e.boundHosts[host]=nil end end
+    else fan(e,e.x,e.y,e.host,e.relative);Presentation.shot(e,e.x);e.count=e.count+1 end
 end
 local function bossMotion(s)
     local e=s.settings

@@ -319,13 +319,20 @@ function R.stopMusic()
     R.music=nil
 end
 function E.PlaySound(name,...)
-    if not has('snd',name) then
+    local id='th43/se/'..name
+    if not has('snd',id) then
         local path='Resources/th43/soundeffect/se_'..name..'.wav'
         if not FileExist(path) then return end
-        LoadSound(name,path)
+        local pool=GetResourceStatus();SetResourceStatus('global')
+        LoadSound(id,path);SetResourceStatus(pool)
     end
-    return PlaySound(name,...)
+    return PlaySound(id,...)
 end
+function E.StopSound(name)
+    local id='th43/se/'..name
+    if has('snd',id) then StopSound(id) end
+end
+stg.StopSound=E.StopSound
 E.audio={playMusic=function(key,_,time) R.playMusic(key,time) end,stopMusic=R.stopMusic,playSound=E.PlaySound}
 stg.PlaySound=E.PlaySound
 E.EISlib.stage.playMusic=R.playMusic

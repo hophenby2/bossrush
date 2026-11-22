@@ -1,0 +1,90 @@
+{
+  "source_sha256": {
+    "resources.assets": "99df11eb0b282fefe4f9dc877e9d57ee5f6e4df4a75c0b412166dbe3b4b5f46c",
+    "globalgamemanagers": "8e64279df1ed55ab702aedabf40fc04c8eb5e0a40bd0751055f924570f18c4ee",
+    "Managed/UnityEngine.ParticleSystemModule.dll": "aa9ad90cf107d6792a4c7f98839fb705942b8e38211d455180b28b0631971221"
+  },
+  "systems": 64,
+  "textures": {
+    "1538": {
+      "file": "Resources/th38/presentation/particle_1538.png",
+      "size": [
+        128,
+        128
+      ],
+      "sha256": "232cce512d3902f1dcfdf09ea32f27855d93254ccf590e76d8e3eda8f5adf382"
+    },
+    "382": {
+      "file": "Resources/th38/presentation/particle_382.png",
+      "size": [
+        32,
+        32
+      ],
+      "sha256": "22016b90fb55f4fd98b18576cd52f3f9ea72adc10fc80b1d86dcc1826ef9da4c"
+    },
+    "1380": {
+      "file": "Resources/th38/presentation/particle_1380.png",
+      "size": [
+        433,
+        433
+      ],
+      "sha256": "978581c1fb1ee54a21303f06c203f4f1a847e3bc5f57596a5481b82a06d93811"
+    },
+    "1524": {
+      "file": "Resources/th38/presentation/particle_1524.png",
+      "size": [
+        64,
+        64
+      ],
+      "sha256": "2be0fd98c0aa04b6672cbbba9659badc7174d2fe8ae8b3c072a60f617b7349ec"
+    },
+    "513": {
+      "file": "Resources/th38/presentation/particle_513.png",
+      "size": [
+        32,
+        32
+      ],
+      "sha256": "2fd758b56e95b9154c5bb0c92560e73935a761549f2593fd8d9f63e0e4361766"
+    },
+    "322": {
+      "file": "Resources/th38/presentation/particle_322.png",
+      "size": [
+        109,
+        109
+      ],
+      "sha256": "13d6439f6b412512036990c09f7f843b89065560540342e3725a0db25babc012"
+    },
+    "417": {
+      "file": "Resources/th38/presentation/particle_417.png",
+      "size": [
+        512,
+        512
+      ],
+      "sha256": "8df9f23464a5979ed78254300636570faaa6795e263a64a2378f2c701ddd9c97"
+    },
+    "849": {
+      "file": "Resources/th38/presentation/particle_849.png",
+      "size": [
+        116,
+        116
+      ],
+      "sha256": "1826641305b0f99ad724846810eff7b5a0d19a936699ce339a98f010cf80505b"
+    },
+    "770": {
+      "file": "Resources/th38/presentation/particle_770.png",
+      "size": [
+        92,
+        90
+      ],
+      "sha256": "bfcaf0265f489592ef59615c925c1cd710e75e92e3398c4087f48e866d8c30f7"
+    },
+    "1434": {
+      "file": "Resources/th38/presentation/particle_1434.png",
+      "size": [
+        116,
+        116
+      ],
+      "sha256": "8b53f857aa7338535145493c60aecf2bdf5a914bec4d22d446729d5fbfe5289f"
+    }
+  }
+}

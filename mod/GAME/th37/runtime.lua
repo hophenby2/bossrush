@@ -5,8 +5,8 @@ local R={patterns={},classes={},assets={},objects=setmetatable({},{__mode='k'})}
 local D=dofile('mod/GAME/th37/catalogue.lua')
 local Bindings=dofile('mod/GAME/ports/binding_index.lua')
 local floor,abs,min,max=math.floor,math.abs,math.min,math.max
-local float=require('ffi').typeof('float')
-local function f32(x) return tonumber(float(x)) end
+local floatBox=require('ffi').new('float[1]')
+local function f32(x) floatBox[0]=x;return floatBox[0] end
 local radians,degrees,pi=f32(.0174532924),f32(57.29578),f32(math.pi)
 local function sourceCos(a) return f32(math.cos(f32(f32(a)*radians))) end
 local function sourceSin(a) return f32(math.sin(f32(f32(a)*radians))) end
@@ -16,8 +16,14 @@ end
 local function trunc(x) return x<0 and math.ceil(x) or floor(x) end
 local function valid(o) return o and IsValid(o) end
 local function rnd(a) return a~=0 and ran:Float(-a,a) or 0 end
+local nativeCopy=lstg.CopySourceTable
+local nativeGeometry=lstg.SyncSourceBulletGeometry
+local copySizes=setmetatable({},{__mode='k'})
+local audio=dofile('mod/GAME/ports/mhj/source_audio.lua').new(37)
 local function copy(s)
-    local o={};for k,v in pairs(s) do o[k]=v end
+    local o,count
+    if nativeCopy then o,count=nativeCopy(s,copySizes[s] or 128);copySizes[s]=count+8
+    else o={};for k,v in pairs(s) do o[k]=type(v)=='number' and f32(v) or v end end
     o.changes={};o.limits={};return o
 end
 function R.player(context)
@@ -43,7 +49,7 @@ local function integer(o,key) return intFields[key] or key=='type' and o.is_proj
 local boolFields={Mist=true,Dispel=true,Blend=true,Afterimage=true,Outdispel=true,Invincible=true}
 local function set(o,key,v)
     if integer(o,key) then v=trunc(v) end
-    if type(v)=='number' and not integer(o,key) and (o.is_projectile or key=='r') then v=f32(v) end
+    if type(v)=='number' and not integer(o,key) then v=f32(v) end
     if boolFields[key] then v=v~=0 end
     o[key]=v
     if key=='speed' or key=='speedd' or key=='xscale' or key=='yscale' then o.motion_dirty=true end
@@ -65,23 +71,33 @@ end
 function R.change(o,key,value,random,op,mode,duration)
     local initial=o[key] or 0;if type(initial)=='boolean' then initial=initial and 1 or 0 end
     -- Barrage.type为零基，Batch.type为一基；这里的精灵表统一使用一基。
-    if o.is_projectile and key=='type' and op==0 and type(value)=='number' then value=value+1 end
+    if o.is_projectile and o.kind~='laser' and key=='type' and op==0 and type(value)=='number' then value=value+1 end
     if value=='自机' then
         local x,y=R.player(o)
         if key=='fx' then value=x elseif key=='fy' then value=y
-        else value=angle(o.fx or o.x,o.fy or o.y,x,y) end
-    elseif value=='自身' then value=initial end
-    value=value+rnd(random)
+        else
+            local ox,oy=0,0
+            if not o.is_projectile and (o.kind=='batch' or o.kind=='laser') then ox,oy=o.controller.offsetx,o.controller.offsety end
+            value=angle(f32((o.fx or o.x)+ox),f32((o.fy or o.y)+oy),x,y)
+        end
+    elseif value=='自身' then
+        if not o.is_projectile and (o.kind=='batch' or o.kind=='laser') then
+            local ox,oy=o.controller.offsetx,o.controller.offsety
+            if key=='fx' then value=f32(o.x-4+ox)
+            elseif key=='fy' then value=f32(o.y+16+oy)
+            elseif key=='fdirection' or key=='sonaspeedd' then value=angle(f32(o.fx+ox),f32(o.fy+oy),f32(o.x-4+ox),f32(o.y+16+oy))
+            else value=initial end
+        else value=initial end
+    end
+    value=f32(value+rnd(random))
     o.changes[#o.changes+1]={key=key,value=value,initial=initial,op=op,mode=mode,duration=max(1,duration),left=max(1,duration)}
 end
 function R.move(o,x1,x2,y1,y2)
     o.changes[#o.changes+1]={mode='move',x=ran:Float(x1,x2),y=ran:Float(y1,y2),left=60}
 end
 function R.follow(o) o.changes[#o.changes+1]={mode='follow',left=60} end
-function R.sound(name)
-    -- 差异1：原XACT声库暂用本项目枪音代理，避免把未注册的XACT cue交给LuaSTG。
-    if name:find('kira',1,true) then PlaySound('kira00',.2) end
-end
+function R.sound(name,x) audio.play(name,x) end
+function R.stopSound(name) audio.stop(name) end
 local function interpolate(o)
     local i=1
     while i<=#o.changes do
@@ -108,11 +124,12 @@ local function interpolate(o)
             local v
             if c.mode=='正弦' then
                 local delta=c.op==0 and c.value-c.initial or c.op==1 and c.value or -c.value
-                v=c.initial+delta*sin(360*(c.duration-c.left)/c.duration)
+                local phase=f32(f32(f32(360)/f32(c.duration))*f32(c.duration-c.left))
+                v=f32(c.initial+f32(delta*sourceSin(phase)))
             elseif c.mode=='固定' then v=c.op==0 and c.value or old+(c.op==1 and c.value or -c.value)
-            elseif c.op==0 then v=(old*(c.left-1)+c.value)/c.left
+            elseif c.op==0 then v=f32(f32(f32(old*f32(c.left-1))+f32(c.value))/f32(c.left))
             else
-                local delta=c.value/c.duration
+                local delta=f32(f32(c.value)/f32(c.duration))
                 -- Execution/BExecution先将整数属性的增量截断，再加减原值。
                 if integer(o,c.key) then delta=trunc(delta) end
                 v=old+(c.op==1 and delta or -delta)
@@ -133,17 +150,17 @@ local function motion(o,son,scale)
     local dirty=son and 'sonmotion_dirty' or 'motion_dirty';local accel=son and 'sonaccel_dirty' or 'accel_dirty'
     if o[dirty] or o.mx==nil then
         if son then o.mx,o.my=velocity(o,o[s] or 0,o[d] or 0)
-        else o.mx=(o.xscale or 1)*(o[s] or 0)*cos(o[d] or 0);o.my=(o.yscale or 1)*(o[s] or 0)*sin(o[d] or 0) end
+        else o.mx=f32((o[s] or 0)*sourceCos(o[d] or 0));o.my=f32((o[s] or 0)*sourceSin(o[d] or 0)) end
         o[dirty]=false
     end
     if o[accel] or o.ax==nil then
         if son then o.ax,o.ay=velocity(o,o[a] or 0,o[ad] or 0)
-        else o.ax=(o.xscale or 1)*(o[a] or 0)*cos(o[ad] or 0);o.ay=(o.yscale or 1)*(o[a] or 0)*sin(o[ad] or 0) end
+        else o.ax=f32((o[a] or 0)*sourceCos(o[ad] or 0));o.ay=f32((o[a] or 0)*sourceSin(o[ad] or 0)) end
         o[accel]=false
     end
     if son then
         o.mx=f32(o.mx+f32(o.ax*f32(scale)));o.my=f32(o.my+f32(o.ay*f32(scale)))
-    else o.mx=o.mx+o.ax*scale;o.my=o.my+o.ay*scale end
+    else o.mx=f32(o.mx+f32(o.ax*scale));o.my=f32(o.my+f32(o.ay*scale)) end
     if son and (o.sonspeed or 0)~=0 then
         -- Barrage.Update用去掉横纵倍率后的速度更新逻辑方向，事件随后可修改head。
         local heading
@@ -190,6 +207,12 @@ end
 function R.loadPattern(id)
     if not R.patterns[id] then
         local p=dofile('mod/GAME/th37/patterns/'..id..'.lua');R.patterns[id]=p
+        -- 源文件中的标量是 C# float；仅载入时转换，不在每发弹的浅拷贝中重复转换。
+        for _,o in ipairs(p.emitters) do
+            for k,v in pairs(o) do if type(v)=='number' then o[k]=f32(v) end end
+            for k,v in pairs(o.rand) do o.rand[k]=f32(v) end
+        end
+        for i,v in ipairs(p.center) do p.center[i]=f32(v) end
         if #p.types>0 then globalResource(function() LoadTexture('mhj2_b'..id,'Resources/th37/b'..id..'.png') end) end
     end
     return R.patterns[id]
@@ -200,16 +223,21 @@ local function projected(b)
     local img,p=texture(s.pattern,s.type)
     local a,c=max(0,(p[7]+1)*(s.wscale or 1)),max(0,(p[7]+1)*(s.hscale or 1))
     local rot=-((s.head or 0)+90)
-    local layer=(s.controller.effectLayer or LAYER.ENEMY_BULLET)+(s.layerid or 0)*2+(s.Blend and 1 or 0)
+    local layer=(s.controller.effectLayer or s.controller.drawLayer or LAYER.ENEMY_BULLET)+(s.layerid or 0)*2+(s.Blend and 1 or 0)
     local group=s.controller.effectLayer and GROUP.GHOST or (s.Invincible and GROUP.INDES or GROUP.ENEMY_BULLET)
     local collidable=not s.controller.effectLayer and not s.dis and s.age>(s.Mist and 15 or 0) and s.type>0 and (s.alpha or 100)>95 and s.wscale>0 and s.hscale>0
     if lstg.AndroidProjectBullet then
         lstg.AndroidProjectBullet(b,img,x,y,rot,s.wscale,s.hscale,a,c,layer,group,collidable)
     else
-        b.x,b.y=x,y;b.vx,b.vy=0,0
-        if b.img~=img then b.img=img end
-        b.a,b.b=a,c;b.rect=false;b.rot=rot;b.hscale,b.vscale=s.wscale,s.hscale
-        b.layer,b.group,b.colli=layer,group,collidable
+        if s.renderImage~=img then b.img=img;s.renderImage=img end
+        if nativeGeometry then nativeGeometry(b,x,y,a,c,rot,s.wscale,s.hscale)
+        else
+            b.x,b.y=x,y;b.vx,b.vy=0,0
+            b.a,b.b=a,c;b.rect=false;b.rot=rot;b.hscale,b.vscale=s.wscale,s.hscale
+        end
+        if b.layer~=layer then b.layer=layer end
+        if b.group~=group then b.group=group end
+        b.colli=collidable
     end
     b._a=max(0,min(255,(s.alpha or 100)*2.55*(s.controller.friendlyAlpha or 1)));b._r,b._g,b._b=s.colorR or 255,s.colorG or 255,s.colorB or 255
     b._blend=s.Blend and 'mul+add' or ''
@@ -218,6 +246,9 @@ local function clean(b)
     local s=b.mhj
     if s and s.controller and s.controller.bullets then s.controller.bullets[b]=nil end
     if s then Bindings.remove(s.bindingBucket,b) end
+    if s then
+        Bindings.remove(s.coverBucket,b);Bindings.remove(s.reboundBucket,b);Bindings.remove(s.forceBucket,b)
+    end
     if s then s.object=nil end
     R.objects[b]=nil;object.RawDel(b)
 end
@@ -286,20 +317,35 @@ R.classes.projectile=Class(bullet,{
         s.fx,s.fy=f32(s.fx),f32(s.fy)
         b._a,b._r,b._g,b._b=255,255,255,255;b._blend='';s.age=0;s.changes={};s.limits=s.limits or {};s.object=nil
         s.shadows={};s.previousX,s.previousY=s.fx,s.fy
+        s.sourceSpeedd=0
         if s.Withspeedd then s.head=s.sonspeedd end
         R.objects[b]=true;s.controller.bullets[b]=s
         s.controller.serial=(s.controller.serial or 0)+1;s.serial=s.controller.serial
         s.bindingBucket=bindingBucket(s.controller,s.layerid,s.parentid,true)
-        Bindings.add(s.bindingBucket,b,s);projected(b)
+        Bindings.add(s.bindingBucket,b,s)
+        for _,key in ipairs({'Cover','Rebound','Force'}) do
+            if s[key] then
+                local field=key:lower()..'Bucket'
+                s[field]=bindingBucket(s.controller,s.layerid,key,true)
+                Bindings.add(s[field],b,s)
+            end
+        end
+        projected(b)
     end,
     frame=function(b)
         local s=b.mhj;s.age=s.age+1
+        if s.age==1 then s.sourceSpeedd=s.sonspeedd end
         s.previousX,s.previousY=s.fx,s.fy
         local t=s.age-(s.Mist and 15 or 0)
         if t>0 then
+            if t==1 and not s.controller.effectLayer and not s.banSound and s.life>2 and s.alpha>60 then
+                R.sound('tan',s.fx-93)
+                if s.controller.usekira then R.sound('kira',s.fx-93) end
+            end
             -- 原Barrage.Update先积分，再更新事件；速度变化从下一运动帧生效。
             if not s.dis then
                 local dx,dy=motion(s,true,s.controller.slow or 1);s.fx,s.fy=f32(s.fx+dx),f32(s.fy+dy)
+                s.sourceSpeedd=s.sonspeedd
             end
             updateShadows(s)
             if s.Sonevents then s.Sonevents(s,t,R) end
@@ -332,7 +378,7 @@ R.classes.projectile=Class(bullet,{
     render=function(b)
         local s=b.mhj
         if s.type<=0 then return end
-        local _,profile=texture(s.pattern,s.type)
+        local image,profile=texture(s.pattern,s.type)
         if s.Mist and s.age<=15 then
             local born=s.age/15
             local small=profile[3]<=(s.type<=228 and 32 or 48)
@@ -341,16 +387,17 @@ R.classes.projectile=Class(bullet,{
                 drawSprite(b,'mhj2_mist_'..profile[8],b.x,b.y,b.rot,scale,scale,b._a*born)
             else
                 local extra=small and 0 or 1-born
-                drawSprite(b,b.img,b.x,b.y,b.rot,b.hscale+extra,b.vscale+extra,b._a*born)
+                drawSprite(b,image,b.x,b.y,b.rot,b.hscale+extra,b.vscale+extra,b._a*born)
             end
             return
         end
         if not s.dis or s.type>228 or profile[3]>=48 then
-            drawSprite(b,b.img,b.x,b.y,b.rot,b.hscale,b.vscale,b._a)
+            if RenderSourceObjectImage then RenderSourceObjectImage(image,b,b._blend,b._a,b._r,b._g,b._b)
+            else drawSprite(b,image,b.x,b.y,b.rot,b.hscale,b.vscale,b._a) end
         end
         if s.Afterimage then
             for _,shadow in ipairs(s.shadows) do
-                drawSprite(b,b.img,shadow.x+(s.controller.positionx or 0)-317,227-shadow.y-(s.controller.positiony or 0),-(shadow.head+90),b.hscale,b.vscale,shadow.alpha*255)
+                drawSprite(b,image,shadow.x+(s.controller.positionx or 0)-317,227-shadow.y-(s.controller.positiony or 0),-(shadow.head+90),b.hscale,b.vscale,shadow.alpha*255)
             end
         end
         if s.dis and s.type<=228 and profile[3]<48 and profile[8]>=0 then
@@ -416,24 +463,82 @@ function R.finishCollisions()
     end
     R.collisionCount=0
 end
-R.classes.beam=Class(laser,{
+-- LUpdate 的长度是运行状态，不是发射器的目标长度；短命激光也要完成退场收束。
+R.advanceBeam=dofile('mod/GAME/ports/mhj/straight_laser.lua')(R,interpolate,{
+    firstType=0,
+    outside=function(s)
+        local pad=s.Outdispel and 0 or 200
+        return s.fx< -16-pad-s.longs or s.fx>467+pad+s.longs or s.fy< -33-pad-s.longs or s.fy>515+pad+s.longs
+    end,
+})
+local function beamGrazeGrid(s)
+    local g=s.laserGraze
+    if s.rlongs-g.count*5>0 then
+        g.count=math.ceil(s.rlongs/5)
+    else
+        g.x,g.y,g.direction,g.ready=s.fx,s.fy,s.sonspeedd,g.count
+    end
+end
+local function grazeBeam(b,s)
+    local p=player
+    if s.life<=2 or s.Invincible and s.age<20 or not valid(p.grazer) then return end
+    local g=s.laserGraze
+    if not g.ready or g.ready==0 then return end
+    local px,py=R.player(s);local ca,sa=sourceCos(g.direction),sourceSin(g.direction)
+    local dx,dy=px-g.x,py-g.y
+    local along,across=dx*ca+dy*sa,dy*ca-dx*sa
+    local state=NativePlayers and NativePlayers.state()
+    local radius2=state and state.sakuraStatus==1 and 2000 or 980
+    if across*across>radius2 then return end
+    local reach=math.sqrt(radius2-across*across)
+    local first=max(1,math.ceil((along-reach)/5));local last=min(g.ready,floor((along+reach)/5))
+    for i=first,last do if not g.grazed[i] then
+        g.grazed[i]=true
+        local x,y=g.x+i*5*ca,g.y+i*5*sa
+        p.grazer.class.colli(p.grazer,b,true,x-317,227-y)
+    end end
+end
+R.classes.beam=Class(object,{
     init=function(b,s)
-        laser.init(b,({2,4,6,10,12,14,16,8})[(s.type-1)%8+1],s.fx+(s.controller.positionx or 0)-317,227-s.fy-(s.controller.positiony or 0),-s.sonspeedd,0,max(1,s.longs),0,max(1,s.wscale*16),0,0)
-        s.is_projectile=true;b.mhj=s;b.bound=false;b.vx,b.vy=0,0;s.age=0;s.changes={};s.limits=s.limits or {};s.object=nil;R.objects[b]=true;s.controller.bullets[b]=s
-        laser._TurnOn(b,15,false,false)
+        s.is_projectile=true;s.kind='laser';b.mhj=s;b.bound=false;b.vx,b.vy=0,0;s.age=0;s.rlongs=0;s.rwscale=s.wscale;s.changes={};s.limits=s.limits or {};s.object=nil;R.objects[b]=true;s.controller.bullets[b]=s
+        b.group,b.layer,b.colli=GROUP.LASER,s.controller.effectLayer or LAYER.ENEMY_BULLET,false
+        b.IsLaser,b._inf_graze=true,true
+        s.laserGraze={count=0,grazed={}}
+        b.x,b.y=s.fx+(s.controller.positionx or 0)-317,227-s.fy-(s.controller.positiony or 0)
     end,
     frame=function(b)
         local s=b.mhj;s.age=s.age+1
-        if s.age>s.life then clean(b);return end
-        if s.Sonevents then s.Sonevents(s,s.age,R) end;interpolate(s)
-        local dx,dy=motion(s,true,s.controller.slow or 1);s.fx,s.fy=s.fx+dx,s.fy+dy
-        b.x,b.y,b.rot=s.fx+(s.controller.positionx or 0)-317,227-s.fy-(s.controller.positiony or 0),-s.sonspeedd
-        b.w0,b.l2=max(0,s.wscale*16),max(0,s.longs);b._a=max(0,min(255,(s.alpha or 100)*2.55*(s.controller.friendlyAlpha or 1)));b.colli=(s.alpha or 100)>95;laser.frame(b)
+        beamGrazeGrid(s)
+        if s.age==1 and not s.controller.effectLayer then R.sound('lazer00',s.fx-93) end
+        if R.advanceBeam(s) then clean(b);return end
+        b.x,b.y,b.rot=s.fx+(s.controller.positionx or 0)-317,227-s.fy-(s.controller.positiony or 0),-(s.head or s.sonspeedd)
+        if not s.controller.effectLayer and not s.dis and s.age<=s.life and s.wscale>=.5 and s.alpha>95 and valid(player) and player.colli~=false then
+            local px,py=R.player(s);local cx=s.fx+s.rlongs*sourceCos(s.sonspeedd)/2;local cy=s.fy+s.rlongs*sourceSin(s.sonspeedd)/2
+            local dx,dy=px-cx,py-cy;local ca,sa=sourceCos(s.head),sourceSin(s.head)
+            local along,across=dx*ca+dy*sa,dy*ca-dx*sa
+            local character=player.mhj_source and player.mhj_source.character
+            local vulnerable=not cheat and player.protect<=0 and not player.hit and player.death<=0
+                and not (character and (character.BWudi or character.SWudi))
+            if vulnerable and s.rlongs>0 and along^2/(s.rlongs*3/8)^2+across^2/(s.wscale*1.5)^2<=1 then
+                player.class.colli(player,b)
+                if not s.Invincible then s.dis=true;s.age=s.life+1 end
+            else
+                grazeBeam(b,s)
+            end
+        elseif not s.controller.effectLayer and not s.dis and s.age<=s.life and s.alpha>95 and valid(player) and player.colli~=false then
+            grazeBeam(b,s)
+        end
     end,
     render=function(b)
         local s=b.mhj;local p=D.bulletTypes[33+s.type]
         if not p then return end
         local ray=s.Ray==true;local x,y,w,h=p[1],p[2],p[3],p[4]
+        if s.age<=s.life and (s.rlongs<s.longs and not s.alreadyLong or ray) then
+            effectAssets()
+            local mist='mhj2_mist_'..p[8]
+            SetImageState(mist,'',204,255,255,255)
+            Render(mist,b.x,b.y,-s.age*5*(180/math.pi)^2)
+        end
         if ray then x,y,w,h=s.type*18,711,18,18 end
         local id='mhj2_laser_'..s.type..'_'..tostring(ray)
         if not R.assets[id] then
@@ -441,9 +546,10 @@ R.classes.beam=Class(laser,{
             R.assets[id]=true
         end
         SetImageState(id,s.Blend and 'mul+add' or '',(s.alpha or 100)*2.55,255,255,255)
-        Render(id,b.x,b.y,90-s.sonspeedd,s.wscale,(b.l2 or 0)/(ray and 9 or h))
+        Render(id,b.x,b.y,90-(s.head or s.sonspeedd),s.wscale,s.rlongs/(ray and 9 or h))
     end,
-    del=function(b) clean(b) end,kill=function(b) clean(b) end,
+    del=function(b) b.mhj.dis=true;b.mhj.age=b.mhj.life+1;object.Preserve(b) end,
+    kill=function(b) b.class.del(b) end,
 })
 local function emit(o,bound)
     local c=o.controller;local p=c.pattern;local rr=o.rand or {}
@@ -452,28 +558,41 @@ local function emit(o,bound)
     local fx,fy=o.fx or o.x-4,o.fy or o.y+16
     if bound then fx,fy=bound.fx-ox,bound.fy-oy end
     local r=(o.r or 0)+trunc(rnd(rr.r or 0));local spread=(o.range or 0)+trunc(rnd(rr.range or 0))
-    local base=direction(o.fdirection,o,fx+ox,fy+oy,o.fdirections)+rnd(rr.fdirection or 0)
+    local baseRandom=rnd(rr.fdirection or 0)
     local radial=direction(o.rdirection,o,fx+ox,fy+oy,o.rdirections)+rnd(rr.rdirection or 0)
     local speed=(o.sonspeed or 0)+rnd(rr.sonspeed or 0);local accel=(o.sonaspeed or 0)+rnd(rr.sonaspeed or 0)
-    local ad=direction(o.sonaspeedd,o,fx+ox,fy+oy,o.sonaspeedds)+rnd(rr.sonaspeedd or 0)
+    local accelRandom=rnd(rr.sonaspeedd or 0)
     local jx,jy=trunc(rnd(rr.fx or 0)),trunc(rnd(rr.fy or 0))
     for i=0,n-1 do
-        local fan=(i-(n-1)/2)*spread/n
+        local fan=f32(f32(f32(i-f32((n-1)/2))*spread)/n)
         local s=copy(o);s.limits=o.limits;s.controller=c;s.pattern=p;s.emitter=o;s.parentid=o.id;s.layerid=o.parentid
         s.type=trunc(o.type)
-        s.fx,s.fy=fx+r*cos(radial+fan)+jx+ox,fy+r*sin(radial+fan)+jy+oy
+        local radialAngle=f32(radial+fan)
+        if bound then
+            s.fx=f32(bound.fx+f32(r*sourceCos(radialAngle)))
+            s.fy=f32(bound.fy+f32(r*sourceSin(radialAngle)))
+        else
+            s.fx=f32(f32(f32(fx+f32(r*sourceCos(radialAngle)))+jx)+ox)
+            s.fy=f32(f32(f32(fy+f32(r*sourceSin(radialAngle)))+jy)+oy)
+        end
         -- 发射器的积分缓存不能传给弹体；否则静止发射器会把子弹的3.5速度覆盖成0。
         s.mx,s.my,s.ax,s.ay=nil,nil,nil,nil
         s.sonmotion_dirty,s.sonaccel_dirty=true,true
-        s.sonspeed,s.sonaspeed,s.sonaspeedd=speed,accel,ad
-        s.sonspeedd=base+fan+(o.Bindwithspeedd and bound and bound.sonspeedd or 0)
+        local origin={x=o.x+ox,y=o.y+oy,controller=c}
+        s.sonspeed,s.sonaspeed=speed,accel
+        local fd=o.sourceFdirection and o.sourceFdirection< -99997 and o.sourceFdirection or o.fdirection
+        local ad=o.sourceAdirection and o.sourceAdirection< -99997 and o.sourceAdirection or o.sonaspeedd
+        s.sonaspeedd=direction(ad,origin,s.fx,s.fy,o.sonaspeedds)+accelRandom
+        s.sonspeedd=direction(fd,origin,s.fx,s.fy,o.fdirections)+baseRandom+fan+(o.Bindwithspeedd and bound and (bound.sourceSpeedd or bound.sonspeedd) or 0)
         s.life=o.sonlife;s.age=0;s.head=(o.head or 0)+trunc(rnd(rr.head or 0))
+        s.banSound=c.banSound or o.life<20 and o.shot
         New(o.kind=='laser' and R.classes.beam or R.classes.projectile,s)
+        o.shot=true
     end
 end
 local function fire(o,bound)
     if bound then emit(o,bound);return end
-    if not o.bindid or o.bindid<0 or o.bindid==o.id then emit(o);return end
+    if not o.bindid or o.bindid<0 or o.kind=='batch' and o.bindid==o.id then emit(o);return end
     -- Batch.Shoot的额外发射与周期发射都必须找到已出生的绑定宿主。
     for _,pair in ipairs(bindingTargets(o)) do
         if targetable(pair,15) then emit(o,pair[2]) end
@@ -482,6 +601,9 @@ end
 function R.fire(o) fire(o,o.bound_source) end
 local function emitter(spec,c)
     local o=copy(spec);o.controller=c;o.host=c.host;o.pattern=c.pattern;o.children=setmetatable({},{__mode='k'})
+    -- Time.Start 保留原始自机/自身方向标记；父事件改动副本不能破坏该标记。
+    o.sourceFdirection=spec.sourceFdirection or spec.fdirection
+    o.sourceAdirection=spec.sourceAdirection or spec.sonaspeedd
     -- Batch.Copy是浅拷贝，原EventRead的次数限制跨Totalframe循环保留。
     -- 只重置运动/插值状态；不能每轮重新启用括号(1)的开场事件。
     local key=spec.kind..':'..spec.parentid..':'..spec.id
@@ -519,8 +641,10 @@ local function field(o,c,t)
         for _,center in ipairs(centers) do
             local key=center and (center.key or center) or o
             local region=o.regions[key] or {owner=o};o.regions[key]=region;region.active=true
-            for b,s in pairs(c.bullets) do
-                if valid(b) and s.Cover and s.kind~='laser' and (not s.Mist or s.age>15) then
+            local bucket=bindingBucket(c,o.parentid,o.type==1 and o.controlid-1 or 'Cover')
+            for _,pair in ipairs(Bindings.snapshot(bucket)) do
+                local b,s=pair[1],pair[2]
+                if s and s.Cover and (not s.Mist or s.age>15) and valid(b) then
                     s.covers=s.covers or {}
                     if s~=center and area(o,s,c,center) then
                         if not s.covers[region] then s.coverOrder=s.coverOrder or {};s.coverOrder[#s.coverOrder+1]=region end
@@ -531,13 +655,40 @@ local function field(o,c,t)
         end
         for key,region in pairs(o.regions) do if not region.active then o.regions[key]=nil end end
     elseif o.kind=='rebound' then
-        local ox,oy=o.x+c.offsetx,o.y+c.offsety;local ca,sa=cos(o.angle),sin(o.angle)
-        for b,s in pairs(c.bullets) do if valid(b) and s.Rebound then
-            local dx,dy=s.fx-ox,s.fy-oy;local side=-dx*sa+dy*ca
-            local last=s.rebound_side or {};s.rebound_side=last;local previous=last[o];last[o]=side
-            if previous and previous*side<0 and abs(dx*ca+dy*sa)<=o.longs/2 then
-                s.sonspeedd=2*o.angle-s.sonspeedd;s.sonmotion_dirty=true
-                if o.Parentevents then o.Parentevents(s,t,R) end
+        -- Rebound 是从端点出发的线段，检查下一帧相对位移；不是以坐标为中心的历史过线测试。
+        local x,y=f32(o.x-4),f32(o.y+16)
+        local ex,ey=f32(x+f32(o.longs*sourceCos(o.angle))),f32(y+f32(o.longs*sourceSin(o.angle)))
+        local rx,ry=f32(ex-x),f32(ey-y)
+        for _,pair in ipairs(Bindings.snapshot(bindingBucket(c,o.parentid,'Rebound'))) do
+          local b,s=pair[1],pair[2]
+          if s and not s.dis and (not s.Mist or s.age>15) and ((s.reboundCount or 0)<o.time or o.time==0) and valid(b) then
+            local mx,my=s.mx or 0,s.my or 0;local ax,ay=s.ax or 0,s.ay or 0
+            local nx=f32(s.fx+f32(f32(mx+ax)-(o.mx or 0)))
+            local ny=f32(s.fy+f32(f32(my+ay)-(o.my or 0)))
+            local dx,dy=f32(s.fx-nx),f32(s.fy-ny)
+            local den=f32(f32(rx*dy)-f32(ry*dx))
+            if den~=0 then
+                local qx,qy=f32(nx-x),f32(ny-y)
+                local u=f32(f32(f32(qx*dy)-f32(qy*dx))/den)
+                local v=f32(f32(f32(qx*ry)-f32(qy*rx))/den)
+                if u>=0 and u<=1 and v>=0 and v<=1 then
+                    -- 按 Rebound.cs 原式逐项舍入；改用参数方程会改变近水平交点的原作轨迹。
+                    local denominator=f32(f32(ry*dx)-f32(dy*rx))
+                    local ix=f32(f32(f32(f32(f32(rx*dx)*f32(ny-y))+f32(f32(ry*dx)*x))-f32(f32(dy*rx)*nx))/denominator)
+                    local iy=f32(f32(f32(f32(f32(ry*dy)*f32(nx-x))+f32(f32(rx*dy)*y))-f32(f32(dx*ry)*ny))/f32(-denominator))
+                    s.sonspeedd=f32(2*o.angle-s.sonspeedd)
+                    local distance=math.sqrt(f32(f32(f32(ix-nx)^2)+f32(f32(iy-ny)^2)))
+                    local radiansValue=f32(f32(s.sonspeedd)*radians)
+                    s.fx=f32(ix+f32((s.xscale or 1)*f32(distance*math.cos(radiansValue))))
+                    s.fy=f32(iy+f32((s.yscale or 1)*f32(distance*math.sin(radiansValue))))
+                    s.mx,s.my=velocity(s,s.sonspeed,s.sonspeedd);s.sonmotion_dirty=false
+                    s.reboundCount=(s.reboundCount or 0)+1
+                    if o.Parentevents then
+                        o.Parentevents(s,t,R)
+                        -- 原作反弹事件在碰撞处立即写入，不延迟到弹体积分后。
+                        interpolate(s)
+                    end
+                end
             end
         end end
     elseif o.kind=='force' then
@@ -548,7 +699,9 @@ local function field(o,c,t)
             return a
         end
         -- Force.Update也会在雾化期间积累速度；Barrage到第16帧才开始位移。
-        for b,s in pairs(c.bullets) do if valid(b) and s.Force and area(o,s,c) then
+        for _,pair in ipairs(Bindings.snapshot(bindingBucket(c,o.parentid,'Force'))) do
+          local b,s=pair[1],pair[2]
+          if s and area(o,s,c) and valid(b) then
             local a=forceAngle(s.fx,s.fy)
             if s.mx==nil or s.sonmotion_dirty then
                 s.mx,s.my=velocity(s,s.sonspeed,s.sonspeedd);s.sonmotion_dirty=false
@@ -598,9 +751,10 @@ function R.tick(c)
     local function step(o,ot,bound)
         o.active=ot>=1 and ot<=o.life
         if ot<1 or ot>o.life then return end
-        o.time=ot
+        -- Rebound.time 是允许的反弹次数，不能被发射器时钟覆盖。
+        if o.kind~='rebound' then o.time=ot end
         local mx,my=motion(o,false);o.x,o.y=f32(o.x+mx),f32(o.y+my)
-        if o.fx then o.fx=o.fx+mx end;if o.fy then o.fy=o.fy+my end
+        if o.fx then o.fx=f32(o.fx+mx) end;if o.fy then o.fy=f32(o.fy+my) end
         o.bound_source=bound
         if o.kind~='rebound' and o.Parentevents then o.Parentevents(o,ot,R) end
         interpolate(o)
@@ -611,7 +765,7 @@ function R.tick(c)
         else field(o,c,ot) end
     end
     for _,o in ipairs(c.emitters) do
-        if o.Deepbind and o.bindid and o.bindid>=0 and (o.kind=='cover' or o.bindid~=o.id) then
+        if o.Deepbind and o.bindid and o.bindid>=0 and (o.kind~='batch' or o.bindid~=o.id) then
             for _,child in pairs(o.children) do child.active=false end
             for _,pair in ipairs(bindingTargets(o)) do if targetable(pair,15) then
                 local child=o.children[pair[1]]
@@ -648,7 +802,31 @@ function R.clear(c)
     end
     c.parents={}
 end
+function R.breakPattern(c,items)
+    if not c then return end
+    R.stopEmitter(c)
+    for b,s in pairs(c.bullets) do if valid(b) then
+        if items and not s.dis and s.life>2 and s.alpha>=70 and NativePlayers and NativePlayers.enabled(nil,35) then
+            NativePlayers.pickup(b.x,b.y,'sakuraGreen',8)
+        end
+        Del(b)
+    end end
+end
+function R.bossEntrance(b,t)
+    if t>120 then return end
+    local x,y=b.x+224,240-b.y
+    for o in pairs(R.objects) do if valid(o) then
+        local s=o.mhj
+        if s and s.is_projectile and not s.controller.effectLayer and not s.dis and not s.Invincible
+            and (not s.Mist or s.age>15) and (s.fx-x)^2+(s.fy-y)^2<(t*6)^2 then Del(o)
+        elseif s and s.state and o.hp>0 and o.x>=-192 and o.x<=192 and o.y>=-223 and o.y<=224
+            and (o.x-b.x)^2+(o.y-b.y)^2<(t*6)^2 then
+            s.mana=true;o.hp=0
+        end
+    end end
+end
 function R.clearAll()
+    audio.clear()
     for b in pairs(R.objects) do
         if valid(b) then clean(b) else R.objects[b]=nil end
     end
@@ -665,12 +843,21 @@ local DeathEffect=Class(object,{
         o.effect=R.controller(o,id or 'e14');o.effect.effectLayer=id and LAYER.ENEMY-1 or LAYER.PLAYER+1;R.objects[o]=true
     end,
     frame=function(o)
-        if o.effect.time<o.effect.pattern.total then R.tick(o.effect)
+        if not o.effect.closed and o.effect.time<o.effect.pattern.total then
+            if o.follow and valid(o.follow) then
+                o.effect.positionx,o.effect.positiony=o.follow.x-o.x,o.y-o.follow.y
+            end
+            R.tick(o.effect)
         else R.stopEmitter(o.effect);R.objects[o]=nil;object.RawDel(o) end
     end,
     render=function() end,
 },true)
 function R.playerDeathEffect(p) New(DeathEffect,p) end
+function R.effect(x,y,id,layer)
+    local o=New(DeathEffect,{x=x,y=y},'e'..id)
+    o.effect.effectLayer=layer or LAYER.ENEMY_BULLET+1
+    return o
+end
 function R.deathClear(x,y,r)
     for b in pairs(R.objects) do
         if valid(b) then
@@ -738,10 +925,11 @@ R.classes.fairy=Class(enemy,{
         local s=o.mhj;R.stopEmitter(s.controller)
         local config=D.enemyTypes[s.type]
         New(DeathEffect,o,'e'..(config[12]+7))
-        if s.items and not s.mana then PlaySound('enep00',.3,o.x/192) end
-        if NativePlayers and NativePlayers.enabled(nil,35) then
-            NativePlayers.drop(35,o.x,o.y,s.items)
-        elseif s.items and item and item.DropItem then item.DropItem(o.x,o.y,{s.items[2] or 0,s.items[4] or 0,0}) end
+        if s.items and not s.mana then R.sound('enep00',o.x+224) end
+        if not s.mana then
+            if NativePlayers and NativePlayers.enabled(nil,35) then NativePlayers.drop(35,o.x,o.y,s.items,false,false,max(config[3],config[4]))
+            elseif s.items and item and item.DropItem then item.DropItem(o.x,o.y,{s.items[2] or 0,s.items[4] or 0,0}) end
+        end
         clean(o)
     end,
     del=function(o) R.stopEmitter(o.mhj.controller);clean(o) end,
@@ -796,5 +984,14 @@ function R.stage_ChangeEnemy(s,id,key,value,duration,mode)
 end
 -- 差异2：STD、MSG、XACT与原作资源经济由项目背景、自机、掉落接管。
 for _,name in ipairs({'PlayMusic','FadeoutMusic','LoadBackGround','ShowTitle','SetEnemyBarrageUnderActor','RaiseEffect','Caution','SetEnemyParent','SetBossItems','SetBossPassedCards','LastBoss','ExtraBoss'}) do R['stage_'..name]=function() end end
+function R.stage_RaiseEffect(s,id,x,y,order)
+    if not s.preroll then R.effect(tonumber(x)-224,240-tonumber(y),id,({[1]=LAYER.ENEMY-1,[2]=LAYER.ENEMY_BULLET-1,[3]=LAYER.BG+1})[tonumber(order)]) end
+end
+local stageTitle=dofile('mod/GAME/th37/title.lua')
+function R.stage_ShowTitle(s) if not s.preroll then stageTitle(s.stage) end end
+function R.stage_SetEnemyBarrageUnderActor(s)
+    local o=target(s,tostring(s.current))
+    if o and o.mhj.controller then o.mhj.controller.drawLayer=LAYER.ENEMY-1 end
+end
 R.data=D
 return R

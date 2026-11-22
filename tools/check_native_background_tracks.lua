@@ -58,6 +58,8 @@ function sin(d) return math.sin(math.rad(d)) end
 ran={Float=function() error('背景消耗了对局 RNG') end}
 function PlaySound() error('背景会在快进时播放音效') end
 
+local only=arg and arg[1]
+if only~='th38' and only~='th39' then
 local spring=dofile('mod/GAME/th37/background.lua')
 for stage=1,8 do
     for _,tick in ipairs({0,360,1800}) do
@@ -70,7 +72,9 @@ for stage=1,8 do
     end
 end
 print('春雪篇 8 条路线的网格与视口检查通过')
+end
 
+if only~='th37' and only~='th39' then
 local A=dofile('mod/GAME/th38/background.lua')
 for _,ch in ipairs({'1','2','3','4','5','6','EXA'}) do
     local seq=A.show(ch,'',0,true)
@@ -101,6 +105,8 @@ for _,ch in ipairs({'1','2','3','4','5','6','EXA'}) do
     end
     print('ASL',ch,open,draws)
 end
+end
+if only=='th37' or only=='th38' then return end
 
 local R=dofile('mod/GAME/th39/runtime.lua')
 local B=dofile('mod/GAME/th39/background.lua')

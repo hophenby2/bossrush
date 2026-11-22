@@ -23,8 +23,10 @@ setmetatable(game,{
 function game:LifeItem(v) return NativePlayers.pickup(v.X-224,240-v.Y,'life',1) end
 function game:BombItem(v) return NativePlayers.pickup(v.X-224,240-v.Y,'bombs',1) end
 local function green(x,y,broken)
-    local o=NativePlayers.pickup(x,y,'sakuraGreen',broken and 2 or 8)
+    local difficulty=stage.current_stage.group.difficulty or 4
+    local o=NativePlayers.pickup(x,y,'sakuraGreen',broken and ({5,4,3,2,4,4})[difficulty] or 8)
     o.target=player
+    if broken then o.attract=10 end
     return o
 end
 function game:SmallItem(v) return green(v.X-224,240-v.Y,false) end
@@ -74,14 +76,18 @@ function S.graze()
     S.system.Power=S.system.Power+8
 end
 function S.collect(s,kind,amount)
-    if kind=='points' then
+    if kind=='points' or kind=='bigPoints' then
         local y=240-player.y
         local base=(stage.current_stage.group.difficulty or 4)>=5 and 300000 or 200000
-        local score=math.floor(((y<({165,190,165,190})[player.mhj_source.type] and base or 25*(545-y))+s.pointrate)/10)*10
+        local big=kind=='bigPoints'
+        local score=math.floor(((y<({165,190,165,190})[player.mhj_source.type] and base*(big and 5 or 1) or (big and 125 or 25)*(545-y))+s.pointrate)/10)*10
         lstg.var.score=(lstg.var.score or 0)+score*amount
-        s.points=s.points+amount
-        if S.system.Status==1 then S.system.Blue=S.system.Blue+amount end
-        S.system.Power=S.system.Power+100*amount
+        s.points=s.points+amount*(big and 5 or 1)
+        if S.system.Status==1 then
+            S.system.Blue=S.system.Blue+amount*(big and 5 or 1)
+            if big then S.system.Power=S.system.Power+30*amount end
+        end
+        if not big or S.system.Status~=1 then S.system.Power=S.system.Power+(big and 200 or 100)*amount end
         return true
     elseif kind=='sakuraGreen' then
         lstg.var.score=(lstg.var.score or 0)+100

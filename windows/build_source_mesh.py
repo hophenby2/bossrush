@@ -61,6 +61,7 @@ def main():
         '\t\t{ "SetSourceActorDamageShape", &source_mesh::setActorDamageShape },\n'
         '\t\t{ "CreateSourceTargetView", &source_mesh::createTargetView },\n'
         '\t\t{ "GetSourceFrameStatistics", &source_mesh::frameStatistics },\n'
+        '\t\t{ "SetSourceSoundVolume", &source_mesh::soundVolume },\n'
         '\t\t{ "SetSourceImageStateRGBA", &source_mesh::imageStateRGBA },\n'
         '\t\t{ "RenderSourceObjectImage", &source_mesh::renderObjectImage },\n'
         '\t\t{ "CreateSourceModelMesh", &source_mesh::create },\n'
@@ -68,6 +69,21 @@ def main():
         '\t\t{ "RenderSourceModelMeshes", &source_mesh::drawBatch },',1)
     patched=output/'LW_Renderer.cpp'
     patched.write_text(source,encoding='utf-8')
+    # 单个原作环境音的淡入淡出不应改动玩家设置的全局音效音量。
+    # 只增加非虚成员，不改变官方资源对象布局或现有虚表。
+    audio_header=engine/'LuaSTG/LuaSTG/GameResource/Implement/ResourceSoundEffectImpl.hpp'
+    audio_source=audio_header.read_text(encoding='utf-8-sig')
+    audio_anchor='\t\tfloat GetSpeed() override;'
+    if audio_source.count(audio_anchor)!=1:
+        raise RuntimeError('官方音效资源补丁上下文不匹配')
+    audio_source=audio_source.replace(audio_anchor,audio_anchor+'\n'
+        '\t\tvoid SetSourceVolume(float volume) {\n'
+        '\t\t\tif (m_last_command.type == CommandType::play) m_last_command.vol = volume;\n'
+        '\t\t\tm_player->setVolume(volume);\n'
+        '\t\t}',1)
+    audio_include=output/'include/GameResource/Implement/ResourceSoundEffectImpl.hpp'
+    audio_include.parent.mkdir(parents=True,exist_ok=True)
+    audio_include.write_text(audio_source,encoding='utf-8')
     # 着色器原先到第一次画模型时才编译；构建时也编译两入口，避免把语法错误带进游戏。
     sdk=Path(os.environ.get('ProgramFiles(x86)','C:/Program Files (x86)'))/'Windows Kits/10/bin'
     compilers=sorted(sdk.glob('*/x64/fxc.exe'),key=lambda p:tuple(int(n) for n in p.parents[1].name.split('.')))
@@ -173,7 +189,7 @@ def main():
         item=ET.SubElement(group,tag('ClCompile'),{'Include':str(source_file)})
         ET.SubElement(item,tag('PrecompiledHeader')).text='NotUsing'
         ET.SubElement(item,tag('ForcedIncludeFiles')).text=str(project.parent/'CMakeFiles/LuaSTG.dir/Release/cmake_pch.hxx')
-        ET.SubElement(item,tag('AdditionalIncludeDirectories')).text=(str(engine/'engine/window-system')+';'
+        ET.SubElement(item,tag('AdditionalIncludeDirectories')).text=(str(output/'include')+';'+str(engine/'engine/window-system')+';'
             +str(engine/'engine/graphics')+';%(AdditionalIncludeDirectories)')
     local_project=output/'SourceModelMesh.vcxproj'
     tree.write(local_project,encoding='utf-8',xml_declaration=True)
@@ -201,6 +217,9 @@ def main():
         'application_source_sha256':hashlib.sha256(application_original.read_bytes()).hexdigest(),
         'application_patch_sha256':hashlib.sha256(patched_application.read_bytes()).hexdigest(),
         'patch_sha256':hashlib.sha256(header.read_bytes()).hexdigest(),'exe_sha256':hashlib.sha256(built.read_bytes()).hexdigest()}
+    record['sound_volume']='独立音效资源音量；不改动全局音效混音器'
+    record['sound_header_sha256']=hashlib.sha256(audio_header.read_bytes()).hexdigest()
+    record['sound_patch_sha256']=hashlib.sha256(audio_include.read_bytes()).hexdigest()
     (output/'build.json').write_text(json.dumps(record,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     if not args.no_install:
         target=ROOT/'LuaSTGSub.exe';backup=output/'LuaSTGSub.before.exe'

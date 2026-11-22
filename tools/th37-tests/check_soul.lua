@@ -3,6 +3,8 @@ arg={'th37-soul'}
 local f=assert(io.open('tools/check_stage.lua'));local src=f:read('*a');f:close()
 assert(loadstring(src:sub(1,assert(src:find('if path == "--all" then',1,true))-1)))()
 local R=dofile('mod/GAME/th37/runtime.lua');local expected,inputs={},{}
+R.sound=function() end
+player.protect,player.death=999,0
 for line in io.lines('tools/th37-tests/oracle/soul/soul.tsv') do
  local v={};for w in line:gmatch('%S+') do v[#v+1]=tonumber(w) or w end
  if v[1]=='P' then inputs[v[2]]=inputs[v[2]] or {};inputs[v[2]][v[3]]={v[4],v[5]}

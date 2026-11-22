@@ -29,7 +29,7 @@ def atom(s):
  except ValueError:return s
 
 def main():
- ap=argparse.ArgumentParser(description=__doc__);ap.add_argument('--source',type=Path,required=True);ap.add_argument('--player-only',action='store_true');args=ap.parse_args()
+ ap=argparse.ArgumentParser(description=__doc__);ap.add_argument('--source',type=Path,required=True);ap.add_argument('--player-only',action='store_true');ap.add_argument('--effects-only',action='store_true');args=ap.parse_args()
  source=args.source.resolve();content=source/'src/THMHJ/bin/x86/Debug/net461/Content';data=content/'Data';dst=ROOT/'mod/GAME/th37';art=ROOT/'Resources/th37';art.mkdir(exist_ok=True)
  hashes={};stats=collections.Counter();unsupported=[]
  for name in ('Game','StageManager','Code','CrazyStorm','Batch','Barrage','Lase','Cover','Rebound','Force','Time','Center','Execution','BExecution','CExecution','Enemy','EnemyEvent','Boss','BossCard','CSManager'):
@@ -126,14 +126,20 @@ def main():
    if ge[16]:global_code.append(f'if t>={start} then R.slow(c,{ge[17]},{ge[18]},t,{start}) end')
   # 中心运动独立于宿主；中心脚本控制boss，普通发射器坐标只做一次center偏移。
   code='-- 离线展开：'+source_name+'.xna；事件均已编译为Lua条件和调用。\nreturn {id='+lua(name)+',total='+str(total)+',centerAvailable='+lua(available)+',center='+lua([atom(x) for x in center[:6]])+',centerEvents='+events(ce,'center')+',globalEvents=function(c,t,R)\n'+'\n'.join(global_code)+'\nend,types='+lua(custom)+',emitters={\n'+',\n'.join(rows)+'\n}}\n'
-  (dst/'patterns').mkdir(exist_ok=True);(dst/'patterns'/(name+'.lua')).write_text(code)
+  target=dst/'patterns'/(name+'.lua');target.parent.mkdir(exist_ok=True)
+  # 保留原有换行格式；效果补导不改写等价的已有产物。
+  if not target.exists() or target.read_text(encoding='utf-8')!=code:
+   target.write_text(code,encoding='utf-8',newline='\n')
   tex=data/(source_name+'.dat')
   if tex.exists():(art/('b'+name+'.png')).write_bytes(decrypt(tex,0))
- if args.player_only:
-  for n in range(1,36):
-   name='e'+str(n)
+ if args.player_only or args.effects_only:
+  names=['e'+str(n) for n in range(1,36)] if args.player_only else sorted(p.stem for p in data.glob('e[0-9]*.xna') if p.stem[1:].isdigit())
+  for name in names:
    if (data/(name+'.xna')).exists():pattern(name,name)
-  (dst/'player_effect_sources.json').write_text(json.dumps({'sha256':hashes,'statistics':dict(stats)},ensure_ascii=False,indent=2)+'\n')
+  if args.effects_only:
+   title=content/'Graphics/Info/stagetitle.xna'
+   (art/'stagetitle.png').write_bytes(decrypt(title,0))
+  (dst/('player_effect_sources.json' if args.player_only else 'effect_sources.json')).write_text(json.dumps({'sha256':hashes,'statistics':dict(stats)},ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
   print('已导出自机效果',len(patterns));return
  def time(s):
   m,s,f=map(int,s.split(':'));return m*3600+s*60+f

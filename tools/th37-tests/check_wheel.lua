@@ -4,6 +4,8 @@ local f=assert(io.open('tools/check_stage.lua'));local src=f:read('*a');f:close(
 assert(loadstring(src:sub(1,assert(src:find('if path == "--all" then',1,true))-1)))()
 ran.Float=function(_,a,b)return (a+b)/2 end
 local R=dofile('mod/GAME/th37/runtime.lua')
+R.sound=function() end
+player.protect,player.death=999,0
 local expected={}
 for line in io.lines('tools/th37-tests/oracle/wheel/wheel.tsv') do
  local a={};for word in line:gmatch('%S+') do a[#a+1]=tonumber(word) or word end

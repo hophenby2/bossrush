@@ -159,21 +159,24 @@ function S.collect(s,kind,amount)
     if kind=='lanternEnergy' then
         if v.Energy>=3 then lstg.var.score=(lstg.var.score or 0)+1000000 else v.Energy=v.Energy+amount end
         return true
-    elseif kind=='points' then
+    elseif kind=='points' or kind=='bigPoints' then
+        local big=kind=='bigPoints'
         local difficulty=stage.current_stage.group.difficulty or 4
         local base=({80000,100000,150000,200000,300000,300000,200000})[difficulty]
         local y=360-player.y*1.5
-        local total=base+s.pointrate
+        local total=base*(big and 5 or 1)+s.pointrate
         local score=y<380 and total or math.floor(total/(672-380))*math.max(10,672-math.floor(y))
         lstg.var.score=(lstg.var.score or 0)+(score-score%10)*amount
-        s.points=(s.points or 0)+amount
+        s.points=(s.points or 0)+amount*(big and 5 or 1)
         local gain
-        if v.Status==0 then gain=v.ProtectChance>0 and setting.BluePowerOpened or setting.BluePowerClosed
-        elseif v.Status==5 or v.Status==6 then gain=setting.BluePowerClosed
-        elseif v.Status==1 or v.Status==4 then gain=setting.BluePowerOpened;v.ItemEnergy=v.ItemEnergy+gain*amount end
+        local opened=big and setting.BigBluePowerOpened or setting.BluePowerOpened
+        local closed=big and setting.BigBluePowerClosed or setting.BluePowerClosed
+        if v.Status==0 then gain=v.ProtectChance>0 and opened or closed
+        elseif v.Status==5 or v.Status==6 then gain=closed
+        elseif v.Status==1 or v.Status==4 then gain=opened;v.ItemEnergy=v.ItemEnergy+gain*amount end
         v.Power=v.Power+(gain or 0)*amount
         if v.Status==5 or v.Status==6 then v.Power=math.min(v.Power,math.floor(setting.HiPower*.99)) end
-        if game.LanternLighting then v.Blue=v.Blue+amount end
+        if game.LanternLighting then v.Blue=v.Blue+amount*(big and 5 or 1) end
         return true
     elseif kind=='lanternGreen' then
         lstg.var.score=(lstg.var.score or 0)+100

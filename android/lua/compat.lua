@@ -175,6 +175,7 @@ expose('SetBGMSpeed', function(name, speed) assert(FindResMusic(name), name):get
 expose('GetBGMSpeed', function(name) return assert(FindResMusic(name), name):getSource():getPitch() end)
 expose('GetBGMVolume', function(name) return assert(FindResMusic(name), name):getSource():getVolume() end)
 expose('SetSESpeed', function(name, speed) assert(FindResSound(name), name):getSource():setPitch(speed) end)
+expose('SetSourceSoundVolume', function(name, volume) assert(FindResSound(name), name):getSource():setVolume(volume) end)
 expose('GetSESpeed', function(name) return assert(FindResSound(name), name):getSource():getPitch() end)
 expose('GetSEVolume', function(name) return assert(FindResSound(name), name):getSource():getVolume() end)
 expose('SetBGMLoop', function(name, ending, duration)

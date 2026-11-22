@@ -4,6 +4,7 @@ OriginalSequenceMedia=M
 M.background=dofile('mod/sequence_background.lua')
 M.music=dofile('mod/GAME/original/std/music.lua')
 M.cues=dofile('mod/GAME/original/std/cues.lua')
+M.titles=dofile('THlib/anm/stage_title.lua')
 for name,m in pairs(M.music) do AddMusic('ORIG_'..name,m.loop_end/m.rate,(m.loop_end-m.loop_start)/m.rate,name,true) end
 local works={[29]=8,[30]=6,[31]=95,[32]=7,[33]=10}
 local function location(chapter,row)
@@ -52,6 +53,10 @@ function M.enter(scene,chapter,kind,row)
     if changed or game==95 and row then
         scene.sequence_background=New(M.background.class,game,key)
         scene.sequence_background_key=game..'/'..key
+        if kind=='stage' then
+            if scene.sequence_title and IsValid(scene.sequence_title) then Del(scene.sequence_title) end
+            scene.sequence_title=M.titles.start(game,key)
+        end
     end
     scene.sequence_chapter=chapter
     scene.sequence_default_music=kind=='boss' and bossTrack or stageTrack
@@ -104,6 +109,8 @@ function M.stop(scene)
     if scene.sequence_music then StopMusic(scene.sequence_music);scene.sequence_music=nil end
     scene.sequence_background=nil
     scene.sequence_background_key=nil
+    if scene.sequence_title and IsValid(scene.sequence_title) then Del(scene.sequence_title) end
+    scene.sequence_title=nil
     scene.sequence_music_fade=nil
 end
 M.location=location

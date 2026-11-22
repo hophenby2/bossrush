@@ -22,13 +22,14 @@ LoadTexture('mhj2_barrages','Resources/th37/barrages.png')
 LoadTexture('mhj2_enemys','Resources/th37/enemys.png')
 local function valid(o) return o and IsValid(o) end
 local function setupCard(meta,group)
-    local opening=150+(meta.flag=='TRANS' and 100 or 0)
+    local opening=150+(meta.flag=='TRANS' and 100 or 0)+(meta.spell and 60 or 0)
     local total=meta.seconds+opening/60
     local endurance=meta.flag=='TIME' or meta.flag=='TIMENOTHIDE'
     local immune=endurance and total or math.min(total,(opening+meta.immune)/60)
     local card=boss.card.New(meta.spell and meta.title or '',immune,immune,total,meta.hp)
     card.phase_name,card.phase_kind=meta.title,meta.role or 'boss'
     card.mhj_source=meta
+    card.own_phase_display=true
     function card.prepareRogue() BG.prepare(meta.stage,meta.sceneFrame) end
     card.nativeBombFactor=(meta.flag=='LAST' or meta.spell and group.extraBoss) and 0 or 1
     function card:nativeDamage(timer)
@@ -48,29 +49,51 @@ local function setupCard(meta,group)
         self.native_actor_collision.noContact=endurance
         self.native_actor_collision.noDamage=endurance
         self.mhj_opening=opening
+        self.mhj_portrait_at=90
+        if meta.spell and (ext.sc_pr or meta==group.cards[1]) then
+            self.mhj_portrait_at=121
+            self.mhj_opening=opening+20
+            self.t1,self.t2,self.t3=self.t1+20,self.t2+20,self.t3+20
+        end
+        self.mhj_entrance=self.mhj_group~=group
+        self.mhj_group=group
+        self.mhj_effects={}
     end
     function card:frame()
         if not self.mhj_clock then return end
         self.mhj_clock=self.mhj_clock+1
+        if self.mhj_entrance then R.bossEntrance(self,self.mhj_clock) end
         -- BossCard.Update 在 120 帧后逐帧调用 Hide；TIMENOTHIDE 仍显示本体。
         local actor=self.mhj_actor
         local target=meta.flag=='TIME' and self.mhj_clock>120 and 0 or 1
         actor.alpha=(actor.alpha or 1)+(target-(actor.alpha or 1))/20
-        if self.mhj_clock==90 and meta.spell then
+        if self.mhj_clock==(self.mhj_entrance and 61 or 30) and (self.mhj_entrance or meta.spell) then
+            self.mhj_effects[#self.mhj_effects+1]=R.effect(self.x,self.y,'24')
+            R.sound('ch02',self.x+224)
+        end
+        if self.mhj_clock==self.mhj_portrait_at and meta.spell then
             BG.spell(meta.stage,group.source[2])
+            local effect=R.effect(self.x,self.y,tostring(25+group.source[7]))
+            effect.follow=self
+            self.mhj_effects[#self.mhj_effects+1]=effect
             self.mhj_portrait=R.controller(nil,'e'..group.source[#group.source])
             self.mhj_portrait.effectLayer=LAYER.TOP-10
+            R.sound('cat',self.x+224)
+            if self._bosssys then
+                self._sc_name_obj=New(boss.sc_name,self,meta.title)
+                object.Connect(self,self._sc_name_obj,0,true)
+            end
         end
         if self.mhj_portrait and self.mhj_portrait.time<self.mhj_portrait.pattern.total then
             R.tick(self.mhj_portrait)
         end
-        if self.mhj_clock<=opening then
+        if self.mhj_clock<=self.mhj_opening then
             self.x=self.x+(0-self.x)/20;self.y=self.y+(70-self.y)/20
             return
         end
         local continuation=meta.continuations and meta.continuations[self.mhj_index]
-        if continuation and (meta.seconds-(self.mhj_clock-opening)/60<=continuation.time or (self.hp or meta.hp)<=continuation.hp) then
-            R.clear(self.mhj_controller)
+        if continuation and (meta.seconds-(self.mhj_clock-self.mhj_opening)/60<=continuation.time or (self.hp or meta.hp)<=continuation.hp) then
+            R.breakPattern(self.mhj_controller,true)
             self.mhj_controller=R.controller(self,continuation.pattern,false);self.mhj_index=self.mhj_index+1
         end
         R.tick(self.mhj_controller)
@@ -79,9 +102,11 @@ local function setupCard(meta,group)
         if NativePlayers and NativePlayers.enabled(nil,35) and self.hp<=0 and not self.timeout then
             NativePlayers.drop(35,self.x,self.y,group.items,true,not meta.spell)
         end
-        R.clear(self.mhj_controller);self.mhj_controller=nil;self.mhj_clock=nil
+        R.breakPattern(self.mhj_controller,self.hp<=0 and not self.timeout);self.mhj_controller=nil;self.mhj_clock=nil
         BG.endSpell()
         R.clear(self.mhj_portrait);self.mhj_portrait=nil
+        for _,o in ipairs(self.mhj_effects or {}) do if valid(o) then R.breakPattern(o.effect,false) end end
+        self.mhj_effects=nil
     end
     return card
 end
