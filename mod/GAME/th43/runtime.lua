@@ -587,6 +587,13 @@ E.EISlib.path='EISlib/'
 run('EISlib/item/item.lua')
 E.system.spellcard={auxiliary={setChainBonusBase=noop}}
 
+-- 发行版 playerclass.lua 的 resVarInit 在道具库默认值之上设置实战掉落速度。
+-- 宿主接管自机生命周期后，原作机体与 Roguelike 的宿主机体均须执行。
+function R.initItemResources()
+    E.item.Power.setDropVelocity(-1.5)
+    E.item.Point.setDropVelocity(-1.5)
+    E.item.Blood.setDropVelocity(-1.7)
+end
 
 function R.reset(diff,practice)
     R.prepareSounds()
@@ -595,6 +602,8 @@ function R.reset(diff,practice)
     R.practice=practice
     lstg.var.coun_num=lstg.var.coun_num or 0
     local s=resources()
+    -- 原作机体已在基类初始化中设置，保留咲夜随后对 P 点和蓝点的 -1 覆盖。
+    if not s then R.initItemResources() end
     if s then
         s.difficulty,s.stageChain=diff,0
         lstg.tmpvar.point_rate=1

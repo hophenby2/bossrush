@@ -68,6 +68,7 @@ function R.tryHyper()
 end
 function R.playerMiss() power.missEvent();sync() end
 function base.init(p)
+    R.initItemResources()
     p.lh,p.shift,p.lock_player_shift=0,1,0
     p.lockshoot,p.lockspell,p.max_nextspell=0,0,360
     p.attack_speed,p.speed_rate,p.fire_buff,p.laser_rate=1,1,1,1
