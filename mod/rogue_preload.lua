@@ -43,10 +43,15 @@ function M.clear()
 end
 function M.texture(path)
     if not job or coroutine.running()~=owner or not lstg.AndroidPrepareTexture then return end
-    while lstg.AndroidPrepareTexture(path)==0 do
+    local state=lstg.AndroidPrepareTexture(path)
+    -- 小图往往在1ms内解码完成，不必让每张图都占用一个完整显示帧。
+    local untilTime=math.min(deadline,clock()+.001)
+    while state==0 and clock()<untilTime do state=lstg.AndroidPrepareTexture(path) end
+    while state==0 do
         local current=GetResourceStatus();SetResourceStatus(pool)
         suspend()
         SetResourceStatus(current);deadline=clock()+.008
+        state=lstg.AndroidPrepareTexture(path)
     end
 end
 -- 背景快照包含循环引用；保留模式定义，复制全部可变粒子、随机数及插值状态。

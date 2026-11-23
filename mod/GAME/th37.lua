@@ -31,7 +31,21 @@ local function setupCard(meta,group)
     card.mhj_source=meta
     card.own_phase_display=true
     function card.prepareRogue()
-        if meta.spell then BG.prepareSpell(meta.stage,group.source[2]) end
+        Actor.prepare()
+        R.preparePattern(meta.pattern)
+        R.preparePattern('e14')
+        R.preparePattern('e24')
+        if meta.spell then
+            BG.prepareSpell(meta.stage,group.source[2])
+            R.preparePattern('e'..(25+group.source[7]))
+            R.preparePattern('e'..group.source[#group.source])
+        end
+    end
+    function card.createRogueBackground()
+        BG.prepare(meta.stage,meta.sceneFrame)
+        local bg=BG.show(meta.stage,meta.sceneFrame)
+        if bg then bg.boss=RogueEncounter.backgroundActive.anchor end
+        return bg
     end
     card.nativeBombFactor=(meta.flag=='LAST' or meta.spell and group.extraBoss) and 0 or 1
     function card:nativeDamage(timer)
@@ -136,6 +150,10 @@ for _,chapter in ipairs(D.chapters) do
             local card=boss.card.New('',duration,duration,duration,1)
             card.phase_name,card.phase_kind=title,'road'
             card.mhj_source={chapter=chapter.name,first=window.first,last=window.last}
+            function card.createRogueBackground()
+                BG.prepare(chapter.stage,window.first)
+                return BG.show(chapter.stage,window.first)
+            end
             function card:before()
                 self.mhj_road=nil;hideRoad(self)
                 BG.show(chapter.stage,window.first)

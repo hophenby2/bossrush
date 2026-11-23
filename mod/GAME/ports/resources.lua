@@ -84,13 +84,17 @@ return function(assetRoot)
         return true
     end
     function Set:Load()
-        if self:IsLoaded() then return end
+        local resident=RogueEncounter and RogueEncounter.retainResources()
+        if resident then self.rogue_resident=true end
+        if self:IsLoaded() and (not resident or self.pool=='global') then return end
+        local previous=GetResourceStatus()
+        if resident then SetResourceStatus('global') end
         local pool = GetResourceStatus()
         self.pool = pool
         self.loaded=self.loaded or {}
         for _, entry in ipairs(self.entries) do
             local found=CheckRes(entry[1], entry[2])
-            if not self.loaded[entry] or found~=self.loaded[entry] then
+            if not self.loaded[entry] or found~=self.loaded[entry] or resident and found~='global' then
                 if found~=pool then entry[3]() end
                 -- CheckRes 优先返回 global；同名 stage 副本不能让有效的共享素材永久失去命中。
                 self.loaded[entry]=CheckRes(entry[1], entry[2])
@@ -98,8 +102,10 @@ return function(assetRoot)
             if RogueEncounter then RogueEncounter.checkpoint() end
         end
         for _, option in ipairs(self.options) do option() end
+        if resident then SetResourceStatus(previous) end
     end
     function Set:Unload()
+        if self.rogue_resident then return end
         if not self.pool then return end
         for i=#self.entries,1,-1 do
             local entry = self.entries[i]

@@ -21,6 +21,13 @@ end
 for name,track in pairs(dofile('mod/GAME/th40/music.lua')) do AddMusic('TH40_'..name,track.last,track.length,name,true) end
 class.background=assert(loadfile('mod/GAME/th40/background.lua'))(Visual,data)
 function class.prepareRogue(_,unit) class.background.prepare(unit.sc_group[1].card.th38_source) end
+function class.createRogueBackground(_,unit)
+    local phase=unit.sc_group[1].card.th38_source
+    -- 首个关卡场景独立于本卡的二维符卡覆盖层，后续只替换覆盖层。
+    local stage={chapter=phase.chapter,role=phase.role,part=phase.part,kind='nonspell'}
+    class.background.prepare(stage)
+    return class.background.enter(stage.chapter,stage)
+end
 local Media=dofile('mod/GAME/ports/scene_media.lua')
 local function track(chapter,kind)
     return 'TH40_'..kind..(chapter=='EX' and 'Ex' or '0'..chapter)

@@ -112,7 +112,7 @@ stg.RegisterClass=compile
 function R.clear(scope)
     local objects={}
     for o,owner in pairs(R.objects) do
-        if not scope or owner==scope then
+        if (not scope or owner==scope) and not (RogueEncounter and RogueEncounter.keepsBackground(o)) then
             if scope and valid(o) and o.th43_source_visual and o.group==GROUP.GHOST then
                 -- 原作视觉对象自行按寿命结束，换卡只取消攻击协程；退出作品仍完整回收。
                 R.objects[o]=false

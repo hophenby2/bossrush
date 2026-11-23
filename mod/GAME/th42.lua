@@ -83,7 +83,7 @@ local checkpoints={
 local function clear()
     if objects then
         for _,o in ipairs(objects) do
-            if IsValid(o) then object.RawDel(o) end
+            if IsValid(o) and not (RogueEncounter and RogueEncounter.keepsBackground(o)) then object.RawDel(o) end
         end
     end
     if W.music then StopMusic(W.music);W.music=nil end
@@ -93,6 +93,14 @@ end
 W.stop=clear
 function W.prepareRogue(_,unit)
     L.Resources.load(assert(unit.sc_group[1].card.port_source.stage))
+end
+function W.createRogueBackground(_,unit)
+    local source=unit.sc_group[1].card.port_source
+    local visual={stageNumber=source.stage,frame=source.first,gate=true}
+    local bg=L.Background.create(visual)
+    -- 只保留画面时钟，不保留第一场攻击的运行时和敌机引用。
+    bg.rogueBackgroundTick=function() visual.frame=visual.frame+1 end
+    return bg
 end
 
 local Guard=Class(object,{

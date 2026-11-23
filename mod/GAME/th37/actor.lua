@@ -24,11 +24,13 @@ local function load()
                 local name='mhj2_actor_'..id..'_'..x..'_'..y
                 LoadImage(name,'mhj2_bosses',p[1]+x*p[3],p[2]+y*p[4],p[3],p[4])
                 SetImageCenter(name,p[7],p[8])
+                if RogueEncounter then RogueEncounter.checkpoint() end
             end
         end
     end
     SetResourceStatus(pool);loaded=true
 end
+A.prepare=load
 local function play(s,name)
     s.clip,s.clock,s.frame,s.advanced=name,0,1,0
 end

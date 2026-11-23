@@ -559,6 +559,7 @@ local function load(key)
     if not R.patterns[key] then R.patterns[key]=dofile('mod/GAME/th38/patterns/'..key:gsub('/','_')..'.lua') end
     return R.patterns[key]
 end
+R.preparePattern=load
 function R.controller(host,key,first)
     local c={host=host,time=first or 0,emitters={},entities={},byName={},vars={0,0,0,0},closed=false,key=key};R.controllers[c]=true
     local pat=load(key)

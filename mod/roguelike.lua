@@ -165,6 +165,7 @@ local function runCards(self)
     local run=lstg.var.rogue_run
     task.Wait(60)
     local config=mode(run)
+    encounter.warmup(self)
     local function prepare(entry)
         local port=encounter.begin(self,entry)
         if GameHPScale then GameHPScale.enter(run.current) end
@@ -172,7 +173,7 @@ local function runCards(self)
         local class=unit.sc_group[1].boss
         self.level=entry.level
         if port then encounter.prepare(self,entry,unit) end
-        -- 整局底图由 encounter 保留；这里只切换音乐，符卡背景由当前作品叠加。
+        -- 首张卡的真实关卡背景整局保留；这里只切换音乐及当前符卡背景。
         if port then
             rogueMusic.stop(self)
             if self.now_music then StopMusic(self.now_music) end
@@ -384,7 +385,10 @@ function panel:render()
     local previous=lstg.viewmode
     SetViewMode('ui')
     ui.RunHUD.stage(run.current,lstg.world.scrl/2,270,lstg.world.scrl)
-    if run.preparing then ui:RenderText('title','准备下一战…',lstg.world.scrl/2,220,.5,Color(255,255,255,255),'centerpoint') end
+    if run.preparing then
+        local text=run.preloadTotal and ('加载资源 '..run.preloadIndex..' / '..run.preloadTotal) or '准备下一战…'
+        ui:RenderText('title',text,lstg.world.scrl/2,220,.5,Color(255,255,255,255),'centerpoint')
+    end
     if GameHPScale then GameHPScale.render(lstg.world.scrl/2,165) end
     if previous then SetViewMode(previous) end
 end

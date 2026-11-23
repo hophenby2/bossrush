@@ -974,7 +974,9 @@ function R.prepareFamiliars(configs)
     for _,config in pairs(configs) do loadTexture(D.enemyTypes[config[1]][1]) end
 end
 local sharedSpritesPrepared=false
+local preparedPatterns={}
 function R.preparePattern(id)
+    if preparedPatterns[id] then return end
     prepareStates()
     local pattern=R.loadPattern(id);local context={}
     for _,name in ipairs({'kira','tan','lazer00','ch02','cat'}) do audio.prepare(name) end
@@ -996,6 +998,7 @@ function R.preparePattern(id)
             texture({pattern=pattern,type=#D.bulletTypes+i,age=frame*(1+(p[10] or 0)),controller=context})
         end
     end
+    preparedPatterns[id]=true
 end
 local function visualOrder(a,b)
     if a.layerid~=b.layerid then return a.layerid<b.layerid end

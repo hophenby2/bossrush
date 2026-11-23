@@ -168,6 +168,10 @@ local function setupCard(meta,group,chapter)
         BG.prepare(R,chapter,group.time,group,meta)
         preparePatterns()
     end
+    function card.createRogueBackground()
+        BG.prepare(R,chapter,group.time,group,meta)
+        return BG.show(R,chapter,group.time)
+    end
     card.nativeBombFactor=group.extraBoss and (meta.kind==0 and .5 or 0) or 1
     local start=60+(flag(meta,'DELAY') and 150 or 0)+(flag(meta,'TRANS') and 100 or 0)
     function card:nativeDamage(timer)
@@ -336,6 +340,10 @@ for _,chapter in ipairs(D.chapters) do
             local card=boss.card.New('',1000000,1000000,1000000,1)
             card.phase_name,card.phase_kind=title,'road'
             card.mhj3_source=window
+            function card.createRogueBackground()
+                BG.prepare(R,chapter,window.first)
+                return BG.show(R,chapter,window.first)
+            end
             function card:before()
                 self.mhj3_road=nil;detachRoad(self)
                 BG.show(R,chapter,window.first)

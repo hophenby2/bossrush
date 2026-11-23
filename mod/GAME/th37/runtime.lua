@@ -266,6 +266,25 @@ local function effectAssets()
     end)
     R.assets.effects=true
 end
+local preparedPatterns,commonPrepared={},false
+function R.preparePattern(id)
+    if preparedPatterns[id] then return end
+    local p=R.loadPattern(id)
+    effectAssets()
+    if not commonPrepared then
+        for i=1,228 do
+            texture(p,i)
+            if RogueEncounter then RogueEncounter.checkpoint() end
+        end
+        for _,name in ipairs({'tan','kira','lazer00','ch02','cat','enep00'}) do audio.prepare(name) end
+        commonPrepared=true
+    end
+    for i=1,#p.types do
+        texture(p,228+i)
+        if RogueEncounter then RogueEncounter.checkpoint() end
+    end
+    preparedPatterns[id]=true
+end
 local function drawSprite(b,img,x,y,rot,sx,sy,alpha)
     SetImageState(img,b._blend,max(0,min(255,alpha)),b._r,b._g,b._b)
     Render(img,x,y,rot,sx,sy)

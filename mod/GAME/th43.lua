@@ -49,6 +49,10 @@ function Card.createFullCardBoss(editor,res,diff,paths,hidden)
         E.EISlib.Bullet.Laser.init()
         if res.bossLoadRes then res.bossLoadRes({}) end
     end
+    function class.createRogueBackground()
+        if res.background.prepareRogueResources then res.background.prepareRogueResources() end
+        return E.New(res.background,true)
+    end
     local cards={}
     class.init=function(o,selected)
         local practice=(ext.sc_pr or RogueEncounter and RogueEncounter.enabled(41)) and not (R.chapterScope and IsValid(R.chapterRunner))
@@ -148,6 +152,11 @@ local function roadCard(n,road,segment,index)
     boss.Define(band,title,nil,nil,{0,384},nil,'Yukari',LEVEL)
     local card=boss.card.New('',10000,10000,10000,1)
     card.phase_name,card.phase_kind=title,'road'
+    function card.createRogueBackground()
+        local class=E['stage'..n..'_background']
+        if class.prepareRogueResources then class.prepareRogueResources() end
+        return E.New(class,true)
+    end
     function card:before()
         self.hide=true
         self._sequence_road_carrier=true

@@ -416,7 +416,9 @@ W.source=env
 
 local function clear()
     if objects then
-        for _,o in ipairs(objects) do if IsValid(o) then object.RawDel(o) end end
+        for _,o in ipairs(objects) do
+            if IsValid(o) and not (RogueEncounter and RogueEncounter.keepsBackground(o)) then object.RawDel(o) end
+        end
     end
     objects=nil
     env._boss=nil
@@ -426,6 +428,10 @@ local function clear()
 end
 W.stop=clear
 function W.prepareRogue() api.ResourceSet.LoadByTag(false,'global') end
+function W.createRogueBackground(_,unit)
+    local number=unit.sc_group[1].card.port_source.stage
+    return new(env['stage'..number..'_background'],true)
+end
 local Guard=Class(object,{
     init=function(o) o.bound=false;o.hide=true;o.colli=false end,
     del=clear,

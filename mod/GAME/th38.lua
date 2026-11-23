@@ -32,8 +32,22 @@ local function addCard(meta,band)
     card.phase_name,card.phase_kind,card.asl_source=phaseLabel(meta),meta.role,meta
     function card.prepareRogue()
         R.loadAssets()
+        R.preparePattern(meta.key)
         Actor.prepare(meta.key)
         if meta.spell then SpellBG.prepare(meta.key) end
+        for _,phase in ipairs(meta.transitions or {}) do
+            R.preparePattern(phase.key)
+            Actor.prepare(phase.key)
+            if meta.spell then SpellBG.prepare(phase.key) end
+        end
+    end
+    function card.createRogueBackground()
+        local chapter=meta.key:match('/stage(%d+)/') or 'EXA'
+        local variant=meta.spell and '_spell' or (chapter=='EXA' and '' or '_boss')
+        BG.prepare(chapter,variant)
+        local bg=BG.show(chapter,variant,0,false)
+        if bg then bg.boss=true end
+        return bg
     end
     function card:before()
         self.asl_controller,self.asl_clock=nil,nil
@@ -90,6 +104,15 @@ for _,chapter in ipairs(D.chapters) do
             local chapterLabel=chapter.name=='EXA' and 'Extra A' or chapter.name..'面'
             card.phase_name,card.phase_kind='雪莲华 '..chapterLabel..' 道中'..(road.key:sub(-1)=='a' and '前段' or '后段'),'road'
             card.asl_source=road
+            function card.prepareRogue()
+                R.loadAssets()
+                R.preparePattern(road.key)
+                Actor.prepare(road.key)
+            end
+            function card.createRogueBackground()
+                BG.prepare(chapter.name,'')
+                return BG.show(chapter.name,'',road.first,false)
+            end
             function card:before()
                 self.asl_controller=nil;hideRoad(self)
                 BG.show(chapter.name,'',road.first,false)

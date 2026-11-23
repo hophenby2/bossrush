@@ -238,12 +238,14 @@ function B.prepare(runtime,chapter,start,group,meta)
         end
         R.prepareBackground(c)
     end
-    local config=state.script.groups[group.index]
-    local card=config.cards[tostring(meta.number)]
-    local ids={}
-    if card.portrait then ids[#ids+1]=card.portrait end
-    for _,effect in ipairs(meta.kind~=0 and D.spells[tostring(chapter.stage)][tostring(card.variant or config.variant)] or {}) do ids[#ids+1]=effect[1] end
-    for _,id in ipairs(ids) do R.prepareBackground(R.backgroundEffect(id,0,0,7919,D.textureHeights,state.resources)) end
+    if group then
+        local config=state.script.groups[group.index]
+        local card=config.cards[tostring(meta.number)]
+        local ids={}
+        if card.portrait then ids[#ids+1]=card.portrait end
+        for _,effect in ipairs(meta.kind~=0 and D.spells[tostring(chapter.stage)][tostring(card.variant or config.variant)] or {}) do ids[#ids+1]=effect[1] end
+        for _,id in ipairs(ids) do R.prepareBackground(R.backgroundEffect(id,0,0,7919,D.textureHeights,state.resources)) end
+    end
     ready={chapter=chapter,start=start,px=px,py=py,state=state,spellOnly=only}
 end
 function B.clearPrepared() snapshot,ready=nil,nil end
