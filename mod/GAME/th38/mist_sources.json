@@ -1,24 +1,146 @@
 {
-  "Scripts/Basic.cs": "bdb0b0a6769cb0c003a9fc327c5fd532e4c16a573a41bfb05eeb77822e8e0b29",
-  "Scripts/Basic_zi.cs": "4758f858a84552ea909a33926300748259a7289202e93de5467a5fcbac95327e",
-  "Scripts/Wuhua.cs": "3b34d4e50ae1e3bb1dabcd8741275e6415895bf1082c725b937ba0fe9d069dcc",
-  "Scripts/Sincos.cs": "fe12b39945e120e014ec372e9cc7efdd2c6355b7e1355b52561ab663c13e16e4",
-  "Scripts/Loading0.cs": "fe011dd0c18708ddefdde6cde832a8dfdbd12e0484af58bc4f21fff7bd27785a",
-  "Resources/xuelianhua/prefab/dam_wuhua.prefab": "d0ab4a3528f5f3080db060713ac4548cae405a08a8550ba568cb580518f7d6ed",
-  "Resources/xuelianhua/image/Bullet/雾化/wuhua0.png.meta": "5cad49c501b433bde10422419273cb1dcb65d3014d0bcefeabb0d7163489d83a",
-  "Resources/xuelianhua/image/Bullet/雾化/wuhua0.png": "6168c6628826e61372a567e4fb6a73be7cdd343d414347c3b0289fb1c83fc860",
-  "Resources/xuelianhua/image/Bullet/雾化/wuhua1.png.meta": "84a583324c3c433f7ee69fc965a24915c77ff76268f1b77677f691b6340bd37f",
-  "Resources/xuelianhua/image/Bullet/雾化/wuhua1.png": "420c77bfa702624d27fc8ec65072a80f1212dcaab63be984ccde7802123085bd",
-  "Resources/xuelianhua/image/Bullet/雾化/wuhua2.png.meta": "64216a68f0fddae33653ae6f9bdfbffdf8b573141b2b0a3f76fb58c459f85072",
-  "Resources/xuelianhua/image/Bullet/雾化/wuhua2.png": "204d084add350f5d589835bd44cba3fd8b634e3b50e5b684f74482e17fae1e33",
-  "Resources/xuelianhua/image/Bullet/雾化/wuhua3.png.meta": "e93de3f87b367d56d522a8f68eba35433ae1efae583fb6c8192e5cd0502e6d61",
-  "Resources/xuelianhua/image/Bullet/雾化/wuhua3.png": "bdaaf50ddeaec0b619623eeff54e808b08852a6ded16d45843c084eee7681877",
-  "Resources/xuelianhua/image/Bullet/雾化/wuhua4.png.meta": "89c054893a1042acd72a4efa73bd9a7f65e7b7d63c521c3f8b8f73b830b63f92",
-  "Resources/xuelianhua/image/Bullet/雾化/wuhua4.png": "6010849109bb966247ce61dbaaa91b3801990b9549a31f9d1ed519bd27ae24fa",
-  "Resources/xuelianhua/image/Bullet/雾化/wuhua5.png.meta": "a63d72bef24559b90d4e6109ebdce379bee24fec9cdd9d0c67c7a6a30a69cd39",
-  "Resources/xuelianhua/image/Bullet/雾化/wuhua5.png": "43ee677de595423d6438a829c70bc758b1c2d7063dd157ce8c5ec5a73d207a85",
-  "Resources/xuelianhua/image/Bullet/雾化/wuhua6.png.meta": "73c6076281a1eb23bb4708a0ea9f3d708830aec6941469f699afc8e4f6a650eb",
-  "Resources/xuelianhua/image/Bullet/雾化/wuhua6.png": "4628bb4ce9074656035385d9602a6edfc22f63b39ec0b928767f9d7a46e7af2e",
-  "Resources/xuelianhua/image/Bullet/雾化/wuhua7.png.meta": "b97f121604eb04c2c1a40119f2f3acbcf328d3d2cae29ae6e2ccf547f739ac10",
-  "Resources/xuelianhua/image/Bullet/雾化/wuhua7.png": "b4c0dba78188ab5333fe0500a50a69d2e4cc5b7da3a7b44f2c55b235741d28b3"
+  "data_directory": "/Users/happyelements/asl/THasl/THasl_Data",
+  "sha256": {
+    "globalgamemanagers": "8e64279df1ed55ab702aedabf40fc04c8eb5e0a40bd0751055f924570f18c4ee",
+    "resources.assets": "99df11eb0b282fefe4f9dc877e9d57ee5f6e4df4a75c0b412166dbe3b4b5f46c",
+    "resources.assets.resS": "f6dee62b054a6ff035e50ab63e9dc3fc4b39eeeda315125e2af15da1742291d6",
+    "Managed/Assembly-CSharp.dll": "93a96cffffb0edebec41d248c680666221dfd34f70499d9cfe6ea3931ab2d699"
+  },
+  "resource_key": "xuelianhua/image/bullet/wuhua",
+  "scripts": {
+    "Basic": "a5d1f291afb4b7f8cc2813dc21b35b703acd786e9a73b21bb2963d88c8e7daed",
+    "Basic_zi": "24228c99f9d3890797f46c751eb180be794a2e741738c998866a4a5191f5772d",
+    "Wuhua": "69401b05cae7780ff8289d0b6b9225ca0b83fba34208e0d741811d394fb2b086",
+    "Sincos": "3c20a6ee342b3151c3dcdd3eefa3451457fc5268627ff2e5b7b281b3f8b3b51c"
+  },
+  "sprites": [
+    {
+      "name": "wuhua0",
+      "path_id": 4277,
+      "texture_path_id": 1209,
+      "rect": {
+        "x": 28.0,
+        "y": 156.0,
+        "width": 73.0,
+        "height": 72.0
+      },
+      "pixels_per_unit": 100.0,
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    {
+      "name": "wuhua1",
+      "path_id": 4745,
+      "texture_path_id": 1209,
+      "rect": {
+        "x": 156.0,
+        "y": 284.0,
+        "width": 73.0,
+        "height": 72.0
+      },
+      "pixels_per_unit": 100.0,
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    {
+      "name": "wuhua2",
+      "path_id": 3992,
+      "texture_path_id": 1209,
+      "rect": {
+        "x": 155.0,
+        "y": 28.0,
+        "width": 74.0,
+        "height": 72.0
+      },
+      "pixels_per_unit": 100.0,
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    {
+      "name": "wuhua3",
+      "path_id": 4639,
+      "texture_path_id": 1209,
+      "rect": {
+        "x": 284.0,
+        "y": 156.0,
+        "width": 73.0,
+        "height": 72.0
+      },
+      "pixels_per_unit": 100.0,
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    {
+      "name": "wuhua4",
+      "path_id": 4411,
+      "texture_path_id": 1209,
+      "rect": {
+        "x": 28.0,
+        "y": 284.0,
+        "width": 73.0,
+        "height": 72.0
+      },
+      "pixels_per_unit": 100.0,
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    {
+      "name": "wuhua5",
+      "path_id": 4136,
+      "texture_path_id": 1209,
+      "rect": {
+        "x": 284.0,
+        "y": 28.0,
+        "width": 73.0,
+        "height": 72.0
+      },
+      "pixels_per_unit": 100.0,
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    {
+      "name": "wuhua6",
+      "path_id": 3482,
+      "texture_path_id": 1209,
+      "rect": {
+        "x": 28.0,
+        "y": 28.0,
+        "width": 73.0,
+        "height": 72.0
+      },
+      "pixels_per_unit": 100.0,
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    {
+      "name": "wuhua7",
+      "path_id": 4529,
+      "texture_path_id": 1209,
+      "rect": {
+        "x": 156.0,
+        "y": 156.0,
+        "width": 72.0,
+        "height": 72.0
+      },
+      "pixels_per_unit": 100.0,
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    }
+  ]
 }
