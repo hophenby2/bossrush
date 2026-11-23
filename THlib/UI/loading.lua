@@ -21,7 +21,10 @@ local function LoadingImage()
         table.insert(list, v1)
     end
     table.insert(list, function()
-        InitAllClass()
+        -- 作品注册脚本都在前面的 LoadRes 队列中；执行到这里后再展开新作资源任务。
+        -- 追加到当前队列，必须全部完成才允许进入主菜单。
+        if RogueEncounter then RogueEncounter.appendStartup(list) end
+        list[#list+1]=function() InitAllClass() end
     end)
     return list
 end
@@ -90,6 +93,7 @@ function stage_init:frame()
             end
             res = self.res[self.index]
             res()
+            self.maxindex = #self.res
             self.index = self.index + 1
             end_time = clock()
         end

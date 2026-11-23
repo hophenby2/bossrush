@@ -152,9 +152,16 @@ local SpellAttack=Class(object,{
     end,
 })
 function V.prepare(meta)
-    V.backgrounds(meta)
-    local cfg=V.config(meta)
-    for _,portrait in ipairs(cfg and cfg.portraits or {}) do image(portrait.name) end
+    local function prepare(cfg)
+        for _,part in ipairs(cfg and cfg.backgrounds or {}) do if part.kind~='tensei' then image(part.name) end end
+        for _,portrait in ipairs(cfg and cfg.portraits or {}) do image(portrait.name) end
+    end
+    prepare(V.config(meta))
+    -- 主菜单前尚未选择机体；把A–D分支的符卡图层和立绘一起准备。
+    if meta.kind=='spell' then
+        local prefix=meta.source:match('^(.*%d)[ABCD]$')
+        if prefix then for _,route in ipairs({'A','B','C','D'}) do prepare(D.configs[prefix..route]) end end
+    end
     image('SpellCircle06')
 end
 function V.open(meta)

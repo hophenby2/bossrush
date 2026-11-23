@@ -25,7 +25,7 @@ local function discardCache()
 end
 local rawNew=New
 local ports=dofile('mod/rogue_ports.lua')
--- 与旧作一样，资源开局加载后复用。首个真实背景有整局独立的对象作用域。
+-- 与旧作一样，资源在主菜单前加载后复用。首个真实背景有整局独立的对象作用域。
 local setPool=SetResourceStatus
 local function resourcePool(value)
     if M.warming or M.backgroundActive then value='global' end
@@ -36,8 +36,11 @@ function M.enabled(level)
     local run=lstg.var.rogue_run
     return run and run.source_hp and run.encounter and (not level or run.encounter.level==level)
 end
-function M.spellOnly(level) return M.enabled(level) and not M.backgroundActive end
-function M.retainResources() return M.warming or M.residentReady end
+function M.spellOnly(level)
+    local startup=M.startupLevel and (not level or M.startupLevel==level)
+    return (startup or M.enabled(level)) and not M.backgroundActive
+end
+function M.retainResources() return M.warming or M.startupReady or M.residentReady end
 function M.keepsBackground(o)
     local scope=M.backgroundActive or M.background
     return scope and scope.objects[o] or false
@@ -109,6 +112,40 @@ local function prepareOnce(entry,unit,seen)
         end
     end
 end
+function M.appendStartup(list)
+    if M.startupReady then return end
+    local seen={works={},bosses={},cards={}}
+    local count,started=0
+    list[#list+1]=function() started=(lstg.AndroidClock or os.clock)() end
+    local function append(entry,unit)
+        list[#list+1]=function()
+            local pool=GetResourceStatus()
+            -- 只准备共享素材，不创建自机、Boss或场景，也不建立虚假的随机对局。
+            M.warming,M.startupLevel=true,entry.level
+            SetResourceStatus('global')
+            prepareOnce(entry,unit,seen)
+            M.warming,M.startupLevel=nil,nil
+            SetResourceStatus(pool)
+        end
+        count=count+1
+    end
+    for _,source in ipairs(ports.sources) do
+        for index,unit in ipairs(_sc_pr_table[source.level] or {}) do
+            append({level=source.level,index=index,source=source.code},unit)
+        end
+    end
+    list[#list+1]=function()
+        -- ready 是某一次入场的临时状态，不能让启动阶段的最后一张卡影响首次练习。
+        for _,work in pairs({TH37,TH38,TH39,_editor_class.TH40}) do
+            if work and work.background and work.background.clearPrepared then work.background.clearPrepared() end
+        end
+        M.startupReady=true
+        if lstg.SystemLog then
+            lstg.SystemLog(('BOSSRUSH_STARTUP: native_resources_ready cards=%d elapsed_ms=%.1f'):format(count,
+                ((lstg.AndroidClock or os.clock)()-started)*1000))
+        end
+    end
+end
 local function createBackground(entry,unit)
     local part=unit.sc_group[1]
     local work=GameContent.ports[entry.level] or _editor_class[entry.source]
@@ -141,13 +178,17 @@ function M.warmup(scene)
     run.preparing=true
     M.warming=true;SetResourceStatus('global')
     preload.run(function()
-        local seen={works={},bosses={},cards={}}
-        for i,entry in ipairs(run.cards) do
-            run.preloadIndex,run.preloadTotal=i,#run.cards
-            run.encounter,run.source_hp=entry,entry.level>=35 and entry.level<=41
-            local unit=assert(_sc_pr_table[entry.level][entry.index],'随机卡片已移除')
-            if run.source_hp then prepareOnce(entry,unit,seen) end
-            M.checkpoint()
+        -- 正式启动已完成全部新作资源准备；省略开局再遍历几百张卡。
+        -- 独立开发入口若绕过启动页，仍保留本局资源的准备回退。
+        if not M.startupReady then
+            local seen={works={},bosses={},cards={}}
+            for i,entry in ipairs(run.cards) do
+                run.preloadIndex,run.preloadTotal=i,#run.cards
+                run.encounter,run.source_hp=entry,entry.level>=35 and entry.level<=41
+                local unit=assert(_sc_pr_table[entry.level][entry.index],'随机卡片已移除')
+                if run.source_hp then prepareOnce(entry,unit,seen) end
+                M.checkpoint()
+            end
         end
         run.encounter,run.source_hp=first,first.level>=35 and first.level<=41
         createBackground(first,assert(_sc_pr_table[first.level][first.index]))
@@ -247,7 +288,7 @@ function M.prepare(scene,entry,unit)
     if not M.scope then return end
     -- 无标记的既有录像/续玩继续原有同步入口，不插入等待用的逻辑帧。
     if lstg.var.__rogue_preload_version~=1 then return end
-    -- 开局已将资源放入 global。这里只更新当前卡的轻量入口状态，不再插入加载帧。
+    -- 启动时已将资源放入 global。这里只更新当前卡的轻量入口状态，不再插入加载帧。
     if M.residentReady then
         for _,part in ipairs(unit.sc_group) do
             if part.card.enterRogue then part.card.enterRogue() end
