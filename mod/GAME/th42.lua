@@ -94,6 +94,7 @@ W.stop=clear
 function W.prepareRogue(_,unit)
     L.Resources.load(assert(unit.sc_group[1].card.port_source.stage))
 end
+function W.roguePreloadKey(unit) return unit.sc_group[1].card.port_source.stage end
 function W.createRogueBackground(_,unit)
     local source=unit.sc_group[1].card.port_source
     local visual={stageNumber=source.stage,frame=source.first,gate=true}

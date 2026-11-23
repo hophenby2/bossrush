@@ -29,6 +29,9 @@ function A.new(work)
         del=function(o) for _,id in pairs(loaded) do StopSound(id) end end,
     })
     local api={}
+    function api.hasCue(name)
+        return name and data.cues[name:gsub('%.wav$','')]~=nil
+    end
     function api.prepare(name)
         name=name:gsub('%.wav$','')
         local cue=assert(data.cues[name],'未导出的原作音效：'..name)

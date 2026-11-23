@@ -5,7 +5,10 @@ function M.checkpoint() if not M.constructingBackground then preload.checkpoint(
 M.copyPrepared=preload.copy
 M.preloadFrame=preload.frame
 M.preloading=preload.active
-function M.prepareTexture(path) if not M.constructingBackground then preload.texture(path) end end
+function M.prepareTexture(path)
+    -- 整批预加载沿用旧作的直接纹理加载；按整批时间预算让出，不为每张小图启动线程并等显示帧。
+    if not M.warming and not M.constructingBackground then preload.texture(path) end
+end
 M.preloadIdle=preload.idle
 local cached
 -- 只保留最近一作，切换作品前全部释放，避免原作未加前缀的别名互相覆盖。
@@ -89,6 +92,23 @@ local function prepareResources(entry,unit)
         if part.card.prepareRogue then part.card.prepareRogue() end
     end
 end
+local function prepareOnce(entry,unit,seen)
+    local work=GameContent.ports[entry.level] or _editor_class[entry.source]
+    if work and work.prepareRogue then
+        local key=work.roguePreloadKey and work.roguePreloadKey(unit) or unit
+        local keys=seen.works[work]
+        if not keys then keys={};seen.works[work]=keys end
+        if not keys[key] then work.prepareRogue(entry,unit);keys[key]=true end
+    end
+    for _,part in ipairs(unit.sc_group) do
+        if part.boss.prepareRogue and not seen.bosses[part.boss] then
+            part.boss.prepareRogue();seen.bosses[part.boss]=true
+        end
+        if part.card.prepareRogue and not seen.cards[part.card] then
+            part.card.prepareRogue();seen.cards[part.card]=true
+        end
+    end
+end
 local function createBackground(entry,unit)
     local part=unit.sc_group[1]
     local work=GameContent.ports[entry.level] or _editor_class[entry.source]
@@ -121,11 +141,12 @@ function M.warmup(scene)
     run.preparing=true
     M.warming=true;SetResourceStatus('global')
     preload.run(function()
+        local seen={works={},bosses={},cards={}}
         for i,entry in ipairs(run.cards) do
             run.preloadIndex,run.preloadTotal=i,#run.cards
             run.encounter,run.source_hp=entry,entry.level>=35 and entry.level<=41
             local unit=assert(_sc_pr_table[entry.level][entry.index],'随机卡片已移除')
-            if run.source_hp then prepareResources(entry,unit) end
+            if run.source_hp then prepareOnce(entry,unit,seen) end
             M.checkpoint()
         end
         run.encounter,run.source_hp=first,first.level>=35 and first.level<=41
@@ -227,7 +248,12 @@ function M.prepare(scene,entry,unit)
     -- 无标记的既有录像/续玩继续原有同步入口，不插入等待用的逻辑帧。
     if lstg.var.__rogue_preload_version~=1 then return end
     -- 开局已将资源放入 global。这里只更新当前卡的轻量入口状态，不再插入加载帧。
-    if M.residentReady then prepareResources(entry,unit);return end
+    if M.residentReady then
+        for _,part in ipairs(unit.sc_group) do
+            if part.card.enterRogue then part.card.enterRogue() end
+        end
+        return
+    end
     local run=lstg.var.rogue_run
     local p=IsValid(player) and player
     local dialog,lock=p and p.dialog,p and p.lock

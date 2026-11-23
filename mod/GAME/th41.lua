@@ -428,6 +428,7 @@ local function clear()
 end
 W.stop=clear
 function W.prepareRogue() api.ResourceSet.LoadByTag(false,'global') end
+function W.roguePreloadKey() return 'global' end
 function W.createRogueBackground(_,unit)
     local number=unit.sc_group[1].card.port_source.stage
     return new(env['stage'..number..'_background'],true)

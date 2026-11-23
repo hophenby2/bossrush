@@ -168,6 +168,7 @@ local function setupCard(meta,group,chapter)
         BG.prepare(R,chapter,group.time,group,meta)
         preparePatterns()
     end
+    function card.enterRogue() BG.prepare(R,chapter,group.time,group,meta) end
     function card.createRogueBackground()
         BG.prepare(R,chapter,group.time,group,meta)
         return BG.show(R,chapter,group.time)

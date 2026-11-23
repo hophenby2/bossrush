@@ -11,6 +11,7 @@ return function(assetRoot)
     Set.__index = Set
 
     function Set:add(kind, name, load, ...)
+        self.rogue_resident_ready=nil
         local args = {...}
         self.entries[#self.entries+1] = {kind, name, function()
             load(name, unpack(args))
@@ -84,9 +85,14 @@ return function(assetRoot)
         return true
     end
     function Set:Load()
+        -- 已驻留 global 的资源集不允许 Unload；切卡无需逐项再扫数千个图片切片。
+        if self.rogue_resident_ready then return end
         local resident=RogueEncounter and RogueEncounter.retainResources()
         if resident then self.rogue_resident=true end
-        if self:IsLoaded() and (not resident or self.pool=='global') then return end
+        if self:IsLoaded() and (not resident or self.pool=='global') then
+            if resident then self.rogue_resident_ready=true end
+            return
+        end
         local previous=GetResourceStatus()
         if resident then SetResourceStatus('global') end
         local pool = GetResourceStatus()
@@ -102,6 +108,7 @@ return function(assetRoot)
             if RogueEncounter then RogueEncounter.checkpoint() end
         end
         for _, option in ipairs(self.options) do option() end
+        if resident and pool=='global' then self.rogue_resident_ready=true end
         if resident then SetResourceStatus(previous) end
     end
     function Set:Unload()

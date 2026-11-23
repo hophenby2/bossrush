@@ -981,8 +981,10 @@ function R.preparePattern(id)
     local pattern=R.loadPattern(id);local context={}
     for _,name in ipairs({'kira','tan','lazer00','ch02','cat'}) do audio.prepare(name) end
     if pattern.audio then
-        for _,name in pairs(pattern.audio.sounds) do audio.prepare(name) end
-        if pattern.audio.laserSound then audio.prepare(pattern.audio.laserSound) end
+        -- 原弹幕表保留 tan00.wav 等未注册的表项，不是音效库中的 cue。
+        -- 预加载只收集已注册资源；真正播放仍由 audio.play/prepare 严格检查。
+        for _,name in pairs(pattern.audio.sounds) do if audio.hasCue(name) then audio.prepare(name) end end
+        if audio.hasCue(pattern.audio.laserSound) then audio.prepare(pattern.audio.laserSound) end
     end
     loadTexture('barrages');loadTexture('bosses')
     -- 原作的公共弹型在战斗前已就绪，公共动画也提前建立切片，避免中途换型时卡住绘制。
