@@ -144,10 +144,13 @@ function F.units(level)
             local row=find(level,id)
             assert(not seen[row.index],'原作流程重复：'..level..':'..id)
             seen[row.index]=true;row.chapter=chapter.name
-            local kind=row.unit.sc_group[1].card.phase_kind
-            if kind=='road' then row.role='road';role='boss'
-            else role=kind or role;row.role=role end
-            out[#out+1]=row
+            local card=row.unit.sc_group[1].card
+            if not card.practice_hidden then
+                local kind=card.phase_kind
+                if kind=='road' then row.role='road';role='boss'
+                else role=kind or role;row.role=role end
+                out[#out+1]=row
+            end
         end
     end
     for index,unit in ipairs(_sc_pr_table[level] or {}) do

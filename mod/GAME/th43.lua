@@ -178,15 +178,21 @@ for n=1,7 do
     end
 end
 function C.units()
-    if C.indexed then return C.rows end
+    if C.indexed then return C.practiceRows end
     local entries={}
     for index,unit in ipairs(_sc_pr_table[LEVEL]) do entries[unit.sc_group[1].card.card_id]={index,unit} end
+    C.practiceRows={}
     for _,row in ipairs(C.rows) do
         local entry=assert(entries[row.id],'栖霞园阶段未注册：'..row.id)
         row.index,row.unit=entry[1],entry[2]
+        -- 原作 StageMain 为 1～4 难度分别创建定义；注册保留旧录像索引，
+        -- 当前练习只展示 Lunatic / Extra，不把其他难度的同名攻击混入列表。
+        if row.difficulty==4 or row.difficulty==5 then
+            C.practiceRows[#C.practiceRows+1]=row
+        end
     end
     C.indexed=true
-    return C.rows
+    return C.practiceRows
 end
 function C.stop()
     R.clear()

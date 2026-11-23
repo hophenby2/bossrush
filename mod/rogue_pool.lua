@@ -88,6 +88,7 @@ function P.build(filters,poolVersion)
                     or (not survival and (first.card.is_sc and filters.cards.spell or not first.card.is_sc and filters.cards.nonspell)))
                 if tag and filters.difficulties[difficulty] and filters.encounters[tag.kind]
                     and not (poolVersion==2 and tag.difficulty=='phantasm')
+                    and (not first.card.practice_hidden or poolVersion and poolVersion<11)
                     and selected
                     and first.card.is_combat~=false and not seen[id] then
                     local label=unit.CardName or ''

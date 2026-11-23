@@ -533,6 +533,9 @@ for number=1,7 do
                         finish(guard)
                     end,{stage=number,class=key,index=index,card=source},source.is_sc)
                     card.hp=source.hp
+                    -- Lily 的第六项只用于阻止最后一张攻击触发自爆；退场对话直接 Del，
+                    -- 不会运行到这里。保留原注册供旧录像定位，不列入练习与新版随机池。
+                    if key=='stage5mid_boss:Lunatic' and index==6 then card.practice_hidden=true end
                 end
             end
         end
