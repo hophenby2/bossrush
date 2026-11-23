@@ -217,7 +217,10 @@ local function start()
             if SaveResume then SaveResume.flush('切到后台') end
             pauseCache.invalidate()
             AndroidInput.reset()
-            if ext and not ext.StageIsMenu() then ext.pop_pause_menu = true end
+            -- 暂停菜单已打开时不再排队暂停，避免恢复游戏后重复弹出。
+            if ext and not ext.StageIsMenu() and ext.pause_menu and ext.pause_menu:IsKilled() then
+                ext.pop_pause_menu = true
+            end
             for _, name in ipairs(EnumRes2('bgm')) do
                 if GetMusicState(name) == 'playing' then pausedMusic[name] = true; PauseMusic(name) end
             end
