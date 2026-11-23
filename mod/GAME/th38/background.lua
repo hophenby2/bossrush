@@ -770,6 +770,7 @@ function B.releaseMeshes()
     for _,mesh in pairs(meshes or {}) do mesh.native=nil end
 end
 function B.show(chapter,variant,start,sequence)
+    if RogueEncounter and RogueEncounter.spellOnly(36) then return end
     if not setting or not setting.displayBG then return end
     local o=current()
     if not o or o.chapter~=chapter or o.variant~=variant then
@@ -786,6 +787,7 @@ function B.story(t)
     end
 end
 function B.card(chapter,spell)
+    if RogueEncounter and RogueEncounter.spellOnly(36) then return end
     local o=current()
     if not o or not o.sequence then
         local variant=spell and '_spell' or (chapter=='EXA' and '' or '_boss')

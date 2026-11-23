@@ -139,24 +139,35 @@ local Scene=Class(background,{
 B.class,B.State=Scene,State
 local function current() local o=lstg.tmpvar.bg;return o and IsValid(o) and o.class==Scene and o end
 function B.show(chapter,clock)
+    if RogueEncounter and RogueEncounter.spellOnly(35) then return end
     if setting and setting.displayBG then return New(Scene,chapter,clock) end
 end
 function B.setBoss(boss) local o=current();if o then o.boss=boss end end
 function B.signalMusic() local o=current();if o and o.state.mode=='music' then o.state.mode='boss' end end
 -- 原作Data/<stage><bgtype>.xna：按BSprite更新、循环、缩放及混合顺序绘制。
 local spellData=dofile('mod/GAME/th37/spell_backgrounds.lua')
+local function spellTexture(p)
+    local name='mhj2_spell_'..p.texture
+    if not CheckRes('tex',name) then
+        local pool=GetResourceStatus();SetResourceStatus('global')
+        LoadTexture(name,'Resources/th37/spell'..p.texture..'.png')
+        local w,h=GetTextureSize(name);LoadImage(name,name,0,0,w,h)
+        SetResourceStatus(pool)
+    end
+end
+function B.prepareSpell(stage,variant)
+    if not setting or not setting.displayBG then return end
+    for _,p in ipairs(spellData[tostring(stage)..tostring(variant)] or {}) do
+        spellTexture(p)
+        if RogueEncounter then RogueEncounter.checkpoint() end
+    end
+end
 local Spell=Class(object,{
     init=function(o,key)
         o.layer=LAYER.BG-.05;o.group=GROUP.GHOST;o.bound,o.colli=false,false
         o.parts={}
         for i,p in ipairs(spellData[key]) do
-            local name='mhj2_spell_'..p.texture
-            if not CheckRes('tex',name) then
-                local pool=GetResourceStatus();SetResourceStatus('global')
-                LoadTexture(name,'Resources/th37/spell'..p.texture..'.png')
-                local w,h=GetTextureSize(name);LoadImage(name,name,0,0,w,h)
-                SetResourceStatus(pool)
-            end
+            spellTexture(p)
             o.parts[i]={data=p,x=p.position[1],y=p.position[2],rotation=0}
         end
     end,

@@ -2,6 +2,16 @@
 local A=...
 local D=A.data
 local B={}
+local function backgroundKey(key)
+    local phase=D.phases[key]
+    return phase and D.spellMap and D.spellMap[phase.number]
+end
+function B.prepare(key)
+    for _,n in ipairs(D.backgrounds[backgroundKey(key)] or {}) do
+        A.picture(n.sprite)
+        if RogueEncounter then RogueEncounter.checkpoint() end
+    end
+end
 local current
 local function clone(t)
     local r={};for k,v in pairs(t) do r[k]=type(v)=='table' and clone(v) or v end;return r
@@ -125,8 +135,7 @@ function B.close()
 end
 function B.open(key)
     B.close()
-    local phase=D.phases[key];local number=phase and phase.number
-    local which=D.spellMap and D.spellMap[number]
+    local which=backgroundKey(key)
     if which and D.backgrounds[which] then current=New(Scene,which) end
 end
 return B

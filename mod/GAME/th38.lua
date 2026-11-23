@@ -33,7 +33,7 @@ local function addCard(meta,band)
     function card.prepareRogue()
         R.loadAssets()
         Actor.prepare(meta.key)
-        BG.prepare(meta.key:match('/stage(%d+)/') or 'EXA',meta.spell and '_spell' or (meta.key:find('EXA',1,true) and '' or '_boss'))
+        if meta.spell then SpellBG.prepare(meta.key) end
     end
     function card:before()
         self.asl_controller,self.asl_clock=nil,nil

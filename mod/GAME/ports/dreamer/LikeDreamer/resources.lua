@@ -383,8 +383,10 @@ end
 
 function ResourceManager:loadStage(stage_number)
 	stage_number = normalizeStage(stage_number)
-	if self.activeBackground and self.activeBackground ~= stage_number then
+	local background_enabled = not (RogueEncounter and RogueEncounter.spellOnly(40))
+	if self.activeBackground and (not background_enabled or self.activeBackground ~= stage_number) then
 		lstg.ResourceSet.UnloadByName("LikeDreamer.Background." .. self.activeBackground)
+		self.activeBackground = nil
 	end
 	if self.activeStageGameplay and self.activeStageGameplay ~= stage_number then
 		lstg.ResourceSet.UnloadByName(
@@ -394,12 +396,14 @@ function ResourceManager:loadStage(stage_number)
 		lstg.ResourceSet.UnloadByName("LikeDreamer.Gameplay.Late")
 		self.lateGameplayLoaded = false
 	end
-	self.activeBackground = stage_number
 	self.activeStageGameplay = stage_number
 	loadSets(self,
 		"LikeDreamer.Gameplay",
-		"LikeDreamer.Gameplay.Stage." .. stage_number,
-		"LikeDreamer.Background." .. stage_number)
+		"LikeDreamer.Gameplay.Stage." .. stage_number)
+	if background_enabled then
+		self.activeBackground = stage_number
+		loadSets(self, "LikeDreamer.Background." .. stage_number)
+	end
 	if stage_number >= 7 then
 		loadSets(self, "LikeDreamer.Gameplay.Late")
 		self.lateGameplayLoaded = true

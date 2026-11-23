@@ -48,7 +48,6 @@ function Card.createFullCardBoss(editor,res,diff,paths,hidden)
         R.prepareSounds()
         E.EISlib.Bullet.Laser.init()
         if res.bossLoadRes then res.bossLoadRes({}) end
-        if res.background.prepareRogueResources then res.background.prepareRogueResources() end
     end
     local cards={}
     class.init=function(o,selected)
@@ -70,7 +69,7 @@ function Card.createFullCardBoss(editor,res,diff,paths,hidden)
         o.a,o.b=32,32
         E.New(BossContact,o).th43_bullet=nil
         o.taskers={}
-        if practice then
+        if practice and not (RogueEncounter and RogueEncounter.spellOnly(41)) then
             E.New(res.background,true)
         end
         if practice then o.y=144;R.practiceBoss=o end

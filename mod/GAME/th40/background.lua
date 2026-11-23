@@ -4,6 +4,8 @@ local directory='Resources/th40/Background/'
 local prefix='TH40_scene_'
 local Scene=dofile('mod/GAME/th40/scene.lua')
 local prepared
+local spellObject
+local function spellOnly() return RogueEncounter and RogueEncounter.spellOnly(38) end
 local folder={['1']='St01/',['2']='St02/',['3']='St03/',['4']='St04/',['5']='St05/',['6']='St06/',EX='StEx/'}
 local aliases={
     Card02a='St02/Card02a',Card02b='St02/Card02b',Card02c='St02/Card02c',
@@ -56,7 +58,11 @@ end
 local B=Class(background,{
     init=function(o)
         o.android_direct_background=true
-        background.init(o,false)
+        o.spellOnly=spellOnly() or false
+        if o.spellOnly then
+            o.group,o.bound,o.colli=GROUP.GHOST,false,false
+            spellObject=o
+        else background.init(o,false) end
         o.layer=LAYER.BG-.1
     end,
     frame=function(o)
@@ -70,11 +76,11 @@ local B=Class(background,{
     end,
     render=function(o)
         SetViewMode('world')
-        RenderClearViewMode(Color(255,10,18,38))
+        if not o.spellOnly then RenderClearViewMode(Color(255,10,18,38)) end
         if setting.displayBG==false or not o.chapter then return end
         if o.tenseiAge then drawTensei(o.tenseiAge);return end
         -- 只在实际不透明原图完全覆盖当前视口时省略场景提交，场景时间仍由 frame 推进。
-        if not Visual.coversBackground(o.originalParts,o.mediaAlpha or 0) then Scene.render(o.scene) end
+        if not o.spellOnly and not Visual.coversBackground(o.originalParts,o.mediaAlpha or 0) then Scene.render(o.scene) end
         if o.originalParts then Visual.drawBackground(o.originalParts,o.mediaAlpha or 0) end
     end,
 })
@@ -86,6 +92,12 @@ local function entryClock(chapter,phase)
     return 0
 end
 function B.prepare(phase)
+    if spellOnly() then
+        Visual.prepare(phase)
+        local _,tensei=Visual.backgrounds(phase)
+        if tensei then load(phase.chapter,tenseiLayers) end
+        return
+    end
     local chapter=phase.chapter
     local clock=entryClock(chapter,phase)
     local state=Scene.State.new(chapter,clock)
@@ -94,13 +106,16 @@ function B.prepare(phase)
 end
 function B.clearPrepared() prepared=nil end
 function B.enter(chapter,phase)
-    local bg=lstg.tmpvar.bg
+    local only=spellOnly() or false
+    local bg=only and spellObject or lstg.tmpvar.bg
     if not IsValid(bg) or bg.class~=B then bg=New(B) end
     if bg.chapter~=chapter then
         bg.chapter,bg.mediaLayers,bg.mediaAlpha=chapter,nil,0
-        local clock=entryClock(chapter,phase)
-        if prepared and prepared.chapter==chapter and prepared.clock==clock then bg.scene=prepared.state;prepared=nil
-        else bg.scene=Scene.State.new(chapter,clock) end
+        if not only then
+            local clock=entryClock(chapter,phase)
+            if prepared and prepared.chapter==chapter and prepared.clock==clock then bg.scene=prepared.state;prepared=nil
+            else bg.scene=Scene.State.new(chapter,clock) end
+        end
     end
     bg.originalParts,bg.tenseiAge=Visual.backgrounds(phase)
     bg.mediaSpell=bg.originalParts and #bg.originalParts>0 or false

@@ -399,6 +399,7 @@ end
 -- 原引擎的 dialog 卡承担移动和等待，保留其协程，只跳过对话文本。
 for number=1,7 do
     load('EISlib/background/stage'..number..'bg.lua')
+    env['stage'..number..'_background'].rogue_stage_background=39
     env.EISlib.stage.loadStage(number)
     local controller=env['s'..number..'_boss']
     local main=controller.main
@@ -526,7 +527,7 @@ for number=1,7 do
                         if not tracks[music] then music='s'..number end
                         playMusic(music)
                         local bg=env['stage'..number..'_background']
-                        if bg then new(bg,true) end
+                        if bg and not (RogueEncounter and RogueEncounter.spellOnly(39)) then new(bg,true) end
                         local practiceClass,cards=practiceBoss(key,index)
                         local actor=new(practiceClass,cards)
                         while IsValid(actor) do task.Wait() end

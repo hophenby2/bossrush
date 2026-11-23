@@ -71,6 +71,7 @@ if P then
 end
 W.source=L
 W.ownHud=true
+L.Background.Class.rogue_stage_background=40
 
 local checkpoints={
     {0,2700,3750,5700}, {0,5200,6420,9700}, {0,2860,4350,9500},
@@ -136,9 +137,11 @@ local function start(number, first)
     objects={}
     local guard=New(Guard)
     guard.runtime=rt
-    if lstg.tmpvar.bg and IsValid(lstg.tmpvar.bg) then background.DelBG() end
-    rt.background=L.Background.create(rt)
-    lstg.tmpvar.bg=rt.background
+    if not (RogueEncounter and RogueEncounter.spellOnly(40)) then
+        if lstg.tmpvar.bg and IsValid(lstg.tmpvar.bg) then background.DelBG() end
+        rt.background=L.Background.create(rt)
+        lstg.tmpvar.bg=rt.background
+    end
     -- 随机模式使用宿主残机、强化和阶段倍率；原作侧栏会遮住它们并显示另一套库存。
     if not (RogueEncounter and RogueEncounter.enabled(40)) then L.SideHud.create(rt) end
     if L.BossHud then L.BossHud.create(rt) end

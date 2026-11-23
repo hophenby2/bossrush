@@ -5,6 +5,12 @@ local presentation=dofile('mod/GAME/th39/scenes/presentation.lua')
 for key,height in pairs(presentation.textureHeights) do D.textureHeights[key]=height end
 local R
 local snapshot,ready
+local spellScene
+local function spellOnly() return RogueEncounter and RogueEncounter.spellOnly(37) end
+local function spellState(chapter)
+    return {chapter=chapter,script=D.stages[chapter.script],effects={},serial=0,fade=0,
+        resources={tex={},img={}},spellOnly=true}
+end
 local applyCard,applyEnd
 local shake={{-1,0},{0,1},{0,-1},{1,0},{-1,1},{1,-1},{-1,-1},{1,1},{0,0}}
 local function track(scene,id,x,y,order,number)
@@ -124,15 +130,17 @@ local function preview(o,point)
 end
 local Scene=Class(background,{
     init=function(o,chapter,start)
-        background.DelBG()
-        lstg.tmpvar.bg=o
+        o.spellOnly=spellOnly() or false
+        if o.spellOnly then spellScene=o
+        else background.DelBG();lstg.tmpvar.bg=o end
         o.chapter=chapter
         o.pending={}
         o.group,o.layer,o.colli,o.bound=GROUP.GHOST,LAYER.BG-.1,false,false
         local px,py=R.player()
-        local prepared=ready and ready.chapter==chapter and ready.start==start and ready
+        local prepared=ready and ready.chapter==chapter and ready.start==start and ready.spellOnly==o.spellOnly and ready
         ready=nil
-        if prepared and prepared.px==px and prepared.py==py then o.state=prepared.state
+        if o.spellOnly then o.state=prepared and prepared.state or spellState(chapter)
+        elseif prepared and prepared.px==px and prepared.py==py then o.state=prepared.state
         else
             -- 玩家可能在45帧入场期间移动。不能使用瞄准旧位置的快照，也不能在 New 回调内挂起。
             local point={px,py}
@@ -166,9 +174,11 @@ local Scene=Class(background,{
         if not setting or not setting.displayBG then draw(o,4);draw(o,3);return end
         SetViewMode('world')
         local w=lstg.world
-        SetImageState('white','',255,0,0,0)
-        RenderRect('white',w.l,w.r,w.b,w.t)
-        SetImageState('white','',255,255,255,255)
+        if not o.spellOnly then
+            SetImageState('white','',255,0,0,0)
+            RenderRect('white',w.l,w.r,w.b,w.t)
+            SetImageState('white','',255,255,255,255)
+        end
         draw(o,4)
         draw(o,3)
         if o.spell then
@@ -181,6 +191,7 @@ local Scene=Class(background,{
         end
     end,
     del=function(o)
+        if spellScene==o then spellScene=nil end
         if RogueEncounter and RogueEncounter.stopping then return end
         o=o.state
         if not o then return end
@@ -189,7 +200,7 @@ local Scene=Class(background,{
     end,
 },true)
 local function current()
-    local o=lstg.tmpvar.bg
+    local o=spellOnly() and spellScene or lstg.tmpvar.bg
     if IsValid(o) and o.class==Scene then return o end
 end
 function B.seek(chapter,start,point,resources)
@@ -210,10 +221,17 @@ function B.prepare(runtime,chapter,start,group,meta)
     R=runtime
     if not setting or not setting.displayBG then return end
     local px,py=R.player()
-    if not snapshot or snapshot.chapter~=chapter or snapshot.start~=start or snapshot.px~=px or snapshot.py~=py then
-        snapshot={chapter=chapter,start=start,px=px,py=py,state=B.seek(chapter,start,{px,py})}
+    local only=spellOnly() or false
+    local state
+    if only then
+        -- 随机模式只准备本卡的立绘与符卡特效，不从第0帧预演道中背景。
+        state=spellState(chapter)
+    else
+        if not snapshot or snapshot.chapter~=chapter or snapshot.start~=start or snapshot.px~=px or snapshot.py~=py then
+            snapshot={chapter=chapter,start=start,px=px,py=py,state=B.seek(chapter,start,{px,py})}
+        end
+        state=RogueEncounter.copyPrepared(snapshot.state)
     end
-    local state=RogueEncounter.copyPrepared(snapshot.state)
     for _,c in ipairs(state.effects) do
         c.onQuake=function(duration,strength)
             if not state.quake then state.quake={time=0,duration=duration,strength=strength*2/3} end
@@ -226,7 +244,7 @@ function B.prepare(runtime,chapter,start,group,meta)
     if card.portrait then ids[#ids+1]=card.portrait end
     for _,effect in ipairs(meta.kind~=0 and D.spells[tostring(chapter.stage)][tostring(card.variant or config.variant)] or {}) do ids[#ids+1]=effect[1] end
     for _,id in ipairs(ids) do R.prepareBackground(R.backgroundEffect(id,0,0,7919,D.textureHeights,state.resources)) end
-    ready={chapter=chapter,start=start,px=px,py=py,state=state}
+    ready={chapter=chapter,start=start,px=px,py=py,state=state,spellOnly=only}
 end
 function B.clearPrepared() snapshot,ready=nil,nil end
 function B.show(runtime,chapter,start)
@@ -237,6 +255,7 @@ function B.show(runtime,chapter,start)
 end
 function B.tick(t)
     local o=current()
+    if o and o.spellOnly then return end
     if o and not o.state then
         if o.pendingStageTick~=t then
             local x,y=R.player();o.pending[#o.pending+1]={'tick',t,{x,y}};o.pendingStageTick=t
@@ -272,7 +291,7 @@ end
 applyEnd=function(o,group,meta)
     local card=o.script.groups[group.index].cards[tostring(meta.number)]
     o.spell=nil;o.portrait=nil
-    if card.replace then change(o,card.replace) end
+    if card.replace and not o.spellOnly then change(o,card.replace) end
 end
 function B.card(chapter,group,meta)
     local o=B.show(R,chapter,group.time)

@@ -22,9 +22,30 @@ local function discardCache()
 end
 local rawNew=New
 local ports=dofile('mod/rogue_ports.lua')
+-- 随机模式整局使用同一底图；作品只叠加当前符卡背景。
+local Backdrop=Class(object,{
+    init=function(o)
+        o.group,o.layer,o.bound,o.colli=GROUP.GHOST,LAYER.BG-1,false,false
+        o.rogue_background,o.alpha=true,1
+    end,
+    render=function(o)
+        SetViewMode('world')
+        SetImageState('white','',255,9,13,22)
+        local w=lstg.world;RenderRect('white',w.l,w.r,w.b,w.t)
+        SetImageState('white','',255,255,255,255)
+    end,
+})
 function M.enabled(level)
     local run=lstg.var.rogue_run
     return run and run.source_hp and run.encounter and (not level or run.encounter.level==level)
+end
+function M.spellOnly(level) return M.enabled(level) end
+local function ensureBackground()
+    local bg=lstg.tmpvar.bg
+    if IsValid(bg) and bg.rogue_background then return end
+    if IsValid(bg) then background.DelBG() end
+    -- 不属于某一张卡的作用域，切卡回收不能把整局底图删除。
+    lstg.tmpvar.bg=rawNew(Backdrop)
 end
 local function stageResources()
     local out={}
@@ -90,19 +111,23 @@ function M.stop(scene)
         release(owned);cached=nil
     end
     if IsValid(player) then player.dialog=false;player.lock=false;player.ldX,player.ldY=nil,nil end
+    if IsValid(lstg.tmpvar.bg) then
+        lstg.tmpvar.bg.hide=false
+        if lstg.tmpvar.bg.rogue_background then lstg.tmpvar.bg.alpha=1 end
+    end
     lstg.tmpvar.boss=nil;_boss=nil
     scope.run.source_hp=false
 end
 function M.begin(scene,entry)
     M.stop(scene)
     if cached and cached.level~=entry.level then discardCache() end
+    ensureBackground()
     local run=lstg.var.rogue_run
     local enabled=run.poolVersion>=10 and entry.level>=35 and entry.level<=41
     run.encounter,run.source_hp=entry,enabled
     run.source_damage=enabled and assert(ports.damageUnits[entry.level]) or nil
     run.source_boss_damage=enabled and ports.bossDamageUnits[entry.level] or nil
     if not enabled then return false end
-    if IsValid(lstg.tmpvar.bg) then background.DelBG() end
     M.scope={entry=entry,run=run,objects={},resources=stageResources()}
     return true
 end
@@ -153,7 +178,11 @@ function M.frame(timer)
     end
 end
 local function new(class,...)
+    -- 原作道中入口也可能直接创建背景；跳过其构造器，保留可安全回收的空对象。
+    local skip=class and class.rogue_stage_background and M.spellOnly(class.rogue_stage_background)
+    if skip then class=object end
     local o=rawNew(class,...)
+    if skip then o.group,o.bound,o.colli,o.hide=GROUP.GHOST,false,false,true end
     -- _drop_owner 标记宿主自机弹与 Bomb；它们使用宿主资源，跨卡继续原来的寿命。
     if M.scope and not o._drop_owner then M.scope.objects[o]=true end
     return o

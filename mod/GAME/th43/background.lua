@@ -31,6 +31,7 @@ R.load('EISlib/EGGlib/Background/BgObj.lua')
 for n=1,7 do
     R.load('EISlib/background/stage'..n..'bg.lua')
     local class=E['stage'..n..'_background']
+    class.rogue_stage_background=41
     local init,render=class.init,class.render
     -- 复用原脚本私有 loadRes，仅提前资源 I/O，不调用背景 init 或消耗画面随机数。
     for i=1,100 do

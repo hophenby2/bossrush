@@ -172,7 +172,7 @@ local function runCards(self)
         local class=unit.sc_group[1].boss
         self.level=entry.level
         if port then encounter.prepare(self,entry,unit) end
-        -- 整局沿用首位 Boss 的场景；符卡背景仍由当前 Boss 自己的 _bg 管理。
+        -- 整局底图由 encounter 保留；这里只切换音乐，符卡背景由当前作品叠加。
         if port then
             rogueMusic.stop(self)
             if self.now_music then StopMusic(self.now_music) end
@@ -182,7 +182,6 @@ local function runCards(self)
             if self.now_music then PlayMusic(self.now_music) end
         elseif not self.rogue_scene_ready then
             self.rogue_scene_ready=true
-            if class._bg then background.Create(class._bg) end
             self.now_music=class.bgm
             if class.bgm and not rogueMusic.start(self,class.bgm) then
                 if run.poolVersion<10 or not rogueMusic.resume(self) then PlayMusic(class.bgm) end
