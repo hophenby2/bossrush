@@ -9,6 +9,7 @@ local object,bullet,enemy,laser,bent_laser=object,bullet,enemy,laser,bent_laser
 local sin,cos,atan2,sqrt,pi=math.sin,math.cos,math.atan2,math.sqrt,math.pi
 local min,max,floor,abs=math.min,math.max,math.floor,math.abs
 local R=pi/180
+local Mist=assert(loadfile('mod/GAME/th40/mist.lua'))(N)
 local animatedTypes={[181]='bullet66_',[185]='bullet66_',[182]='bullet64_',[183]='bullet65_',[184]='bullet18-'}
 local function clamp(x,a,b) return max(a,min(b,x)) end
 local function copy(t) local o={};for k,v in pairs(t or {}) do o[k]=v end;return o end
@@ -65,7 +66,11 @@ local function updateTweens(o)
         elseif e.key=='cycle' or e.key=='ways' or e.key=='life' or e.key=='type' then value=value<0 and math.ceil(value) or floor(value) end
         e.target[e.key]=value
         if e.key=='out' and value==false then e.target.outside=200 end
-        if e.key=='type' then e.target.type_dirty=true end
+        if e.key=='type' then
+            e.target.type_dirty=true
+            -- 原Type setter会重新绑定默认纹理，即使类型值没有变化。
+            if e.target.mode=='bullet' or e.target==o.p and o.mode=='bullet' then e.target.texture=nil end
+        end
         e.left=e.left-1
         if e.left~=(e.curve==2 and -1 or 0) then write=write+1;o.tweens[write]=e end
     end
@@ -74,6 +79,10 @@ end
 local function sync(o)
     o.x,o.y=o.cx-320,240-o.cy;o.rot=-(o.follow and o.direction+o.angle-90 or o.angle-90)
     o.hscale,o.vscale=o.width,o.height;o.vx,o.vy=0,0
+    if not o.emitter and o.mode=='bullet' then
+        local layer=o.draw_layer or 0
+        o.layer=LAYER.ENEMY_BULLET+(o.blend and -2 or layer<0 and -.2 or layer>0 and .2 or 0)
+    end
     if o.mode=='enemy' and not o.emitter then
         local radius=(o.region or 4)*max(o.width,o.height)
         local collision=NativeActorCollision or dofile('THlib/native_actor_collision.lua')
@@ -133,6 +142,7 @@ local function cull(o)
 end
 local function image(o)
     local name=o.texture
+    if name and not N.images[name] then name=nil end
     if o.mode=='enemy' then
         name=o.enemy or 'EnemyA0'
         if name:find('MaoYu',1,true) then name=name
@@ -143,7 +153,7 @@ local function image(o)
         name=name or N.bullet_names[o.type or 0]
         -- BaseBullet_CS.Ctrl：四帧循环，每一帧持续四个逻辑帧。
         local animated=animatedTypes[o.type]
-        if animated then name=animated..floor(o.age%16/4) end
+        if animated and (not name or o.age>0) then name=animated..floor(o.age%16/4) end
         if not name then return 'img_void' end
     end
     return N.images[name] or 'ball_mid1'
@@ -215,7 +225,8 @@ local function bulletRegion(o)
     end
     if not o.region_initialized or o.region_type~=o.type or o.type_dirty then
         local first=not o.region_initialized
-        local name=o.texture or N.bullet_names[o.type or 0] or ''
+        -- 自定义图片只改变外观；Type产生的判定和旋转规则保持不变。
+        local name=N.bullet_names[o.type or 0] or ''
         local kind=tonumber(name:match('bullet(%d+)'))
         o.region=({[0]=1,[1]=1,[2]=2,[3]=2,[4]=1,[5]=1,[6]=1,[7]=1,[8]=1,[9]=1,[10]=2,[11]=2,[12]=1,[13]=3,[15]=1,[20]=6,[21]=6,[22]=3,[23]=3,[24]=3,[26]=16,[40]=6,[46]=1,[50]=12,[61]=2,[62]=3,[64]=3,[65]=3,[66]=3,[67]=3})[kind] or 2
         if name=='' then o.region=-100 end
@@ -335,6 +346,7 @@ update=function(o)
         o.events(o,o.emitter and (o.age-o.start+1) or o.age,N)
     end
     updateTweens(o);o.age=o.age+1;motion(o)
+    if not o.emitter and o.mode=='bullet' and o.age==1 and o.mist then Mist.spawn(o) end
     if o.emitter then
         if o.mode~='cover' and o.age>=o.start and o.age<=o.start+o.duration then
             local cycle=max(1,o.cycle+math.modf(r(o,'cycle')))
@@ -408,6 +420,7 @@ function N.damageFactor(meta)
 end
 function N.clear(o)
     N.runs[o.run]=nil
+    Mist.clear(o.run)
     for _,obj in ipairs(o.run.objects) do erase(obj) end
     o.run.objects={};o.run.bullets={};o.run.enemies={};o.run.effects={};o.run.controllers={}
 end
@@ -476,6 +489,7 @@ function N.step(run,hostUpdate)
     each(run.enemies);each(run.bullets)
     if hostUpdate then hostUpdate() end
     each(run.effects)
+    Mist.tick(run)
     -- 原BaseCover_CS.HitCheckAll在弹更新后执行；遮罩只影响Cover=true的原弹。
     for _,o in ipairs(run.enemies) do
         if valid(o) and o.mode=='cover' and o.age>=o.start and o.age<=o.start+o.duration then
@@ -531,10 +545,13 @@ end
 function N.stop(owner) if owner.th38_run then N.clear(owner.th38_run.host);owner.th38_run=nil end end
 function N.load()
     if N.loaded then return end;N.loaded=true;N.sounds={};N.bullet_names=dofile('mod/GAME/th40/bullet_names.lua')
+    N.bullet_colors=dofile('mod/GAME/th40/bullet_colors.lua')
+    local centers=(N.visual and N.visual.data or dofile('mod/GAME/th40/visuals.lua')).centers
     local textures={}
     for _,a in ipairs(dofile('mod/GAME/th40/atlas.lua')) do
         if not textures[a[2]] then local tex='th38.tex.'..a[2];LoadTexture(tex,a[2]);textures[a[2]]=tex end
         local id='th38.'..a[1];LoadImage(id,textures[a[2]],a[3],a[4],a[5],a[6],2,2);N.images[a[1]]=id;N.regions[a[1]]=a
+        if centers[a[1]] then SetImageCenter(id,unpack(centers[a[1]])) end
     end
 end
 N.update=update;N.spawn=spawn;N.sync=sync;N.motion=motion

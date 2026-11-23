@@ -5,6 +5,7 @@ local R={classes={},patterns={},objects=setmetatable({},{__mode='k'}),controller
 local Time=NativeTime or dofile('THlib/native_time.lua')
 local FixedLaser=dofile('mod/GAME/th38/fixed_laser.lua')
 local Presentation=dofile('mod/GAME/th38/presentation.lua')
+local Mist=dofile('mod/GAME/th38/mist.lua')
 R.presentation=Presentation
 local float=require('ffi').typeof('float')
 local function f32(x) return tonumber(float(x)) end
@@ -33,6 +34,7 @@ local assets=false
 function R.loadAssets()
     if assets then return end
     Presentation.prepare()
+    Mist.prepare()
     globalResource(function()
         LoadTexture('asl_bullet','Resources/th38/bullet.png')
         if RogueEncounter then RogueEncounter.checkpoint() end
@@ -400,7 +402,7 @@ attach=function(e,p)
         if target then
             if link.kind==1 or link.kind==4 then target.boundHosts[p]=link.kind
             elseif link.kind==2 or link.kind==5 then
-                local child=template(target,e.c);child.host=p;child.relative=link.kind==5;child.birth=e.c.time+1
+                local child=template(target,e.c);child.host=p;child.relative=link.kind==5;child.birth=e.c.time+1;child.sourceZi=true
                 child.skip=false;child.deep=false;child.bound=false;e.c.emitters[#e.c.emitters+1]=child
             end
         end
@@ -428,8 +430,10 @@ local function fan(e,x,y,host,relative)
                 velocity=(vx*vx+vy*vy)^.5;d=math.deg(math.atan2(vy,vx))+(e.a5_5==1 and head or 0)
             end
             e.emitHost=host;spawn(e,xx,yy,d,velocity)
+            if radiusNow~=0 then Mist.spawn(e,xx,yy) end
         end
     end
+    if radiusNow==0 then Mist.spawn(e,x,y) end
 end
 emit=function(e)
     local c=e.c;local t=c.time-e.birth-e.a2_7
@@ -581,6 +585,7 @@ end
 function R.step(c,deferBulletProjection)
     if not c or c.closed then return end
     do
+        Mist.tick(c)
         -- 新对象下一tick开始积分；所有对象仍是引擎内的子弹/敌机/激光实体。
         local n=#c.entities
         for i=1,n do local s=c.entities[i];if s.alive then move(s,deferBulletProjection) end end
@@ -630,11 +635,12 @@ end
 function R.clear(c)
     if not c then return end
     Time.reset(c)
+    Mist.clear(c)
     c.closed=true
     for _,s in ipairs(c.entities) do if valid(s.native) then clean(s.native) else release(s) end;s.alive=false end
     c.emitters,c.entities,c.byName={},{},{};R.controllers[c]=nil
 end
-function R.clearAll() for c in pairs(R.controllers) do R.clear(c) end;R.bulletCount=0 end
+function R.clearAll() for c in pairs(R.controllers) do R.clear(c) end;R.bulletCount=0;Mist.reset() end
 function R.deathClear(x,y,r,outside,dropKind)
     for b in pairs(R.objects) do
         local s=b.asl

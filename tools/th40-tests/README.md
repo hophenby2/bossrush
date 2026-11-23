@@ -84,6 +84,10 @@ Mac 可用 `package_mac.py --base-app <已有.app> --engine <已有LuaSTG-x缓�
 在本 worktree 重新打包。它调用项目正式资源管线，重写 WAV 的标准数据块；直接把源码 WAV
 覆盖进 app 会导致截图中出现过的 `se_focus.wav` 解码失败。
 
+普通子弹也保留MBG第93列的自定义纹理；该列覆盖默认Type的外观，不改变其判定。Type事件按原setter重设默认纹理，动画弹仍在Ctrl后更新帧图。「流星神话」的`sixing_1/2/3`和`MC-G/B/R`由此恢复，保留原图大小、旋转中心、宽高事件和分组绘制顺序。只更新这类参数时可给`export_thsss.py`追加`--patterns-only`，避免重写素材。
+
+出生弹雾由`mist.lua`按原`ParticleBeginBullet`实现：读取原弹型颜色表，固定2倍大小、出生位置不跟弹移动，8帧渐隐；与弹体判定分开。每个run只有两个分混合模式的渲染对象，粒子本身保存在短寿命列表中；清场释放，不消耗CrazyStorm发弹随机流。
+
 ## Boss与符卡画面
 
 `export_visuals.py`从原构造函数离线导出81个符卡类的背景、立绘及中心点；

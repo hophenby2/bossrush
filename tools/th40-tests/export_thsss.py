@@ -3,7 +3,7 @@
 import argparse,hashlib,json,re,shutil,subprocess,wave,struct
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]
-p=argparse.ArgumentParser();p.add_argument('--game',type=Path,required=True);p.add_argument('--source',type=Path,required=True);p.add_argument('--media',action='store_true');a=p.parse_args()
+p=argparse.ArgumentParser();p.add_argument('--game',type=Path,required=True);p.add_argument('--source',type=Path,required=True);p.add_argument('--media',action='store_true');p.add_argument('--patterns-only',action='store_true',help='只更新弹幕参数和弹型索引，不重写素材');a=p.parse_args()
 OUT=ROOT/'mod/GAME/th40';ASSET=ROOT/'Resources/th40';OUT.mkdir(exist_ok=True);ASSET.mkdir(exist_ok=True)
 q=lambda s:json.dumps(str(s),ensure_ascii=False)
 def lua(v):
@@ -98,6 +98,9 @@ def record(row,kind,origin):
   if boolean(81):
    r['mode']='enemy';p.update(enemy=s[82],hp=get(83),red_drop=get(84),blue_drop=get(85),enemy_color=get(86),backfire=boolean(87),clear_radius=get(88),green_drop=get(89),star_drop=get(90))
   elif get(91)>0:r['mode']='effect';p['texture']=s[92]
+  # CS_Data在设置Type之后应用自定义纹理，与EffectType是否为零无关。
+  if len(s)>95 and s[92]:p['texture']=s[92]
+  if get(78)!=0:p['draw_layer']=get(78)
   for j,k in enumerate(['x','y','radius','radius_angle','ways','cycle','emit_angle','spread','speed','direction','accel','accel_angle','p.angle','p.speed','p.direction','p.accel','p.accel_angle']):r.setdefault('random',{})[k]=get(53+j)
   e,b=s[51],s[52]
  r['p']=p
@@ -122,6 +125,15 @@ for path in sorted((a.game/'CS').rglob('*.mbg')):
  output+=['return T'];(OUT/('p_'+key+'.lua')).write_text('\n'.join(output)+'\n')
 (OUT/'patterns.lua').write_text('-- 路径只用于离线来源追踪；值为已编译Lua模块。\nreturn '+lua(patterns)+'\n')
 (OUT/'source_manifest.json').write_text(json.dumps({'exe_sha256':hashlib.sha256((a.game/'THSSS.exe').read_bytes()).hexdigest(),'patterns':hashes,'event_count':event_count,'source_noops':ignored},ensure_ascii=False,indent=2)+'\n')
+bullet_source=(a.source/'BaseBullet_CS.cs').read_text()
+names=re.search(r'string\[\] BulletName = new string\[\d+\]\s*\{([^}]+)\}',bullet_source)[1]
+entries=re.findall(r'null|"[^"\n]*"',names);assert len(entries)==229
+(OUT/'bullet_names.lua').write_text('-- 原BaseBullet_CS.Type的纹理索引；0保留为空。\nreturn {'+','.join('['+str(i)+']='+s for i,s in enumerate(entries) if s!='null')+'}\n')
+colors=re.search(r'byte\[\] BulletColorType = new byte\[\d+\]\s*\{([^}]+)\}',bullet_source)[1]
+colors=[int(x) for x in re.findall(r'\d+',colors)]
+(OUT/'bullet_colors.lua').write_text('-- 原BaseBullet_CS.Type的出生弹雾颜色索引。\nreturn {'+','.join('['+str(i)+']='+str(c) for i,c in enumerate(colors))+'}\n')
+if a.patterns_only:
+ print(json.dumps({'patterns':len(patterns),'events':event_count,'source_noops':len(ignored)},ensure_ascii=False));raise SystemExit
 # 导出原图切片，保持图集坐标；所有资源名前缀隔离，避免覆盖现有关卡。
 atlas=[]
 for folder in ['Bullet','Boss','Enemy','Effect','Background']:
@@ -146,8 +158,4 @@ for folder in ['Bullet','Boss','Enemy','Effect','Background']:
 (OUT/'atlas.lua').write_text('-- 原作图集切片参数。\nreturn '+lua(atlas)+'\n')
 from export_background_coverage import export as export_background_coverage
 export_background_coverage(ROOT)
-bullet_source=(a.source/'BaseBullet_CS.cs').read_text()
-names=re.search(r'string\[\] BulletName = new string\[\d+\]\s*\{([^}]+)\}',bullet_source)[1]
-entries=re.findall(r'null|"[^"\n]*"',names);assert len(entries)==229
-(OUT/'bullet_names.lua').write_text('-- 原BaseBullet_CS.Type的纹理索引；0保留为空。\nreturn {'+','.join('['+str(i)+']='+s for i,s in enumerate(entries) if s!='null')+'}\n')
 print(json.dumps({'patterns':len(patterns),'events':event_count,'atlas':len(atlas),'source_noops':len(ignored)},ensure_ascii=False))
