@@ -375,7 +375,8 @@ local function spawn(e,x,y,direction,speed)
         life=e.a6_6,shape=shape,color=e.a6_5,scaleX=sx,scaleY=e.a6_8,customOn=e.a6_1,custom=e.custom,customRadius=e.a6_3,
         red=e.a7_1+rnd(e.a7_2),green=e.a7_3+rnd(e.a7_4),blue=e.a7_5+rnd(e.a7_6),alpha=e.a7_7+rnd(e.a7_8),
         exit=e.a6_10,delayExit=e.a6_14,outTime=0,mist=e.a6_11,invincible=e.a6_12,dispel=e.a6_13,blend=e.a9_4,
-        collision=e.a5_2==0,events=e.sonEvents,limits={},changes={},vars={0,0,0,0},kind=e.a47==1 and 'enemy' or e.a47==3 and (e.a54_1>=2 and 'curve' or 'beam') or 'bullet',
+        -- Sincos.Zidan_fuzhi 在出生时复制全局变量，子弹事件之后读取自己的快照。
+        collision=e.a5_2==0,events=e.sonEvents,limits={},changes={},vars={c.vars[1],c.vars[2],c.vars[3],c.vars[4]},kind=e.a47==1 and 'enemy' or e.a47==3 and (e.a54_1>=2 and 'curve' or 'beam') or 'bullet',
         enemyType=e.a48_1,enemyStyle=1+(e.a48_1*2+e.a48_2)%9,laserStyle=e.a54_4 or 0,beamMode=e.a47==3 and e.a54_1 or nil,
         tailTicks=max(5,floor((e.a54_2 or 5)/5)*5),contact=e.a48_4*.01,hit=e.a48_5*.01,immune=e.a48_6,followSpeed=e.a8_9==1,length=e.a54_2 and e.a54_2*.01 or 1,width=e.a54_3 or 1}
     if e.a47==4 then return end -- Unity蓄力/爆炸/震屏只演出，不制造有判定的替代弹。
@@ -492,7 +493,14 @@ local function move(s,deferBulletProjection)
     if s.kind=='boss' and s.main and valid(c.host) then s.life=c.host.hp end
     if s.kind=='boss' then bossMotion(s) end
     local parent=s.parent
-    if parent and not parent.alive then s.alive=false;return end
+    if parent and not parent.alive then
+        if s.kind~='bullet' then s.alive=false;return end
+        -- Sincos.Yundong_delete：普通子弹保留父对象最后一拍的世界坐标，
+        -- 解除运动绑定后加上父对象的速度方向，继续自身寿命和事件；不是一并删弹。
+        followParent(s,parent)
+        s.direction=s.direction+parent.direction
+        s.parent=nil;parent=nil
+    end
     local boundBullet=parent and s.kind=='bullet'
     if boundBullet then followParent(s,parent) end
     events(s,s.events,s.age,true)
