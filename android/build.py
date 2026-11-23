@@ -76,6 +76,28 @@ def asset_compression(path):
     return zipfile.ZIP_STORED if path.suffix.lower() in {'.ttf', '.otf', '.ogg'} else zipfile.ZIP_DEFLATED
 
 
+def prepare_wav(source, target):
+    """入包副本去掉元数据，并把高位深整数PCM转为解码器支持的16位。"""
+    with wave.open(str(source), 'rb') as audio:
+        params = audio.getparams()
+        samples = audio.readframes(params.nframes)
+    width = params.sampwidth
+    if width not in (1, 2, 3, 4):
+        raise ValueError(f'不支持的PCM位深：{source}（{width * 8}位）')
+    if len(samples) != params.nframes * params.nchannels * width:
+        raise ValueError(f'WAV采样数据不完整：{source}')
+    if width > 2:
+        # PCM按小端交错存储；保留每个有符号样本的高16位，不混音、不重采样。
+        converted = bytearray(len(samples) // width * 2)
+        converted[0::2] = samples[width - 2::width]
+        converted[1::2] = samples[width - 1::width]
+        samples = converted
+        params = params._replace(sampwidth=2)
+    with wave.open(str(target), 'wb') as audio:
+        audio.setparams(params)
+        audio.writeframes(samples)
+
+
 def copy_tree(source, target):
     shutil.copytree(source, target, dirs_exist_ok=True,
                     ignore=shutil.ignore_patterns('.git', '.DS_Store', '*.bat'))
@@ -274,13 +296,7 @@ def prepare_assets():
                 write_utf8(target, source.read_text(encoding='utf-8-sig'))
             elif source.suffix.lower() == '.wav':
                 if not target.exists() or target.stat().st_mtime <= source.stat().st_mtime:
-                    # 去掉 JUNK/LIST 等元数据，不改变 PCM 样本、声道、采样率或位深。
-                    with wave.open(str(source), 'rb') as audio:
-                        params = audio.getparams()
-                        samples = audio.readframes(audio.getnframes())
-                    with wave.open(str(target), 'wb') as audio:
-                        audio.setparams(params)
-                        audio.writeframes(samples)
+                    prepare_wav(source, target)
             elif not target.exists() or target.stat().st_mtime < source.stat().st_mtime:
                 shutil.copy2(source, target)
             paths.append(relative.as_posix())
