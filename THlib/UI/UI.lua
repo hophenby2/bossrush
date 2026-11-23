@@ -1,7 +1,8 @@
+-- 子模块会注册加载页等组件，必须先创建父表，之后不能再清空这些注册。
+ui = {}
 Include "THlib\\UI\\font.lua"
 Include "THlib\\UI\\title.lua"
 Include "THlib\\UI\\sc_pr.lua"
-ui = {}
 ui.RenderStatusRow=dofile('THlib/UI/status_row.lua')
 ui.NativeHUD=dofile('THlib/UI/native/hud.lua')
 ui.RunHUD=dofile('THlib/UI/run_hud.lua')
