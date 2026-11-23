@@ -377,7 +377,7 @@ local function projected(b)
     local born=s.Mist and min(1,s.age/15) or 1
     b._a=max(0,min(255,(s.alpha or 100)*2.55*born*(s.controller.friendlyAlpha or 1)));b._r,b._g,b._b=s.colorR or 255,s.colorG or 255,s.colorB or 255
     b._blend=s.Blend and 'mul+add' or ''
-    local layer=(s.controller.effectLayer or LAYER.ENEMY_BULLET)+(s.controller.pattern.order==1 and .1 or 0)
+    local layer=(s.controller.effectLayer or s.controller.drawLayer or LAYER.ENEMY_BULLET)+(s.controller.pattern.order==1 and .1 or 0)
     local group=s.controller.effectLayer and GROUP.GHOST or (s.Invincible or p and p.invincible) and GROUP.INDES or GROUP.ENEMY_BULLET
     -- 按实际引擎属性确认层与分组，仅在变化时同步。
     if b.layer~=layer then b.layer=layer end
@@ -624,6 +624,28 @@ local function fairySprite(b,config,age)
     Render(name,b.x,b.y,0,config[16]*SCALE)
 end
 -- 147–150 是使魔槽位；它们沿用弹体轨迹，使用可受击的原生敌机对象。
+R.classes.teammate=Class(object,{
+    init=function(b,s,slot,config)
+        b.mhj=s;s.familiar,s.teammate=slot,config.teammate
+        s.is_projectile,s.age=true,0
+        b.group,b.bound,b.colli,b.hide=GROUP.GHOST,false,false,true
+        s.controller.bullets[b]=s;s.controller.familiars[slot]=b;R.objects[b]=true
+        b.x,b.y=projectBullet(s.fx,s.fy)
+    end,
+    frame=function(b)
+        local s=b.mhj
+        if not valid(s.controller.host) or not updateParticle(s) then clean(b);return end
+        b.x,b.y=projectBullet(s.fx,s.fy);b.vx,b.vy=0,0
+    end,
+    del=clean,
+})
+function R.teammatePosition()
+    for c in pairs(R.controllers) do if not c.closed and valid(c.host) then
+        for _,b in pairs(c.familiars) do
+            if valid(b) and b.mhj.teammate then return b.mhj.fx-145,b.mhj.fy end
+        end
+    end end
+end
 R.classes.familiar=Class(enemy,{
     init=function(b,s,slot,config)
         enemybase.init(b,config[2]);b.mhj=s;s.familiar=slot;s.familiarConfig=config
@@ -706,7 +728,7 @@ local function emit(o,bound)
             c.particles[#c.particles+1]=s
             c.drawDirty=true
         elseif o.kind=='laser' then b=New(s.Ray=='Curve' and R.classes.curve or R.classes.beam,s)
-        elseif config then b=New(R.classes.familiar,s,slot,config)
+        elseif config then b=New(config.teammate and R.classes.teammate or R.classes.familiar,s,slot,config)
         else b=New(R.classes.projectile,s) end
         if bucket then Bindings.add(bucket,b,s) end
         o.shot=true
@@ -1228,6 +1250,7 @@ function R.deathDamage(x,y,r,damage)
 end
 function R.clearAll()
     audio.clear()
+    if R.sourceEffectsClear and not (NativePlayers and NativePlayers.enabled(nil,37)) then R.sourceEffectsClear() end
     for c in pairs(R.controllers) do R.clear(c) end
     for b in pairs(R.objects) do if valid(b) then clean(b) end end
     R.bulletCount=0

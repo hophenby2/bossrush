@@ -291,6 +291,7 @@ local function register(variant,config)
     local group=stage.group.New('menu',{},config.name,false)
     local battle=stage.group.AddStage(config.name,config.battle,false)
     battle.displayname=config.title
+    battle.wait_for_resources=true
     battle.revive_miss_limit=R.MISS_LIMIT-1
     function battle:init()
         self.rogue_finished=false

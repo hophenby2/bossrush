@@ -171,6 +171,7 @@ function M.warmup(scene)
         createBackground(first,assert(_sc_pr_table[first.level][first.index]))
         run.encounter=nil
         restoreBackground()
+        if ui.ResourceLoading then ui.ResourceLoading.ready() end
         return
     end
     local pool=GetResourceStatus()
@@ -198,6 +199,7 @@ function M.warmup(scene)
     run.preparing,run.preloadIndex,run.preloadTotal=nil,nil,nil
     run.encounter,run.source_hp=nil,false
     restoreBackground()
+    if ui.ResourceLoading then ui.ResourceLoading.ready() end
     if started and lstg.SystemLog then
         lstg.SystemLog(('BOSSRUSH_ROGUE_PRELOAD: cards=%d elapsed_ms=%.1f background=%s'):format(#run.cards,
             (lstg.AndroidClock()-started)*1000,first.key))

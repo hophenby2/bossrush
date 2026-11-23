@@ -99,8 +99,8 @@ function stage_init:frame()
         end
     end
 end
-function stage_init:render()
-    if AndroidPortrait and AndroidPortrait.enabled() and not AndroidPortrait.rendering then return AndroidPortrait.loading(self,stage_init.render) end
+local function renderLoading(self)
+    if AndroidPortrait and AndroidPortrait.enabled() and not AndroidPortrait.rendering then return AndroidPortrait.loading(self,renderLoading) end
     Render("loading", 480, 270)
     ui:RenderText('title', "少女折寿中" .. string.rep(".", int(self.timer / 20 % 6) + 1),
             480, 25, 1, Color(255, 255, 227, 132), "centerpoint")
@@ -121,4 +121,61 @@ function stage_init:render()
             Color(255, 250, 128, 114 + 50 * sin(self.timer * 2)), "centerpoint")
     ui:RenderText("title", ("%0.2f%% ( %d / %d ) "):format(length * 100, min(self.index, self.maxindex), self.maxindex),
             480, 62.5, 0.8, Color(255, 255 * length, 255 - 28 * length, 100 + 32 * length), "centerpoint")
+end
+stage_init.render=renderLoading
+
+-- 战斗入口与启动页共用底图和读条；先提交加载画面，再执行可能阻塞的场景初始化。
+local L={}
+ui.ResourceLoading=L
+function L.beforeFrame()
+    if SaveResume and SaveResume.recovering then L.state=nil;return false end
+    local next=stage.next_stage
+    if next and next.is_menu then L.state=nil;return false end
+    local s=L.state
+    if next and not next.is_menu and (not s or s.target~=next) then
+        L.state={target=next,start=clock(),index=0,maxindex=3,text='正在准备战斗，请稍候。',timer=0}
+        return true
+    end
+    if not s and RogueEncounter and RogueEncounter.preloading() then
+        L.state={target=stage.current_stage,start=clock(),index=1,maxindex=3,text='正在准备战斗，请稍候。',timer=0,preload=true}
+        return true
+    end
+    if not s then return false end
+    if s.done then
+        if not s.presented then return true end
+        L.state=nil
+        -- 入场淡入已在加载画面期间推进，不再让完成后的读条退回黑底。
+        if mask_fader.mode then mask_fader.time=0 end
+        return false
+    end
+    if s.preload and not RogueEncounter.preloading() then L.ready();return true end
+    if RogueEncounter and RogueEncounter.preloading() then s.index=2 end
+    return false
+end
+function L.stageReady()
+    local s=L.state
+    if s and s.target==stage.current_stage then s.index=1;s.initialized=true end
+end
+function L.ready()
+    local s=L.state
+    if s and s.target==stage.current_stage then s.index=s.maxindex;s.done=true end
+end
+function L.afterFrame()
+    local s=L.state
+    if not s or s.done or not s.initialized or s.target~=stage.current_stage then return end
+    if s.target.wait_for_resources or RogueEncounter and RogueEncounter.preloading() then return end
+    if setting.displayBG==false then L.ready();return end
+    if IsValid(lstg.tmpvar.bg) then L.ready();return end
+    -- 关闭背景或由原作自行绘制场景时，以真正进入画面的Boss为就绪标志。
+    for _,b in ipairs(boss_group) do
+        if IsValid(b) and not b.hide and not b._sequence_road_carrier and b.y<=lstg.world.t then L.ready();return end
+    end
+end
+function L.render()
+    local s=L.state
+    if not s then return end
+    s.timer=int((clock()-s.start)*60)
+    renderLoading(s)
+    mask_fader:frame()
+    if s.done then s.presented=true end
 end

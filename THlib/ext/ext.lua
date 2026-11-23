@@ -168,6 +168,7 @@ local function ChangeGameStage()
     if not stage.current_stage.is_menu then
         lstg.system:init_value()
     end
+    if ui.ResourceLoading then ui.ResourceLoading.stageReady() end
     if SaveResume then SaveResume.afterStageInit() end
 end
 
@@ -358,6 +359,7 @@ function FrameFunc()
         if stage.next_stage then DoFrame() end
         GameNet.clientFrame();return false
     end
+    if ui.ResourceLoading and ui.ResourceLoading.beforeFrame() then return false end
     -- 预载仅占显示帧，不消费录像输入或推进战斗时钟；缓存命中不会改变录像帧序。
     if RogueEncounter and RogueEncounter.preloadFrame() then
         return false
@@ -397,6 +399,7 @@ function FrameFunc()
         end
         -- 每次显示回调只推进当前倍率对应的逻辑帧，不按墙钟时间追帧。
         DoFrameEx()
+        if ui.ResourceLoading then ui.ResourceLoading.afterFrame() end
         --按键弹出菜单
         if not (GameNet and GameNet.active()) and (GetLastKey() == setting.keysys.menu and not lstg.tmpvar.noPause or ext.pop_pause_menu) and not ext.StageIsMenu() then
             ext.pause_menu:FlyIn()
@@ -432,6 +435,14 @@ end
 function RenderFunc()
     if SaveResume and SaveResume.recovering then return SaveResume.renderRecovery() end
     if SaveSync and SaveSync.visible then return end
+    if ui.ResourceLoading and ui.ResourceLoading.state then
+        BeginScene()
+        SetViewMode('ui')
+        RenderClear(Color(255,0,0,0))
+        ui.ResourceLoading.render()
+        EndScene()
+        return
+    end
     if GameNet and GameNet.client() then
         BeginScene();GameNet.clientRender();GameNet.render();EndScene();return
     end

@@ -126,7 +126,8 @@ function S.frame(p,s)
     -- 其余状态仍在 Update 之前按原时机取视图，避免改变消弹遍历与属性写回。
     local needsBarrages=S.system.Status~=E.LanternStatus.CLOSED or S.system.protectTime>61
     S.system:Update(view(needsBarrages),c)
-    S.system:UpdateTeammate(c,{HasValue=false})
+    local x,y=R.teammatePosition()
+    S.system:UpdateTeammate(c,{HasValue=x~=nil,Value=x and CS.Vector2(x,y)})
     if c.SWudi or c.PWudi then p.protect=math.max(p.protect,2) end
     s.lanternPower,s.lanternMax,s.lanternStatus,s.lanternEnergy=S.system.Power,S.system.setting.HiPower,S.system.Status,S.system.Energy
 end
@@ -200,4 +201,43 @@ end
 S.view=view
 function S.render() S.system:DrawTeammate(nil,CS.Vector2()) end
 function S.renderHUD(x,y) drawHUD(S.system,x,y) end
+-- 宿主自机没有灯笼系统，队友仍使用原 Character / Equipment 推进和绘制保护圈。
+local Companion=Class(object,{
+    init=function(o,kind,chapter)
+        o.kind,o.chapter=kind,chapter
+        o.group,o.layer,o.bound,o.colli=GROUP.GHOST,LAYER.PLAYER-.05,false,false
+        S.system=nil
+        R.objects[o]=true
+    end,
+    frame=function(o)
+        E.Main.Character=o.kind;game.StmStage=o.chapter
+        E.Character.IsPlayerShoot=player and player.__shoot_flag or false
+        local x,y=R.teammatePosition()
+        if x and not o.character then
+            local kind=({3,4,1,2})[o.kind]
+            local name=({'reimu','marisa','sanae','mokou'})[kind]
+            local textures=CS.List({[0]='39_selfbarrage1',[1]='39_selfbarrage2',[2]='39_selfbarrage3',[3]='39_selfbarrage4',[4]='39_selfbarrage5'})
+            o.character=CS.new('Character',B.makeConfig(name,true),textures,CS.Vector2(x,y),kind,false)
+            return
+        end
+        if o.character then
+            B.frameEffects()
+            local px,py=R.player()
+            o.character:Update(CS.Vector2(x or px-145,y or py),x~=nil)
+            if o.character.Dis then o.character=nil end
+        end
+    end,
+    render=function(o)
+        if o.character then
+            o.character:DrawSprite(nil,CS.Vector2(),false)
+            o.character:DrawEquip(nil,CS.Vector2())
+        end
+    end,
+    del=function(o)
+        B.clearEffects()
+        R.objects[o]=nil
+    end,
+})
+function R.teammateEffect(kind,chapter) return New(Companion,kind,chapter) end
+R.sourceEffectsClear=B.clearEffects
 return S

@@ -228,7 +228,7 @@ local function updateTargets(p)
     object.EnemyNontjtDo(function(o)
         if o.IsBoss then
             if not o._sequence_road_carrier and o.is_combat then local w=target(o);bosses.Bosses:Add(w);currentBoss=currentBoss or w end
-        elseif o.mhj and o.mhj.familiar then
+        elseif o.mhj and o.mhj.familiar and not o.mhj.teammate then
             local w=target(o);w.__type='Familiar';w.LikeEnemy=o.mhj.familiarConfig[5]==true
             familiar.Familiars:Add(w)
         elseif not o.owner and o.colli then
@@ -394,9 +394,9 @@ function game:PlayEffect(add,id,p)
     id=tostring(id):gsub('^e','')
     local anchor=New(Effect,(p.X-(night and 336 or 317))*scale,((night and 360 or 227)-p.Y)*scale)
     local c=R.controller(anchor,'e'..id,false);c.effectLayer=LAYER.PLAYER_BULLET
-    local fx={Id='e'..id,shoot=CS.List(),time={total=c.pattern.total},controller=c,anchor=anchor,auto=add,clock=0,opos=CS.copy(p)}
+    local fx={Id='e'..id,shoot=CS.List(),time={now=0,total=c.pattern.total},controller=c,anchor=anchor,auto=add,clock=0,opos=CS.copy(p)}
     fx.layerm={LayerArray=CS.List()};fx.bgset={}
-    function fx:BanSound() end
+    function fx:BanSound(value) c.banSound=value~=false end
     function fx:StopSound() end
     function fx:UnderBarrage() c.effectLayer=LAYER.ENEMY_BULLET-1 end
     function fx:UnderActor() c.effectLayer=LAYER.PLAYER-1 end
@@ -424,11 +424,22 @@ function game:PlayEffect(add,id,p)
     function fx:Update(player,target)
         if self:IsClosing() or self.stopped then return end
         c.status=self.Status or c.status;c.friendlyAlpha=self.alpha or 1
+        if self.order==E.CrazyStorm.Order.UnderBarrage then c.drawLayer=LAYER.ENEMY_BULLET-1 end
+        -- 队友保护圈在原作设 effect=false，包含有判定的弹体；绘制顺序与是否参与碰撞分别处理。
+        if night and self.effect==false then c.effectLayer=nil
+        elseif c.drawLayer then c.effectLayer=c.drawLayer end
         c.weaponTarget=player and player.body and CS.copy(player.body.position)
-        self.clock=self.clock+1;R.tick(c)
+        self.clock=self.clock+1;R.tick(c);self.time.now=c.time
     end
     c.friendly=fx
     effects[#effects+1]=fx;game.Crazystorms:Add(fx);return fx
+end
+function B.frameEffects()
+    for _,fx in ipairs(effects) do if fx.auto and not fx:IsClosing() then fx:Update() end end
+end
+function B.clearEffects()
+    for _,fx in ipairs(effects) do fx:ReturnComponentToPool() end
+    effects={};game.Crazystorms:Clear()
 end
 function game:FindEffect(id) for _,fx in ipairs(effects) do if fx.Id==id and not fx:IsClosing() then return fx end end end
 local function character(p)
@@ -558,7 +569,7 @@ function B.frame(p,s)
     else
         source.equipment:Update(currentBoss,em,source.type,math.floor(s.power/100),pos(p),B.character.BanEShoot or B.character.Dis or p.dialog)
     end
-    for _,fx in ipairs(effects) do if fx.auto and not fx:IsClosing() then fx:Update() end end
+    B.frameEffects()
     for i=shots.Count-1,0,-1 do if shots[i].needDelete then shots:RemoveAt(i) end end
     if night and B.character.BWudi then p.protect=math.max(p.protect,2) end
 end

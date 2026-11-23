@@ -5,6 +5,7 @@ local D=R.data
 local Media=dofile('mod/GAME/th39/media.lua')
 local BG=dofile('mod/GAME/th39/background.lua')
 local Presentation=dofile('mod/GAME/th39/scenes/presentation.lua')
+local Teammates=dofile('mod/GAME/th39/teammates.lua')
 local Collision=NativeActorCollision or dofile('THlib/native_actor_collision.lua')
 local function collider(o,p) Collision.bind(o,35*2/3,50*2/3,'box',p.size[1]/3,p.size[2]/3,'box',true) end
 local LEVEL=37
@@ -149,6 +150,7 @@ local function specialCue(meta)
 end
 
 local function setupCard(meta,group,chapter)
+    local teammates=Teammates[chapter.script..'/'..meta.number]
     local opening=30+(flag(meta,'DELAY') and 150 or 60)+(flag(meta,'TRANS') and 100 or 0)
     local timeout=opening+meta.seconds*60
     local endurance=flag(meta,'TIME') or flag(meta,'TIMENOTHIDE')
@@ -163,6 +165,7 @@ local function setupCard(meta,group,chapter)
             for _,phase in ipairs(meta.tracks[tostring(i)] or {}) do R.preparePattern(phase.pattern) end
         end
         R.prepareFamiliars(meta.familiars)
+        if teammates then for i=505,508 do R.preparePattern('e'..i) end end
     end
     function card.prepareRogue()
         BG.prepare(R,chapter,group.time,group,meta)
@@ -200,6 +203,13 @@ local function setupCard(meta,group,chapter)
         local difference=ctx.opening-opening
         if difference~=0 then self.t1,self.t2,self.t3=self.t1+difference,self.t2+difference,self.t3+difference end
         for id,config in pairs(meta.familiars) do ctx.configs[tonumber(id)]=config end
+        if teammates then
+            local kind=player.mhj_source and player.mhj_source.type
+                or (tostring(lstg.var.player_name):lower():find('marisa',1,true) and 2 or 1)
+            local binding=teammates[({'灵','魔','早','妹'})[kind]] or teammates['灵']
+            ctx.configs[binding[1]]={teammate=binding[2]}
+            if not (NativePlayers and NativePlayers.enabled(nil,37)) then ctx.companion=R.teammateEffect(kind,chapter.stage) end
+        end
         for i,host in ipairs(group.hosts) do
             local x,y=R.project(host.x,host.y)
             local ox,oy=entry(host)
@@ -278,6 +288,7 @@ local function setupCard(meta,group,chapter)
         BG.endCard(group,meta)
         local ctx=self.mhj3_card
         if ctx then
+            if valid(ctx.companion) then Del(ctx.companion) end
             if valid(ctx.warning) then ctx.warning.effect.closing=true end
             for i,a in ipairs(ctx.actors) do
                 R.endGather(a.object)
