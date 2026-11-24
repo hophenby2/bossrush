@@ -4,7 +4,7 @@
 三档子弹、自机、敌机行走图、掉落物等核心图片逐像素无损；全部图片保留尺寸和 Alpha。
 1gb：非核心 WebP 可见 RGB PSNR 至少 36 dB；BGM 保留原采样率、声道与帧数。
 750mb：非核心 WebP 可见 RGB PSNR 至少 32 dB；BGM 使用更紧凑 Vorbis，仍保留采样率、声道与帧数。
-500mb：非核心 WebP 可见 RGB PSNR 至少 24 dB；BGM 降至 12 kHz 单声道 Vorbis，时长误差不超过一个输出采样。
+500mb：非核心 WebP 可见 RGB PSNR 至少 24 dB；BGM 降至 6 kHz 单声道 Vorbis，时长误差不超过一个输出采样。
 WAV / FLAC 音效统一选择更小的 Ogg 副本，三档逐级增加音效压缩，均保留采样率、声道和帧数。
 字体、循环时间和核心贴图尺寸不因档位变化。压缩只修改入包副本。
 构建命令：python3 android/build.py --compression-profile 1gb

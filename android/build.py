@@ -35,8 +35,8 @@ PROFILES = {
     '750mb': {'max_bytes':750000000,'image_psnr':32,'image_qualities':(40,50,60,70,80,90,95),
               'music_compression':1.0,'music_min_bitrate':56000,'sound_compression':.5},
     '500mb': {'max_bytes':500000000,'image_psnr':24,'image_qualities':(5,10,20,30,40,50,60,75,85,95),
-              'music_compression':1.0,'music_min_bitrate':0,'music_sample_rate':12000,'music_mono':True,
-              'sound_compression':.8},
+              'music_compression':1.0,'music_min_bitrate':0,'music_sample_rate':6000,'music_mono':True,
+              'sound_compression':1.0},
 }
 sys.path.insert(0, str(ROOT.parent / 'tools'))
 from release_version import game_version
