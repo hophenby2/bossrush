@@ -542,6 +542,9 @@ for number=1,7 do
                         finish(guard)
                     end,{stage=number,class=key,index=index,card=source},source.is_sc)
                     card.hp=source.hp
+                    -- 原作退场保护用的工具非只有空init/del；保留练习索引，排除随机抽取。
+                    card.random_empty=(key=='stage1mid_boss:Lunatic' and index==4
+                        or (key=='stage6boss:Lunatic' or key=='stage7boss') and index==#class.cards) or nil
                 end
             end
         end

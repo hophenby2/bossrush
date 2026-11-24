@@ -368,11 +368,16 @@ local function refreshEffects()
         for o,s in pairs(fx.controller.bullets) do if valid(o) and s.is_projectile then
             local profile=night and R.weaponProfile(s)
             if profile then fx.bgset[s.type]={rect=CS.Rectangle(0,0,profile[3],profile[4])} end
-            list:Add({Dis=s.dis~=nil,time=s.age,Mist=s.Mist,NeedDelete=0,parentid=s.parentid,type=s.type,x=s.fx,y=s.fy,head=s.head,
+            list:Add(setmetatable({Dis=s.dis~=nil,time=s.age,Mist=s.Mist,NeedDelete=0,parentid=s.parentid,type=s.type,x=s.fx,y=s.fy,head=s.head,
+                wscale=s.wscale,hscale=s.hscale,
                 Judge=function(_,x,y,px,py,a,w,h)
                     local dx,dy=px-x,py-y;a=90-a
                     return math.abs(dx*cos(a)+dy*sin(a))<=math.abs(w)/2 and math.abs(dy*cos(a)-dx*sin(a))<=math.abs(h)/2
-                end})
+                end}, {__index=function(_,key) if key=='speed' then return s.speed end end,
+                __newindex=function(view,key,value)
+                    -- 妹红B原作命中检测会把火焰速度改为0.4，必须写回实际弹体。
+                    if key=='speed' then s.speed=value;s.motion_dirty=true else rawset(view,key,value) end
+                end}))
         end end
     end
 end
@@ -411,7 +416,8 @@ function game:PlayEffect(add,id,p)
         if all then x,y=x-self.opos.X+p.X,y-self.opos.Y+p.Y end
         anchor.x,anchor.y=(x-(night and 336 or 317))*scale,((night and 360 or 227)-y)*scale
     end
-    function fx:IsClosing() return self.closed or self.clock>=self.time.total end
+    -- Time.Update：specialnotkill 的武器模板循环，不能按模板总时长关掉妹红B火焰。
+    function fx:IsClosing() return self.closed or not self.specialnotkill and self.clock>=self.time.total end
     function fx:Run() self.stopped=false;return not self:IsClosing() end
     function fx:EndStart() self.stopped=true end
     function fx:Break()

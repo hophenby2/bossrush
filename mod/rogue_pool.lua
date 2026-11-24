@@ -92,7 +92,7 @@ function P.build(filters)
                 local selected=tag and (tag.kind=='road' or (survival and filters.cards.survival)
                     or (not survival and (first.card.is_sc and filters.cards.spell or not first.card.is_sc and filters.cards.nonspell)))
                 if tag and filters.difficulties[difficulty] and filters.encounters[tag.kind]
-                    and not first.card.practice_hidden
+                    and not first.card.practice_hidden and not first.card.random_empty
                     and selected
                     and first.card.is_combat~=false and not seen[id] then
                     local label=unit.CardName or ''
@@ -162,14 +162,9 @@ function P.stageStatus(filters)
             local kind=entry.spell and 'spell' or 'nonspell'
             types[kind]=types[kind]+1
         end end
-        for _,rule in ipairs({{'nonspell','非符',math.floor(need/2)},{'spell','符卡',math.ceil(need/2)}}) do
-            if types[rule[1]]<rule[3] and state.valid then
-                state.valid=false
-                state.message=string.format('第%d面%s仅%d张，至少需要%d张',number,rule[2],types[rule[1]],rule[3])
-            end
-        end
     end
-    if state.count==0 then state.message='选择的卡池为空' end
+    state.valid=state.count>0
+    if not state.valid then state.message='选择的卡池为空' end
     return state,stages
 end
 function P.status(filters,need)

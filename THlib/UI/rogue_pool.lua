@@ -143,7 +143,7 @@ function U.render(o)
     if o.pool_variant=='staged' then
         ui:RenderText('title','Lunatic · 非符起交替 · 末张符卡',715,232,.65,white,'centerpoint')
         ui:RenderText('title','1～6面：4 / 5 / 6 / 7 / 7 / 9 张',715,200,.65,muted,'centerpoint')
-        ui:RenderText('title','共38张 · 通关后可选无尽模式',715,168,.65,muted,'centerpoint')
+        ui:RenderText('title','共38张 · 候选不足循环/跨面补齐',715,168,.65,muted,'centerpoint')
     end
     -- 筛选可暂时为空，只有点击开始后才显示开局校验结果。
     local message=o.pool_notice_time>0 and o.pool_notice

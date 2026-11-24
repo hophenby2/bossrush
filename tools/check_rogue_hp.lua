@@ -115,6 +115,22 @@ check(root._hp_growth_source_rate==22 and part._hp_growth_source_rate==22 and mo
 run.source_hp=false
 local legacy=New(actor,100)
 check(near(legacy.hp,100*factor),'切回旧作恢复原有实体血量缩放')
+-- 七作完整输出TTK表接入真实受伤包装；Like Dreamer既有×52只参与一次。
+local calibration=dofile('mod/rogue_ttk_hp.lua')
+H.init(run);run.enhanced=false
+for level=35,41 do
+    run.source_hp=true
+    run.source_damage=calibration.damageUnits[level]
+    run.source_boss_damage=calibration.bossDamageUnits[level]
+    local backend=level==40 and 52 or 1
+    local damageBase={take_damage=function(o,d) o.hp=o.hp-d*backend end}
+    local cls={base=damageBase,init=function(o) o.hp=9000;o.maxhp=9000;o.IsBoss=true end}
+    local target=New(cls)
+    local expected=115.5/calibration.scale[level]
+    damageBase.take_damage(target,115.5)
+    check(near(9000-target.hp,expected),'完整火力换算只生效一次：'..level)
+    check(target.maxhp==9000,'原作血量阈值保持数值域：'..level)
+end
 lstg.var.__hp_scale_version=nil
 check(not H.enabled() and H.factor()==1 and New(actor,100).hp==100,'非随机模式不启用阶段HP倍率')
 drawn={};H.render(144,165);check(#drawn==0,'非随机模式不插入倍率动画')

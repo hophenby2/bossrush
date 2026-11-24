@@ -6,14 +6,9 @@ local M={sources={
     {level=41,code='TH43',title='栖霞园'},
 }}
 local difficulties={[4]='lunatic',[5]='extra',[6]='phantasm'}
--- 原作灵梦基准主炮 / 宿主主炮（双发2点、每4帧，60 DPS）的伤害单位。
--- Spring NORMAL: 2×13/3×60；ASL: 2×8/5×120；Night NORMAL_A: 4×8×60；
--- Summer Reimu.Shoot: 2×14/3×60；THEIS fire_shot: 2×5/6×60。
--- Dreamer 已在 damageable 中乘52；栖霞园基准主炮同为60 DPS，不再换算。
-M.damageUnits={[35]=26/3,[36]=32/5,[37]=32,[38]=28/3,[39]=5/3,[40]=1,[41]=1}
--- 永夜篇关闭灯笼时，BossStage 共用的逐帧受伤上限为22（night_settings 灵梦A首项）。
--- 普通敌机没有这个上限，仍使用四发主炮的32点单位。
-M.bossDamageUnits={[37]=22}
+-- 原作可选机体完整低速输出的活跃TTK中位数；保留原HP域，见生成表及报告。
+local calibration=dofile('mod/rogue_ttk_hp.lua')
+M.damageUnits,M.bossDamageUnits=calibration.damageUnits,calibration.bossDamageUnits
 function M.tags()
     local out={}
     local function add(code,id,difficulty,role,survival,chapter)

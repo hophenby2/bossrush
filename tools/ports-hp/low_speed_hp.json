@@ -1,0 +1,705 @@
+{
+  "host_dps": 115.5,
+  "warmup_frames": 600,
+  "window_frames": 3600,
+  "model": "median(active HP / full focused DPS), equal weight per selectable default machine",
+  "works": {
+    "35": {
+      "name": "幕华祭春雪",
+      "backend_damage_factor": 1,
+      "boss": {
+        "machines": [
+          {
+            "level": 35,
+            "windows": [
+              1069.3333333333,
+              1068.2666666667
+            ],
+            "machine": "reimu",
+            "events": {
+              "hits": 8916
+            },
+            "window_relative_delta": 0.0009975062343516386,
+            "dps": 1068.8000000000002
+          },
+          {
+            "level": 35,
+            "windows": [
+              1336.0000228882,
+              1336.0000228882
+            ],
+            "machine": "marisa",
+            "events": {
+              "hits": 33600
+            },
+            "window_relative_delta": 0.0,
+            "dps": 1336.0000228882
+          },
+          {
+            "level": 35,
+            "windows": [
+              1160,
+              1160
+            ],
+            "machine": "sanae",
+            "events": {
+              "hits": 81600
+            },
+            "window_relative_delta": 0.0,
+            "dps": 1160
+          },
+          {
+            "level": 35,
+            "windows": [
+              1460.2333333333,
+              1466.1
+            ],
+            "machine": "youmu",
+            "events": {
+              "hits": 9060
+            },
+            "window_relative_delta": 0.004001546051906408,
+            "dps": 1463.16666666665
+          }
+        ],
+        "hp_scale": 0.09301052992226859,
+        "damage_units": 10.751470837073255
+      }
+    },
+    "36": {
+      "name": "雪莲华",
+      "backend_damage_factor": 1,
+      "boss": {
+        "machines": [
+          {
+            "level": 36,
+            "windows": [
+              960,
+              960
+            ],
+            "machine": "reimu",
+            "events": {
+              "hits": 11520,
+              "Damage_zhuqiang": 46080,
+              "Damage1": 69120
+            },
+            "window_relative_delta": 0.0,
+            "dps": 960
+          },
+          {
+            "level": 36,
+            "windows": [
+              1069.3333333333,
+              1070
+            ],
+            "machine": "yukari",
+            "events": {
+              "hits": 22216,
+              "Damage_zhuqiang": 46080,
+              "Damage1": 82280
+            },
+            "window_relative_delta": 0.0006230529595326533,
+            "dps": 1069.6666666666501
+          },
+          {
+            "level": 36,
+            "windows": [
+              864,
+              864
+            ],
+            "machine": "marisa",
+            "events": {
+              "hits": 9600,
+              "Damage_zhuqiang": 46080,
+              "Damage1": 57600
+            },
+            "window_relative_delta": 0.0,
+            "dps": 864
+          },
+          {
+            "level": 36,
+            "windows": [
+              984,
+              984
+            ],
+            "machine": "marisa_b",
+            "events": {
+              "hits": 20160,
+              "Damage_zhuqiang": 46080,
+              "Damage7_5": 72000
+            },
+            "window_relative_delta": 0.0,
+            "dps": 984
+          },
+          {
+            "level": 36,
+            "windows": [
+              3124.5666666667,
+              3119.2666666667
+            ],
+            "machine": "byakuren",
+            "events": {
+              "Damage4": 311270,
+              "Damage_zhuqiang": 63360,
+              "hits": 7778
+            },
+            "window_relative_delta": 0.001696235211282526,
+            "dps": 3121.9166666666997
+          },
+          {
+            "level": 36,
+            "windows": [
+              2472.1333333333,
+              2470.9333333333
+            ],
+            "machine": "miko",
+            "events": {
+              "hits": 34913,
+              "Damage_zhuqiang": 63360,
+              "Damage7_9": 233224
+            },
+            "window_relative_delta": 0.00048541071139629775,
+            "dps": 2471.5333333333
+          }
+        ],
+        "hp_scale": 0.11267780594213006,
+        "damage_units": 8.874862193479235
+      }
+    },
+    "37": {
+      "name": "幕华祭永夜",
+      "backend_damage_factor": 1,
+      "boss": {
+        "machines": [
+          {
+            "level": 37,
+            "windows": [
+              1320,
+              1320
+            ],
+            "machine": "reimu",
+            "events": {
+              "hits": 21600
+            },
+            "window_relative_delta": 0.0,
+            "dps": 1320
+          },
+          {
+            "level": 37,
+            "windows": [
+              1380,
+              1380
+            ],
+            "machine": "reimu_b",
+            "events": {
+              "hits": 21600
+            },
+            "window_relative_delta": 0.0,
+            "dps": 1380
+          },
+          {
+            "level": 37,
+            "windows": [
+              1380,
+              1380
+            ],
+            "machine": "marisa",
+            "events": {
+              "hits": 7200
+            },
+            "window_relative_delta": 0.0,
+            "dps": 1380
+          },
+          {
+            "level": 37,
+            "windows": [
+              1320,
+              1320
+            ],
+            "machine": "marisa_b",
+            "events": {
+              "hits": 14400
+            },
+            "window_relative_delta": 0.0,
+            "dps": 1320
+          },
+          {
+            "level": 37,
+            "windows": [
+              1320,
+              1320
+            ],
+            "machine": "sanae",
+            "events": {
+              "hits": 7200
+            },
+            "window_relative_delta": 0.0,
+            "dps": 1320
+          },
+          {
+            "level": 37,
+            "windows": [
+              1320,
+              1320
+            ],
+            "machine": "sanae_b",
+            "events": {
+              "hits": 14400
+            },
+            "window_relative_delta": 0.0,
+            "dps": 1320
+          },
+          {
+            "level": 37,
+            "windows": [
+              1320,
+              1320
+            ],
+            "machine": "mokou",
+            "events": {
+              "hits": 14400
+            },
+            "window_relative_delta": 0.0,
+            "dps": 1320
+          },
+          {
+            "events": {
+              "hits": 12240
+            },
+            "windows": [
+              1188,
+              1188
+            ],
+            "warmup": 600,
+            "level": 37,
+            "machine": "mokou_b",
+            "window_relative_delta": 0.0,
+            "dps": 1188
+          }
+        ],
+        "hp_scale": 0.0875,
+        "damage_units": 11.428571428571429
+      },
+      "enemy": {
+        "machines": [
+          {
+            "events": {
+              "hits": 39551
+            },
+            "level": 37,
+            "windows": [
+              2984.3333333333,
+              3077.8333333333
+            ],
+            "enemy": true,
+            "machine": "reimu",
+            "warmup": 600,
+            "window_relative_delta": 0.030378513023230958,
+            "dps": 3031.0833333333
+          },
+          {
+            "events": {
+              "hits": 62870
+            },
+            "level": 37,
+            "windows": [
+              3986,
+              4100.75
+            ],
+            "enemy": true,
+            "machine": "reimu_b",
+            "warmup": 600,
+            "window_relative_delta": 0.027982686094007194,
+            "dps": 4043.375
+          },
+          {
+            "events": {
+              "hits": 26400
+            },
+            "level": 37,
+            "windows": [
+              3920,
+              3920
+            ],
+            "enemy": true,
+            "machine": "marisa",
+            "warmup": 600,
+            "window_relative_delta": 0.0,
+            "dps": 3920
+          },
+          {
+            "events": {
+              "hits": 33598
+            },
+            "level": 37,
+            "windows": [
+              3480,
+              3479.6666666667
+            ],
+            "enemy": true,
+            "machine": "marisa_b",
+            "warmup": 600,
+            "window_relative_delta": 9.578544060340046e-05,
+            "dps": 3479.8333333333503
+          },
+          {
+            "events": {
+              "hits": 16200
+            },
+            "level": 37,
+            "windows": [
+              2970,
+              2970
+            ],
+            "enemy": true,
+            "machine": "sanae",
+            "warmup": 600,
+            "window_relative_delta": 0.0,
+            "dps": 2970
+          },
+          {
+            "events": {
+              "hits": 21600
+            },
+            "level": 37,
+            "windows": [
+              2820,
+              2820
+            ],
+            "enemy": true,
+            "machine": "sanae_b",
+            "warmup": 600,
+            "window_relative_delta": 0.0,
+            "dps": 2820
+          },
+          {
+            "events": {
+              "hits": 21600
+            },
+            "level": 37,
+            "windows": [
+              2340,
+              2340
+            ],
+            "enemy": true,
+            "machine": "mokou",
+            "warmup": 600,
+            "window_relative_delta": 0.0,
+            "dps": 2340
+          },
+          {
+            "events": {
+              "hits": 27720
+            },
+            "level": 37,
+            "windows": [
+              2886,
+              2886
+            ],
+            "enemy": true,
+            "machine": "mokou_b",
+            "warmup": 600,
+            "window_relative_delta": 0.0,
+            "dps": 2886
+          }
+        ],
+        "hp_scale": 0.03849703840150071,
+        "damage_units": 25.97602417023896
+      }
+    },
+    "38": {
+      "name": "夏夜祭",
+      "backend_damage_factor": 1,
+      "boss": {
+        "machines": [
+          {
+            "level": 38,
+            "windows": [
+              1160,
+              1160
+            ],
+            "machine": "A",
+            "events": {
+              "hits": 19200
+            },
+            "window_relative_delta": 0.0,
+            "dps": 1160
+          },
+          {
+            "level": 38,
+            "windows": [
+              1560,
+              1560
+            ],
+            "machine": "B",
+            "events": {
+              "hits": 33600
+            },
+            "window_relative_delta": 0.0,
+            "dps": 1560
+          },
+          {
+            "level": 38,
+            "windows": [
+              1200,
+              1200
+            ],
+            "machine": "C",
+            "events": {
+              "hits": 19200
+            },
+            "window_relative_delta": 0.0,
+            "dps": 1200
+          },
+          {
+            "level": 38,
+            "windows": [
+              1240,
+              1240
+            ],
+            "machine": "D",
+            "events": {
+              "hits": 19200
+            },
+            "window_relative_delta": 0.0,
+            "dps": 1240
+          }
+        ],
+        "hp_scale": 0.09469758064516129,
+        "damage_units": 10.559931871407281
+      }
+    },
+    "39": {
+      "name": "祈华梦",
+      "backend_damage_factor": 1,
+      "boss": {
+        "machines": [
+          {
+            "level": 39,
+            "windows": [
+              131.99999999999,
+              131.99999999999
+            ],
+            "machine": "reimu",
+            "events": {
+              "hits": 14400
+            },
+            "window_relative_delta": 0.0,
+            "dps": 131.99999999999
+          },
+          {
+            "level": 39,
+            "windows": [
+              140,
+              140
+            ],
+            "machine": "marisa",
+            "events": {
+              "hits": 12000
+            },
+            "window_relative_delta": 0.0,
+            "dps": 140
+          },
+          {
+            "level": 39,
+            "windows": [
+              380,
+              380
+            ],
+            "machine": "mokou",
+            "events": {
+              "hits": 14400
+            },
+            "window_relative_delta": 0.0,
+            "dps": 380
+          }
+        ],
+        "hp_scale": 0.825,
+        "damage_units": 1.2121212121212122
+      }
+    },
+    "40": {
+      "name": "Like Dreamer",
+      "backend_damage_factor": 52,
+      "boss": {
+        "machines": [
+          {
+            "windows": [
+              5280,
+              5280
+            ],
+            "machine": "dream",
+            "warmup": 600,
+            "events": {
+              "hits": 8640,
+              "type_0": 374400,
+              "type_5": 259200
+            },
+            "level": 40,
+            "window_relative_delta": 0.0,
+            "dps": 5280
+          },
+          {
+            "windows": [
+              5520,
+              5520
+            ],
+            "machine": "cute",
+            "warmup": 600,
+            "events": {
+              "hits": 8640,
+              "type_0": 374400,
+              "type_5": 288000
+            },
+            "level": 40,
+            "window_relative_delta": 0.0,
+            "dps": 5520
+          },
+          {
+            "windows": [
+              5520,
+              5520
+            ],
+            "machine": "cool",
+            "warmup": 600,
+            "events": {
+              "hits": 8640,
+              "type_0": 374400,
+              "type_5": 288000
+            },
+            "level": 40,
+            "window_relative_delta": 0.0,
+            "dps": 5520
+          }
+        ],
+        "hp_scale": 0.02092391304347826,
+        "damage_units": 0.919080919080919
+      }
+    },
+    "41": {
+      "name": "栖霞园",
+      "backend_damage_factor": 1,
+      "boss": {
+        "machines": [
+          {
+            "level": 41,
+            "machine": "reimu",
+            "events": {
+              "hits": 12000
+            },
+            "windows": [
+              162,
+              162
+            ],
+            "warmup": 600,
+            "window_relative_delta": 0.0,
+            "dps": 162
+          },
+          {
+            "level": 41,
+            "machine": "marisa",
+            "events": {
+              "hits": 9600
+            },
+            "windows": [
+              155.99999999999,
+              155.99999999999
+            ],
+            "warmup": 600,
+            "window_relative_delta": 0.0,
+            "dps": 155.99999999999
+          },
+          {
+            "level": 41,
+            "machine": "sakuya",
+            "events": {
+              "hits": 15600
+            },
+            "windows": [
+              161.99999999999,
+              161.99999999999
+            ],
+            "warmup": 600,
+            "window_relative_delta": 0.0,
+            "dps": 161.99999999999
+          }
+        ],
+        "hp_scale": 0.712962962963007,
+        "damage_units": 1.402597402597316
+      }
+    }
+  },
+  "source_sha256": {
+    "THlib/native_players.lua": "bd1dd521fe48ded59dcb01ec8a1d1ba47f2f2b3f755bd9ff9958b1546e2fd02e",
+    "THlib/player/reimu/reimu.lua": "5a8a34298111e66f24178398cfe40721bcb8916896383c7cc91fac977ca070b5",
+    "macos/lua/rogue_ttk_calibration.lua": "291d58545614218f2ea64e53be68a1701a9f7d82a154418aa076171e922e346b",
+    "mod/GAME/ports/dreamer/LikeDreamer/player.lua": "f7a1ec03b599db2c0ec267440b7e0383409572f737a1584a4aeab1bf609bea7a",
+    "mod/GAME/ports/mhj/native_players/bridge.lua": "39746194e507a1e80a0730309909ea4556204d47bdcc1b87c301a141f2b6ca2c",
+    "mod/GAME/ports/mhj/native_players/night.lua": "c353dd087a19a698fcfe43e7dbef9af533804abaccafed5181fb1e2a0ad796a9",
+    "mod/GAME/ports/mhj/native_players/night_adapter.lua": "842820cd4a671215569edb5293f2a7a6f2589ec3c2a7404bb972928196e29bd4",
+    "mod/GAME/ports/mhj/native_players/night_barrage_view.lua": "2698a0df47ec589bbc7d178be1c026e80fa900b4a1d713b1abdb8acc759b0d09",
+    "mod/GAME/ports/mhj/native_players/night_carddisplay.lua": "cd700f88c9fc43c779a5eaf589604809d63da1e41ffe0e222d6a1e1406f72e28",
+    "mod/GAME/ports/mhj/native_players/night_character.lua": "3625981068b9daf650353e153eaa68a10e36b85de1e95640b2e5e09b2a1ca355",
+    "mod/GAME/ports/mhj/native_players/night_curve.lua": "caced662e1d09011c7a9862f6cfc8725b574a22ad7e765b6fa11e610d3c971bf",
+    "mod/GAME/ports/mhj/native_players/night_data.lua": "973f764c514d32411829c78766663f21d62c517fa814486c653ff94ae2173c9c",
+    "mod/GAME/ports/mhj/native_players/night_settings.lua": "eb3bb40fd34326d343e0980f6a21e34f5b5dcb9c5cd8192ef6f24451d18107eb",
+    "mod/GAME/ports/mhj/native_players/night_special.lua": "75b70bd41ee31226905ee2c4e411e705f01b6f798edfd087849876d9eadef737",
+    "mod/GAME/ports/mhj/native_players/night_system.lua": "6d0c7c8c7e59cc80c4c717b93a6e5ed7badf3da78159207834281b2cd852afbb",
+    "mod/GAME/ports/mhj/native_players/spring.lua": "708eb1eabd046571b7b22fa6c3bbf1239926378900ecc8cb6083e8501de248c4",
+    "mod/GAME/ports/mhj/native_players/spring_adapter.lua": "7d5b7e855bbf1b0d9d02fea4fa692f8c6210f6c8129d192fbfbbeef69d297d8f",
+    "mod/GAME/ports/mhj/native_players/spring_special.lua": "c6c1185b57d7e9071413214a1155d3985c5a398b4276845aede8c36ba3384093",
+    "mod/GAME/ports/mhj/native_players/spring_system.lua": "e5182478135e518ba5be5b6519fe9115b5491f4184848add614b968c1ca50370",
+    "mod/GAME/ports/mhj/native_players/system_hud.lua": "13fb9d1b0d2e87d07ef2350a07f34561e6995ce4db05b6c4ecb953af7ac406f2",
+    "mod/GAME/ports/mhj/native_players/target_collision.lua": "b0f9b22c68a99e9deedeb76af7d8e13ff761912c6f70b4815b3cafb2ce824d61",
+    "mod/GAME/ports/theis/native_players/bridge.lua": "e720d904fb0373841b6de678cbe573f30b7307c7bb39fe3992214639f0313e71",
+    "mod/GAME/ports/theis/native_players/marisa.lua": "f69863c829501517757d01fc6724ca044ed6ed3dc5b02393647c1c796002ab00",
+    "mod/GAME/ports/theis/native_players/mokou.lua": "07e6d5a6ef4916a9de6f53343126c12927793ee5325bcd9ffed162477f82e4cb",
+    "mod/GAME/ports/theis/native_players/reimu.lua": "aa069cb197743221422820f8b562374425a6b2c3c0dbe175782a103e863276f2",
+    "mod/GAME/th38/native_players/bridge.lua": "b7a22fe872a89ad861f8f12e801b8fec112df6b976182c34537b8aa6d7fbae1e",
+    "mod/GAME/th38/native_players/damage.lua": "100c550085c83c01a9011dc3e5a38078ea801582a2975ce0647c8b6225226d7d",
+    "mod/GAME/th38/native_players/data.lua": "7b3484435b2d7e2197b4f1d9bee3f0175a47e8a77876d5cfbf585847ac733875",
+    "mod/GAME/th38/native_players/rate.lua": "b628b523b868fd7880b5c7323a0e074aeffe23ec3d8b385b13cbe31b8ccae6bf",
+    "mod/GAME/th38/native_players/source.lua": "a7b43a73712a357b94fbc754924ac5d3c3322ddf71bc023f14e6f95ecee39ad5",
+    "mod/GAME/th40/native_players/atlas.lua": "cdac03e471529b3a7ed8c8922de874bc16d383f9c130e215d7df595a91736a2b",
+    "mod/GAME/th40/native_players/bomb.lua": "8fa08a595881b622520d14f8e7a79a342c582a79c84987e2d35e876e6bf790f7",
+    "mod/GAME/th40/native_players/bridge.lua": "068dd5051e5ae4c5f4ba72aae17566f9c294a4180cbc8d1aa8aa2f384cff7aa7",
+    "mod/GAME/th40/native_players/source.lua": "be071e87084ea15815270a4f0082290c3d46f090d782fabdb0adbf6932e90115",
+    "mod/GAME/th40/player.lua": "b4a7636f0568dc2783b495a8736217a56537180a72decf815fba15bbf1fcb177",
+    "mod/GAME/th43/native_players/PowerRank.lua": "72ae4553dacf2d92e9fb5f24c89736d81fc24757a028d6ef4bbc0de6e7626811",
+    "mod/GAME/th43/native_players/auxiliary.lua": "adf502d48b5fb72de3b046ed0b49d54939cf798839bd497cc8a0faae05059545",
+    "mod/GAME/th43/native_players/bomb_effect.lua": "f96ac778866ade921a46fb2e72c5daf5a584e833ff14e0e4b07fec5a7e780db1",
+    "mod/GAME/th43/native_players/bridge.lua": "272ce9a10cce31d3b91d031f482aa624486a83da2dbe36db7c41af745cad6100",
+    "mod/GAME/th43/native_players/darkmask.lua": "3326ed21ee3a0c6cdab17ee84f40a62f4d6fcb7cf42c567f279e4da7ac84145a",
+    "mod/GAME/th43/native_players/equip_system.lua": "1a85bc51b4e26b5d61474e1786dc66dffbc3b2d469d4e9cde2f2283be1914e7d",
+    "mod/GAME/th43/native_players/marisa/equip.lua": "3095e74516245f958fd7c04928c71b3cbeced9d1d008c4c6014de088e985165a",
+    "mod/GAME/th43/native_players/marisa/marisa.lua": "c3dfd0d2108564691171c98ad491f3edf0bc752ab854319f98d469945592bbdd",
+    "mod/GAME/th43/native_players/reimu/equip.lua": "ddb67785d43786bdae5f612651ef0022ca61c968035bb253728f6df4934b437d",
+    "mod/GAME/th43/native_players/reimu/reimu.lua": "47d6811879f80a4780c8fa6d72150138914f55136fdc74f8adacfb9ae9af17f2",
+    "mod/GAME/th43/native_players/resources.lua": "13fe2589ef776ab188ddfeb53144f58edd5bafc077fee29ec07a5db7b6bad932",
+    "mod/GAME/th43/native_players/sakuya/equip.lua": "7bdba7db1563899777605ee80029b4194293473878bf1406cb25bbddc8cfe02a",
+    "mod/GAME/th43/native_players/sakuya/sakuya.lua": "f206bf45b5e8db3300b9acebab9948c3786c420db1c54dc791d0301183dc455f",
+    "mod/GAME/th43/player.lua": "b007dc491fdab37d34fe9c9e50154a47da54c675962731c49cf291295a2961c6"
+  },
+  "sampling_runs": [
+    {
+      "log": "macos/build/ttk-calibration/run.log",
+      "sampler_sha256": "319f383f8c532f42ab65d6272ba1f013b299fc4d4675dfca9d4777ae2522ce68"
+    },
+    {
+      "sampler_sha256": "291d58545614218f2ea64e53be68a1701a9f7d82a154418aa076171e922e346b",
+      "log": "macos/build/ttk-dreamer/run.log"
+    },
+    {
+      "sampler_sha256": "291d58545614218f2ea64e53be68a1701a9f7d82a154418aa076171e922e346b",
+      "log": "macos/build/ttk-th43/run.log"
+    },
+    {
+      "sampler_sha256": "291d58545614218f2ea64e53be68a1701a9f7d82a154418aa076171e922e346b",
+      "log": "macos/build/ttk-night-enemies/run.log"
+    },
+    {
+      "sampler_sha256": "291d58545614218f2ea64e53be68a1701a9f7d82a154418aa076171e922e346b",
+      "log": "macos/build/ttk-night-mokou-b/run.log"
+    }
+  ]
+}

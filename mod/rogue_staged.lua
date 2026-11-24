@@ -19,20 +19,45 @@ function M.draw(seed,filters)
     local status,stages=pool.stageStatus(filters)
     assert(status.valid,status.message)
     local gen=Rand();gen:Seed(seed)
-    local cards={}
+    local cards,all,remaining={},{},{}
+    for _,buckets in ipairs(stages) do for _,bucket in ipairs(buckets) do
+        for _,entry in ipairs(bucket.cards) do all[#all+1]=entry;remaining[entry.key]=true end
+    end end
+    local function choose(candidates)
+        local available={}
+        for _,entry in ipairs(candidates) do
+            if remaining[entry.key] then available[#available+1]=entry end
+        end
+        if #available==0 then
+            -- 只重置本次所需的候选，单一作品/类型也能完成固定38战。
+            for _,entry in ipairs(candidates) do remaining[entry.key]=true;available[#available+1]=entry end
+        end
+        local previous=cards[#cards]
+        if #available>1 and previous then
+            for i=#available,1,-1 do if available[i].key==previous.key then table.remove(available,i) end end
+        end
+        local works,order={},{}
+        for _,entry in ipairs(available) do
+            if not works[entry.source] then works[entry.source]={};order[#order+1]=entry.source end
+            local list=works[entry.source];list[#list+1]=entry
+        end
+        local list=works[order[gen:Int(1,#order)]]
+        local entry=list[gen:Int(1,#list)]
+        remaining[entry.key]=nil
+        return entry
+    end
     for number,count in ipairs(pool.STAGE_COUNTS) do
         for index=1,count do
             local spell=pool.spellAt(number,index)
-            local available={}
-            for _,bucket in ipairs(stages[number]) do
-                local indices={}
-                for i,entry in ipairs(bucket.cards) do
-                    if entry.spell==spell then indices[#indices+1]=i end
-                end
-                if #indices>0 then available[#available+1]={bucket=bucket,indices=indices} end
+            local same,other,localAny={},{},{}
+            for _,entry in ipairs(all) do
+                if entry.stage==number then
+                    localAny[#localAny+1]=entry
+                    if entry.spell==spell then same[#same+1]=entry end
+                elseif entry.spell==spell then other[#other+1]=entry end
             end
-            local choice=available[gen:Int(1,#available)]
-            cards[#cards+1]=table.remove(choice.bucket.cards,choice.indices[gen:Int(1,#choice.indices)])
+            local candidates=#same>0 and same or #other>0 and other or #localAny>0 and localAny or all
+            cards[#cards+1]=choose(candidates)
         end
     end
     return cards
