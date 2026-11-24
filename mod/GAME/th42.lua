@@ -217,13 +217,14 @@ for number,frames in ipairs(checkpoints) do
         local last=frames[index+1]
         local title=chapter.title..(last and (' 道中 '..index) or ' 关底')
         register.card(W,chapter,71000+number*100+index,title,last and 'road' or 'boss',
-            function() playRange(number,first,last) end,{stage=number,first=first,last=last})
+            function() playRange(number,first,last) end,{stage=number,first=first,last=last,
+                road_index=index,road_count=#frames-1})
     end
     local function registerAttacks(typeId,first,count,base,title)
         for phase=1,count do
             local source={stage=number,first=first,type=typeId,phase=phase}
             register.card(W,chapter,71000+number*100+base+phase,
-                chapter.title..' '..title..' '..phase,'boss',
+                chapter.title..' '..title..' '..phase,typeId==0x14c and 'mid' or 'boss',
                 function() playRange(number,first,nil,source) end,source)
         end
     end

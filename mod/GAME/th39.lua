@@ -159,6 +159,7 @@ local function setupCard(meta,group,chapter)
     local card=boss.card.New(meta.kind~=0 and meta.title or '',immune/60,immune/60,timeout/60,meta.hp)
     card.phase_name,card.phase_kind=meta.title,group.role
     card.mhj3_source=meta
+    card.phase_source={chapter=chapter.name,kind=group.role,route=chapter.script}
     if meta.kind~=0 then card.own_phase_display=true end
     local function preparePatterns()
         for i=1,#group.hosts do
@@ -342,8 +343,10 @@ for _,chapter in ipairs(D.chapters) do
         if a.tick==b.tick then return a.group~=nil and b.group==nil end
         return a.tick<b.tick
     end)
+    local roadIndex=0
     for _,entry in ipairs(entries) do
         if entry.road then
+            roadIndex=roadIndex+1
             local window=entry.road
             local band='mhj3road'..window.id..'a'
             local title='幕华祭永夜篇 '..chapter.name..' 道中 '..window.first..'–'..window.last
@@ -352,6 +355,7 @@ for _,chapter in ipairs(D.chapters) do
             local card=boss.card.New('',1000000,1000000,1000000,1)
             card.phase_name,card.phase_kind=title,'road'
             card.mhj3_source=window
+            card.phase_source={chapter=chapter.name,kind='road',road_index=roadIndex,road_count=#chapter.roads}
             function card.createRogueBackground()
                 BG.prepare(R,chapter,window.first)
                 return BG.show(R,chapter,window.first)

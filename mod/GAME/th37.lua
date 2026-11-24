@@ -143,12 +143,15 @@ for _,chapter in ipairs(D.chapters) do
     for _,group in ipairs(chapter.bosses) do ordered[#ordered+1]={time=group.time,boss=group} end
     -- 同一原作时间点先执行上一段Boss，再进入下一段道中。
     table.sort(ordered,function(a,b) if a.time==b.time then return a.boss~=nil and b.boss==nil end;return a.time<b.time end)
+    local roadIndex=0
     for _,entry in ipairs(ordered) do
         if entry.road then
+            roadIndex=roadIndex+1
             local window=entry.road;local title='幕华祭'..chapter.name..'道中 '..window.first..'–'..window.last
             local duration=(window.last-window.first)/60
             local card=boss.card.New('',duration,duration,duration,1)
             card.phase_name,card.phase_kind=title,'road'
+            card.phase_source={chapter=chapter.name,kind='road',road_index=roadIndex,road_count=#chapter.roads}
             card.mhj_source={chapter=chapter.name,first=window.first,last=window.last}
             function card.createRogueBackground()
                 BG.prepare(chapter.stage,window.first)
@@ -183,6 +186,7 @@ for _,chapter in ipairs(D.chapters) do
                 meta.role=group.source[3]=='1' and 'boss' or 'mid'
                 meta.stage,meta.sceneFrame=chapter.stage,group.time
                 local card=setupCard(meta,group)
+                card.phase_source={chapter=chapter.name,kind=meta.role,route=chapter.difficulty}
                 boss.card.add({{card,band}},35,'幕华祭'..chapter.name..' '..meta.actor..' '..meta.title,meta.id)
                 C.cards[meta.id]={card=card,band=band}
                 chapter.units[#chapter.units+1]={id=meta.id,role=meta.role}

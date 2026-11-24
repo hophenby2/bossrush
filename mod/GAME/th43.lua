@@ -31,6 +31,9 @@ local BossContact=Class(object,{
     kill=keepContact,
 })
 local function add(card,band,id,title,role,diff)
+    local source=card.phase_source or {}
+    source.chapter,source.kind,source.route=stageNumber==7 and 'EX' or tostring(stageNumber),role,diff
+    card.phase_source=source
     boss.card.add({{card,band}},LEVEL,'栖霞园 '..title,id)
     C.cards[id]=card
     C.rows[#C.rows+1]={id=id,chapter=stageNumber==7 and 'EX' or tostring(stageNumber),
@@ -146,12 +149,13 @@ local function withRoad(fn)
     R.scope,R.chapterScope,R.chapterRunner=nil,nil,nil
 end
 local segments={'FIRST','SECOND','THIRD','FOURTH','FIFTH','SIXTH'}
-local function roadCard(n,road,segment,index)
+local function roadCard(n,road,segment,index,count,labelIndex)
     local band='bdb_road_'..n..'_'..index..'a'
     local title=(n==7 and 'EX' or n)..'面 道中 '..index
     boss.Define(band,title,nil,nil,{0,384},nil,'Yukari',LEVEL)
     local card=boss.card.New('',10000,10000,10000,1)
     card.phase_name,card.phase_kind=title,'road'
+    card.phase_source={road_index=labelIndex,road_count=count}
     function card.createRogueBackground()
         local class=E['stage'..n..'_background']
         if class.prepareRogueResources then class.prepareRogueResources() end
@@ -181,8 +185,14 @@ for n=1,7 do
     local road=E.EISlib.stage['stage'..n].road
     local chapter=n==7 and 'EX' or tostring(n)
     C.chapters[chapter]={n=n,main=route.main}
+    local count=0
+    for _,segment in ipairs(segments) do if road[segment] then count=count+1 end end
+    local labelIndex=0
     for index,segment in ipairs(segments) do
-        if road[segment] then roadCard(n,road,segment,index) end
+        if road[segment] then
+            labelIndex=labelIndex+1
+            roadCard(n,road,segment,index,count,labelIndex)
+        end
     end
 end
 function C.units()

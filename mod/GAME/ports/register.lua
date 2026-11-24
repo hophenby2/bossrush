@@ -28,6 +28,10 @@ function M.card(work, chapter, id, title, role, run, source, spell)
     local card = boss.card.New(spell and title or '', 9999,9999,9999,1)
     card.phase_kind, card.phase_name = role, title
     card.port_source = source
+    card.phase_source={chapter=chapter.name,kind=role,route=source.class,
+        spell_name=source.card and source.card.name,
+        road_index=source.road_index,road_count=source.road_count,
+        aggregate=work.code=='TH42' and role=='boss' and not source.phase}
     card.own_phase_display = work.ownHud
     card.before=function(o)
         o.hide,o.colli,o._colli = true,false,false

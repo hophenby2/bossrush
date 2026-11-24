@@ -37,6 +37,10 @@ local bands={};local function band(meta)
     if meta.kind=='road' then return 'thsssroad'..meta.chapter..'a' end
     return meta.boss..meta.role..'a'
 end
+local roadCounts,roadIndices={},{}
+for _,meta in ipairs(data.phases) do
+    if meta.kind=='road' then roadCounts[meta.chapter]=(roadCounts[meta.chapter] or 0)+1 end
+end
 for _,meta in ipairs(data.phases) do
     class.byId[meta.id]=meta
     local id=band(meta)
@@ -51,10 +55,16 @@ for _,meta in ipairs(data.phases) do
     local card=boss.card.New(title,immune and limit or 100/60,immune and limit or 100/60,limit,meta.hp)
     card.phase_kind=meta.role;card.phase_name=meta.kind=='spell' and meta.title or meta.kind=='road' and meta.title or '夏夜祭'..meta.chapter..(meta.role=='mid' and '道中Boss' or '关底')..'非符'
     card.th38_source=meta;card.source_card_id=meta.id
+    card.phase_source={chapter=meta.chapter,kind=meta.role}
+    if meta.kind=='road' then
+        roadIndices[meta.chapter]=(roadIndices[meta.chapter] or 0)+1
+        card.phase_source.road_index,card.phase_source.road_count=roadIndices[meta.chapter],roadCounts[meta.chapter]
+    end
     card.before=function(o)
         if meta.kind=='spell' and meta.variants and o.current_card then
             local source=meta.source:gsub('(%d)[ABCD]$',function(n) return n..N.route({}) end)
             o.current_card.name=meta.variants[source] or meta.title
+            o.current_card.phase_name=o.current_card.name
         end
         o.th38_run=nil
         if meta.kind=='road' then o.x,o.y=0,500;o.hide=true;o.colli=false

@@ -1,7 +1,44 @@
--- TH31–TH35的阶段标题。面数和中Boss归属读移植时保留的宿主来源，不从符卡名称猜。
+-- 老作品与新作共用阶段命名入口。面数、路线和道中归属读注册元数据，不从标题猜。
 -- 道中只改名称与阶段类型；非符的name仍为空，右上角标题单独保存。
 local P={}
 local games={[29]='永夜抄',[30]='红魔乡',[31]='文花帖',[32]='妖妖梦',[33]='风神录'}
+local portGames={[35]='幕华祭春雪',[36]='雪莲华',[37]='幕华祭永夜',[38]='夏夜祭',
+    [39]='祈华梦',[40]='Like Dreamer',[41]='栖霞园'}
+local portCounts={}
+local function portLabel(card,level)
+    local game=portGames[level]
+    if not game then return end
+    local source=assert(card.phase_source,'新作阶段缺少命名来源：'..level)
+    if source.label then return source.label end
+    local chapter=tostring(source.chapter)
+    local kind=source.kind or card.phase_kind
+    local name
+    if kind=='road' then
+        local count,index=source.road_count or 1,source.road_index or 1
+        local part=count>2 and ('#'..index) or count==2 and (index==1 and '前半' or '后半') or ''
+        name=game..chapter..'道中'..part
+        card.phase_part=part~='' and part or nil
+        -- 沿用老作品：有标题的道中也不作为符卡结算。
+        card.name,card.is_sc=name,false
+    elseif card.is_sc then
+        name=source.spell_name or card.name
+        card.name=name
+    else
+        local face=chapter:match('^%d') and chapter..'面' or chapter
+        name=game..face..(kind=='mid' and '道中' or '关底')
+        if not source.aggregate then
+            -- 只在非符处递增；道中/关底、难度与互斥路线分别计数。
+            local key=level..':'..chapter..':'..kind..':'..tostring(source.route or '')
+            local index=(portCounts[key] or 0)+1
+            portCounts[key]=index
+            card.phase_key,card.phase_index=key,index
+            name=name..index..'非'
+        end
+    end
+    source.label=name
+    card.phase_name=name
+    return name
+end
 local roads={
     [29]={[3409]='1',[3410]='1',[3429]='2',[3428]='3',[3437]='3',
         [3412]='4A',[3416]='4A',[3414]='4B',[3418]='4B',[3432]='5',[3435]='5',
@@ -62,6 +99,7 @@ local function source(card,level,id,band)
     end
 end
 function P.apply(card,level,id,boss,band)
+    if portGames[level] then return portLabel(card,level) end
     local game=games[level]
     if not game then return end
     if card.phase_name then return card.phase_name end

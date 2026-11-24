@@ -30,6 +30,8 @@ local function addCard(meta,band)
     local immune=meta.endurance and duration or min(duration,(opening+meta.immune/2)/60)
     local card=boss.card.New(meta.spell and meta.title or '',immune,immune,duration,meta.hp)
     card.phase_name,card.phase_kind,card.asl_source=phaseLabel(meta),meta.role,meta
+    card.phase_source={chapter=meta.key:match('^L/stage(%d+)/') or meta.key:match('^([^/]+)/'),
+        kind=meta.role=='mid' and 'mid' or 'boss',route=meta.key:match('/boss([AB])/') or ''}
     function card.prepareRogue()
         R.loadAssets()
         R.preparePattern(meta.key)
@@ -95,8 +97,10 @@ for _,chapter in ipairs(D.chapters) do
     for _,road in ipairs(chapter.roads) do ordered[#ordered+1]={time=road.first,road=road} end
     for _,group in ipairs(chapter.bosses) do ordered[#ordered+1]={time=group.time,boss=group} end
     table.sort(ordered,function(a,b) return a.time<b.time end)
+    local roadIndex=0
     for _,entry in ipairs(ordered) do
         if entry.road then
+            roadIndex=roadIndex+1
             local road=entry.road;local band='aslroad'..road.id..'a'
             boss.Define(band,'雪莲华道中',Media.track(number,'road'),nil,{0,300},nil,'Yukari',36)
             local duration=(road.last-road.first)/120
@@ -104,6 +108,7 @@ for _,chapter in ipairs(D.chapters) do
             local chapterLabel=chapter.name=='EXA' and 'Extra A' or chapter.name..'面'
             card.phase_name,card.phase_kind='雪莲华 '..chapterLabel..' 道中'..(road.key:sub(-1)=='a' and '前段' or '后段'),'road'
             card.asl_source=road
+            card.phase_source={chapter=chapter.name,kind='road',road_index=roadIndex,road_count=#chapter.roads}
             function card.prepareRogue()
                 R.loadAssets()
                 R.preparePattern(road.key)
