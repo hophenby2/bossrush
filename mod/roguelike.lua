@@ -52,6 +52,7 @@ local function releaseChainGhosts(battle)
     end
 end
 local poolSource=dofile('mod/rogue_pool.lua')
+local staged=assert(loadfile('mod/rogue_staged.lua'))(poolSource)
 local rogueMusic=dofile('mod/rogue_music.lua')
 local encounter=dofile('mod/rogue_encounter.lua')
 RogueBossHUD=dofile('mod/rogue_boss_hud.lua')
@@ -71,31 +72,18 @@ end
 R.STAGE_COUNTS=poolSource.STAGE_COUNTS
 -- 战斗和结算使用同一进度口径；模式2按抽卡路线的每面张数换算，不读取当前作品的面数。
 function R.progressLabel(run)
-    local current=math.max(1,math.floor(run.current or run.completed or 1))
-    if mode(run).progression then
-        local index=current
-        for number,count in ipairs(R.STAGE_COUNTS) do
-            if index<=count then return number..'#'..index end
-            index=index-count
-        end
-    end
-    return tostring(current)
+    if mode(run).progression then return staged.label(run) end
+    return tostring(math.max(1,math.floor(run.current or run.completed or 1)))
 end
+R.progressAlpha=staged.alpha
+function R.afterLogic(scene)
+    local run=lstg.var.rogue_run
+    if scene and scene.stage_name==R.modes.staged.battle and run and not run.finished then staged.choiceFrame(run) end
+end
+
 R.buildStagePool=poolSource.buildStages
 function R.drawStages(seed,filters)
-    local status,stages=poolSource.stageStatus(filters)
-    assert(status.valid,status.message)
-    local gen=Rand();gen:Seed(seed)
-    local cards={}
-    for number,count in ipairs(R.STAGE_COUNTS) do
-        for _=1,count do
-            local available={}
-            for _,bucket in ipairs(stages[number]) do if #bucket.cards>0 then available[#available+1]=bucket end end
-            local bucket=available[gen:Int(1,#available)]
-            cards[#cards+1]=table.remove(bucket.cards,gen:Int(1,#bucket.cards))
-        end
-    end
-    return cards
+    return staged.draw(seed,filters)
 end
 
 function R.draw(seed,width,filters,wholePool)
@@ -129,6 +117,9 @@ function R.start(variant,filters)
     -- stage.group.Start立即序列化录像初态；筛选必须先写入lstg.var，不能只放在菜单对象里。
     lstg.var.rogue_filters=options
     lstg.var.rogue_variant=variant
+    local record=scoredata[config.record]
+    lstg.var.rogue_extend_unlocked=config.progression and type(record)=='table'
+        and type(record.cleared)=='number' and record.cleared>0 or false
     lstg.var.rogue_run=nil
     if variant=='single' then scoredata.rogue10_filters=R.copyFilters(options) end
     if config.progression then scoredata.rogue2_filters=R.copyFilters(options,variant) end
@@ -140,9 +131,12 @@ end
 function R.finish(self,won)
     if self.rogue_finished then return end
     self.rogue_finished=true
-    encounter.stop(self)
     local run=lstg.var.rogue_run
-    run.won=not run.endless and won and misses()<R.MISS_LIMIT
+    staged.clearChoice(run)
+    run.stage_banner,run.banner_queue=nil,{}
+    encounter.stop(self)
+    -- 六面已经通关后，无尽挑战耗尽生命仍按胜利结算。
+    run.won=run.cleared==true or (not run.endless and won and misses()<R.MISS_LIMIT)
     run.finished=true
     rogueMusic.stop(self)
     if GameNet and GameNet.host() then GameNet.finish(run.won) end
@@ -191,6 +185,7 @@ local function runCards(self)
                 if not rogueMusic.resume(self) then PlayMusic(class.bgm) end
             end
         end
+        if config.progression then staged.announce(run) end
         player.protect=math.max(player.protect or 0,90)
         return unit
     end
@@ -238,7 +233,7 @@ local function runCards(self)
         return
     end
     local index=0
-    while run.endless or index<count do
+    while run.endless or run.overtime or index<count do
         index=index+1
         if misses()>=R.MISS_LIMIT then R.finish(self,false);return end
         run.current=index
@@ -257,7 +252,8 @@ local function runCards(self)
             end
         end
         local first=run.endless and run.cardIndex or (index-1)*config.width+1
-        local entry=run.cards[first]
+        local entry
+        if run.overtime then entry=staged.nextEndless(run) else entry=run.cards[first] end
         local unit=prepare(entry)
         -- 单 Boss 只保留首战入场；后续战在上一位死亡后立即创建。双 Boss 节奏不变。
         if index==1 or config.width==2 then task.Wait(45) end
@@ -281,10 +277,19 @@ local function runCards(self)
             active=spawnSingle(unit)
             for _,b in ipairs(active) do while IsValid(b) do task.Wait() end end
         end
+        local cleared=config.progression and not run.overtime and index==count
+        if cleared then run.cleared=true;run.completed=index end
         if misses()>=R.MISS_LIMIT then R.finish(self,false);return end
         run.completed=index
-        if lstg.SystemLog then lstg.SystemLog('BOSSRUSH_ROGUE: cleared '..index..(run.endless and '' or '/'..count)..' '..entry.key) end
+        if lstg.SystemLog then lstg.SystemLog('BOSSRUSH_ROGUE: cleared '..index..((run.endless or run.overtime) and '' or '/'..count)..' '..entry.key) end
         encounter.stop(self)
+        if cleared then
+            staged.beginChoice(run)
+            local choice=run.endless_choice
+            while not choice.answer do task.Wait() end
+            if choice.answer==2 then R.finish(self,true);return end
+            staged.beginEndless(run,choice.answer==3)
+        end
         if config.width==2 then task.Wait(90) end
     end
     R.finish(self,true)
@@ -307,6 +312,7 @@ local function register(variant,config)
         else cards=R.draw(lstg.var.ran_seed,config.width,filters,endless) end
         lstg.var.rogue_run={mode=variant,seed=lstg.var.ran_seed,filters=filters,total=config.count or R.COUNT,
             cards=cards,current=0,completed=0,enhanced=filters.rules.enhanced,
+            cleared=false,extend_unlocked=lstg.var.rogue_extend_unlocked==true,
             endless=endless,cycle=1,cardIndex=0}
         if GameHPScale then GameHPScale.init(lstg.var.rogue_run) end
         -- 曲库取本模式四作的全部原有配乐，不因只选某一Boss而退化成单曲循环。
@@ -324,6 +330,7 @@ local function register(variant,config)
     function battle:frame()
         encounter.frame(self.timer)
         if GameHPScale then GameHPScale.frame() end
+        staged.frame(lstg.var.rogue_run)
         releaseChainGhosts(self)
         if self.rogue_finished then stage.group.frame(self);return end
         if misses()>=R.MISS_LIMIT then R.finish(self,false);return end
@@ -333,6 +340,7 @@ local function register(variant,config)
         stage.group.render(self)
     end
     function battle:del()
+        staged.clearChoice(lstg.var.rogue_run)
         encounter.stop(self)
         encounter.release()
         rogueMusic.stop(self)
@@ -375,8 +383,9 @@ local function register(variant,config)
         if AndroidPortrait and AndroidPortrait.enabled() then return AndroidPortrait.result(self) end
         SetViewMode('ui');RenderClear(Color(255,12,21,36))
         local c=Color(255,225,241,250);local run=self.run
+        ui:RenderText('title',run.won and '胜利' or '挑战结束',480,420,1.2,c,'centerpoint')
         ui.RunHUD.stage(R.progressLabel(run),480,270,560)
-        for _,b in ipairs({{300,465,'返回标题 ESC'},{495,660,'再来一局 ENTER'}}) do
+        for _,b in ipairs({{300,465,'返回标题 ESC'},{495,660,'不保存录像并重新开始 ENTER'}}) do
             SetImageState('white','',Color(255,29,64,85));RenderRect('white',b[1],b[2],85,125)
             ui:RenderText('title',b[3],(b[1]+b[2])/2,105,0.65,c,'centerpoint')
         end
@@ -387,15 +396,18 @@ function panel:init() self.group=GROUP.GHOST;self.layer=LAYER.TOP end
 function panel:render()
     local run=lstg.var.rogue_run
     if not run then return end
-    if AndroidPortrait and AndroidPortrait.enabled() then return AndroidPortrait.roguePanel(run) end
+    if AndroidPortrait and AndroidPortrait.enabled() then
+        AndroidPortrait.roguePanel(run);staged.render(run);return
+    end
     local previous=lstg.viewmode
     SetViewMode('ui')
-    ui.RunHUD.stage(R.progressLabel(run),lstg.world.scrl/2,270,lstg.world.scrl)
+    ui.RunHUD.stage(R.progressLabel(run),lstg.world.scrl/2,270,lstg.world.scrl,nil,staged.alpha(run))
     if run.preparing then
         local text=run.preloadTotal and ('加载资源 '..run.preloadIndex..' / '..run.preloadTotal) or '准备下一战…'
         ui:RenderText('title',text,lstg.world.scrl/2,220,.5,Color(255,255,255,255),'centerpoint')
     end
     if GameHPScale then GameHPScale.render(lstg.world.scrl/2,165) end
+    staged.render(run)
     if previous then SetViewMode(previous) end
 end
 register('single',R.modes.single)

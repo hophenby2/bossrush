@@ -159,9 +159,11 @@ function H.original(x1,x2,top,alpha)
         text(row[2],x2,y,i==1 and .5 or .65,alpha,{235,240,255},'right','vcenter')
     end
 end
-function H.stage(value,x,y,width,maxScale)
+function H.stage(value,x,y,width,maxScale,alpha)
     local label=type(value)=='string' and value or tostring(math.max(1,math.floor(value or 1)))
-    local scale=math.min(maxScale or 8,(width-24)/(#label*16))
-    text(label,x,y,scale,255,{230,241,250},'centerpoint')
+    local length=0
+    for _ in label:gmatch('[%z\1-\127\194-\244][\128-\191]*') do length=length+1 end
+    local scale=math.min(maxScale or 8,(width-24)/(math.max(1,length)*16))
+    text(label,x,y,scale,alpha or 255,{230,241,250},'centerpoint')
 end
 return H

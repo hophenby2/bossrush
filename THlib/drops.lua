@@ -129,6 +129,9 @@ function D.draw()
 end
 function D.award(b)
     if not allowDrops() then return false end
+    local run=lstg.var.rogue_run
+    -- 六面末卡只产生通关选择；拦截死亡回调，不能等常规奖励入队后再补删。
+    if run and run.mode=='staged' and not run.overtime and run.current==run.total then return false end
     local s=ensure()
     if not s or not b.is_combat or b.cannot_kill or b._drop_awarded then return false end
     if not b.current_card or b.current_card.is_combat==false then return false end
@@ -143,6 +146,11 @@ function D.award(b)
     mark(b);for _,other in ipairs(b.otherboss or {}) do mark(other) end
     s.count=s.count+1;s.queue[#s.queue+1]={id=s.count,options=D.draw(),age=0,duration=D.TIME,linear=true,colorMask=true,picks={false,false}}
     return true
+end
+function D.clearPending()
+    local s=peek()
+    if s then s.active=nil;s.queue={} end
+    GameQuiz.clearSelection('drops')
 end
 function D.apply(slot,option)
     local s=assert(ensure());local p=s.players[D.slot(slot)]

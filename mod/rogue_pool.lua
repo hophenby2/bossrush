@@ -130,14 +130,43 @@ function P.buildStages(filters)
     end
     return stages,counts
 end
+-- 偶数张从非符起交替；奇数张在末尾多接一张符卡。
+function P.spellAt(number,index)
+    return index%2==0 or index==P.STAGE_COUNTS[number]
+end
+function P.buildEndless(filters,extended)
+    local options=P.copy(filters,'staged')
+    options.difficulties.extra=extended==true
+    options.cards={nonspell=false,spell=true,survival=true}
+    local pool=P.build(options)
+    local out,total={},0
+    for _,bucket in ipairs(pool) do
+        local selected={code=bucket.code,level=bucket.level,cards={}}
+        for _,entry in ipairs(bucket.cards) do
+            if entry.spell and entry.kind=='boss' and (entry.originalDifficulty=='lunatic' and entry.stage==6
+                or extended and (entry.originalDifficulty=='extra' or entry.originalDifficulty=='phantasm')) then
+                selected.cards[#selected.cards+1]=entry
+            end
+        end
+        if #selected.cards>0 then out[#out+1]=selected;total=total+#selected.cards end
+    end
+    return out,total
+end
 function P.stageStatus(filters)
     local stages,counts=P.buildStages(filters)
-    local state={valid=true,count=0,need=38,counts=counts}
+    local state={valid=true,count=0,need=38,counts=counts,types={}}
     for number,need in ipairs(P.STAGE_COUNTS) do
         state.count=state.count+counts[number]
-        if counts[number]<need and state.valid then
-            state.valid=false
-            state.message=string.format('第%d面仅%d张，至少需要%d张',number,counts[number],need)
+        local types={nonspell=0,spell=0};state.types[number]=types
+        for _,bucket in ipairs(stages[number]) do for _,entry in ipairs(bucket.cards) do
+            local kind=entry.spell and 'spell' or 'nonspell'
+            types[kind]=types[kind]+1
+        end end
+        for _,rule in ipairs({{'nonspell','非符',math.floor(need/2)},{'spell','符卡',math.ceil(need/2)}}) do
+            if types[rule[1]]<rule[3] and state.valid then
+                state.valid=false
+                state.message=string.format('第%d面%s仅%d张，至少需要%d张',number,rule[2],types[rule[1]],rule[3])
+            end
         end
     end
     if state.count==0 then state.message='选择的卡池为空' end

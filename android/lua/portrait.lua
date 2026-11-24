@@ -523,15 +523,16 @@ function P.roguePanel(run)
     SetViewMode('ui')
     local w=lstg.world
     if run.mode=='single' or run.mode=='staged' then
-        ui.RunHUD.stage(RogueTen.progressLabel(run),(w.scrl+w.scrr)/2,w.scrt-28,200,3)
+        ui.RunHUD.stage(RogueTen.progressLabel(run),(w.scrl+w.scrr)/2,w.scrt-28,200,3,RogueTen.progressAlpha(run))
     else P.score(255) end
     if GameHPScale then GameHPScale.render(w.scrr-14,w.scrt-28,165,44,'right') end
     if previous then SetViewMode(previous) end
 end
 function P.result(o)
     P.background(1)
+    label(o.run.won and '胜利' or '挑战结束',WIDTH/2,screen.height/2+120,1.2,255,{225,241,250})
     ui.RunHUD.stage(RogueTen.progressLabel(o.run),WIDTH/2,screen.height/2,WIDTH-48)
-    for i,entry in ipairs({{'返回标题 ESC',27},{'再来一局 ENTER',13}}) do
+    for i,entry in ipairs({{'返回标题 ESC',27},{'不保存录像并重新开始',13}}) do
         local key=entry[2];local y=170-(i-1)*64
         rect(160,380,y-20,y+20,255,29,64,85)
         label(entry[1],WIDTH/2,y,.8,255,{225,241,250})

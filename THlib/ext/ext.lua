@@ -266,6 +266,7 @@ local function DoFrame()
     if nopause and GameDrops then
         if perf then perf.begin('logic.drops') end
         GameDrops.frame(stage.current_stage)
+        if RogueTen then RogueTen.afterLogic(stage.current_stage) end
         if perf then perf.finish('logic.drops') end
     end
     UpdateXY()

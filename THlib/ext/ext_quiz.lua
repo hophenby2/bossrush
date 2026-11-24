@@ -45,8 +45,8 @@ local function classes()
         end,
     },true)
     Choice=Class(object,{
-        init=function(o,pos,text,count,manual)
-            o.x=-192+(pos-0.5)*384/count;o.y=Q.CHOICE_Y;o.pos=pos;o.text=text;o.count=count;descend(o,manual)
+        init=function(o,pos,text,count,manual,palette)
+            o.x=-192+(pos-0.5)*384/count;o.y=Q.CHOICE_Y;o.pos=pos;o.text=text;o.count=count;o.palette=palette;descend(o,manual)
         end,
         frame=task.Do,
         render=function(o)
@@ -55,7 +55,8 @@ local function classes()
                 ui:RenderText('title',({'A','B','C','D'})[o.pos]..'. '..o.text,o.x,o.y,0.85,Color(o.alpha*255,255,255,255),'centerpoint')
             else
                 for i,line in ipairs(o.text) do
-                    local rgb=(GameDrops and GameDrops.palette and GameDrops.palette[line.color]) or maskColors[line.color] or {255,115,120}
+                    local palette=o.palette or GameDrops and GameDrops.palette or maskColors
+                    local rgb=palette[line.color] or maskColors[line.color] or {255,115,120}
                     local r,g,b=rgb[1],rgb[2],rgb[3]
                     local scale=o.count==3 and 0.7 or 0.85
                     if o.count==3 and line.color=='green' and i==2 then scale=0.6 end
@@ -91,17 +92,17 @@ function Q.wall(x,y,manual,index)
     end
     return o
 end
-function Q.spawn(text,choices,manual)
+function Q.spawn(text,choices,manual,palette)
     classes()
     local board={walls={},labels={}}
     local function optionColor(index)
         local lines=choices[index]
         local name=type(lines)=='table' and lines[1] and lines[1].color
-        local palette=GameDrops and GameDrops.palette
-        return manual and palette and palette[name] and palette[name].bullet or nil
+        local colors=palette or GameDrops and GameDrops.palette
+        return manual and colors and colors[name] and colors[name].bullet or nil
     end
     if text then board.question=New(Question,text,manual) end
-    for i,choice in ipairs(choices) do board.labels[i]=New(Choice,i,choice,#choices,manual) end
+    for i,choice in ipairs(choices) do board.labels[i]=New(Choice,i,choice,#choices,manual,palette) end
     for x=-16,16 do board.walls[#board.walls+1]=Q.wall(x*Q.STEP,Q.TOP,manual,optionColor(Q.answer(x*Q.STEP,#choices))) end
     for i=1,#choices-1 do
         for y=1,8 do board.walls[#board.walls+1]=Q.wall(-192+i*384/#choices,Q.TOP-y*Q.STEP,manual,optionColor(i)) end
@@ -132,7 +133,7 @@ function Q.selection(key,state,text,choices,alpha)
         Q.clearSelection(key)
         -- bullet.init 的雾化偏移会取随机数；选项演出使用独立源，保持战斗弹幕随机序列。
         local old=ran;ran=Rand();ran:Seed(1)
-        local ok,board=pcall(Q.spawn,text,choices,true);ran=old
+        local ok,board=pcall(Q.spawn,text,choices,true,state.palette);ran=old
         if not ok then error(board,0) end
         cached={state=state,board=board};selections[key]=cached
     end
@@ -140,7 +141,7 @@ function Q.selection(key,state,text,choices,alpha)
     if state.colorMask then
         if not board.mask or not IsValid(board.mask) then
             local colors={}
-            local palette=GameDrops and GameDrops.palette or maskColors
+            local palette=state.palette or GameDrops and GameDrops.palette or maskColors
             for i,lines in ipairs(choices) do
                 local name=type(lines)=='table' and lines[1] and lines[1].color
                 colors[i]=palette[name] or palette[i==1 and 'red' or 'blue']
