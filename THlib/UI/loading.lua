@@ -20,12 +20,14 @@ local function LoadingImage()
     for _, v1 in pairs(LoadRes) do
         table.insert(list, v1)
     end
-    table.insert(list, function()
-        -- 作品注册脚本都在前面的 LoadRes 队列中；执行到这里后再展开新作资源任务。
-        -- 追加到当前队列，必须全部完成才允许进入主菜单。
-        if RogueEncounter then RogueEncounter.appendStartup(list) end
-        list[#list+1]=function() InitAllClass() end
-    end)
+    -- 新作卡表要等前面的注册脚本执行完才存在，但进度预算必须从启动起就固定。
+    -- 预留与基础资源等量的进度单位；后续展开的子任务只分摊这份预算，不扩展总数。
+    list[#list+1]={weight=math.max(#list,1),build=function()
+        local tasks={}
+        if RogueEncounter then RogueEncounter.appendStartup(tasks) end
+        tasks[#tasks+1]=function() InitAllClass() end
+        return tasks
+    end}
     return list
 end
 LoadImageFromFile("loading", "THlib\\UI\\loading.png")
@@ -52,8 +54,11 @@ function stage_init:init()
     math.randomseed(os.time())
     self.start_time = clock()
     self.res = LoadingImage()
-    self.index = 1
-    self.maxindex = #self.res
+    self.taskindex = 1
+    self.index,self.maxindex = 0,0
+    for _,res in ipairs(self.res) do
+        self.maxindex=self.maxindex+(type(res)=='table' and res.weight or 1)
+    end
     self.textindex = math.random(1, #TIP)
     self.text = TIP[self.textindex]
     self.settime = self.timer
@@ -79,7 +84,7 @@ function stage_init:frame()
         self.text = TIP[self.textindex]
         self.settime = self.timer
     end
-    if self.index > self.maxindex then
+    if self.taskindex > #self.res then
         if AndroidPlatform and not self.jump then
             lstg.SystemLog(string.format('BOSSRUSH_STARTUP: resources_ready %.1f ms', (clock()-self.start_time)*1000))
         end
@@ -88,13 +93,23 @@ function stage_init:frame()
         local res
         local start_time, end_time = clock(), clock()
         while end_time - start_time < time do
-            if self.index > self.maxindex then
+            if self.taskindex > #self.res then
                 return
             end
-            res = self.res[self.index]
-            res()
-            self.maxindex = #self.res
-            self.index = self.index + 1
+            res = self.res[self.taskindex]
+            if type(res)=='function' then
+                res()
+                self.index=self.index+1
+                self.taskindex=self.taskindex+1
+            else
+                if not res.tasks then
+                    res.tasks,res.index,res.start=res.build(),1,self.index
+                end
+                local run=res.tasks[res.index]
+                if run then run();res.index=res.index+1 end
+                self.index=res.start+res.weight*min((res.index-1)/#res.tasks,1)
+                if res.index>#res.tasks then self.taskindex=self.taskindex+1 end
+            end
             end_time = clock()
         end
     end
