@@ -4,6 +4,17 @@ local function state()
     local run=lstg.var.rogue_run
     return lstg.var.__rogue_music_version==M.VERSION and run and run.music
 end
+-- 模式2的配乐属于整局，不由某张原作符卡的开场、淡出和清理接管。
+function M.ownsPlayback()
+    local s=state()
+    local run=lstg.var.rogue_run
+    local scene=stage.current_stage
+    return s and s.active and run.mode=='staged' and not run.finished
+        and scene and scene.stage_name=='RogueTwo@RogueTwo' and not scene.rogue_finished
+end
+function M.keepTrack(id)
+    return M.ownsPlayback() and state().current==id
+end
 function M.tracks(pool)
     local seen,tracks={},{}
     for _,bucket in ipairs(pool) do for _,entry in ipairs(bucket.cards) do
@@ -24,15 +35,24 @@ function M.init(run,pool)
     for i,id in ipairs(run.music.tracks) do run.music.remaining[i]=id end
 end
 local function play(scene,s,id)
+    s.active=false -- 轮播自身切歌时允许音频层执行，不拦截自己的请求。
     PlayMusic(id)
     s.current,s.active,s.elapsed,s.last_timer=id,true,0,0
     s.plays=s.plays+1;scene.now_music=id
     if lstg.SystemLog then lstg.SystemLog('BOSSRUSH_ROGUE_BGM: cycle='..s.cycle..' song='..id) end
 end
 function M.start(scene,id)
-    local s=state();if not s or not id then return false end
+    local s=state();if not s then return false end
+    if M.ownsPlayback() then scene.now_music=s.current;return true end
+    if not id then return false end
     for i,track in ipairs(s.remaining) do
         if track==id then table.remove(s.remaining,i);play(scene,s,id);return true end
+    end
+    if lstg.var.rogue_run.mode=='staged' and musicList[id] and musicList[id][1]>0 then
+        -- 首战可以来自新作；播过的首曲同样加入后续曲袋，且本轮不重复抽到。
+        s.tracks[#s.tracks+1]=id
+        play(scene,s,id)
+        return true
     end
     return false
 end
@@ -51,9 +71,20 @@ end
 -- 从独立后端返回时继续本局曲袋；首曲已经播过也不能让轮播永久停用。
 function M.resume(scene)
     local s=state();if not s then return false end
+    if M.ownsPlayback() then scene.now_music=s.current;return true end
     local id=M.pick(s) or s.current
     if not id then return false end
     play(scene,s,id)
+    return true
+end
+-- 音频层的快进/时缓校时仍可定位同一首歌，不把原作开卡的重播请求当作校时。
+function M.seek(id,position)
+    local s=state()
+    if not M.keepTrack(id) then return false end
+    s.active=false
+    PlayMusic(id,1,position)
+    s.active=true
+    s.last_timer=ext.music[id].timer
     return true
 end
 function M.frame()
@@ -73,7 +104,7 @@ function M.frame()
     local ending=math.ceil(musicList[s.current][1]*60)
     if s.elapsed<ending and status~='stopped' then return end
     local id=M.pick(s)
-    if id then StopMusic(s.current);play(scene,s,id)
+    if id then s.active=false;StopMusic(s.current);play(scene,s,id)
     else s.elapsed=s.elapsed%ending end
 end
 function M.stop(scene)

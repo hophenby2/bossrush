@@ -449,6 +449,7 @@ local stop = StopMusic
 local get = GetMusicState
 local set = SetBGMVolume
 local function PlayMusic(bgm, v, start_time)
+    if RogueMusic and RogueMusic.ownsPlayback() then return end
     if not CheckRes("bgm", bgm) then
         local musicList = musicList
         SetResourceStatus("global")
@@ -458,12 +459,15 @@ local function PlayMusic(bgm, v, start_time)
     play(bgm, v, start_time)
 end
 local function StopMusic(bgm)
+    if RogueMusic and RogueMusic.keepTrack(bgm) then return end
     if CheckRes("bgm", bgm) then
         stop(bgm)
     end
     RemoveResource("global", 4, bgm)
 end
 function SetBGMVolume(bgm, v)
+    -- 屏蔽原作转场对当前曲目的淡出；单参数的全局音量设置仍正常生效。
+    if v and RogueMusic and RogueMusic.keepTrack(bgm) then return end
     if not v then
         set(bgm)
     else
@@ -486,6 +490,7 @@ ext.ResumeMusic = ResumeMusic
 ext.PauseMusic = PauseMusic
 ext.music = {}
 function _G.PlayMusic(bgm, v, start_time, force)
+    if RogueMusic and RogueMusic.ownsPlayback() then return end
     local musicList = musicList
     start_time = start_time or 0
     start_time = start_time - int(start_time / musicList[bgm][1]) * musicList[bgm][2]
@@ -494,6 +499,7 @@ function _G.PlayMusic(bgm, v, start_time, force)
     ext.music[bgm] = { faketimer = int(start_time * 60), timer = int(start_time * 60), paused = false, force = force }
 end
 function _G.StopMusic(bgm)
+    if RogueMusic and RogueMusic.keepTrack(bgm) then return end
     ext.StopMusic(bgm)
     ext.music[bgm] = nil
 end
@@ -530,18 +536,22 @@ function ext.MusicFrame(k, i)
     if k=='timer' and RogueMusic then RogueMusic.frame() end
 end
 function ext.FastMusic()
+    local function seek(bgm,position)
+        if RogueMusic and RogueMusic.seek(bgm,position) then return end
+        PlayMusic(bgm,1,position)
+    end
     for bgm, m in pairs(ext.music) do
         if m.timer ~= m.faketimer then
             m.faketimer = m.timer
             local loopend = musicList[bgm][1] * 60
             local looplength = musicList[bgm][2] * 60
             if m.timer <= loopend then
-                PlayMusic(bgm, 1, m.timer / 60)
+                seek(bgm,m.timer/60)
             else
                 while m.timer > loopend do
                     m.timer = -looplength + m.timer
                 end
-                PlayMusic(bgm, 1, m.timer / 60)
+                seek(bgm,m.timer/60)
             end
 
         end

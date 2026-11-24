@@ -428,7 +428,9 @@ function P.pause(o)
     local rows=o.choose and {'好！','*不*'} or o.panel_rows or lstg.tmpvar.pause_menu_text or o.text[ext.replay.IsReplay() and 2 or 1]
     local title=o.panel_title or lstg.tmpvar.pause_menu_text and (ext.rep_over and '播放结束' or '游戏结束') or '游戏暂停'
     o.RenderText(cx-90,cy+60,o.choose and '真的吗?' or title,Color(o.mask_alph,250,128,114))
-    if o.panel_detail then label(o.panel_detail,cx,cy+95,.55,o.mask_alph) end
+    if o.panel_detail then label(o.panel_detail,cx,cy+95,.55,o.mask_alph)
+    elseif o.tip then ui:RenderTip(o.tip,cx,cy-145,w.scrr-w.scrl-40,.8,
+        Color(o.mask_alph,250,128,114+50*sin(o.timer*2)),'title') end
     for i,value in ipairs(rows) do
         local index=i;local y=cy+25-(i-1)*40
         local chosen=(o.choose and o.pos2 or o.pos)==i
@@ -451,7 +453,8 @@ function P.music(o,render)
     end)
 end
 function P.loading(o,render)
-    P.rendering=true;P.place(480,270,WIDTH/2,screen.height/2,WIDTH/960)
+    -- 加载页使用完整竖屏画布；各元素在共用绘制函数里重新排版，不缩小整张横屏页面。
+    P.rendering=true;P.place(0,0,0,0,1)
     return shared(o,render)
 end
 function P.hud(alpha)

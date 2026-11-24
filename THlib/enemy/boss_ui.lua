@@ -239,7 +239,10 @@ function pointer:render()
         local w = lstg.world
         local scale = self.scale
         local portrait=AndroidPortrait and AndroidPortrait.enabled()
-        if not portrait then
+        if portrait then
+            -- 指示器坐标属于世界；外层集中HUD刚使用的是UI投影。
+            SetViewMode('world')
+        else
             SetRenderRect(w.l, w.r, w.b - max(16 * scale, 0), w.t,
                     w.scrl, w.scrr, w.scrb - max(16 * scale, 0), w.scrt)
         end

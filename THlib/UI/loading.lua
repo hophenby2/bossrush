@@ -100,28 +100,36 @@ function stage_init:frame()
     end
 end
 local function renderLoading(self)
-    if AndroidPortrait and AndroidPortrait.enabled() and not AndroidPortrait.rendering then return AndroidPortrait.loading(self,renderLoading) end
-    Render("loading", 480, 270)
-    ui:RenderText('title', "少女折寿中" .. string.rep(".", int(self.timer / 20 % 6) + 1),
-            480, 25, 1, Color(255, 255, 227, 132), "centerpoint")
-    --SetImageState("title", "mul+add", min(self.timer, 45) / 45 * 255, 200, 200, 200)
-    --Render("title", 480, 270 + sin(self.timer) * 2, 0, 0.5 + sin(self.timer * 4) * 0.001)
-
-    local length = min(self.index / self.maxindex, 1)
-    SetImageState("white", "", 255, 255, 255, 255)
-    RenderRect("white", 150, 810, 50, 75)
-    SetImageState("white", "", 255, 0, 0, 0)
-    RenderRect("white", 152, 808, 52, 73)
-    SetImageState("white", "",
-            Color(180, 255 - 155 * length, 255 * length, 0 + 100 * length))
-    RenderRect("white", 152, 152 + length * 656, 52, 73)
-    SetFontState("Score", "",
-            Color(255, 255 * length, 255 - 28 * length, 100 + 32 * length))
-    ui:RenderText('sc_menu', "Tips : " .. self.text, 480, 170, 1,
-            Color(255, 250, 128, 114 + 50 * sin(self.timer * 2)), "centerpoint")
-    ui:RenderText("title", ("%0.2f%% ( %d / %d ) "):format(length * 100, min(self.index, self.maxindex), self.maxindex),
-            480, 62.5, 0.8, Color(255, 255 * length, 255 - 28 * length, 100 + 32 * length), "centerpoint")
+    local portrait=AndroidPortrait and AndroidPortrait.enabled()
+    if portrait and not AndroidPortrait.rendering then return AndroidPortrait.loading(self,renderLoading) end
+    local center,left,right,barY,tipY,statusY,imageY,imageScale=480,150,810,62.5,170,25,270,1
+    if portrait then
+        center=screen.width/2
+        left,right=32,screen.width-32
+        barY,tipY,statusY=screen.height*.2,screen.height*.42,screen.height*.2-40
+        imageY,imageScale=screen.height*.68,screen.width/960
+        -- 完整保留原底图中的元素和比例，把tip、读条及文字移到下方独立区域。
+        SetImageState('white','',Color(255,0,0,0))
+        RenderRect('white',0,screen.width,0,screen.height)
+    end
+    Render('loading',center,imageY,0,imageScale,imageScale)
+    ui:RenderText('title',"少女折寿中"..string.rep('.',int(self.timer/20%6)+1),
+        center,statusY,1,Color(255,255,227,132),'centerpoint')
+    local length=min(self.index/self.maxindex,1)
+    local innerLeft,innerRight=left+2,right-2
+    SetImageState('white','',255,255,255,255)
+    RenderRect('white',left,right,barY-12.5,barY+12.5)
+    SetImageState('white','',255,0,0,0)
+    RenderRect('white',innerLeft,innerRight,barY-10.5,barY+10.5)
+    SetImageState('white','',Color(180,255-155*length,255*length,100*length))
+    RenderRect('white',innerLeft,innerLeft+length*(innerRight-innerLeft),barY-10.5,barY+10.5)
+    SetFontState('Score','',Color(255,255*length,255-28*length,100+32*length))
+    ui:RenderTip(self.text,center,tipY,right-left,1,
+        Color(255,250,128,114+50*sin(self.timer*2)))
+    ui:RenderText('title',('%0.2f%% ( %d / %d ) '):format(length*100,min(self.index,self.maxindex),self.maxindex),
+        center,barY,.8,Color(255,255*length,255-28*length,100+32*length),'centerpoint')
 end
+
 stage_init.render=renderLoading
 
 -- 战斗入口与启动页共用底图和读条；先提交加载画面，再执行可能阻塞的场景初始化。

@@ -151,6 +151,15 @@ function ui:RenderText(ttfname, text, x, y, size, color, ...)
     end
     RenderTTF2(ttfname, text, x, y, size, color, ...)
 end
+-- 按UTF-8字符换行；中文占全角、拉丁字符占半角，横竖屏传入各自可用宽度。
+function ui:RenderTip(text,x,y,width,size,color,font,plain)
+    font=font or 'sc_menu'
+    local charWidth=font=='sc_menu' and 13 or 16
+    local lines=GameQuiz.wrap((plain and '' or 'Tips : ')..text,width/(charWidth*size))
+    for i,line in ipairs(lines) do
+        self:RenderText(font,line,x,y-(i-1)*(charWidth*2+4)*size,size,color,'centerpoint')
+    end
+end
 
 CreateRenderTarget("test")
 function ui:DrawBack(alpha, t)

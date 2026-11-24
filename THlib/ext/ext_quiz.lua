@@ -28,7 +28,7 @@ local Question,Choice,Mask
 local maskColors={red={255,40,55},blue={35,110,255},green={35,210,85}}
 local function descend(o,manual)
     o.bound=false;o.colli=false;o.layer=0;o.alpha=1
-    if manual then o.group=GROUP.GHOST;return end
+    if manual then o.group=GROUP.GHOST;o._rogue_host_overlay=true;return end
     task.New(o,function() task.MoveToEx(0,-Q.FALL,Q.TIME,Q.fall);task.SmoothSetValueTo('alpha',0,60,0);Del(o) end)
 end
 local function classes()
@@ -85,6 +85,7 @@ function Q.wall(x,y,manual,index)
     if manual then
         -- 选项以扫掠接触结算，不让复活者再被选项弹击杀；仍使用原弹体与贴图。
         o.class=bullet;o.group=GROUP.GHOST;o.colli=false;o._no_gray=true;o.rank_speed=false
+        o._rogue_host_overlay=true
     else
         task.New(o,function() task.MoveToEx(0,-Q.FALL,Q.TIME,Q.fall);o.bound=true end)
     end
@@ -116,9 +117,18 @@ function Q.setSelectionVisible(key,visible)
     show(board.mask);show(board.question);for _,o in ipairs(board.labels) do show(o) end
     for _,o in ipairs(board.walls) do show(o) end
 end
+local function boardValid(board)
+    local function alive(o) return o and IsValid(o) and o.status=='normal' end
+    if board.question and not alive(board.question) then return false end
+    if board.mask and not alive(board.mask) then return false end
+    for _,o in ipairs(board.labels) do if not alive(o) then return false end end
+    for _,o in ipairs(board.walls) do if not alive(o) then return false end end
+    return true
+end
 function Q.selection(key,state,text,choices,alpha)
     local cached=selections[key]
-    if not cached or cached.state~=state or not IsValid(cached.board.walls[1]) then
+    -- 文字与弹墙是不同对象，不能仅凭第一颗弹还在就复用已损坏的选项。
+    if not cached or cached.state~=state or not boardValid(cached.board) then
         Q.clearSelection(key)
         -- bullet.init 的雾化偏移会取随机数；选项演出使用独立源，保持战斗弹幕随机序列。
         local old=ran;ran=Rand();ran:Seed(1)

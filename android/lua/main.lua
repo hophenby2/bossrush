@@ -102,8 +102,9 @@ local function start()
         if not desktop then
             if s.androidPortrait==nil then s.androidPortrait=true end
             if s.touchSlowMode~=2 and s.touchSlowMode~=3 then s.touchSlowMode=1 end
-            if not s.androidBackgroundDefaultApplied then
-                s.displayBG, s.androidBackgroundDefaultApplied = false, true
+            if s.androidBackgroundDefaultApplied~=2 then
+                -- 将旧版默认关闭迁移为开启；此后仍保留玩家手动修改的选项。
+                s.displayBG, s.androidBackgroundDefaultApplied = true, 2
             end
             if not s.touchBombIntervalDefaultApplied then
                 -- 旧版默认100毫秒迁移到170毫秒，已有自定义间隔继续保留。

@@ -161,7 +161,11 @@ local function runCards(self)
         self.level=entry.level
         if port then encounter.prepare(self,entry,unit) end
         -- 首张卡的真实关卡背景整局保留；这里只切换音乐及当前符卡背景。
-        if port then
+        if run.mode=='staged' then
+            -- 模式2整局连续轮播；换卡只更新攻击和符卡背景，不重启歌曲。
+            self.rogue_scene_ready=true
+            if not rogueMusic.start(self,class.bgm) then rogueMusic.resume(self) end
+        elseif port then
             rogueMusic.stop(self)
             if self.now_music then StopMusic(self.now_music) end
             self.rogue_scene_ready=false
