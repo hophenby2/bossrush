@@ -515,13 +515,15 @@ function P.roguePanel(run)
     local previous=lstg.viewmode
     SetViewMode('ui')
     local w=lstg.world
-    P.score(255)
+    if run.mode=='single' or run.mode=='staged' then
+        ui.RunHUD.stage(RogueTen.progressLabel(run),(w.scrl+w.scrr)/2,w.scrt-28,200,3)
+    else P.score(255) end
     if GameHPScale then GameHPScale.render(w.scrr-14,w.scrt-28,165,44,'right') end
     if previous then SetViewMode(previous) end
 end
 function P.result(o)
     P.background(1)
-    ui.RunHUD.stage(o.run.current or o.run.completed,WIDTH/2,screen.height/2,WIDTH-48)
+    ui.RunHUD.stage(RogueTen.progressLabel(o.run),WIDTH/2,screen.height/2,WIDTH-48)
     for i,entry in ipairs({{'返回标题 ESC',27},{'再来一局 ENTER',13}}) do
         local key=entry[2];local y=170-(i-1)*64
         rect(160,380,y-20,y+20,255,29,64,85)

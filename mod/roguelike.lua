@@ -69,6 +69,18 @@ function R.poolStatus(filters,width,variant)
     return poolSource.status(filters,width and R.COUNT*width or 1)
 end
 R.STAGE_COUNTS=poolSource.STAGE_COUNTS
+-- 战斗和结算使用同一进度口径；模式2按抽卡路线的每面张数换算，不读取当前作品的面数。
+function R.progressLabel(run)
+    local current=math.max(1,math.floor(run.current or run.completed or 1))
+    if mode(run).progression then
+        local index=current
+        for number,count in ipairs(R.STAGE_COUNTS) do
+            if index<=count then return number..'#'..index end
+            index=index-count
+        end
+    end
+    return tostring(current)
+end
 R.buildStagePool=poolSource.buildStages
 function R.drawStages(seed,filters)
     local status,stages=poolSource.stageStatus(filters)
@@ -363,7 +375,7 @@ local function register(variant,config)
         if AndroidPortrait and AndroidPortrait.enabled() then return AndroidPortrait.result(self) end
         SetViewMode('ui');RenderClear(Color(255,12,21,36))
         local c=Color(255,225,241,250);local run=self.run
-        ui.RunHUD.stage(run.current or run.completed,480,270,560)
+        ui.RunHUD.stage(R.progressLabel(run),480,270,560)
         for _,b in ipairs({{300,465,'返回标题 ESC'},{495,660,'再来一局 ENTER'}}) do
             SetImageState('white','',Color(255,29,64,85));RenderRect('white',b[1],b[2],85,125)
             ui:RenderText('title',b[3],(b[1]+b[2])/2,105,0.65,c,'centerpoint')
@@ -378,7 +390,7 @@ function panel:render()
     if AndroidPortrait and AndroidPortrait.enabled() then return AndroidPortrait.roguePanel(run) end
     local previous=lstg.viewmode
     SetViewMode('ui')
-    ui.RunHUD.stage(run.current,lstg.world.scrl/2,270,lstg.world.scrl)
+    ui.RunHUD.stage(R.progressLabel(run),lstg.world.scrl/2,270,lstg.world.scrl)
     if run.preparing then
         local text=run.preloadTotal and ('加载资源 '..run.preloadIndex..' / '..run.preloadTotal) or '准备下一战…'
         ui:RenderText('title',text,lstg.world.scrl/2,220,.5,Color(255,255,255,255),'centerpoint')

@@ -160,7 +160,7 @@ function H.original(x1,x2,top,alpha)
     end
 end
 function H.stage(value,x,y,width,maxScale)
-    local label=tostring(math.max(1,math.floor(value or 1)))
+    local label=type(value)=='string' and value or tostring(math.max(1,math.floor(value or 1)))
     local scale=math.min(maxScale or 8,(width-24)/(#label*16))
     text(label,x,y,scale,255,{230,241,250},'centerpoint')
 end
