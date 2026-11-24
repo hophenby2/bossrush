@@ -10,7 +10,7 @@ import wave
 import zlib
 
 
-def optimize_audio(sources, cache):
+def optimize_audio(sources, cache, compression_level=.2):
     try:
         import soundfile as sf
     except ImportError as exc:
@@ -21,7 +21,7 @@ def optimize_audio(sources, cache):
 
     def encode(source):
         raw = source.read_bytes()
-        codec = f'vorbis-v1-compression-0.2-{sf.__version__}-{sf.__libsndfile_version__}'
+        codec = f'vorbis-v1-compression-{compression_level}-{sf.__version__}-{sf.__libsndfile_version__}'
         key = hashlib.sha256(str(source).encode() + raw + codec.encode()).hexdigest()
         metadata, target = cache / (key + '.json'), cache / (key + '.ogg')
         if metadata.exists():
@@ -44,13 +44,13 @@ def optimize_audio(sources, cache):
         encoded = io.BytesIO()
         # 长音效一次交给 Vorbis 会耗尽编码线程的栈；按固定大小流式写入。
         with sf.SoundFile(encoded,'w',samplerate=rate,channels=pcm.shape[1],
-                          format='OGG',subtype='VORBIS',compression_level=.2) as output:
+                          format='OGG',subtype='VORBIS',compression_level=compression_level) as output:
             for offset in range(0,len(pcm),32768):
                 output.write(pcm[offset:offset+32768])
         result = encoded.getvalue()
         record = {'converted': False, 'source_bytes': len(raw), 'wav_zip_bytes': len(packed_wav),
                   'ogg_bytes': len(result), 'frames': len(pcm), 'sample_rate': rate,
-                  'channels': pcm.shape[1], 'compression_level': .2}
+                  'channels': pcm.shape[1], 'compression_level': compression_level}
         # Ogg自身已压缩，APK按ZIP_STORED存放；极短音效可能反而变大，继续保留PCM。
         if len(result) < len(packed_wav) * .95:
             decoded, decoded_rate = sf.read(io.BytesIO(result), dtype='float32', always_2d=True)

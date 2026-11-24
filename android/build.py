@@ -31,11 +31,12 @@ COMPACT_MUSIC = False
 COMPRESSION_PROFILE = None
 PROFILES = {
     '1gb': {'max_bytes':1000000000,'image_psnr':36,'image_qualities':(85,90,95),
-            'music_compression':.95,'music_min_bitrate':80000},
+            'music_compression':.95,'music_min_bitrate':80000,'sound_compression':.2},
     '750mb': {'max_bytes':750000000,'image_psnr':32,'image_qualities':(40,50,60,70,80,90,95),
-              'music_compression':1.0,'music_min_bitrate':56000},
+              'music_compression':1.0,'music_min_bitrate':56000,'sound_compression':.5},
     '500mb': {'max_bytes':500000000,'image_psnr':24,'image_qualities':(5,10,20,30,40,50,60,75,85,95),
-              'music_compression':1.0,'music_min_bitrate':0,'music_sample_rate':12000,'music_mono':True},
+              'music_compression':1.0,'music_min_bitrate':0,'music_sample_rate':12000,'music_mono':True,
+              'sound_compression':.8},
 }
 sys.path.insert(0, str(ROOT.parent / 'tools'))
 from release_version import game_version
@@ -236,7 +237,9 @@ def prepare_assets():
         from audio_optimizer import optimize_audio, optimize_music
         sources = [p for folder in ['THlib','Resources','mod'] for p in (GAME/folder).rglob('*')
                    if p.suffix.lower() in {'.wav','.flac'} and include_asset(p.relative_to(GAME))]
-        audio_variants, records = optimize_audio(sources,CACHE/'vorbis-sounds')
+        profile=PROFILES.get(COMPRESSION_PROFILE,{})
+        audio_variants, records = optimize_audio(sources,CACHE/'vorbis-sounds',
+                                                 compression_level=profile.get('sound_compression',.2))
         write_utf8(BUILD/'audio-optimization.json',json.dumps(
             {str(p.relative_to(GAME)):r for p,r in records.items()},ensure_ascii=False,indent=2)+'\n')
         saved = sum(r['wav_zip_bytes']-r['ogg_bytes'] for r in records.values() if r['converted'])
