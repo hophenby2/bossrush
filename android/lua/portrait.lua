@@ -499,7 +499,14 @@ function P.slowButton()
     return w.scrl+42,w.scrb+P.BOSS_BOTTOM_INSET+34
 end
 function P.drawSlowButton(b,active)
-    SetImageState('white','',active and Color(210,120,240,170) or Color(160,200,210,225))
+    -- 开启时亮色实心、关闭时深色底，文字同步反色，抬手后仍能分辨切换状态。
+    SetImageState('white','',active and Color(235,165,245,195) or Color(210,32,42,55))
+    for i=0,47 do
+        local a,c=i*math.pi/24,(i+1)*math.pi/24
+        Render4V('white',b.x,b.y,.5,b.x+math.cos(c)*28,b.y+math.sin(c)*28,.5,
+            b.x+math.cos(a)*28,b.y+math.sin(a)*28,.5,b.x,b.y,.5)
+    end
+    SetImageState('white','',active and Color(255,100,255,155) or Color(210,115,135,155))
     for i=0,47 do
         local a,c=i*math.pi/24,(i+1)*math.pi/24
         local ca,sa,cc,sc=math.cos(a),math.sin(a),math.cos(c),math.sin(c)

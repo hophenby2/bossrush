@@ -28,19 +28,31 @@ local menuButtons = {
 }
 local portraitPause={key=27,x=34,y=0,radius=28,label='暂停'}
 local portraitSlow={key=16,action='slow',radius=30,label='低速'}
+local cheatButton={cheat=true,radius=24,label='无敌'}
 function I.slowMode()
     local mode=setting and setting.touchSlowMode
     return mode==2 and 2 or mode==3 and 3 or 1
 end
 local function activeButtons(menuMode)
-    if AndroidPortrait and AndroidPortrait.enabled() then
+    local portrait=AndroidPortrait and AndroidPortrait.enabled()
+    local list=menuMode and menuButtons or buttons
+    if portrait then
         if menuMode then return {} end
         portraitPause.x,portraitPause.y=AndroidPortrait.pauseButton()
         portraitSlow.x,portraitSlow.y=AndroidPortrait.slowButton()
         portraitSlow.toggle=I.slowMode()==1
-        return {portraitPause,portraitSlow}
+        list={portraitPause,portraitSlow}
     end
-    return menuMode and menuButtons or buttons
+    if not menuMode and not BossRushDesktop and GameDebug and GameDebug.canToggleCheat() then
+        -- 竖屏用完整屏幕右上角，避开场地内的阶段数与血量倍率；横屏放在暂停左侧。
+        cheatButton.x,cheatButton.y=portrait and screen.width-42 or 850,portrait and screen.height-42 or 514
+        cheatButton.radius=portrait and 30 or 24
+        local withCheat={}
+        for i,b in ipairs(list) do withCheat[i]=b end
+        withCheat[#withCheat+1]=cheatButton
+        return withCheat
+    end
+    return list
 end
 function I.menuMode()
     if GameNet and GameNet.client() then return false end
@@ -100,8 +112,11 @@ local function rebuild()
     end
     for _, t in pairs(I.touches) do
         if t.button then
-            if portrait and t.button.action=='slow' then slowHeld=true
-            elseif not t.button.toggle then keys[buttonKey(t.button)] = true end
+            -- 无敌是UI操作，不注入射击、移动或键盘快捷键。
+            if not t.button.cheat then
+                if portrait and t.button.action=='slow' then slowHeld=true
+                elseif not t.button.toggle then keys[buttonKey(t.button)] = true end
+            end
         elseif not t.drag and not t.ignored then
             I.mouse.down = true; I.mouse.x = t.x; I.mouse.y = t.y
         end
@@ -155,7 +170,10 @@ function I.touch(id, x, y, event)
                 if t.button then break end
                 if math.abs(x-button.x)<=button.radius and math.abs(y-button.y)<=button.radius then
                     t.button = button
-                    if button.toggle and event=='began' then I.toggles[button.action]=not I.toggles[button.action] end
+                    if event=='began' then
+                        if button.cheat then GameDebug.toggleCheat()
+                        elseif button.toggle then I.toggles[button.action]=not I.toggles[button.action] end
+                    end
                     if button.key == 27 then I.pulse(27) end
                     break
                 end
@@ -273,17 +291,32 @@ function I.install(scene)
 end
 function I.render()
     if AndroidPortrait then AndroidPortrait.coverOutside() end
+    local portrait=AndroidPortrait and AndroidPortrait.enabled()
+    local covering=portrait and AndroidPortrait.covering
+    -- 场地外的调试按钮也使用屏幕坐标，不受世界视口裁剪。
+    if portrait then AndroidPortrait.covering=true end
     SetViewMode('ui')
     local menuMode = I.menuMode()
     for _, b in ipairs(activeButtons(menuMode)) do
-        local active=I.keys[buttonKey(b)]
-        if b==portraitSlow then AndroidPortrait.drawSlowButton(b,active) end
-        if not (AndroidPortrait and AndroidPortrait.enabled()) then
-            SetImageState('white', '', active and Color(180,40,110,75) or Color(90,34,57,82))
-            RenderRect('white', b.x-b.radius, b.x+b.radius, b.y-b.radius, b.y+b.radius)
+        local active
+        if b.cheat then active=cheat==true else active=GetKeyState(buttonKey(b)) end
+        local stateful=b.cheat or b.action=='slow'
+        if b==portraitSlow then
+            AndroidPortrait.drawSlowButton(b,active)
+        elseif not portrait or b.cheat then
+            local fill=stateful and (active and Color(235,165,245,195) or Color(210,32,42,55))
+                or (active and Color(180,40,110,75) or Color(90,34,57,82))
+            SetImageState('white','',fill)
+            RenderRect('white',b.x-b.radius,b.x+b.radius,b.y-b.radius,b.y+b.radius)
+            if stateful then
+                SetImageState('white','',active and Color(255,100,255,155) or Color(210,115,135,155))
+                misc.RenderOutLine('white',b.x-b.radius,b.x+b.radius,b.y-b.radius,b.y+b.radius,0,2)
+            end
         end
-        local label=b.label..(b.toggle and b~=portraitSlow and (I.toggles[b.action] and ' 开' or ' 关') or '')
-        ui:RenderText('title',label,b.x,b.y,menuMode and .8 or .75,Color(230,235,241,247),'centerpoint')
+        local label=b.label..((b.cheat or b.toggle) and (active and ' 开' or ' 关') or '')
+        local color=stateful and (active and Color(255,12,50,28) or Color(235,185,200,215)) or Color(230,235,241,247)
+        ui:RenderText('title',label,b.x,b.y,b.cheat and .65 or menuMode and .8 or .75,color,'centerpoint')
     end
+    if portrait then AndroidPortrait.covering=covering;SetViewMode('ui') end
 end
 return I

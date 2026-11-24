@@ -61,10 +61,8 @@ do
     function ext.Debugging()
         -- 调试模式下按 F8 切换本局无敌；只认按下沿，长按不会重复切换。
         local down = GetKeyState(KEY.F8)
-        if down and not cheatKeyDown and GameDebug and GameDebug.enabled
-            and not ext.StageIsMenu() and not ext.replay.IsReplay() then
-            cheat = not cheat
-            lstg.var.cheat = cheat
+        if down and not cheatKeyDown and GameDebug then
+            GameDebug.toggleCheat()
         end
         cheatKeyDown = down
         --DEBUGGER
