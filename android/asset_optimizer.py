@@ -42,7 +42,8 @@ def recompress_png(image, original):
     return b''.join(output)
 
 
-def optimize_images(sources, cache, game_root=None, lossy_noncore=False, transparent_webp=False, png_only=()):
+def optimize_images(sources, cache, game_root=None, lossy_noncore=False, transparent_webp=False, png_only=(),
+                    lossy_psnr=36, lossy_qualities=(85,90,95)):
     try:
         import numpy as np
         from PIL import Image, __version__, features
@@ -63,6 +64,8 @@ def optimize_images(sources, cache, game_root=None, lossy_noncore=False, transpa
             version = f'images-v6-webp-alpha-{allow_lossy}-{__version__}'
         if source in png_only:
             version += '-png-only'
+        if allow_lossy and (lossy_psnr!=36 or tuple(lossy_qualities)!=(85,90,95)):
+            version += f'-psnr{lossy_psnr}-q'+','.join(map(str,lossy_qualities))
         legacy_version=version
         if allow_lossy:
             version += '-rgb-step6'
@@ -130,7 +133,7 @@ def optimize_images(sources, cache, game_root=None, lossy_noncore=False, transpa
                             record.update(format='png',codec='png-rgb-step6' if changed else 'png-lossless',max_rgb_error=3,gpu_max_rgb_error=4,lossy=changed)
                     if allow_lossy and source not in png_only and (opaque or transparent_webp):
                         reference = np.asarray(rgba).astype('float32')
-                        for quality in (85,90,95):
+                        for quality in lossy_qualities:
                             encoded = io.BytesIO()
                             rgba.save(encoded,format='WEBP',quality=quality,method=6,exact=True)
                             result = encoded.getvalue()
@@ -142,7 +145,7 @@ def optimize_images(sources, cache, game_root=None, lossy_noncore=False, transpa
                             error = (reference[:,:,:3]-values[:,:,:3])*(reference[:,:,3:4]/255)
                             mse = float(np.mean(error**2))
                             psnr = float(10*np.log10(255**2/mse)) if mse else 99.0
-                            if psnr < 36:
+                            if psnr < lossy_psnr:
                                 continue
                             packed = zip_size(result)
                             if packed < cost*.95:

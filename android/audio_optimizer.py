@@ -4,6 +4,8 @@ from pathlib import Path
 import hashlib
 import io
 import json
+import shutil
+import subprocess
 import wave
 import zlib
 
@@ -61,13 +63,16 @@ def optimize_audio(sources, cache):
     return variants, records
 
 
-def optimize_music(sources, cache, compression_level=.5, minimum_bitrate=192000):
+def optimize_music(sources, cache, compression_level=.5, minimum_bitrate=192000,
+                   sample_rate=None, mono=False):
     import soundfile as sf
     cache.mkdir(parents=True, exist_ok=True)
 
     def encode(source):
         raw = source.read_bytes()
         codec = f'music-v2-compression-{compression_level}-min-{minimum_bitrate}-{sf.__version__}-{sf.__libsndfile_version__}'
+        if sample_rate or mono:
+            codec += f'-resample-v1-{sample_rate}-mono{mono}'
         key = hashlib.sha256(str(source).encode() + raw + codec.encode()).hexdigest()
         metadata, target = cache / (key + '.json'), cache / (key + '.ogg')
         if metadata.exists():
@@ -78,21 +83,36 @@ def optimize_music(sources, cache, compression_level=.5, minimum_bitrate=192000)
         record = {'converted': False, 'source_bytes': len(raw), 'packed_bytes': len(raw),
                   'frames': info.frames, 'sample_rate': info.samplerate,
                   'channels': info.channels, 'compression_level': compression_level}
-        # 低于目标档位的曲目继续使用原编码，避免重复有损压缩。
+        # 常规档保留采样率、声道和帧数；小包档仅重采样 BGM，循环位置仍以秒计。
         if info.duration > 0 and len(raw) * 8 / info.duration > minimum_bitrate:
-            encoded = io.BytesIO()
-            with sf.SoundFile(io.BytesIO(raw)) as audio, sf.SoundFile(
-                    encoded, 'w', samplerate=info.samplerate, channels=info.channels,
-                    format='OGG', subtype='VORBIS', compression_level=compression_level) as output:
-                for block in audio.blocks(blocksize=32768, dtype='float32', always_2d=True):
-                    output.write(block)
-            result = encoded.getvalue()
+            target_rate=min(sample_rate or info.samplerate,info.samplerate)
+            target_channels=1 if mono else info.channels
+            if target_rate!=info.samplerate or target_channels!=info.channels:
+                ffmpeg=shutil.which('ffmpeg')
+                if not ffmpeg:
+                    raise RuntimeError('低码率 BGM 档需要 ffmpeg')
+                result=subprocess.run([ffmpeg,'-v','error','-i','pipe:0','-map_metadata','-1',
+                    '-vn','-ar',str(target_rate),'-ac',str(target_channels),'-c:a','libvorbis',
+                    '-q:a','-1','-f','ogg','pipe:1'],input=raw,stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,check=True).stdout
+            else:
+                encoded = io.BytesIO()
+                with sf.SoundFile(io.BytesIO(raw)) as audio, sf.SoundFile(
+                        encoded, 'w', samplerate=info.samplerate, channels=info.channels,
+                        format='OGG', subtype='VORBIS', compression_level=compression_level) as output:
+                    for block in audio.blocks(blocksize=32768, dtype='float32', always_2d=True):
+                        output.write(block)
+                result = encoded.getvalue()
             if len(result) < len(raw) * .95:
                 with sf.SoundFile(io.BytesIO(result)) as decoded:
                     frames = sum(len(block) for block in decoded.blocks(blocksize=32768))
-                    if (frames, decoded.samplerate, decoded.channels) != (
-                            info.frames, info.samplerate, info.channels):
+                    expected_frames=round(info.frames*target_rate/info.samplerate)
+                    tolerance=1 if target_rate!=info.samplerate else 0
+                    if (abs(frames-expected_frames)>tolerance or decoded.samplerate!=target_rate
+                            or decoded.channels!=target_channels):
                         raise RuntimeError(f'Ogg改变了音乐采样率、声道或帧数：{source}')
+                    record.update(packed_frames=frames,packed_sample_rate=decoded.samplerate,
+                                  packed_channels=decoded.channels)
                 target.write_bytes(result)
                 record.update(converted=True, packed_bytes=len(result))
         metadata.write_text(json.dumps(record, ensure_ascii=False) + '\n')

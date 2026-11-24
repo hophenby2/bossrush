@@ -28,6 +28,15 @@ COMPRESS_AUDIO = False
 OPTIMIZE_FONTS = False
 TRANSPARENT_WEBP = False
 COMPACT_MUSIC = False
+COMPRESSION_PROFILE = None
+PROFILES = {
+    '1gb': {'max_bytes':1000000000,'image_psnr':36,'image_qualities':(85,90,95),
+            'music_compression':.95,'music_min_bitrate':80000},
+    '750mb': {'max_bytes':750000000,'image_psnr':32,'image_qualities':(40,50,60,70,80,90,95),
+              'music_compression':1.0,'music_min_bitrate':56000},
+    '500mb': {'max_bytes':500000000,'image_psnr':24,'image_qualities':(5,10,20,30,40,50,60,75,85,95),
+              'music_compression':1.0,'music_min_bitrate':0,'music_sample_rate':12000,'music_mono':True},
+}
 sys.path.insert(0, str(ROOT.parent / 'tools'))
 from release_version import game_version
 
@@ -238,6 +247,10 @@ def prepare_assets():
                 'Resources/ports/dreamer/res/likedreamer/bgm', 'Resources/th43/music')
                 for p in sorted((GAME/folder).glob('*.ogg')) if include_asset(p.relative_to(GAME))]
         options = {'compression_level': .95, 'minimum_bitrate': 80000} if COMPACT_MUSIC else {}
+        if COMPRESSION_PROFILE:
+            profile=PROFILES[COMPRESSION_PROFILE]
+            options.update(compression_level=profile['music_compression'],minimum_bitrate=profile['music_min_bitrate'],
+                           sample_rate=profile.get('music_sample_rate'),mono=profile.get('music_mono',False))
         music_variants, records = optimize_music(music_sources, CACHE/'vorbis-music', **options)
         write_utf8(BUILD/'music-optimization.json', json.dumps(
             {str(p.relative_to(GAME)): r for p, r in records.items()}, ensure_ascii=False, indent=2)+'\n')
@@ -247,8 +260,11 @@ def prepare_assets():
         from asset_optimizer import optimize_images
         sources = [p for folder in ['THlib','Resources','mod'] for p in (GAME/folder).rglob('*.png')
                    if include_asset(p.relative_to(GAME))]
+        profile=PROFILES.get(COMPRESSION_PROFILE,{})
         optimized, records = optimize_images(sources,CACHE/'lossless-images',GAME,LOSSY_IMAGES,
-                                             transparent_webp=TRANSPARENT_WEBP,png_only=font_images)
+                                             transparent_webp=TRANSPARENT_WEBP,png_only=font_images,
+                                             lossy_psnr=profile.get('image_psnr',36),
+                                             lossy_qualities=profile.get('image_qualities',(85,90,95)))
         report = {str(p.relative_to(GAME)):r for p,r in records.items()}
         write_utf8(BUILD/'asset-optimization.json',json.dumps(report,ensure_ascii=False,indent=2)+'\n')
         saved = sum(r['source_zip_bytes']-r['packed_zip_bytes'] for r in records.values())
@@ -326,6 +342,11 @@ def prepare_assets():
         '  ['+json.dumps(src,ensure_ascii=False)+']='+json.dumps(dst,ensure_ascii=False)+',\n'
         for src,dst in sorted(asset_variants.items()))+'}\n')
     copy_tree(ROOT / 'lua', destination / 'android')
+    if COMPRESSION_PROFILE:
+        commit=subprocess.check_output(['git','-C',str(GAME),'rev-parse','HEAD'],text=True).strip()
+        write_utf8(destination/'android/build-profile.json',json.dumps(
+            {'profile':COMPRESSION_PROFILE,'source_commit':commit,**PROFILES[COMPRESSION_PROFILE]},
+            ensure_ascii=False,indent=2)+'\n')
     for script in (destination / 'android').glob('*.lua'):
         write_utf8(script, script.read_text(encoding='utf-8-sig'))
     copy_tree(ROOT / 'shaders', destination / 'android' / 'shaders')
@@ -446,7 +467,7 @@ def package_apk(sdk, ndk, assets):
     staging = BUILD / 'stripped-libs'
     staging.mkdir(exist_ok=True)
     lib_names = set()
-    with zipfile.ZipFile(unsigned, 'a', compression=zipfile.ZIP_DEFLATED, compresslevel=6) as apk:
+    with zipfile.ZipFile(unsigned, 'a', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as apk:
         apk.write(dex / 'classes.dex', 'classes.dex')
         for lib in libs:
             if lib.name not in lib_names:
@@ -483,16 +504,22 @@ def sign_apk(tools, keytool, unsigned):
     digest = hashlib.file_digest(output.open('rb'), 'sha256').hexdigest()
     (dist / (output.name + '.sha256')).write_text(digest + '  ' + output.name + '\n')
     print(f'APK：{output}\nSHA-256：{digest}', flush=True)
-    release = dist / f'BossRushHD-android-arm64-{game_version(GAME)}.apk'
+    if COMPRESSION_PROFILE and output.stat().st_size>=PROFILES[COMPRESSION_PROFILE]['max_bytes']:
+        raise RuntimeError(f'{COMPRESSION_PROFILE} APK超过预算：{output.stat().st_size}字节')
+    suffix='-'+COMPRESSION_PROFILE if COMPRESSION_PROFILE else ''
+    release = dist / f'BossRushHD-android-arm64-{game_version(GAME)}{suffix}.apk'
     shutil.copy2(output, release)
     write_utf8(dist / (release.name + '.sha256'), digest + '  ' + release.name + '\n')
     write_utf8(BUILD / 'packaged-manifest.sha256',
                hashlib.sha256((BUILD / 'AndroidManifest.xml').read_bytes()).hexdigest())
     print(f'发行包：{release}', flush=True)
+    if COMPRESSION_PROFILE:
+        for name in ('asset-optimization','music-optimization','audio-optimization','font-optimization'):
+            shutil.copy2(BUILD/(name+'.json'),dist/(release.stem+'-'+name+'.json'))
 
 
 def main():
-    global GAME, OPTIMIZE_ASSETS, COMPRESS_AUDIO, LOSSY_IMAGES, OPTIMIZE_FONTS, TRANSPARENT_WEBP, COMPACT_MUSIC
+    global GAME, OPTIMIZE_ASSETS, COMPRESS_AUDIO, LOSSY_IMAGES, OPTIMIZE_FONTS, TRANSPARENT_WEBP, COMPACT_MUSIC, COMPRESSION_PROFILE
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--game-root', type=Path, help='从指定的游戏源码快照打包，隔离工作区其他未提交改动')
     parser.add_argument('--engine-archive')
@@ -503,6 +530,7 @@ def main():
     parser.add_argument('--optimize-fonts',action='store_true',help='保留全部Unicode和像素，去掉安卓未使用的布局替代字形')
     parser.add_argument('--transparent-webp',action='store_true',help='透明图片使用WebP，需要完整构建以启用对应的原生Alpha解码修复')
     parser.add_argument('--compact-music',action='store_true',help='全部BGM使用紧凑Vorbis档位，隐含--compress-audio')
+    parser.add_argument('--compression-profile',choices=tuple(PROFILES),help='核心图片无损，其他资源按1gb/750mb/500mb档压缩；超预算停止发布')
     parser.add_argument('--package-only', action='store_true')
     parser.add_argument('--update-assets', '--update-lua', dest='update_assets', action='store_true', help='复用已经生成的原生库，更新 assets 并重新签名')
     parser.add_argument('--jobs', type=int, default=min(os.cpu_count() or 4, 8))
@@ -513,6 +541,9 @@ def main():
     OPTIMIZE_FONTS = args.optimize_fonts
     TRANSPARENT_WEBP = args.transparent_webp
     COMPACT_MUSIC = args.compact_music
+    COMPRESSION_PROFILE=args.compression_profile
+    if COMPRESSION_PROFILE:
+        OPTIMIZE_ASSETS=LOSSY_IMAGES=COMPRESS_AUDIO=OPTIMIZE_FONTS=TRANSPARENT_WEBP=COMPACT_MUSIC=True
     if args.game_root:
         GAME = args.game_root.resolve()
         if not (GAME / 'core.lua').is_file():
