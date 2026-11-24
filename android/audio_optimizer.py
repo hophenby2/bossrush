@@ -42,7 +42,11 @@ def optimize_audio(sources, cache):
         packed_wav = compressor.compress(original) + compressor.flush()
         pcm, rate = sf.read(io.BytesIO(raw), dtype='float32', always_2d=True)
         encoded = io.BytesIO()
-        sf.write(encoded, pcm, rate, format='OGG', subtype='VORBIS', compression_level=.2)
+        # 长音效一次交给 Vorbis 会耗尽编码线程的栈；按固定大小流式写入。
+        with sf.SoundFile(encoded,'w',samplerate=rate,channels=pcm.shape[1],
+                          format='OGG',subtype='VORBIS',compression_level=.2) as output:
+            for offset in range(0,len(pcm),32768):
+                output.write(pcm[offset:offset+32768])
         result = encoded.getvalue()
         record = {'converted': False, 'source_bytes': len(raw), 'wav_zip_bytes': len(packed_wav),
                   'ogg_bytes': len(result), 'frames': len(pcm), 'sample_rate': rate,
