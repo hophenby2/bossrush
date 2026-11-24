@@ -45,7 +45,6 @@ function boss:frame()
     if self.th07_shared_damage then TH34Prism.step(self) end
     self._bosssys:frame() --boss系统帧逻辑
     if GameHPScale then GameHPScale.verify(self) end
-    if GameRank then GameRank.verifyHealth(self) end
     self._wisys:frame() --行走图系统帧逻辑
     --受击闪烁
     if self.dmgt and self.dmgt > 0 then

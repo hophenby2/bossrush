@@ -257,7 +257,6 @@ for _,entry in ipairs(S.catalog.entries) do
     group.sequence_key,group.sequence_native,group.sequence_level=entry.key,entry.native,entry.level
     local battle=stage.group.AddStage(entry.group,entry.battle,false)
     battle.displayname,battle.level=entry.title,entry.level
-    battle.revive_miss_limit=S.MISS_LIMIT-1
     function battle:init()
         assert(lstg.var.sequence_key==selected.key,'顺序关卡与录像路线不一致')
         self.sequence_finished=false
@@ -266,7 +265,7 @@ for _,entry in ipairs(S.catalog.entries) do
     end
     function battle:frame()
         if self.sequence_finished then return end
-        local misses=GameRevive and GameRevive.misses() or lstg.var.dead or 0
+        local misses=lstg.var.dead or 0
         local resources=SequenceResources and SequenceResources.state()
         local native=NativePlayers and NativePlayers.state()
         if native and NativePlayers.out() or not native and not resources and misses>=S.MISS_LIMIT then

@@ -6,14 +6,15 @@ local resources={};for k=1,9 do resources[k]={}end
 lstg.EnumRes=function(kind)local names={};for name in pairs(resources[kind])do names[#names+1]=name end;return {},names end
 lstg.RemoveResource=function(_,kind,name)resources[kind][name]=nil end
 GetTextureSize=function(name)return name=='huge' and 16384 or 64,name=='huge' and 8192 or 64 end
-GameContent={ports={[39]={},[41]={}}};_editor_class={};lstg.var.rogue_run={poolVersion=10};setting={}
+GameContent={ports={[39]={},[41]={}}};_editor_class={};lstg.var.rogue_run={};setting={}
 local M=dofile('mod/rogue_encounter.lua')
 local scene={};local a={level=39,source='TH41'};local b={level=41,source='TH43'}
 resources[1].host=true
 M.begin(scene,a)
+M.residentReady=true
 local prepared=false
-M.prepare(scene,a,{sc_group={{boss={},card={prepareRogue=function()prepared=true end}}}})
-assert(not prepared and not M.preloading(),'无标记旧录像插入了预载等待')
+M.prepare(scene,a,{sc_group={{boss={},card={enterRogue=function()prepared=true end}}}})
+assert(prepared and not M.preloading(),'驻留资源直接准备当前卡')
 resources[1].atlas=true;resources[2].alias=true;M.stop(scene)
 assert(resources[1].atlas and resources[2].alias,'同作素材被逐卡卸载')
 M.begin(scene,a);M.stop(scene)

@@ -16,7 +16,7 @@ cos=function(a) return math.cos(math.rad(a)) end;sin=function(a) return math.sin
 acos=function(x) return math.deg(math.acos(x)) end
 Forbid=function(v,a,b) return max(a,min(b,v)) end
 Dist=function(a,b) return ((a.x-b.x)^2+(a.y-b.y)^2)^0.5 end
-DefaultRenderFunc=noop;PlaySound=noop;GameNet=nil;GameRank=nil
+DefaultRenderFunc=noop;PlaySound=noop;GameNet=nil;
 lstg={var={},tmpvar={},world={l=-192,r=192,b=-224,t=224,pl=-192,pr=192,pb=-224,pt=224}}
 SearchStageLevel={};SetCurSystem=noop;GetGlobal=function(k) return lstg.var[k] end
 for _,name in ipairs({'CopyImage','CopyAnimation','LoadTexture','LoadImage','LoadPS','LoadImageGroup','LoadAnimation','SetImageState','SetAnimationState','SetAnimationCenter','SetImageCenter','LoadImageFromFile','SetImageScale'}) do _G[name]=noop end
@@ -62,7 +62,7 @@ InitAllClass();item={};ext={replay={IsReplay=function() return false end},achiev
 AddMoney=noop;load('THlib/item/item_func.lua')
 stage={current_stage={is_menu=false,timer=0}};KeyState={};KeyStatePre={}
 local function reset()
-    GameNet=nil;objects={};lstg.var={__drops_version=1,ran_seed=18373,player_name='reimu_player',current_system=''}
+    GameNet=nil;objects={};lstg.var={__drops_version=D.VERSION,ran_seed=18373,player_name='reimu_player',current_system=''}
     item.PlayerInit();object.EnemyNontjtDo=noop;player=nil
 end
 local function hero(class,slot)
@@ -75,7 +75,7 @@ do
     local function target(group,style,laser)
         local b=New(object);b.group=group;b.imgclass=style and {};b.IsLaser=laser;return b
     end
-    reset();lstg.var.__contact_cancel_version=1
+    reset()
     local p=hero(reimu_player);p.protect=0
     local b=target(GROUP.ENEMY_BULLET,true);local dead=lstg.var.dead
     check(player_class.colli(p,b) and p.death==90 and lstg.var.dead==dead+1,'实体弹命中只结算一次死亡')
@@ -101,52 +101,20 @@ do
     p.protect=0;cheat=true;b=target(GROUP.ENEMY_BULLET,true);player_class.colli(p,b)
     check(not IsValid(b) and p.death==0,'练习无敌也消除实际接触的实体弹');cheat=nil
     OriginalBulletVisual=original
-    lstg.var.__contact_cancel_version=nil
-    p.protect=0;b=target(GROUP.ENEMY_BULLET,true);player_class.colli(p,b)
-    check(IsValid(b) and p.death==90,'旧录像未带版本标志，保留致死分支行为')
-    p.death,p.protect=49,300;b=target(GROUP.ENEMY_BULLET,true);player_class.colli(p,b)
-    check(IsValid(b),'旧录像保留复活计时未归零时的行为')
+
 end
-local function shots(class,blue,enabled,start)
-    reset();if enabled==false then lstg.var.__drops_version=nil;lstg.var.upgrades=nil end
-    local p=hero(class);if class==chiruno_player then p._playersys:removeFrameEvent('frame.ice') end;if D.enabled() then lstg.var.upgrades.players[1].blue=blue*100 end
-    KeyState={shoot=true}
-    for i=start or 0,(start or 0)+239 do p.timer=i;p._playersys:frame();check(p.timer==i,'射击虚拟时钟不改变真实自机计时') end
-    local n=0;for _,o in ipairs(objects) do if o.group==3 then n=n+1 end end
-    return n,p.shots
-end
-for _,class in ipairs({reimu_player,chiruno_player}) do
-    local base=shots(class,100);local legacy=shots(class,100,false)
-    check(base==legacy and base>0,'100 射速与原始发弹数量一致')
-    local faster=shots(class,200);check(faster==base*2,'200 射速实际弹数翻倍')
-    check(shots(class,50)==base/2,'50 射速实际弹数减半')
-    check(near(shots(class,110),base*1.1),'110 射速保留小数累积，不被取整吞掉')
-    check(shots(class,100,true,1)==shots(class,100,false,1),'首次回调 timer=1 也与原始节拍一致')
-end
-local _,base=shots(cooldown,100);local _,fast=shots(cooldown,200);local _,slow=shots(cooldown,50)
-check(base==60 and fast==120 and slow==30,'nextshoot 冷却按同一虚拟节拍计算，不重复扣减')
--- 魔理沙激光的直伤也与红字和射速分别相乘。
-local function laserDamage(red,blue)
-    reset();local p=hero(marisa_player);local state=lstg.var.upgrades.players[1];state.red=red*100;state.blue=blue*100
-    local damage=0;local enemy={x=0,y=p.y,a=1000,colli=true,hp=10000,maxhp=10000,class={base={take_damage=function(_,n) damage=damage+n end}}}
-    object.EnemyNontjtDo=function(fn) fn(enemy) end;marisa_player.IsInLaser=function() return true end
-    KeyState={shoot=true};for i=0,119 do p.timer=i;p._playersys:frame() end;return damage
-end
-local ray=laserDamage(100,100);check(ray>0 and near(laserDamage(200,100),ray*2),'魔理沙激光火力倍率生效')
-check(near(laserDamage(100,200),ray*2),'魔理沙持续激光射速倍率生效')
--- 移动端开关关闭当帧停火；桌面原有短连射与旧录像仍沿用原规则。
-local function releaseBurst(touch,version,coop,guestTouch)
-    reset();AndroidPlatform=touch and {} or nil;lstg.var.__touch_toggle_version=version
+-- 移动端开关关闭当帧停火；桌面保留原有短连射。
+local function releaseBurst(touch,coop,guestTouch)
+    reset();AndroidPlatform=touch and {} or nil
     local p=hero(reimu_player);if coop then GameNet={host=function() return true end};p.key={shoot=true,touch_shoot=guestTouch} end
     KeyState={shoot=true};p._playersys:frame();check(p.__shoot_flag,'射击按下正常发弹')
     KeyState={};if coop then p.key.shoot=false end;p._playersys:frame()
     local stopped=not p.__shoot_flag;AndroidPlatform=nil;GameNet=nil;return stopped
 end
-check(releaseBurst(true,1),'移动端新局关闭时立即停火')
-check(not releaseBurst(false,1),'桌面按键保留原有15帧短连射')
-check(not releaseBurst(true,nil),'旧录像无新标记时保留旧行为')
-check(releaseBurst(false,1,true,true),'Windows 房主收到移动端关闭也立即停火')
-check(not releaseBurst(true,1,true,false),'Android 房主不改变桌面客机原有松键行为')
+check(releaseBurst(true),'移动端新局关闭时立即停火')
+check(not releaseBurst(false),'桌面按键保留原有15帧短连射')
+check(releaseBurst(false,true,true),'Windows 房主收到移动端关闭也立即停火')
+check(not releaseBurst(true,true,false),'Android 房主不改变桌面客机原有松键行为')
 -- 真实自机类的绘制尺寸随当前火力线性变化，绘制后恢复物理对象缩放。
 reset();local visualPlayer=hero(reimu_player);lstg.var.upgrades.players[1].red=15000
 local defaultDraw,rawRender=DefaultRenderFunc,Render
@@ -167,13 +135,13 @@ for _,o in ipairs(visualShots) do
 end
 local trace=visualShots[3];trace.smear={{x=0,y=0,rot=90,alpha=40}};trace.class[4](trace)
 check(near(trailCalls[1].h,1.2) and near(trailCalls[1].v,1.8),'追踪弹拖影与弹体按相同比例放大')
-D.apply(1,1);trace.class[4](trace);check(near(defaultCalls[#defaultCalls].h,.8*1.55),'已经在场的子弹立即使用提升后的当前火力')
+D.apply(1,2);trace.class[4](trace);check(near(defaultCalls[#defaultCalls].h,.8*1.5*1.15),'已经在场的子弹立即使用提升后的当前火力')
 lstg.var.upgrades.players[2].red=25000;trace._drop_owner=2;trace.class[4](trace)
 check(near(defaultCalls[#defaultCalls].h,2) and near(defaultCalls[#defaultCalls].v,3),'联机 P2 子弹按各自火力放大')
 DefaultRenderFunc=function() error('绘制测试错误') end
 check(not pcall(D.renderBullet,trace) and trace.hscale==.8 and trace.vscale==1.2,'绘制异常也恢复基准尺寸')
 DefaultRenderFunc=function(o) defaultCalls[#defaultCalls+1]={h=o.hscale,v=o.vscale} end
-lstg.var.__drops_version=nil;D.renderBullet(trace);check(defaultCalls[#defaultCalls].h==.8,'旧录像保持原尺寸')
+lstg.var.__drops_version=nil;D.renderBullet(trace);check(defaultCalls[#defaultCalls].h==.8,'未启用成长时保持原尺寸')
 -- 魔理沙的光束沿弹道延伸，只按火力放大横向宽度与发射光点。
 reset();local beamPlayer=hero(marisa_player);lstg.var.upgrades.players[1].red=15000
 beamPlayer.fire=1;beamPlayer.nextshoot=0
@@ -192,14 +160,6 @@ local master=New(targetClass);e._master=master;e._dmg_transfer=.5;enemybase.coll
 check(near(master.hp,9992.5),'传递到主机的伤害不会再次乘倍率')
 lstg.var.upgrades.players[2].red=20000;shot._drop_owner=2;enemybase.colli(e,shot)
 check(near(e.hp,9935),'碰撞使用子弹所属玩家的火力')
--- 选项运算与数值显示。
-reset();D.apply(1,1);D.apply(1,4);local red,blue=D.values(1)
-check(red==105 and blue==110,'红加法与蓝乘法')
-D.apply(1,5);red,blue=D.values(1);check(red==115 and blue==105,'红+10蓝-5同时生效')
-for _=1,200 do D.apply(1,9) end;red,blue=D.values(1)
-check(red==1000 and blue>=1,'倍率有上界，下限不归零')
-local seen={};for seed=1,300 do local pair=D.draw(seed*7919,7);check(pair[1]~=pair[2],'两个选项不重复');seen[pair[1]]=true;seen[pair[2]]=true;check(table.concat(pair,',')==table.concat(D.draw(seed*7919,7),','),'同种子与序号稳定重建') end
-local total=0;for _ in pairs(seen) do total=total+1 end;check(total==#D.pool,'随机池中的所有道具都可抽到')
 local function boss(id,others)
     local card={card_id=id,is_combat=true};local b={current_card=card,is_combat=true,otherboss=others or {}}
     D.beginCard(b,card);return b
@@ -208,8 +168,8 @@ reset();local a,b=boss(50),boss(50);a.otherboss={b};b.otherboss={a}
 check(D.award(a) and not D.award(a) and not D.award(b) and #lstg.var.upgrades.queue==1,'同卡多 Boss 和重复结算只掉一次')
 D.beginCard(a,a.current_card);D.beginCard(b,b.current_card)
 check(D.award(b) and not D.award(a),'下次出现同一张卡仍可正常掉落')
-local other=boss(51);other.timeout=true;check(not D.award(other),'普通符卡拖到超时不算击破')
-other.time_sc=true;check(D.award(other),'完成耐久阶段可以掉落')
+local other=boss(51);other.timeout=true;check(D.award(other),'普通符卡完成超时也奖励')
+other=boss(57);other.time_sc=true;check(D.award(other),'完成耐久阶段可以掉落')
 local fake=boss(52);fake.cannot_kill=true;check(not D.award(fake),'伪击破不掉落')
 fake.cannot_kill=false;fake.is_combat=false;check(not D.award(fake),'非战斗过场不掉落')
 reset();check(D.award(boss(53)) and D.award(boss(54)) and #lstg.var.upgrades.queue==2,'双 Boss 的不同卡分别排队，选择不重叠')
@@ -220,7 +180,7 @@ check(not D.award(boss(55)) and lstg.var.upgrades.count==0 and #lstg.var.upgrade
 local pending={id=1,age=100,options={1,2},picks={false,false},previous={{x=chainHero.x,y=chainHero.y}}}
 lstg.var.upgrades.active=pending;lstg.var.upgrades.queue={pending}
 local cached=Q.selection('drops',pending,nil,{D.optionLines(1),D.optionLines(2)})
-check(not D.frame(stage.current_stage) and not lstg.var.upgrades.active and #lstg.var.upgrades.queue==0,'接续清除旧检查点待选掉落，不冻结战斗')
+check(not D.frame(stage.current_stage) and not lstg.var.upgrades.active and #lstg.var.upgrades.queue==0,'接续清除当前待选掉落，不冻结战斗')
 check(not IsValid(cached.walls[1]) and not IsValid(cached.labels[1]),'接续移除已经显示的强化弹体与文字')
 for _,variant in ipairs({'single','dual','main'}) do
     reset();lstg.var.rogue_run={mode=variant=='main' and 'chain' or variant}
@@ -237,98 +197,9 @@ local runtime=setmetatable({boss=phase,KillBonus=noop,refresh=noop,popSpellResul
 runtime:kill();check(#lstg.var.upgrades.queue==1,'正式 Boss 击破回调确实生成掉落')
 reset();phase=boss(61);phase.ui={};phase.current_card.del=function(b) b.cannot_kill=true end
 runtime.boss=phase;object.Preserve=noop;runtime:kill();check(#lstg.var.upgrades.queue==0,'卡片 del 中声明继续存活时不掉落')
-local function pick(up,coop)
-    reset();local p=hero(reimu_player);p.x=-96;p.y=-176
-    local ps={p};if coop then local q=hero(reimu_player,2);q.x=96;q.y=-176;q.key={};ps[2]=q;GameNet={host=function() return true end,players=ps} end
-    player=p;KeyState={up=up};p.key=KeyState
-    D.award(boss(70));lstg.var.upgrades.queue[1].options={1,2}
-    for i=1,D.TIME do
-        for _,unit in ipairs(ps) do unit.timer=unit.timer+1;unit._playersys:frame() end
-        D.frame(stage.current_stage);if not lstg.var.upgrades.active and #lstg.var.upgrades.queue==0 then return i,ps end end
-    error('击破掉落未在 120 帧内结束')
-end
-reset();p=hero(reimu_player);D.award(boss(69));D.frame(stage.current_stage)
-local row=lstg.var.upgrades.active;local board=Q.selection('drops',row,nil,{D.optionLines(row.options[1]),D.optionLines(row.options[2])})
-check(#board.walls==41 and #board.labels==2,'二选一由 33 颗横弹和 8 颗分隔弹组成，选项是实体文字')
-check(board.walls[34].x==0 and near(board.walls[41].y,Q.top(row.age,D.TIME)-96),'二选一竖向分隔位置与原卡一致')
-local gap=board.walls[1].y-board.labels[1].y;row.age=D.TIME/2
-Q.selection('drops',row,nil,{D.optionLines(1),D.optionLines(2)})
-check(near(board.walls[1].y,Q.top(D.TIME/2,D.TIME)) and near(board.walls[1].y-board.labels[1].y,gap),'两秒内走完原下落曲线，子弹与选项文字同步')
-check(near(D.rowY(row),board.labels[1].y),'接取位置和实际文字使用相同的两秒时钟')
-local oldView=SetViewMode;SetViewMode=function(mode) lstg.viewmode=mode end;lstg.viewmode='ui'
-local rectangles=0;local rect=RenderRect;RenderRect=function() rectangles=rectangles+1 end
-for _,o in ipairs(board.walls) do o.class[4](o) end;for _,o in ipairs(board.labels) do o.class[4](o) end;D.render()
-check(rectangles==0,'选择呈现不绘制遮挡矩形或浮层');RenderRect=rect
-check(drawn[#drawn].mode=='world' and lstg.viewmode=='ui','文字明确使用世界坐标并恢复原视图，不会落到屏幕左下角');SetViewMode=oldView
-Q.clearSelection('drops',true);check(not IsValid(board.walls[1]) and not IsValid(board.labels[1]),'选择结束清理弹体与文字，不残留覆盖')
-local gen=Rand();gen:Seed(17);local quiz=Q.new(1,gen);quiz.age=220
-local beforeRandom=ran;local four=Q.selection('revive',quiz,quiz.text,quiz.choices)
-check(ran==beforeRandom and #four.walls==57 and #four.labels==4 and four.question,'四区答题使用相同工厂：33 横弹、24 分隔弹、题目与四个答案，不替换战斗随机源')
-check(four.walls[34].x==-96 and four.walls[42].x==0 and four.walls[50].x==96,'四区分隔与原符卡 -96 / 0 / 96 完全一致')
-local y=four.labels[1].y;Q.selection('revive',quiz,quiz.text,quiz.choices,.5)
-check(four.labels[1].alpha==.5 and four.walls[1]._a==127.5 and four.labels[1].y==y,'答题结果时弹体和文字一起淡出，位置保持同步')
-Q.clearSelection('revive');check(not IsValid(four.question) and not IsValid(four.walls[57]),'四区结果淡出后清理全部实体')
-local live=Q.spawn(quiz.text,quiz.choices)
-check(#live.walls==57 and live.walls[1].group~=GROUP.GHOST,'原卡调用同一工厂，保留真实敌弹碰撞组')
-local stationary=pick(false);red,blue=D.values(1);check(stationary==120 and D.TIME==120 and red==105 and blue==100,'击破掉落在两秒整按所在区选择并结束')
-check(Q.TIME==500,'缩短掉落时长不改变复活答题和原 Special 的时长')
-local early=pick(true);check(early<stationary,'向上移动可以提前接取')
-pick(false,true);local r1,b1=D.values(1);local r2,b2=D.values(2)
-check(r1==105 and b1==100 and r2==100 and b2==105,'联机两人独立选择，各自生效')
-drawn={};D.renderHUD(672,504,255);local text={};for _,v in ipairs(drawn) do text[#text+1]=v.text end
-local labels={};for _,label in ipairs(text) do labels[label]=true end
-check(labels['火力'] and labels['P1 105'] and labels['P2 100'],'右侧属性条下方分别显示两位玩家数值')
--- 真正死亡时先让重生逻辑继续，不冻结在死亡状态里。
-reset();p=hero(reimu_player);p.death=90;D.award(boss(72));check(not D.frame(stage.current_stage) and not lstg.var.upgrades.active,'死亡时延后开始选项落下')
-p.death=0;check(not D.frame(stage.current_stage) and D.active(),'重生后叠加选择，但不接管战斗')
-check(D.active(),'下落选择状态可供暂停流程识别');stage.current_stage.is_menu=true;drawn={};D.render()
-check(not D.active() and #drawn==0,'回标题或切换存档后不会在菜单继续画旧选项');stage.current_stage.is_menu=false
--- 使用正式 DoFrame：选择期间世界正常前进，自机仍按原系统只移动 / 射击一次。
-reset();p=hero(reimu_player);p.x=-96;KeyState={up=true,shoot=true};p.key=KeyState
-D.award(boss(73));lstg.var.upgrades.queue[1].options={1,2}
-local physics,recorded,rank,collisions=0,0,0,0;local phase
-SaveResume={beforeLogic=function() return true end,afterLogic=function() recorded=recorded+1 end}
-GameRevive={active=function() return false end,frame=function() return false end};GameRank={step=function() rank=rank+1 end,beforeObjects=noop,afterObjects=noop}
-GetInput=function() phase='input' end;GetCurrentSuperPause=function() return 0 end;stage.current_stage.frame=noop;stage.current_stage.timer=0
-lstg.system={frame=noop}
-ObjFrame=function()
-    physics=physics+1;phase='physics'
-    if GetCurrentSuperPause()<=0 then p.timer=p.timer+1;p._playersys:frame() end
-end
-UpdateXY=noop;AfterFrame=noop;BoundCheck=noop
-CollisionCheck=function() collisions=collisions+1;phase='collision' end
-ext={notUIdraw=false,boss_ui={frame=noop},GetPauseMenuOrder=noop}
-local f=assert(io.open(root..'/THlib/ext/ext.lua','rb'));local code=f:read('*a');f:close()
-local first=assert(code:find('local function DoFrame()',1,true));local last=assert(code:find('_G.DoFrame = DoFrame',first,true))
-local tick=assert(loadstring(code:sub(first,last-1)..'\nreturn DoFrame'))()
-local update=D.frame
-D.frame=function(scene) check(phase=='collision','掉落在正常物理和碰撞后更新');return update(scene) end
-local y=p.y;tick();check(near(p.y,y+p.hspeed),'叠加掉落不额外移动自机')
-for _=1,12 do tick() end
-local shotCount=0;for _,o in ipairs(objects) do if o.group==GROUP.PLAYER_BULLET then shotCount=shotCount+1 end end
-check(D.active() and shotCount>0 and physics==13 and stage.current_stage.timer==13 and rank==13 and collisions>0,'选项下落期间仍正常移动、射击、碰撞、计时和增长Rank')
--- 超级暂停沿用游戏规则，掉落自身不建立新的暂停。
-local age=lstg.var.upgrades.active.age;GetCurrentSuperPause=function() return 1 end;tick()
-check(lstg.var.upgrades.active.age==age,'超级暂停时不额外推进掉落')
-GetCurrentSuperPause=function() return 0 end
-while lstg.var.upgrades.active or #lstg.var.upgrades.queue>0 do tick() end
-check(rank==stage.current_stage.timer and recorded==physics and rank==physics-1,'选择完成前后战斗与输入持续前进，仅尊重原超级暂停')
-local previous=physics;tick();check(physics==previous+1,'接取完成后继续正常战斗')
-D.frame=update;GameRank=nil
--- 答题复活冻结原战斗时隐藏掉落，结束后原进度恢复且不把传送算作接取。
-reset();p=hero(reimu_player);D.award(boss(74));D.frame(stage.current_stage)
-local row=lstg.var.upgrades.active;local board=Q.selection('drops',row,nil,{D.optionLines(row.options[1]),D.optionLines(row.options[2])})
-local age=row.age;p.x=-100;p.y=-200;D.suspend()
-check(board.walls[1].hide and board.labels[1].hide and row.age==age and row.previous[1].y==-200,'复活答题隐藏选项并保持下落进度，同步自机位置')
-D.frame(stage.current_stage);check(not board.walls[1].hide and not board.labels[1].hide and row.age==age+1,'答题结束恢复叠加掉落')
--- 中弹先于拾取结算，本帧已死亡的自机不能因为穿过横线获得强化。
-row.age=400;p.y=Q.top(401);row.previous[1]={x=p.x,y=p.y};p.death=90
-D.frame(stage.current_stage);check(not row.picks[1],'死亡状态不能接取正在下落的强化')
-lstg.var.upgrades=nil;local before=Serialize(lstg.var);D.values(1);D.power(1);D.rate(1);D.signature();check(Serialize(lstg.var)==before,'零帧 HUD 与签名只读')
-lstg.var.__drops_version=nil;check(D.power(1)==1 and D.rate(1)==1,'旧录像没有版本标记时保持原倍率')
 -- 正式符卡名组件：保留底部上移入场，进度栏 / 三维对象不能改变屏幕锚点。
 local oldBoss,oldView,oldRender,oldText,oldFont,oldDist=_G.boss,SetViewMode,Render,RenderText,SetFontState,Dist
-local oldRank,oldSmooth=GameRank,task.Smooth;GameRank=nil;task.Smooth=task.SetMode[3]
+local oldSmooth=task.Smooth;task.Smooth=task.SetMode[3]
 _G.boss={};SetViewMode=function(mode) lstg.viewmode=mode end
 Render=noop;RenderText=noop;SetFontState=noop
 Dist=function(a,b,c,d) if type(a)=='table' then return oldDist(a,b) end;return ((a-c)^2+(b-d)^2)^.5 end
@@ -357,101 +228,31 @@ local calls=0;local b={_live=true}
 local function part() return {render=function() check(lstg.viewmode=='world','Boss计时器等战斗坐标组件主动设置视图');calls=calls+1 end} end
 local widget={boss=b,infobar=part(),timeCounter=part(),pointer=part()};lstg.viewmode='ui';_G.boss.ui.render(widget)
 check(calls==3 and lstg.viewmode=='ui','Boss信息栏显示完成恢复调用方视图')
-GameRank,task.Smooth=oldRank,oldSmooth
+task.Smooth=oldSmooth
 lstg.world=oldWorld;_G.boss,SetViewMode,Render,RenderText,SetFontState,Dist=oldBoss,oldView,oldRender,oldText,oldFont,oldDist
 local originalDraw=D.draw
 local diagnostic=load('android/lua/drops_check.lua');RogueTen=nil
 check(pcall(diagnostic.install,'drops-new'),'私有诊断不提前访问尚未加载的随机模式')
-R.P.init();lstg.var.__drops_version=1;D.reset();stage.current_stage={is_menu=false,timer=0,stage_name='test'}
+R.P.init();lstg.var.__drops_version=D.VERSION;D.reset();stage.current_stage={is_menu=false,timer=0,stage_name='test'}
 check(pcall(D.frame,stage.current_stage),'私有诊断能在测试槽写出状态，使用独立文件而非受限存档文件名')
 local df=assert(io.open(R.P.userRoot()..'/drops-check.json','rb'));local data=DeSerialize(df:read('*a'));df:close()
 check(data.phase=='battle' and data.red==100 and data.blue==100,'真实诊断输出包含初始数值')
 D.draw=originalDraw
 
 
--- 新版：红蓝选项独立、匀速掉落和自然恢复 Bomb；旧版回归继续保留在上文。
 local function modernReset()
-    reset();lstg.var.__drops_version=2;lstg.var.__input_version=2;D.reset();stage.current_stage={is_menu=false,timer=0}
+    reset();lstg.var.__drops_version=D.VERSION;D.reset();stage.current_stage={is_menu=false,timer=0}
 end
-modernReset()
-check(D.bombState(1)==3 and D.recoveryRate(1)==1 and D.rate(1)==1,'新版开局三枚 Bomb，蓝字不改变射速')
-for seed=1,250 do
-    local pair=D.draw(seed*7919,7)
-    check(pair[1]%2==1 and pair[2]%2==0,'左红右蓝随机池')
-    local beforeRed,beforeBlue=D.values(1)
-    D.apply(1,pair[1]);local red,blue=D.values(1);check(blue==beforeBlue,'红色选项不改蓝值')
-    D.apply(1,pair[2]);local r,b=D.values(1);check(r==red,'蓝色选项不改红值')
-end
-local function modernShots(class,blue)
-    modernReset();local p=New(class);lstg.var.upgrades.players[1].blue=blue*100;KeyState={shoot=true}
-    for i=0,239 do p.timer=i;p._playersys:frame() end
-    local n=0;for _,o in ipairs(objects) do if o.group==3 then n=n+1 end end;return n,p.shots
-end
-for _,hero in ipairs({reimu_player,chiruno_player,cooldown}) do
-    local base,n=modernShots(hero,100);local blue,m=modernShots(hero,250)
-    check(base==blue and n==m,'蓝字提高后角色实际发弹和冷却保持原速')
-end
-modernReset();local p=New(reimu_player);local p2=New(reimu_player);p2._net_slot=2
-local state=lstg.var.upgrades;state.players[1].bombs=0;state.players[2].bombs=0;state.players[2].blue=20000
-for i=1,D.BOMB_FRAMES/2-1 do D.playerStep(p);D.playerStep(p2) end
-check(D.bombState(p)==0 and D.bombState(p2)==0,'恢复完成前没有整数 Bomb')
-D.playerStep(p);D.playerStep(p2)
-check(D.bombState(p)==0 and D.bombState(p2)==1,'200 蓝值十五秒恢复一枚，双方独立')
-for i=1,D.BOMB_FRAMES/2 do D.playerStep(p) end
-check(D.bombState(p)==1,'100 蓝值三十秒恢复一枚')
-state.players[1].bombs=3;state.players[1].bomb_fraction=77;D.playerStep(p)
-local bombs,progress=D.bombState(p);check(bombs==3 and progress==0,'库存上限三枚且满库存不预存恢复量')
-local casts=0;lstg.system={castCharge4=function(_,owner) check(owner==p,'Bomb 使用正确自机');casts=casts+1 end}
-p.death=0;p.dialog=false;p.hide=false;p.lock=false
-check(D.bombInput(p,{spell=true},{spell=false}) and D.bombState(p)==2 and casts==1,'X 按下消耗一枚并立即释放')
-check(not D.bombInput(p,{spell=true},{spell=true}) and casts==1,'长按不连续消耗 Bomb')
-state.players[1].bombs=0;check(not D.bombInput(p,{spell=true},{}) and casts==1,'没有 Bomb 不能释放')
-state.players[1].bombs=1;p.death=90;check(not D.bombInput(p,{spell=true},{}),'死亡期间不释放');p.death=0
-for _,death in ipairs({0,1,49,91,100}) do
-    state.players[1].bombs=1;p.death=death;p.protect=300
-    check(D.bombInput(p,{spell=true},{}),'无敌与复活可操作阶段可以释放 Bomb：'..death)
-end
-for _,death in ipairs({50,84,90}) do
-    state.players[1].bombs=1;p.death=death
-    check(not D.bombInput(p,{spell=true},{}),'死亡演出阶段禁止释放：'..death)
-end
-p.death=0;p.time_stop=true;check(not D.bombInput(p,{spell=true},{}),'时间停止期间不释放');p.time_stop=false
-p.dialog=true;check(not D.bombInput(p,{spell=true},{}),'对话期间不释放');p.dialog=false
-local sig=D.signature();state.players[1].bomb_fraction=1;check(sig~=D.signature(),'Bomb 恢复进度参与确定性签名')
-modernReset();p=New(reimu_player);p.x=-96;p.y=-100;player=p
-check(D.award(boss(101)),'新版击破产生选项');local row=lstg.var.upgrades.queue[1]
-check(row.duration==120 and row.linear and row.colorMask,'新版两秒匀速红蓝遮罩')
-local last=Q.offset(0,row.duration,row.linear)
-for i=1,120 do
-    local current=Q.offset(i,row.duration,row.linear);check(near(current-last,460/120),'每帧下降距离恒定');last=current
-end
-row.age=36;local board=Q.selection('modern',row,nil,{D.optionLines(row.options[1]),D.optionLines(row.options[2])})
-check(board.mask and IsValid(board.mask) and near(board.mask.y,330-460*36/120),'遮罩跟随选项一起下落')
-local rects={};RenderRect=function(_,l,r,b,t) rects[#rects+1]={l,r,b,t} end;board.mask.class[4](board.mask)
-check(#rects==2 and rects[1][1]==-192 and rects[1][2]==0 and rects[2][1]==0 and rects[2][2]==192,'遮罩分别覆盖左半和右半')
-Q.setSelectionVisible('modern',false);check(board.mask.hide and board.labels[1].hide,'复活时同时隐藏遮罩与文字')
-Q.clearSelection('modern');check(not IsValid(board.mask),'选取结束清理遮罩')
-local top=Q.top(70,120,true)
-check(Q.contact({x=-90,y=top+5},{x=-90,y=top-1,A=3},69,70,2,120,true)==1,'接取扫掠与显示使用同一匀速轨迹')
-
--- 九枚库存使用新初态版本；旧录像的恢复封顶和选项位置仍必须逐帧一致。
+-- 当前九枚库存、固定三项成长与触控规则。
 do
-    for _,version in ipairs({1,2,3,4,5,D.VERSION}) do
-        modernReset();lstg.var.__drops_version=version;D.reset()
-        local c=lstg.var.upgrades.players[1];c.red=99000
-        D.apply(1,9)
-        check(D.values(1)==(version>=6 and 1188 or 1000),'火力跨越旧上限，仅新版本不截断：'..version)
-        c.red=D.MAX;D.apply(1,1)
-        check(D.values(1)==(version>=6 and 1005 or 1000),'满旧上限后加法升级继续生效：'..version)
-    end
     modernReset();lstg.var.__drops_version=D.VERSION;D.reset()
     local p=hero(reimu_player);local c=lstg.var.upgrades.players[1];c.red=120000
     local e=New(targetClass);local shot={dmg=10,killflag=true,mute=true,_drop_owner=1}
     enemybase.colli(e,shot)
     check(e.hp==9880 and shot.dmg==10,'超过1000的实际火力仍在命中时乘入一次')
-    for _=1,50 do D.apply(1,9) end
+    for _=1,50 do D.apply(1,2) end
     check(D.values(1)>1000000,'火力多次乘法升级能够超过一百万')
-    c.blue=D.MAX;D.apply(1,2);c.green=D.HITBOX_MIN;D.apply(1,11)
+    c.blue=D.MAX;D.apply(1,1);c.green=D.HITBOX_MIN;D.apply(1,3)
     check(c.blue==D.MAX and c.green==D.HITBOX_MIN,'取消红色上限不改变蓝绿的边界')
     local axis=ui.RunHUD.powerAxis
     check(axis(1)==3 and axis(1000)==3 and axis(1000.01)==4 and axis(1000000)==6 and axis(math.huge)==309,'对数轴以完整十进制数量级扩展，并能处理浮点溢出')
@@ -464,26 +265,6 @@ do
     strips={};ui.RunHUD.powerTrack(0,300,100,1000,255,6)
     check(near(strips[2][2],150),'双人共用百万量程时1000落在中点')
     RenderRect=rect
-    for _,version in ipairs({2,3,4,5,D.VERSION}) do
-        modernReset();lstg.var.__drops_version=version;D.reset()
-        local p=New(reimu_player);local c=lstg.var.upgrades.players[1]
-        check(D.bombState(p)==3,'各版初始持有三枚Bomb：'..version)
-        local limit=version>=5 and 9 or 3
-        check(D.bombLimit()==limit,'版本对应的库存上限：'..version)
-        if version>=3 then
-            check(D.hitboxScale(p)==1 and c.green==10000,'三色版本保留判定属性：'..version)
-            local options=D.draw(18373,5)
-            check(options[1]%2==(version>=4 and 0 or 1) and options[3]>=11,'新旧三色选项位置：'..version)
-        end
-        c.bomb_fraction=D.BOMB_FRAMES*10000-10000;D.playerStep(p)
-        check(D.bombState(p)==(version>=5 and 4 or 3),'初始三枚时新版继续恢复，旧版封顶：'..version)
-        c.bombs=limit-1;c.bomb_fraction=D.BOMB_FRAMES*10000-1;c.blue=100000
-        D.playerStep(p)
-        local stock,progress=D.bombState(p)
-        check(stock==limit and progress==0,'最后一枚恢复时封顶，余量归零：'..version)
-        D.playerStep(p);stock,progress=D.bombState(p)
-        check(stock==limit and progress==0,'满库存不额外蓄积：'..version)
-    end
     modernReset();lstg.var.__drops_version=D.VERSION;D.reset()
     local p=New(reimu_player);local c=lstg.var.upgrades.players[1]
     c.bombs=9;c.bomb_fraction=12345
@@ -491,9 +272,9 @@ do
     check(D.bombInput(p,{spell=true},{}) and c.bombs==8 and cast==1 and c.bomb_fraction==12345,'九枚库存释放消耗一枚，保留原有恢复量')
     check(not D.bombInput(p,{spell=true},{spell=true}) and c.bombs==8,'长按Bomb不重复扣库存')
     lstg.system=previous
-    local red,blue=D.optionLines(1),D.optionLines(8)
-    check(red[1].text=='火力' and red[2].text=='+5','红色掉落同时显示属性名和增量')
-    check(blue[1].text=='Bomb恢复速度' and blue[2].text=='×1.1','蓝色掉落同时显示Bomb恢复速度和倍率')
+    local red,blue=D.optionLines(2),D.optionLines(1)
+    check(red[1].text=='火力' and red[2].text=='×1.15','火力掉落显示固定倍率')
+    check(blue[1].text=='Bomb恢复速度' and blue[2].text=='+0.1','蓝色掉落显示固定恢复增量')
     local renderTexture=RenderTexture;local quads={}
     RenderTexture=function(tex,blend,...)
         check(tex=='v310_bullet2' and blend=='','Bomb使用已有绿色大星图集和普通混合')
@@ -548,9 +329,8 @@ do
         if value>0 then check(near(strips[2][2],200*math.min(value,1)),'属性条按数值比例填充并限制在边框内') end
     end
     RenderRect=rect
-    local oldRevive,oldRogue,oldRank=GameRevive,RogueTen,GameRank
-    GameRevive={misses=function() return lstg.var.dead end};RogueTen={MISS_LIMIT=10}
-    GameRank={MAX=100,enabled=function() return true end,value=function() return 50 end,factor=function() return 1 end}
+    local oldRogue=RogueTen
+    RogueTen={MISS_LIMIT=10}
     D.reset();lstg.var.rogue_run={current=42};lstg.var.dead=1
     lstg.var.upgrades.players[1].red=13500;lstg.var.upgrades.players[1].blue=17500;lstg.var.upgrades.players[1].green=7500
     local redStars,brightRed=0,0;local render=RenderTexture
@@ -566,7 +346,7 @@ do
     drawn={};ui.RunHUD.stage(42,144,270,288)
     check(#drawn==1 and drawn[1].text=='42' and drawn[1].scale>=4,'阶段区仅绘制大号阿拉伯数字')
     lstg.var.dead=10;check(ui.RunHUD.lives()==0,'生命耗尽显示零，不出现负数')
-    RenderTexture=render;GameRevive,RogueTen,GameRank=oldRevive,oldRogue,oldRank
+    RenderTexture=render;RogueTen=oldRogue
 end
 
 -- 复用正式花映冢效果与协程，而非复制一套近似 Bomb。
@@ -682,7 +462,7 @@ end
 local f=assert(io.open(root..'/THlib/UI/menu.lua','rb'));local source=f:read('*a'):gsub('\r\n','\n');f:close()
 local section=assert(source:match('(player_system_select = Class%(object%).-)\nlocal valid'))
 -- 菜单抽取段依赖段外的local；保持正式卡池面板，补足测试宿主的只读查询。
-RogueTen={POOL_VERSION=7,savedFilters=function() return {stages={},difficulties={},encounters={},cards={survival=false,nonspell=true,spell=true}} end,
+RogueTen={savedFilters=function() return {stages={},difficulties={},encounters={},cards={survival=false,nonspell=true,spell=true}} end,
     copyFilters=function() return {stages={},difficulties={},encounters={},cards={survival=false,nonspell=true,spell=true}} end,
     poolStatus=function() return {valid=true,count=410} end}
 assert(loadstring('local rogue_pool_menu=dofile('..string.format('%q',root..'/THlib/UI/rogue_pool.lua')..')\n'..section,'@THlib/UI/menu.lua:player_system_select'))()

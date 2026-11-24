@@ -402,7 +402,6 @@ function GameInit()
                 end
                 for _,key in ipairs({'ObjFrame','CollisionCheck','BoundCheck','UpdateXY','AfterFrame'}) do wrap(_G,key,key) end
                 for _,key in ipairs({'beforeLogic','afterLogic'}) do wrap(SaveResume,key,'resume.'..key) end
-                for _,key in ipairs({'beforeObjects','afterObjects'}) do wrap(GameRank,key,'rank.'..key) end
                 for _,key in ipairs({'begin','shots','finish'}) do wrap(NativeActorCollision,key,'actor.'..key) end
                 local attached37,attached38,attached39,attachedPlayer
                 hookRuntime=function()

@@ -1,5 +1,7 @@
 -- 栖霞园脚本的全局量、资源名和对象生命周期归此模块管理。
 local R={root='mod/GAME/th43/source/',objects=setmetatable({},{__mode='k'}),visualClasses=setmetatable({},{__mode='k'})}
+local portraitSizes=dofile('mod/GAME/th43/portrait_sizes.lua')
+local imageScales={}
 local E=setmetatable({}, {__index=_G})
 R.env=E
 E._G=E
@@ -56,10 +58,13 @@ stg.SetV,stg.sin,stg.cos,stg.tan=SetV,sin,cos,tan
 stg.DefaultRenderFunc=function(o)
     local key=o.img
     if key and key:find('^th43/') then
+        local original=imageScales[key]
+        local h,v=o.hscale*.5,o.vscale*.5
+        if original then h,v=h*original[1],v*original[2] end
         if CheckRes('ani',key) then
-            RenderAnimation(key,o.ani,o.x,o.y,o.rot,o.hscale*.5,o.vscale*.5)
+            RenderAnimation(key,o.ani,o.x,o.y,o.rot,h,v)
         else
-            Render(key,o.x,o.y,o.rot,o.hscale*.5,o.vscale*.5)
+            Render(key,o.x,o.y,o.rot,h,v)
         end
     else
         DefaultRenderFunc(o)
@@ -173,6 +178,9 @@ function E.LoadImageFromFile(name,path,mipmap,a,b,rect)
     loadTexture(name,path,mipmap)
     local w,h=GetTextureSize(image(name))
     loadImage(name,name,0,0,w,h,a,b,rect)
+    -- 素材入库时曾缩图；立绘本体及拖影仍按原作纹理的宽高绘制。
+    local original=portraitSizes[path]
+    imageScales[image(name)]=original and {original[1]/w,original[2]/h} or nil
 end
 function E.LoadImageGroup(name,tex,x,y,w,h,n,m,a,b,rect)
     for row=0,m-1 do
@@ -192,6 +200,8 @@ function E.LoadAniFromFile(name,path,mipmap,n,m,interval)
     loadTexture(name,path,mipmap)
     local w,h=GetTextureSize(image(name))
     loadAnimation(name,name,0,0,w/n,h/m,n,m,interval)
+    local original=portraitSizes[path]
+    imageScales[image(name)]=original and {original[1]/w,original[2]/h} or nil
 end
 stg.LoadAniFromFile=E.LoadAniFromFile
 function E.SetImageState(name,...) return SetImageState(resolve('img',name),...) end
@@ -206,6 +216,8 @@ function E.Render(name,x,y,rot,h,v,...)
     if key~=name or key and key:find('^th43/') then
         h=h or 1
         h,v=h*scale,(v or h)*scale
+        local original=imageScales[key]
+        if original then h,v=h*original[1],v*original[2] end
     end
     return Render(key,x,y,rot,h,v,...)
 end
@@ -215,6 +227,8 @@ function E.RenderAnimation(name,timer,x,y,rot,h,v)
     if key~=name or key and key:find('^th43/') then
         h=h or 1
         h,v=h*scale,(v or h)*scale
+        local original=imageScales[key]
+        if original then h,v=h*original[1],v*original[2] end
     end
     return RenderAnimation(key,timer,x,y,rot,h,v)
 end

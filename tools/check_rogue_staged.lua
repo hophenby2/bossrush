@@ -19,8 +19,8 @@ local function route(cards,only)
     end end
 end
 for seed=1,40 do
-    local cards=R.drawStages(seed,filters,R.POOL_VERSION);route(cards)
-    check(keys(cards)==keys(R.drawStages(seed,filters,R.POOL_VERSION)),'相同种子重建38战')
+    local cards=R.drawStages(seed,filters);route(cards)
+    check(keys(cards)==keys(R.drawStages(seed,filters)),'相同种子重建38战')
 end
 check(keys(R.drawStages(17,filters))~=keys(R.drawStages(1234,filters)),'种子改变路线')
 local only=R.copyFilters(filters,'staged');only.stages={TH31=true}
@@ -68,7 +68,7 @@ check(#spawned==actors and run.completed==38 and run.current==38 and run.total==
 check(stage.next_stage==stage.stages.RogueTwoResult and run.won and run.finished,'第38张后成功结算')
 stage.current_stage=stage.next_stage;stage.next_stage=nil;stage.current_stage:init()
 check(scoredata.rogue2.played==1 and scoredata.rogue2.cleared==1 and not scoredata.rogue10,'结算记录与原模式分离')
-check(#R.draw(123,1,R.defaultFilters())==10,'旧抽卡接口仍保持十张')
+check(#R.draw(123,1,R.defaultFilters())==10,'指定抽取数量的接口保持十张')
 print('模式2检查通过：'..total..'项')
 ]=]
 assert(loadstring(setup:sub(1,stop-1)..checks))()

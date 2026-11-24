@@ -13,7 +13,7 @@ end
 function H.enabled() return not not state() end
 local function sourceHealth()
     local run=lstg.var.rogue_run
-    return state() and (run.poolVersion or 0)>=10 and run.source_hp
+    return state() and run.source_hp
 end
 local function sourceRate(o)
     local run=lstg.var.rogue_run

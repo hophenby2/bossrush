@@ -111,8 +111,7 @@ for _,e in ipairs(C.entries) do
     if e.native then
         for _,machine in ipairs(P.machines(e.level)) do
             local v={__sequence_version=1,sequence_key=e.key,sequence_player=machine.id,
-                __native_player_version=P.VERSION,native_player_level=e.level,native_player_id=machine.id,
-                __th43_version=e.native=='thbdb' and 1 or nil}
+                __native_player_version=P.VERSION,native_player_level=e.level,native_player_id=machine.id}
             local record={stageName=e.battle,stageExtendInfo=v}
             check(content.supportsRecord(record),'可播放各原作机体的录像')
             v.native_player_level=0

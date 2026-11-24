@@ -85,7 +85,7 @@ function stg.frame(self)
     local native=NativePlayers and NativePlayers.state()
     local failed
     if native then failed=NativePlayers.out()
-    elseif self.AllowMissCount then failed=self.AllowMissCount < (GameRevive and GameRevive.misses() or lstg.var.dead) end
+    elseif self.AllowMissCount then failed=self.AllowMissCount < (lstg.var.dead) end
     if failed and not lstg.tmpvar.stage_failure_started then
         PlaySound("pldead01")
        --lstg.tmpvar.lost = true
@@ -172,10 +172,7 @@ function stg.frame_pause(self)
 end
 function stg.frame_sc_pr()
     ext.sc_pr = true
-    --符卡练习：自机无敌。cheat 只在 THlib/player/player_system.lua:397 被读，
-    --真值时整个碰撞回调短路（不掉命，代价是撞激光切光、命中消弹也一并没了）。
-    --值从 lstg.var 取：录像会把整个 lstg.var 序列化进 stageExtendInfo，
-    --这样开着无敌录的像回放时判定一致，而旧录像里没有这个字段、不会被误开。
+    -- 符卡练习将调试无敌设置写入录像初态；接触消弹始终按当前碰撞规则处理。
     cheat = lstg.var.cheat or false
     if not lstg.var.init_player_data then
         error('玩家数据加载失败')
@@ -230,22 +227,13 @@ function stg.render()
 end
 
 function stg.Start(group,loadout,practice)
-    lstg.var.__input_version=2;lstg.var.__drops_version=GameDrops.VERSION;lstg.var.upgrades=nil;lstg.var.__touch_toggle_version=1
-    lstg.var.__phase_clear_version=1 -- 初态保存换卡消弹语义，旧录像不受新规则影响。
-    lstg.var.__contact_cancel_version=1 -- 随初态存入录像；旧录像未带此标志时保留旧碰撞语义。
+    lstg.var.__drops_version=GameDrops.VERSION;lstg.var.upgrades=nil
     if GameNet then GameNet.newRound() end
     -- 移动模式随关卡初态保存，录像与续玩不依赖之后的本机设置。
     lstg.var.__touch_unlimited=AndroidInput~=nil and setting.touchUnlimited==true
-    lstg.var.__touch_always_version=AndroidInput and not BossRushDesktop and 1 or nil
-    lstg.var.__revive_version=0;lstg.var.revive=nil -- 新局禁用答题复活；0明确记录在录像初态。
-    lstg.var.__rank_version=0;lstg.var.rank=nil
+    lstg.var.__touch_always=AndroidInput~=nil and not BossRushDesktop
     lstg.var.__hp_scale_version=(group._name=='RogueTen' or group._name=='RogueTwo' or group._name=='RogueDuo' or group._name=='RogueChain') and 1 or nil
     lstg.var.__rogue_music_version=lstg.var.__hp_scale_version and 1 or nil
-    lstg.var.__original_flow_version=group._name=='BossRush' and 1 or nil
-    lstg.var.__th38_version=group.sequence_native=='thasl' and 1 or nil
-    lstg.var.__th39_version=group.sequence_native=='thmhj3' and 1 or nil
-    lstg.var.__th40_version=nil
-    lstg.var.__th43_version=group.sequence_native=='thbdb' and 1 or nil
     lstg.var.__sequence_version=group.sequence_key and 1 or nil
     lstg.var.__sequence_system_version=group.sequence_key and not group.sequence_native and SequenceResources and SequenceResources.VERSION or nil
     lstg.var.original_resources=nil -- 新录像初态只保存机体与系统版本，不能带入上一局的对象状态。
@@ -277,26 +265,17 @@ end
 ---@param sc_pr boolean @是否符卡练习（符卡练习时自机无敌）
 function stg.PracticeStart(stagename, sc_pr, machine, loadout)
     if not dofile('mod/original_practice.lua').canStart(stagename,sc_pr) then return false end
-    lstg.var.__original_flow_version=1
-    -- level36曾是旧版AEX动态槽位；新来源须在录像快照前写入来源版本。
-    lstg.var.__th38_version=(stagename=='TH38@BossRush' or sc_pr and lstg.var.sc_group and lstg.var.sc_group[1]==36) and 1 or nil
-    lstg.var.__th39_version=(stagename=='TH39@BossRush' or sc_pr and lstg.var.sc_group and lstg.var.sc_group[1]==37) and 1 or nil
-    lstg.var.__th40_version=nil
-    lstg.var.__th43_version=(stagename=='TH43@BossRush' or sc_pr and lstg.var.sc_group and lstg.var.sc_group[1]==41) and 1 or nil
     lstg.var.__sequence_version,lstg.var.sequence_run=nil,nil
     lstg.var.sequence_practice_chapter=nil
     lstg.var.__sequence_system_version,lstg.var.original_resources,lstg.var.sequence_player=nil,nil,nil
     lstg.var.th38_route=nil
     lstg.var.theis_route=nil
     lstg.var.rogue_run=nil -- 从随机局返回后再练习，不继承上一局的阶段/血量倍率与资源显示。
-    lstg.var.__input_version=2;lstg.var.__drops_version=GameDrops.VERSION;lstg.var.upgrades=nil;lstg.var.__touch_toggle_version=1
-    lstg.var.__phase_clear_version=1
-    lstg.var.__contact_cancel_version=1
+    lstg.var.__drops_version=GameDrops.VERSION;lstg.var.upgrades=nil
     if GameNet then GameNet.newRound() end
     lstg.var.__touch_unlimited=AndroidInput~=nil and setting.touchUnlimited==true
-    lstg.var.__touch_always_version=AndroidInput and not BossRushDesktop and 1 or nil
-    lstg.var.__revive_version=0;lstg.var.revive=nil
-    lstg.var.__rank_version=0;lstg.var.rank=nil;lstg.var.__hp_scale_version=nil
+    lstg.var.__touch_always=AndroidInput~=nil and not BossRushDesktop
+    lstg.var.__hp_scale_version=nil
     lstg.var.__rogue_music_version=nil
     if NativePlayers then
         local level=NativePlayers.practiceLevel(stagename,sc_pr and lstg.var.sc_group)

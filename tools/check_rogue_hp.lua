@@ -92,7 +92,7 @@ for _,value in ipairs({1.01,10000,123456789012345,1e30,1e100,1e300}) do
 end
 -- 新作真实 HP 不改数值域；继承/部件转伤只折算一次，重设血槽仍沿用本阶段倍率。
 local run=lstg.var.rogue_run
-run.poolVersion,run.source_hp,run.source_damage=10,true,2
+run.source_hp,run.source_damage=true,2
 local base={take_damage=function(o,d) o.hp=o.hp-d end}
 local child={base=base,init=function(o) o.hp=100;o.maxhp=100 end}
 child.take_damage=function(o,d) base.take_damage(o,d*2) end
@@ -116,6 +116,6 @@ run.source_hp=false
 local legacy=New(actor,100)
 check(near(legacy.hp,100*factor),'切回旧作恢复原有实体血量缩放')
 lstg.var.__hp_scale_version=nil
-check(not H.enabled() and H.factor()==1 and New(actor,100).hp==100,'旧录像不启用阶段HP倍率')
-drawn={};H.render(144,165);check(#drawn==0,'旧录像不凭空插入倍率动画')
+check(not H.enabled() and H.factor()==1 and New(actor,100).hp==100,'非随机模式不启用阶段HP倍率')
+drawn={};H.render(144,165);check(#drawn==0,'非随机模式不插入倍率动画')
 print(('阶段血量倍率回归通过：%d 项。'):format(count))

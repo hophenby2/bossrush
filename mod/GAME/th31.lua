@@ -55029,7 +55029,6 @@ local function make_card(build)
 
     ---SET_BOSS 0：标成 BOSS（免伤计时器按 1/9 而不是全免，见 u_step ①）。
     local function u_boss(u)
-        if not u.is_boss and GameRank then u.maxhp,u.hp=GameRank.health(u,u.maxhp,u.hp) end
         u.is_boss = true
     end
     local function u_set_reduction(u, n) u.reduction = n end

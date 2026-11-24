@@ -77,7 +77,6 @@ local keys={alpha=1,x=480,y=270,count=1,edit=true,exit_func=function() exited=tr
 P.keys(keys,{},function(o) P.exit(o,1) end)
 tapControl(P.controls[1]);P.dispatch()
 assert(exited and not keys.edit and #pulses==3,'关闭按键面板取消编辑，不把ESC重新绑定到按键')
-GameRevive={misses=function() return 7 end}
 RogueTen={MISS_LIMIT=10}
 GameDrops={bombsEnabled=function() return true end,bombState=function() return 2 end,renderStar=function(image,x,y,size)
     stars[#stars+1]={image=image,x=x,y=y,size=size}

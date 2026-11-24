@@ -1,8 +1,7 @@
 -- 抽卡只认已核对的卡号与来源；注册标题不承担难度/道中分类职责。
 local P={}
 P.sources={{level=29,code='TH31',title='永夜抄'},{level=30,code='TH32',title='红魔乡'},
-    {level=32,code='TH34',title='妖妖梦'},{level=33,code='TH35',title='风神录'},
-    {level=34,code='TH36',title='地灵殿'}}
+    {level=32,code='TH34',title='妖妖梦'},{level=33,code='TH35',title='风神录'}}
 local catalog=dofile('mod/rogue_pool_sources.lua')
 local ports=dofile('mod/rogue_ports.lua')
 local stageOrder=dofile('mod/GAME/original/stage_order.lua')
@@ -30,21 +29,18 @@ for code,source in pairs(catalog) do
         end
     end
 end
-local fields={stages={'TH31','TH32','TH34','TH35','TH36','TH37','TH38','TH39','TH40','TH41','TH42','TH43'},difficulties={'lunatic','extra','lastword'},encounters={'boss','road'},cards={'nonspell','spell','survival'}}
-function P.defaults(variant,poolVersion)
-    -- 新局关闭TH36选择；仅版本4的历史录像保留当时的五作范围。
+local fields={stages={'TH31','TH32','TH34','TH35','TH37','TH38','TH39','TH40','TH41','TH42','TH43'},difficulties={'lunatic','extra','lastword'},encounters={'boss','road'},cards={'nonspell','spell','survival'}}
+function P.defaults(variant)
     local single=not variant or variant=='single' or variant=='staged'
-    local historical=poolVersion and poolVersion<7
-    -- 版本8的新局默认只选Lunatic；旧录像缺少筛选初态时仍使用当时的Extra默认值。
-    local stages={TH31=true,TH32=single,TH34=true,TH35=true,TH36=single and poolVersion==4}
-    for _,source in ipairs(ports.sources) do stages[source.code]=single and (not poolVersion or poolVersion>=10) end
+    local stages={TH31=true,TH32=single,TH34=true,TH35=true}
+    for _,source in ipairs(ports.sources) do stages[source.code]=single end
     if variant=='staged' then stages.TH42=false end
     return {stages=stages,
-        difficulties={lunatic=true,extra=poolVersion~=nil and poolVersion<8,lastword=false},encounters={boss=true,road=single and historical or false},
-        cards={nonspell=true,spell=true,survival=variant=='staged' or historical or false}}
+        difficulties={lunatic=true,extra=false,lastword=false},encounters={boss=true,road=false},
+        cards={nonspell=true,spell=true,survival=variant=='staged'}}
 end
-function P.copy(filters,variant,poolVersion)
-    local defaults=P.defaults(variant,poolVersion)
+function P.copy(filters,variant)
+    local defaults=P.defaults(variant)
     if type(filters)~='table' then filters={} end
     local out={}
     for group,keys in pairs(fields) do
@@ -56,15 +52,6 @@ function P.copy(filters,variant,poolVersion)
             out[group][key]=value==true
         end
     end
-    -- 旧设置中的勾选也必须失效，不能只移除准备界面的按钮。
-    out.stages.TH36=out.stages.TH36 and poolVersion==4
-    -- Last Word从版本9开始可选；旧录像保持当时的来源集合与抽取顺序。
-    if poolVersion and poolVersion<9 then out.difficulties.lastword=false end
-    if poolVersion and poolVersion<10 then
-        for _,source in ipairs(ports.sources) do out.stages[source.code]=false end
-    end
-    if poolVersion and poolVersion<6 then out.cards.survival=true end
-    if poolVersion and poolVersion<7 then out.cards.nonspell,out.cards.spell=true,true end
     if variant=='staged' then
         out.stages.TH42=false
         out.difficulties={lunatic=true,extra=false,lastword=false}
@@ -86,28 +73,26 @@ function P.isSurvival(unit,kind)
     end
     return combat
 end
-function P.build(filters,poolVersion)
-    filters=P.copy(filters,nil,poolVersion)
+function P.build(filters)
+    filters=P.copy(filters)
     local portTags=ports.tags()
     local pool,total,seen={},0,{}
     for _,source in ipairs(P.sources) do
-        -- 新作只进入版本4；旧录像即使缺少筛选初态，也不能因默认值改变而重抽。
-        if filters.stages[source.code] and not (source.code=='TH36' and poolVersion and poolVersion<4) then
+        if filters.stages[source.code] then
             local bucket={code=source.code,level=source.level,cards={}}
             for index,unit in ipairs(_sc_pr_table[source.level] or {}) do
                 local first=unit.sc_group and unit.sc_group[1]
                 local id=first and first.card.card_id
                 local sourceTags=tags[source.code] or portTags[source.code]
                 local tag=id and sourceTags and sourceTags[id]
-                -- extra键保留已有筛选初态；Phantasm只在新版池并入，版本2录像沿用原集合。
+                -- Extra 和 Phantasm 共用准备页开关。
                 local difficulty=tag and (tag.difficulty=='phantasm' and 'extra' or tag.difficulty)
                 local survival=tag and tag.survival
                 if tag and survival==nil then survival=P.isSurvival(unit,tag.kind) end
                 local selected=tag and (tag.kind=='road' or (survival and filters.cards.survival)
                     or (not survival and (first.card.is_sc and filters.cards.spell or not first.card.is_sc and filters.cards.nonspell)))
                 if tag and filters.difficulties[difficulty] and filters.encounters[tag.kind]
-                    and not (poolVersion==2 and tag.difficulty=='phantasm')
-                    and (not first.card.practice_hidden or poolVersion and poolVersion<11)
+                    and not first.card.practice_hidden
                     and selected
                     and first.card.is_combat~=false and not seen[id] then
                     local label=unit.CardName or ''
@@ -125,8 +110,8 @@ function P.build(filters,poolVersion)
     return pool,total
 end
 -- 每一面单独建池：作品筛选后不足时明确拒绝，不补入其他面、其他难度或重复卡。
-function P.buildStages(filters,poolVersion)
-    local pool=P.build(P.copy(filters,'staged',poolVersion),poolVersion)
+function P.buildStages(filters)
+    local pool=P.build(P.copy(filters,'staged'))
     local stages,counts={},{0,0,0,0,0,0}
     for number=1,6 do stages[number]={} end
     for _,bucket in ipairs(pool) do
@@ -145,8 +130,8 @@ function P.buildStages(filters,poolVersion)
     end
     return stages,counts
 end
-function P.stageStatus(filters,poolVersion)
-    local stages,counts=P.buildStages(filters,poolVersion)
+function P.stageStatus(filters)
+    local stages,counts=P.buildStages(filters)
     local state={valid=true,count=0,need=38,counts=counts}
     for number,need in ipairs(P.STAGE_COUNTS) do
         state.count=state.count+counts[number]

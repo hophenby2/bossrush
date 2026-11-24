@@ -1,40 +1,25 @@
 -- 击破或超时阶段后的紫黄蓝三选一。成长和选择过程都保存在var中，供录像与关内恢复重建。
-local D={VERSION=8,UNIT=100,TIME=2*60,MIN=100,MAX=100000,HITBOX_MIN=2500,BOMB_FRAMES=30*60,BOMB_MAX=9,BOMB_INITIAL=3}
+local D={VERSION=9,UNIT=100,TIME=2*60,MIN=100,MAX=100000,HITBOX_MIN=2500,BOMB_FRAMES=30*60,BOMB_MAX=9,BOMB_INITIAL=3}
 -- red/green/blue保留为成长逻辑键；条、文字、遮罩和选项中玉共用显示配色。
 D.palette={red={205,145,255,name='紫',bullet=4},green={255,225,100,name='黄',bullet=12},blue={110,190,255,name='蓝',bullet=6}}
 -- 数值以百分之一为整数单位；只做加法和有理数乘法，避免长局累计浮点误差。
-D.pool={
-    {{'red','add',5}},{{'blue','add',5}},{{'red','mul',11,10}},{{'blue','mul',11,10}},
-    {{'red','add',10},{'blue','add',-5}},{{'red','add',-5},{'blue','add',10}},
-    {{'red','add',15},{'blue','add',-10}},{{'red','add',-10},{'blue','add',15}},
-    {{'red','mul',6,5},{'blue','mul',9,10}},{{'red','mul',9,10},{'blue','mul',6,5}},
-}
--- 前十项沿用红蓝版本的编号；绿色降低原判定尺寸的百分比，避免改写旧录像的选项含义。
+-- 蓝、紫、黄三项奖励固定，蓝色的10个百分点等于恢复倍率增加0.1。
 D.colorPool={
-    {{'red','add',5}},{{'blue','add',5}},{{'red','add',10}},{{'blue','add',10}},
-    {{'red','add',15}},{{'blue','add',15}},{{'red','mul',11,10}},{{'blue','mul',11,10}},
-    {{'red','mul',6,5}},{{'blue','mul',6,5}},
-    {{'green','add',-5}},{{'green','add',-10}},{{'green','add',-15}},
-    {{'green','mul',9,10}},{{'green','mul',4,5}},
+    {{'blue','add',10}},{{'red','mul',23,20}},
+    {{'green','mul',9,10}},
 }
-local function three() local v=lstg.var.__drops_version;return v and v>=3 and v<=D.VERSION end
-local function modern() return three() or lstg.var.__drops_version==2 end
--- 库存规则进入初态版本，旧录像的三枚上限不能因新UI改动而变成九枚。
-function D.bombLimit() local v=lstg.var.__drops_version;return v and v>=5 and v<=D.VERSION and D.BOMB_MAX or 3 end
+function D.enabled() return lstg.var.__drops_version==D.VERSION end
+D.bombsEnabled=D.enabled
+function D.bombLimit() return D.BOMB_MAX end
 local function fresh()
-    local p={red=10000,blue=10000,clock=-1,fraction=0}
-    if modern() then p.bombs=D.BOMB_INITIAL;p.bomb_fraction=0 end
-    if three() then p.green=10000 end
-    return p
+    return {red=10000,blue=10000,green=10000,bombs=D.BOMB_INITIAL,bomb_fraction=0}
 end
 local function allowDrops(scene)
     scene=scene or (stage and stage.current_stage)
     return lstg.var.__sequence_version~=1 and not (scene and scene.group and scene.group._name=='RogueChain')
 end
-function D.enabled() return modern() or lstg.var.__drops_version==1 end
-D.bombsEnabled=modern
 function D.reset()
-    lstg.var.upgrades=D.enabled() and {version=lstg.var.__drops_version,seed=lstg.var.ran_seed or 1,count=0,players={fresh(),fresh()},queue={}} or nil
+    lstg.var.upgrades=D.enabled() and {count=0,players={fresh(),fresh()},queue={}} or nil
 end
 local function peek() return D.enabled() and lstg.var.upgrades end
 function D.active()
@@ -55,15 +40,15 @@ end
 -- HUD 只读，不能因渲染而改变零帧保存点。
 function D.values(o)
     local s=peek();local p=s and s.players[D.slot(o)]
-    return p and p.red/100 or 100,p and p.blue/100 or 100,p and (p.green or 10000)/100 or 100
+    return p and p.red/100 or 100,p and p.blue/100 or 100,p and p.green/100 or 100
 end
 function D.hitboxScale(o)
-    if not three() then return 1 end
+    if not D.enabled() then return 1 end
     local _,_,green=D.values(o)
     return green/100
 end
 function D.updateHitbox(p)
-    if not three() and not p._drop_hitbox then return end
+    if not D.enabled() and not p._drop_hitbox then return end
     local box=p._drop_hitbox
     if not box then box={baseA=p.A,baseB=p.B};p._drop_hitbox=box
     else
@@ -78,7 +63,7 @@ function D.updateHitbox(p)
 end
 function D.laserInset(p,angle)
     local box=p._drop_hitbox
-    if not three() or not box or box.A==box.baseA and box.B==box.baseB then return 0 end
+    if not D.enabled() or not box or box.A==box.baseA and box.B==box.baseB then return 0 end
     local a=angle*math.pi/180
     local x,y=math.abs(math.sin(a)),math.abs(math.cos(a))
     local function radius(w,h)
@@ -89,11 +74,10 @@ function D.laserInset(p,angle)
     return math.max(0,radius(box.baseA,box.baseB)-radius(box.A,box.B))
 end
 function D.power(o) local red=D.values(o);return D.enabled() and red/100 or 1 end
-function D.rate(o) local _,blue=D.values(o);return D.enabled() and not modern() and blue/100 or 1 end
-function D.recoveryRate(o) local _,blue=D.values(o);return modern() and blue/100 or 1 end
+function D.recoveryRate(o) local _,blue=D.values(o);return D.enabled() and blue/100 or 1 end
 function D.bombState(o)
     local s=peek();local p=s and s.players[D.slot(o)]
-    return p and p.bombs or 0,p and (p.bomb_fraction or 0)/(D.BOMB_FRAMES*10000) or 0
+    return p and p.bombs or 0,p and p.bomb_fraction/(D.BOMB_FRAMES*10000) or 0
 end
 function D.damage(amount,o) return amount*D.power(o) end
 function D.renderBullet(o)
@@ -106,48 +90,23 @@ function D.renderBullet(o)
     if not ok then error(result,0) end
     return result
 end
-function D.bind(p)
-    local s=ensure();if not s then return end
-    local c=s.players[D.slot(p)];c.clock=(p.timer or 0)-1;c.fraction=0;p._drop_first_frame=true
+function D.bind()
+    ensure()
 end
 function D.playerStep(p)
     local s=ensure();if not s then return end
     local c=s.players[D.slot(p)]
-    if p._drop_first_frame then c.clock=(p.timer or 0)-1;p._drop_first_frame=false end
-    if modern() then
-        -- 满库存不积攒额外恢复量；恢复使用整数，蓝色只参与 Bomb 计时。
-        local limit=D.bombLimit()
-        if c.bombs<limit then
-            c.bomb_fraction=c.bomb_fraction+c.blue
-            local unit=D.BOMB_FRAMES*10000;local restored=math.floor(c.bomb_fraction/unit)
-            c.bombs=math.min(limit,c.bombs+restored)
-            c.bomb_fraction=c.bombs==limit and 0 or c.bomb_fraction-restored*unit
-        else c.bomb_fraction=0 end
-        return
-    end
-    c.fraction=c.fraction+c.blue
-    local steps=math.floor(c.fraction/10000);c.fraction=c.fraction-steps*10000
-    p._drop_shot_first=c.clock+1;c.clock=c.clock+steps;p._drop_shot_last=c.clock;p._drop_shot_steps=steps;p._drop_cooldown_done=false
-end
-function D.shoot(p,fn)
-    if not D.enabled() or modern() then return fn(p) end
-    local timer=p.timer;p._drop_cooldown_done=true
-    local ok,err=pcall(function()
-        for t=p._drop_shot_first or timer,p._drop_shot_last or timer do
-            p.timer=t
-            if p.nextshoot<=0 then fn(p) end
-            p.nextshoot=math.max(0,p.nextshoot-1)
-        end
-    end)
-    p.timer=timer
-    if not ok then error(err,0) end
-end
-function D.cooldownStep(p)
-    if not D.enabled() or modern() then return 1 end
-    return p._drop_cooldown_done and 0 or (p._drop_shot_steps or 1)
+    -- 满库存不积攒额外恢复量；恢复使用整数，蓝色只参与 Bomb 计时。
+    local limit=D.bombLimit()
+    if c.bombs<limit then
+        c.bomb_fraction=c.bomb_fraction+c.blue
+        local unit=D.BOMB_FRAMES*10000;local restored=math.floor(c.bomb_fraction/unit)
+        c.bombs=math.min(limit,c.bombs+restored)
+        c.bomb_fraction=c.bombs==limit and 0 or c.bomb_fraction-restored*unit
+    else c.bomb_fraction=0 end
 end
 function D.bombInput(p,key,previous)
-    if not modern() or not key.spell or previous.spell then return false end
+    if not D.enabled() or not key.spell or previous.spell then return false end
     local death=p.death or 0
     -- death<50已恢复操作，protect只是无敌计时；不能把复活后的可操作阶段当作死亡演出。
     if p.lock or p.dialog or p.realrealreal_lock or p.hide or p.time_stop or (death>=50 and death<=90) then return false end
@@ -159,41 +118,17 @@ function D.bombInput(p,key,previous)
 end
 function D.beginCard(b,card)
     b._drop_awarded=false;b._drop_card_id=card.card_id
-    b._drop_misses=nil
     local uses=rawget(b,'_drop_uses') or {};b._drop_uses=uses
     if card.card_id then uses[card.card_id]=(uses[card.card_id] or 0)+1;b._drop_phase=uses[card.card_id] end
 end
-local function misses() return GameRevive and GameRevive.misses() or lstg.var.dead or 0 end
-function D.startCard(b)
-    -- before演出结束才开始计数；Bomb/Circle_Attack会清掉chip_bonus，不能借收卡标记判断无中弹。
-    b._drop_misses=misses()
+function D.draw()
+    return {1,2,3}
 end
-function D.avoided(b)
-    if b._drop_misses==nil then return not not b.chip_bonus end
-    return misses()==b._drop_misses
-end
-function D.draw(seed,index)
-    local gen=Rand();gen:Seed((seed+index*104729)%2147483647)
-    if three() then
-        -- 保留红、蓝、绿的抽样顺序；新版只交换前两列，旧录像仍按原位置接取。
-        local red,blue,green=gen:Int(1,5)*2-1,gen:Int(1,5)*2,gen:Int(11,15)
-        if lstg.var.__drops_version>=4 then return {blue,red,green} end
-        return {red,blue,green}
-    end
-    if modern() then return {gen:Int(1,5)*2-1,gen:Int(1,5)*2} end
-    local a=gen:Int(1,#D.pool);local b=gen:Int(1,#D.pool-1);if b>=a then b=b+1 end
-    return {a,b}
-end
-function D.award(b,avoided_timeout)
+function D.award(b)
     if not allowDrops() then return false end
     local s=ensure()
     if not s or not b.is_combat or b.cannot_kill or b._drop_awarded then return false end
     if not b.current_card or b.current_card.is_combat==false then return false end
-    if b.timeout and not b.time_sc and lstg.var.__drops_version<8 then
-        if avoided_timeout==nil then avoided_timeout=D.avoided(b) end
-        -- 第八版起普通阶段超时直接给奖励；第七版录像仍需无中弹，更早版本仍需击破。
-        if lstg.var.__drops_version<7 or not avoided_timeout then return false end
-    end
     b._drop_awarded=true
     local id,phase=b._drop_card_id,b._drop_phase or 1
     local awards=rawget(b,'_drop_awards') or {}
@@ -203,18 +138,17 @@ function D.award(b,avoided_timeout)
         local seen=rawget(other,'_drop_awards') or {};seen[id]=math.max(seen[id] or 0,phase);rawset(other,'_drop_awards',seen)
     end
     mark(b);for _,other in ipairs(b.otherboss or {}) do mark(other) end
-    s.count=s.count+1;s.queue[#s.queue+1]={id=s.count,options=D.draw(s.seed,s.count),age=0,duration=D.TIME,linear=modern() or nil,colorMask=modern() or nil,picks={false,false}}
+    s.count=s.count+1;s.queue[#s.queue+1]={id=s.count,options=D.draw(),age=0,duration=D.TIME,linear=true,colorMask=true,picks={false,false}}
     return true
 end
 function D.apply(slot,option)
     local s=assert(ensure());local p=s.players[D.slot(slot)]
-    for _,op in ipairs(assert((modern() and D.colorPool or D.pool)[option])) do
-        local value=p[op[1]] or 10000
+    for _,op in ipairs(assert(D.colorPool[option])) do
+        local value=p[op[1]]
         if op[2]=='add' then value=value+op[3]*100 else value=math.floor(value*op[3]/op[4]+0.5) end
         local lower,upper=D.MIN,D.MAX
         if op[1]=='green' then lower,upper=D.HITBOX_MIN,10000 end
-        -- 火力从第六版起不封顶；旧录像仍按原上限结算，蓝绿规则分别保持原值。
-        if op[1]=='red' and lstg.var.__drops_version>=6 then upper=math.huge end
+        if op[1]=='red' then upper=math.huge end
         p[op[1]]=math.max(lower,math.min(upper,value))
     end
 end
@@ -226,19 +160,11 @@ local function controllable(p)
     return p and IsValid(p) and not p.lock and not p.dialog and not p.realrealreal_lock and not p.hide and (p.death or 0)==0
 end
 function D.rowY(row) return GameQuiz.CHOICE_Y-GameQuiz.offset(row.age,row.duration or D.TIME,row.linear) end
-function D.suspend()
-    local s=peek();local row=s and s.active
-    if not row then return end
-    row.previous=row.previous or {}
-    -- 答题复活期间只隐藏掉落；同步位置，避免复活传送被当成穿过接取线。
-    for i,p in ipairs(players()) do if p and IsValid(p) then row.previous[i]={x=p.x,y=p.y} end end
-    GameQuiz.setSelectionVisible('drops',false)
-end
 function D.frame(scene)
     local s=peek()
     if not s or not scene or scene.is_menu then GameQuiz.clearSelection('drops');return false end
     if not allowDrops(scene) then
-        -- 接续模式不生成强化选项；兼容已有检查点中排队或正在下落的选项。
+        -- 接续模式不生成强化选项。
         if s.active or #s.queue>0 then s.active=nil;s.queue={} end
         GameQuiz.clearSelection('drops',true);return false
     end
@@ -283,15 +209,14 @@ local function number(value)
 end
 function D.optionLines(id)
     local out={}
-    for _,op in ipairs((modern() and D.colorPool or D.pool)[id]) do
-        local text=op[2]=='add' and string.format('%+d',op[3]) or ('×'..number(op[3]/op[4]))
-        if op[1]=='green' and op[2]=='add' then text=text..'个百分点' end
+    for _,op in ipairs(D.colorPool[id]) do
+        local text=op[2]=='add' and ('+'..number(op[3]/100)) or ('×'..number(op[3]/op[4]))
         if op[1]=='green' then
             out[#out+1]={color='green',text=D.palette.green.name..' 判定'}
             out[#out+1]={color='green',text=text}
         else
-            local name=op[1]=='red' and '火力' or modern() and 'Bomb恢复速度' or '射速'
-            out[#out+1]={color=op[1],text=name,scale=op[1]=='blue' and modern() and .5 or .7}
+            local name=op[1]=='red' and '火力' or 'Bomb恢复速度'
+            out[#out+1]={color=op[1],text=name,scale=op[1]=='blue' and .5 or .7}
             out[#out+1]={color=op[1],text=text}
         end
     end
@@ -359,15 +284,12 @@ function D.renderHUD(scrr,scrt,alpha)
 end
 function D.signature()
     local s=peek();if not s then return 'drops=none' end
-    local out={'drops',s.seed,s.count}
+    local out={'drops',s.count}
     for _,p in ipairs(s.players) do
-        out[#out+1]=table.concat({p.red,p.blue,p.clock,p.fraction},',')
-        if modern() then out[#out+1]=table.concat({p.bombs,p.bomb_fraction},',') end
-        if three() then out[#out+1]='green='..tostring(p.green or 10000) end
+        out[#out+1]=table.concat({p.red,p.blue,p.green,p.bombs,p.bomb_fraction},',')
     end
     local function row(r)
-        out[#out+1]=table.concat({r.id,r.age,r.options[1],r.options[2],tostring(r.picks[1]),tostring(r.picks[2]),r.duration or D.TIME},',')
-        if r.options[3] then out[#out+1]='option3='..r.options[3] end
+        out[#out+1]=table.concat({r.id,r.age,r.options[1],r.options[2],r.options[3],tostring(r.picks[1]),tostring(r.picks[2]),r.duration},',')
         for _,p in ipairs(r.previous or {}) do out[#out+1]=string.format('%.6f,%.6f',p.x,p.y) end
     end
     if s.active then row(s.active) else out[#out+1]='no-active' end

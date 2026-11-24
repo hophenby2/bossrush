@@ -1,6 +1,6 @@
 -- 实际触点进入输入链，覆盖三种低速逻辑、多指、拖动、取消与暂停恢复。
 package.preload.keycode=function() return setmetatable({}, {__index=function(_,k) return #k+100 end}) end
-lstg={var={__input_version=2},GetKeyState=function() return false end,GetLastKey=function() return 0 end,
+lstg={var={},GetKeyState=function() return false end,GetLastKey=function() return 0 end,
     world={l=-192,r=192,b=-224,t=224,pl=-192,pr=192,pb=-224,pt=224,scrl=0,scrr=540,scrb=285,scrt=915}}
 setting={androidPortrait=true,resx=1080,resy=2400,keys={slow=65,shoot=90,spell=88}}
 stage={current_stage={}};player={x=0,y=0,hspeed=4,lspeed=2,death=0}

@@ -14,7 +14,6 @@ function PlayerContactProbe(host,frame,current)
     end
     if frame~=120 then return end
     probe.started=true
-    assert(lstg.var.__contact_cancel_version==1,'新局未记录接触消弹版本')
     local p=player
     local old={death=p.death,protect=p.protect,dead=lstg.var.dead,man=lstg.var.man,cheat=cheat,colli=p.colli,dialog=p.dialog}
     p.colli,p.dialog=true,false
@@ -69,9 +68,6 @@ function PlayerContactProbe(host,frame,current)
     local enemy=New(Class(object,{},true));enemy.x,enemy.y=p.x,p.y;enemy.group=GROUP.ENEMY;enemy.a,enemy.b=8,8;enemy.colli=true
     collide(enemy);assert(IsValid(enemy) and enemy.colli,'接触误消除了敌机体术对象');enemy.colli=false;object.RawDel(enemy)
     local legacy=make(11,GROUP.ENEMY_BULLET)
-    lstg.var.__contact_cancel_version=nil;p.death,p.protect=0,0;local dead=lstg.var.dead
-    collide(legacy);assert(legacy.colli and not legacy.fading and p.death==90 and lstg.var.dead==dead+1,'旧录像语义改变')
-    object.RawDel(legacy);lstg.var.__contact_cancel_version=1
     probe.rows[#probe.rows+1]={near_miss=true,enemy_preserved=true,legacy=true}
     p.death,p.protect,cheat=old.death,old.protect,old.cheat
     p.colli,p.dialog=old.colli,old.dialog

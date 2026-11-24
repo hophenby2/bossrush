@@ -165,15 +165,6 @@ end
 function M.warmup(scene)
     local run=lstg.var.rogue_run
     local first=run.cards[1]
-    -- 旧录像没有预加载标记，保持同步入口，不增加资源准备等待帧。
-    if lstg.var.__rogue_preload_version~=1 then
-        run.encounter,run.source_hp=first,false
-        createBackground(first,assert(_sc_pr_table[first.level][first.index]))
-        run.encounter=nil
-        restoreBackground()
-        if ui.ResourceLoading then ui.ResourceLoading.ready() end
-        return
-    end
     local pool=GetResourceStatus()
     local started=lstg.AndroidClock and lstg.AndroidClock()
     run.preparing=true
@@ -278,7 +269,7 @@ function M.begin(scene,entry)
     if cached and cached.level~=entry.level then discardCache() end
     restoreBackground()
     local run=lstg.var.rogue_run
-    local enabled=run.poolVersion>=10 and entry.level>=35 and entry.level<=41
+    local enabled=entry.level>=35 and entry.level<=41
     run.encounter,run.source_hp=entry,enabled
     run.source_damage=enabled and assert(ports.damageUnits[entry.level]) or nil
     run.source_boss_damage=enabled and ports.bossDamageUnits[entry.level] or nil
@@ -288,8 +279,6 @@ function M.begin(scene,entry)
 end
 function M.prepare(scene,entry,unit)
     if not M.scope then return end
-    -- 无标记的既有录像/续玩继续原有同步入口，不插入等待用的逻辑帧。
-    if lstg.var.__rogue_preload_version~=1 then return end
     -- 启动时已将资源放入 global。这里只更新当前卡的轻量入口状态，不再插入加载帧。
     if M.residentReady then
         for _,part in ipairs(unit.sc_group) do
@@ -324,7 +313,7 @@ function M.release()
     end
 end
 function M.deferBackground(fn)
-    if not M.enabled(37) or lstg.var.__rogue_preload_version~=1 or preload.active() then return false end
+    if not M.enabled(37) or preload.active() then return false end
     local run=lstg.var.rogue_run
     local p=IsValid(player) and player
     local dialog,lock=p and p.dialog,p and p.lock

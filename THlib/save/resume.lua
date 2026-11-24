@@ -1,5 +1,5 @@
 -- 关内续玩：保存关卡初态和逻辑输入，恢复时有预算地重建场景，校验后交还控制。
--- 新录像带版本标记；旧录像继续使用原来的随机数和时钟行为。
+-- 录像与关内恢复统一使用当前输入格式和确定性随机数、时钟。
 -- 续玩点停用时只保留这套录像规则，不创建快照、输入记录或网络时钟。
 local C,P,N=assert(SaveCodec),assert(SaveProfiles),SaveTransport
 local R={VERSION=1,INTERVAL=120,MAX_FRAMES=1000000,MAX_INPUT=8*1024*1024}
@@ -148,7 +148,7 @@ local function statsValid(value)
     if P.validateGrowth then P.validateGrowth(score,spell) end
 end
 function R.validate(data)
-    assert(type(data)=='table' and data.format=='BossRushResume' and data.version==1,'续玩版本不兼容')
+    assert(type(data)=='table' and data.format=='BossRushResume' and data.version==2,'续玩版本不兼容')
     assert(type(data.stage)=='string' and #data.stage>0 and #data.stage<=256 and not data.stage:find('[/\\%z]'),'续玩关卡无效')
     assert(type(data.run)=='string' and #data.run==32 and not data.run:find('[^0-9a-f]'),'续玩批次无效')
     assert(type(data.code)=='string' and #data.code==64 and type(data.runtime)=='string' and #data.runtime==64,'续玩校验标记无效')
@@ -182,7 +182,7 @@ function R.validate(data)
     local position=1
     for _=1,data.frames do
         assert(position+2<=#bytes,'续玩输入不完整');local count=bytes:byte(position+2)
-        position=position+3+count+(var.__input_version==2 and 4 or 0);assert(position<=#bytes+1,'续玩按键记录不完整')
+        position=position+7+count;assert(position<=#bytes+1,'续玩按键记录不完整')
     end
     assert(position==#bytes+1,'续玩输入数量不匹配');return data,bytes
 end
@@ -263,17 +263,14 @@ function R.beforeLogic()
         local count=assert(bytes:byte(p+2),'续玩输入已结束')
         for i=p+3,p+2+count do R.inputDown[bytes:byte(i)]=true end
         R.position=p+3+count
-        R.touchInput=nil
-        if lstg.var.__input_version==2 then
-            R.touchInput=bytes:sub(R.position,R.position+3);R.position=R.position+4
-        end
+        R.touchInput=bytes:sub(R.position,R.position+3);R.position=R.position+4
     end
     return true
 end
 function R.readInput(state)
     if not R.recovering then return false end
     Byte2KeyState(state,R.actionByte);state.touch_x,state.touch_y,state.touch_unlimited=nil,nil,nil
-    if R.touchInput then UnpackTouchInput(state,R.touchInput) end
+    UnpackTouchInput(state,R.touchInput)
     if replayWriter then replayWriter:Record(state) end;return true
 end
 function R.afterLogic()
@@ -285,7 +282,7 @@ function R.afterLogic()
     local keys={};for key in pairs(R.inputDown) do keys[#keys+1]=key end;table.sort(keys)
     local packet=string.char(R.recovering and R.actionByte or KeyState2Byte(KeyState),math.max(0,math.min(255,R.inputLast)),#keys)
     for _,key in ipairs(keys) do packet=packet..string.char(key) end
-    if lstg.var.__input_version==2 then packet=packet..PackTouchInput(KeyState) end
+    packet=packet..PackTouchInput(KeyState)
     session.packets[#session.packets+1]=packet;session.size=session.size+#packet
     if R.recovering then
         if session.frames==R.pending.frames then R.complete() end
@@ -302,7 +299,7 @@ function R.flush(reason)
     local captured,encoded,committed
     local ok,err=pcall(function()
         assert(session.frames<=R.MAX_FRAMES and session.size<=R.MAX_INPUT,'续玩记录已达到容量上限')
-        local data={format='BossRushResume',version=1,stage=session.stage,run=session.run,frames=session.frames,savedAt=os.time(),
+        local data={format='BossRushResume',version=2,stage=session.stage,run=session.run,frames=session.frames,savedAt=os.time(),
             code=R.codeHash(),runtime=R.runtime(),start=session.start,target={stats=stats(),var=Serialize(lstg.var),music=clone(ext.music or {})},
             inputs=C.base64(table.concat(session.packets)),signature=R.signature()}
         if mask_fader then data.target.fader={time=math.max(0,mask_fader.time),maxtime=math.max(1,mask_fader.maxtime),mode=mask_fader.mode==true} end

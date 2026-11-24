@@ -26,7 +26,8 @@ function Byte2KeyState(state, b)
     end
 end
 
--- 新录像每帧多存四字节拖拽目标；旧版仍是一字节按键，按关卡初态区分。
+-- 当前录像固定每帧五字节：一字节按键和四字节拖拽目标。
+plus.REPLAY_GAME_VERSION=2
 function PackTouchInput(state)
     if state.touch_x == nil or state.touch_y == nil then return string.char(255,255,255,255) end
     local function coord(v) return math.max(0,math.min(65534,math.floor(v*16+0.5)+32768)) end
@@ -39,7 +40,6 @@ function UnpackTouchInput(state,bytes)
     state.touch_x,state.touch_y=nil,nil
     if x~=65535 and y~=65535 then state.touch_x=(x-32768)/16;state.touch_y=(y-32768)/16 end
 end
-local function touchFormat() return lstg and lstg.var and lstg.var.__input_version==2 end
 
 -------------------------------------------------- ReplayFrameReader
 
@@ -51,12 +51,11 @@ plus.ReplayFrameReader = ReplayFrameReader
 ---@param path string@文件路径
 ---@param offset number@录像数据偏移
 ---@param count number@录像帧数量
-function ReplayFrameReader:init(path, offset, count, inputVersion)
+function ReplayFrameReader:init(path, offset, count)
     self._fs = plus.FileStream(__UTF8ToANSI(path), "rb")
 
     self._fs:Seek(offset)-- 定位到录像数据开始位置
     self._offset = offset
-    self._touch = inputVersion==2 or (inputVersion==nil and touchFormat())
     self._read = 0  -- 已读取数量
     self._count = count  -- 帧数量
 end
@@ -71,10 +70,8 @@ function ReplayFrameReader:Next(state)
         self._read = self._read + 1
         Byte2KeyState(state, ret)
         state.touch_x,state.touch_y,state.touch_unlimited=nil,nil,nil
-        if self._touch then
-            local bytes={};for i=1,4 do bytes[i]=string.char(assert(self._fs:ReadByte())) end
-            UnpackTouchInput(state,table.concat(bytes))
-        end
+        local bytes={};for i=1,4 do bytes[i]=string.char(assert(self._fs:ReadByte())) end
+        UnpackTouchInput(state,table.concat(bytes))
         return true
     end
 end
@@ -97,9 +94,8 @@ local ReplayFrameWriter = plus.Class()
 plus.ReplayFrameWriter = ReplayFrameWriter
 
 ---构造ReplayFrameWriter
-function ReplayFrameWriter:init(inputVersion)
+function ReplayFrameWriter:init()
     self._data = {}
-    self._touch = inputVersion==2 or (inputVersion==nil and touchFormat())
     self._targets = {}
     self._count = 0
 end
@@ -109,7 +105,7 @@ function ReplayFrameWriter:Record(state)
     local b = KeyState2Byte(state)
     self._count = self._count + 1
     self._data[self._count] = b
-    if self._touch then self._targets[self._count]=PackTouchInput(state) end
+    self._targets[self._count]=PackTouchInput(state)
 end
 
 ---将数据写成字节
@@ -117,9 +113,7 @@ end
 function ReplayFrameWriter:Write(fs)
     for i = 1, self._count do
         fs:WriteByte(self._data[i])
-        if self._touch then
-            local target=self._targets[i];for j=1,4 do fs:WriteByte(target:byte(j)) end
-        end
+        local target=self._targets[i];for j=1,4 do fs:WriteByte(target:byte(j)) end
     end
 end
 
@@ -160,7 +154,7 @@ end
 ---返回的录像数据信息以下述格式表述：
 ---{
 ---  path = "文件路径",
----   fileVersion = 1, gameName = "游戏名称", gameVersion = 1, gameExtendInfo = "",
+---   fileVersion = 1, gameName = "游戏名称", gameVersion = plus.REPLAY_GAME_VERSION, gameExtendInfo = "",
 ---   userName = "用户名", userExtendInfo = "用户额外信息",
 ---    stages = {
 ---      {
@@ -189,6 +183,7 @@ function ReplayManager.ReadReplayInfo(path)
             local gameNameLength = r:ReadUShort()  -- 游戏名称
             ret.gameName = r:ReadString(gameNameLength)
             ret.gameVersion = r:ReadUShort()  -- 游戏版本
+            if ret.gameVersion~=plus.REPLAY_GAME_VERSION then return end
             ret.group_finish = r:ReadUShort() --是否完成关卡
             local gameExtendInfoLength = r:ReadUInt()  -- 额外信息
             ret.gameExtendInfo = r:ReadString(gameExtendInfoLength)
@@ -223,8 +218,7 @@ function ReplayManager.ReadReplayInfo(path)
                 -- 录像数据
                 stage.frameCount = r:ReadUInt()  -- 帧数
                 stage.frameDataPosition = f:GetPosition()  -- 数据起始位置
-                local initial=stage.stageExtendInfo~='' and DeSerialize(stage.stageExtendInfo) or {}
-                f:Seek(stage.frameCount*(initial.__input_version==2 and 5 or 1))  -- 跳过帧数据
+                f:Seek(stage.frameCount*5)  -- 跳过帧数据
                 table.insert(ret.stages, stage)
             end
         end,
@@ -239,7 +233,7 @@ end
 ---[静态函数]写入录像数据
 ---输入的录像信息需要满足下述表述：
 ---  {
----    gameName = "游戏名称", gameVersion = 1, gameExtendInfo = "额外信息",
+---    gameName = "游戏名称", gameVersion = plus.REPLAY_GAME_VERSION, gameExtendInfo = "额外信息",
 ---    userName = "用户名", userExtendInfo = "用户额外信息",
 ---    stages = {
 ---      {

@@ -63,7 +63,6 @@ function U.toggle(o,index)
     if o.pool_variant=='staged' then scoredata.rogue2_filters=RogueTen.copyFilters(o.pool_options,'staged')
     else
         scoredata.rogue10_filters=RogueTen.copyFilters(o.pool_options)
-        scoredata.rogue10_filters_version=RogueTen.POOL_VERSION
     end
     o.pool_notice=nil;o.pool_notice_time=0;refresh(o);PlaySound('ok00')
 end

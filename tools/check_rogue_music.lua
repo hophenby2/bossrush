@@ -97,7 +97,7 @@ check(table.concat(events,',')==savedSequence,'相同种子与首曲重建相同
 check(ran.v==randomBefore,'换曲不消耗弹幕或抽卡随机源')
 lstg.var={__rogue_music_version=nil,rogue_run={seed=17}}
 M.init(lstg.var.rogue_run,pool)
-check(not lstg.var.rogue_run.music and not M.start(stage.current_stage,'TH07_1'),'旧录像保留原单曲循环行为')
+check(not lstg.var.rogue_run.music and not M.start(stage.current_stage,'TH07_1'),'非随机模式保留原单曲循环行为')
 local before=#events;ext.MusicFrame('timer',100000)
-check(#events==before,'旧录像不会额外播放新曲')
+check(#events==before,'非随机模式不会额外播放新曲')
 print(('随机BGM回归通过：%d 项。'):format(count))

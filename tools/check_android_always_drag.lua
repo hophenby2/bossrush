@@ -5,7 +5,7 @@ local function section(file,first,last)
     local stop=last and assert(source:find(last,start+#first,true)) or #source+1
     assert(loadstring(source:sub(start,stop-1),'@'..file))()
 end
-lstg={var={__touch_always_version=1,__touch_unlimited=true},world={pl=-192,pr=192,pb=-224,pt=224}}
+lstg={var={__touch_always=true,__touch_unlimited=true},world={pl=-192,pr=192,pb=-224,pt=224}}
 KeyState={touch_x=80,touch_y=100,touch_unlimited=true}
 section('THlib/lib/Linput.lua','function TouchInputMovement')
 player_class={};task={Do=function() end}
@@ -37,8 +37,4 @@ for _,normal in ipairs({true,false}) do
 end
 KeyState={};local p=player(90,true,false,false);player_class.frame(p)
 assert(p.x==0 and p.y==0,'松手后不保留拖动')
-KeyState={touch_x=80,touch_y=100,touch_unlimited=true}
-lstg.var.__touch_always_version=nil
-p=player(90,true,false,false);player_class.frame(p)
-assert(p.x==0 and p.y==0,'旧录像保持原锁定规则')
-print('死亡全阶段/锁定/硬锁拖动、单帧限速、松手及旧录像兼容检查通过')
+print('死亡全阶段/锁定/硬锁拖动、单帧限速和松手检查通过')

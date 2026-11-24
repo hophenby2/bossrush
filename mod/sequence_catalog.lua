@@ -1,4 +1,4 @@
--- 顺序模式使用独立入口与稳定key；练习索引、随机卡池和历史录像的数组保持原位。
+-- 顺序模式使用独立入口与稳定key；练习索引和随机卡池共用现有注册数组。
 local C={VERSION=1,entries={}}
 local function add(key,title,level,difficulty,ending)
     C.entries[#C.entries+1]={key=key,title=title,level=level,difficulty=difficulty,ending=ending,

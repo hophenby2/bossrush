@@ -40,7 +40,6 @@ local bullet = Class(object)
 _G.bullet = bullet
 function bullet:frame()
     if self._native_anm then OriginalBulletVisual.step_anm(self) end
-    if GameRank then GameRank.observe(self) end
     self._motion_rot=motion_angle(self) or self._motion_rot
     task.Do(self)
     -- 原作弹的换色/消弹由自己的 ECL/ANM 决定；通用 gray 会把八色精灵索引换到消散图上。

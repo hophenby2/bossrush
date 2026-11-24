@@ -46,7 +46,7 @@ function T.install()
                     assert(workCounts[code],'作品没有分面卡池：'..code)
                     for number=1,6 do assert(workCounts[code][number]>0,'作品缺少面数：'..code..'/'..number) end
                 end end
-                for seed=1,12 do audit(RogueTen.drawStages(seed,filters,RogueTen.POOL_VERSION)) end
+                for seed=1,12 do audit(RogueTen.drawStages(seed,filters)) end
                 choose(title);nextPhase(1)
             elseif phase==1 and selector and IsValid(selector) and not selector.locked and selector.alpha>=1 then
                 assert(selector.simple_mode and selector.pool_variant=='staged','模式2未进入独立准备页')

@@ -69,6 +69,6 @@ for _,entry in ipairs(entries) do
     H.layout();check(not H.enabled() and lstg.world.scrl==0 and lstg.world.scrr==540,'竖屏保留原有布局')
     portrait=false
     lstg.var.__sequence_system_version=nil
-    check(not H.enabled(),'旧录像和其他模式不启用原作UI')
+    check(not H.enabled(),'未选择原作系统的模式不启用原作UI')
 end
 print('原作横屏界面检查通过：'..n)

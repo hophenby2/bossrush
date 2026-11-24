@@ -71,10 +71,9 @@ EndScene=function()
     end
     local scene=stage.current_stage
     if scene and scene.stage_name==RogueTen.RESULT and not resultCaptured and scene.timer>=45 then
-        assert(not GameRevive.active() and not GameRank.enabled(),'新局不能启用答题或Rank')
         Snapshot('snapshot/hud-result.png');resultCaptured=true
         local f=assert(io.open('hud-death-result.json','w'))
-        f:write(Serialize({rank=lstg.var.__rank_version,revive=lstg.var.__revive_version,dead=lstg.var.dead,current=lstg.var.rogue_run.current,finished=true,quiz=GameRevive.active()}));f:close()
+        f:write(Serialize({dead=lstg.var.dead,current=lstg.var.rogue_run.current,finished=true}));f:close()
         BeginScene();SetViewMode('ui');RenderClear(Color(255,12,21,36))
         for i,index in ipairs({9,19,29,39,49,50}) do
             ui:RenderText('title',('×%.2f'):format(1+index/100),160+(i-1)*128,270,2,Color(255,GameHPScale.rgb(index)),'centerpoint')
@@ -86,8 +85,7 @@ EndScene=function()
 end
 return function(host,frames,current)
     if not checked then
-        assert(GameHPScale.enabled() and not GameRank.enabled() and lstg.var.__rank_version==0,'新局只启用阶段HP倍率')
-        assert(lstg.var.__revive_version==0 and not GameRevive.enabled(),'禁用答题复活')
+        assert(GameHPScale.enabled(),'新局启用阶段HP倍率')
         local f=RogueTen.defaultFilters();local all,n=RogueTen.buildPool(f)
         assert(n==249 and not f.difficulties.extra and f.cards.nonspell and f.cards.spell and not f.cards.survival and not f.encounters.road,'默认四作Lunatic非符/符卡池')
         for _,b in ipairs(all) do for _,e in ipairs(b.cards) do assert(not e.survival and e.kind=='boss','不能混入道中或时符') end end

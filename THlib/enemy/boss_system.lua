@@ -246,8 +246,6 @@ end
 ---boss系统击破结算逻辑
 function system:kill()
     local b = self.boss
-    -- 第七版录像仍需在清空收卡标记前保存全避结果；新版超时奖励不检查失误。
-    local avoided_timeout=not not (lstg.var.__drops_version==7 and b.timeout and GameDrops and GameDrops.avoided(b))
     if b.is_combat then
         b.ui.drawtimesaver = b.countdown
     end
@@ -263,7 +261,7 @@ function system:kill()
         b.__card_finish = nil
     end
     if not b.cannot_kill then
-        if GameDrops then GameDrops.award(b,avoided_timeout) end
+        if GameDrops then GameDrops.award(b) end
         if not b.__NoPlayerProtect then
             player.protect = player.protect + 60
         end
@@ -339,7 +337,7 @@ function system:explode()
         b.vx = sign * v * cos(angle)
         b.vy = v * sin(angle)
         if not b.__NoCleanBullet then
-            New(bullet_cleaner, b.x, b.y, 3000, 120, 60, true, true, 0, 0, true,lstg.var.__phase_clear_version==1)
+            New(bullet_cleaner, b.x, b.y, 3000, 120, 60, true, true, 0, 0, true,true)
         end
         if not b.__dieinstantly then
             for _ = 1, 60 do
@@ -531,7 +529,6 @@ local time_rate = 60
 function system:GetBonus(b)
     AddMoney(100)
     lstg.var.getsc = lstg.var.getsc + 1
-    if GameRank then GameRank.capture(b) end
     if SearchStageLevel[1] then
         for i = 1, 20 do
             New(item.obj.sakura, b.x + cos(i * 18) * 45, b.y + sin(i * 18) * 45)
@@ -607,7 +604,6 @@ function system:SpecialCheckGetCard()
     local b = self.boss
     if b.chip_bonus and b.bombchip_bonus then
         lstg.var.getsc = lstg.var.getsc + 1
-        if GameRank then GameRank.capture(b) end
         b._getcard = true
     end
     self:finishSpellHist(b._getcard)
@@ -726,7 +722,7 @@ function system:popResult(continue)
         PlaySound('enep02', 0.4, 0)
         if not b.__NoCleanBullet then
             --New(bullet_killer, player.x, player.y, true)
-            New(bullet_cleaner, player.x, player.y, 800, 40, 40, true, true, 0, 0, true,lstg.var.__phase_clear_version==1)
+            New(bullet_cleaner, player.x, player.y, 800, 40, 40, true, true, 0, 0, true,true)
         end
     end
     if b.is_final or not continue then
@@ -797,7 +793,6 @@ end
 ---@param hp number @血量
 function system:setHP(maxhp, hp)
     if GameHPScale then maxhp,hp=GameHPScale.health(self.boss,maxhp,hp) end
-    if GameRank then maxhp,hp=GameRank.health(self.boss,maxhp,hp) end
     self.boss.maxhp, self.boss.hp = maxhp, hp or maxhp
 end
 
@@ -972,7 +967,6 @@ function system:doCard(card, is_final, sc_bg, sc_ring, score, sc_bonus)
     sc_bonus = sc_bonus or card.is_sc
     b.current_card = card
     if GameHPScale then GameHPScale.beginCard(b) end
-    if GameRank then GameRank.beginCard(b,card) end
     if GameDrops then GameDrops.beginCard(b,card) end
     task.New(self, function()
         if card.before then
@@ -1013,7 +1007,6 @@ function system:doCard(card, is_final, sc_bg, sc_ring, score, sc_bonus)
         self:setStatus(card.hp, card.drop, card.is_extra, is_final, true,
                 card.t1 / 60, card.t2 / 60, card.t3 / 60, card.is_sc, sc_bg, sc_ring)
         self:setIsCombat(card.is_combat)
-        if GameDrops then GameDrops.startCard(b) end
         card.init(b)
     end)
 end

@@ -6,7 +6,9 @@ local function FetchReplaySlots()
     for i = 1, ext.replay.GetSlotCount() do
         local text = {}
         local slot = ext.replay.GetSlot(i)
-        if slot then
+        if slot and (slot.gameVersion~=plus.REPLAY_GAME_VERSION or GameContent and not GameContent.supportsReplay(slot)) then
+            text = { string.format('No.%02d', i), '版本或内容不支持', ' ---- / -- / -- ', '--------', '--------', '---' }
+        elseif slot then
             -- 使用第一关的时间作为录像时间
             local date = os.date("!%Y/%m/%d", slot.stages[1].stageDate + setting.timezone * 3600)
 

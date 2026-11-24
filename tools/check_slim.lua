@@ -1,6 +1,7 @@
 -- 精简范围、共享背景、音乐资源与录像入口契约，不接触玩家目录。
 dofile('tools/check_original_practice.lua')
 local C=dofile('mod/content.lua')
+plus=plus or {};plus.REPLAY_GAME_VERSION=2
 local n=0
 local function check(v,label) assert(v,label);n=n+1 end
 local function exists(path) local f=io.open(path,'rb');if f then f:close();return true end;return false end
@@ -34,31 +35,22 @@ NativePlayers={
     end,
 }
 local stageVersions={
-    ['38']={__th38_version=1},
-    ['39']={__th39_version=1},
     ['40']={__native_player_version=1,native_player_level=38,native_player_id='A'},
-    ['43']={__native_player_version=1,native_player_level=41,native_player_id='reimu',__th43_version=1},
+    ['43']={__native_player_version=1,native_player_level=41,native_player_id='reimu'},
 }
 for _,id in ipairs(C.stages) do
     check(C.supportsRecord(record('TH'..id..'@BossRush',stageVersions[id])),'保留关卡录像可播放')
 end
-check(not C.supportsRecord(record('TH40@BossRush')),'不能将旧 TH40 录像误放为夏夜祭')
-check(not C.supportsRecord(record('Spell Practice@Spell Practice',{sc_group={38,1},__th40_version=1})),'旧栖霞园录像不能进入夏夜祭练习')
 local bdbVars=stageVersions['43']
 bdbVars.sc_group={41,1}
 check(C.supportsRecord(record('Spell Practice@Spell Practice',bdbVars)),'栖霞园独立练习录像可播放')
 NativePlayers=nativePlayers
 for level=29,33 do check(C.supportsRecord(record('Spell Practice@Spell Practice',{sc_group={level,1}})),'保留符卡练习录像可播放') end
-check(C.supportsRecord(record('RogueTen@RogueTen',{__rogue_pool_version=9,current_system=''})),'当前随机模式录像可播放')
-check(not C.supportsRecord(record('RogueTen@RogueTen',{__rogue_pool_version=4})),'不放行依赖已删关卡的历史随机池')
+check(C.supportsRecord(record('RogueTen@RogueTen',{current_system=''})),'当前随机模式录像可播放')
 check(not C.supportsRecord(record('TH36@BossRush')),'不放行已删整关')
 check(not C.supportsRecord(record('Spell Practice@Spell Practice',{sc_group={34,1}})),'不放行已删符卡练习')
 check(not C.supportsRecord(record('TH31@BossRush',{current_system='A'})),'不放行不可开局的历史系统组合')
-check(not C.supportsReplay{stages={record('TH31@BossRush'),record('TH06@BossRush')}},'播放前检查整份录像')
-check(C.supportsReplay{stages={record('TH31@BossRush'),record('TH35@BossRush')}},'保留关卡可组成多阶段录像')
-check(not C.supportsRecord(record('Spell Practice@Spell Practice',{sc_group={36,1}})),'旧AEX的level36不能误放为雪莲华')
-check(C.supportsRecord(record('Spell Practice@Spell Practice',{sc_group={36,1},__th38_version=1})),'新来源带版本的练习录像可播放')
-check(not C.supportsRecord(record('Spell Practice@Spell Practice',{sc_group={37,1}})),'旧AEX的level37不能误放为永夜篇')
-check(C.supportsRecord(record('Spell Practice@Spell Practice',{sc_group={37,1},__th39_version=1})),'永夜篇录像带来源版本可播放')
+check(not C.supportsReplay{gameVersion=plus.REPLAY_GAME_VERSION,stages={record('TH31@BossRush'),record('TH06@BossRush')}},'播放前检查整份录像')
+check(C.supportsReplay{gameVersion=plus.REPLAY_GAME_VERSION,stages={record('TH31@BossRush'),record('TH35@BossRush')}},'保留关卡可组成多阶段录像')
 DeSerialize=old
 print(('精简内容与录像边界检查通过：%d 项。'):format(n))

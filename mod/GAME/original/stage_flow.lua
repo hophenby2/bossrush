@@ -1,4 +1,4 @@
--- 原作练习与整关共用阶段顺序；不重排原注册数组，保留历史录像和随机池索引。
+-- 原作练习与整关共用阶段顺序；不重排原注册数组，保持练习和随机池的索引一致。
 if rawget(_G,'OriginalStageFlow') then return OriginalStageFlow end
 local F={VERSION=1,installed=false}
 OriginalStageFlow=F
@@ -155,9 +155,7 @@ function F.units(level)
     end
     for index,unit in ipairs(_sc_pr_table[level] or {}) do
         local card=unit.sc_group[1].card
-        -- TH32的克罗里是旧自制卡，保留注册供旧录像读取，不进入原作入口。
-        local custom=level==30 and card.card_id==368
-        assert(seen[index] or F.hidden[card] or custom,'原作阶段缺少顺序：'..level..':'..card.card_id)
+        assert(seen[index] or F.hidden[card],'原作阶段缺少顺序：'..level..':'..card.card_id)
     end
     return out
 end

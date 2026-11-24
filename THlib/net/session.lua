@@ -209,7 +209,7 @@ end
 function N.beginClient()
     N.Capture.reset()
     N.match=true;N.phase='playing';N.tick=0;N.receivedFrames=0;N.recorded=false;N.summary=nil;N.pause={false,false};N.players={};N.predict=nil;N.pendingResources={};N.pendingFrame=nil;N.predictAt=nil
-    lstg.var.__resume_version=nil;lstg.var.__rank_version=nil;lstg.var.__coop=true
+    lstg.var.__resume_version=nil;lstg.var.__coop=true
     replayWriter=nil;replayReader=nil
     if not stage.stages.NetClient then
         local s=stage.New('NetClient',true,false);s.init=function() ext.notUIdraw=true end;s.frame=function() end;s.render=function() end
@@ -222,7 +222,7 @@ function N.finish(won)
     send({t='summary',value=N.summary})
 end
 function N.newRound()
-    if N.host() and N.summary then N.summary=nil;N.quizKeys=nil;N.lastMissSlot=1;send({t='new-round'}) end
+    if N.host() and N.summary then N.summary=nil;send({t='new-round'}) end
 end
 function N.leave()
     local playing=N.match
@@ -336,19 +336,7 @@ function N.callback(fn,kind)
 end
 function N.miss(p)
     if not N.host() then return end
-    N.lastMissSlot=p._net_slot or 1
     for _,b in ipairs(boss_group or {}) do if IsValid(b) and b._bosssys then b._bosssys:clearBonus('hit') end end
-end
-function N.quiz(fn,scene)
-    if not N.host() then return fn(scene) end
-    local slot=N.lastMissSlot or 1;local p=N.players[slot]
-    if not p or not IsValid(p) then return fn(scene) end
-    local old,oldLstg=player,lstg.player;local current,previous={},{}
-    local quizInputs={'up','down','left','right','slow','shoot','spell','special','touch_x','touch_y','touch_unlimited'}
-    for _,k in ipairs(quizInputs) do current[k]=KeyState[k];previous[k]=KeyStatePre[k];KeyState[k]=N.keys[slot][k];KeyStatePre[k]=(N.quizKeys or {})[k] end
-    player=p;lstg.player=p;local result={pcall(fn,scene)}
-    N.quizKeys=clone(N.keys[slot]);for _,k in ipairs(quizInputs) do KeyState[k]=current[k];KeyStatePre[k]=previous[k] end
-    player=old;lstg.player=oldLstg;if not result[1] then error(result[2],0) end;return unpack(result,2)
 end
 -- 激光的手动碰撞也逐个玩家检查，但任务、宽度变化和寿命每帧只运行一次。
 function N.forEachPlayer(fn,...)

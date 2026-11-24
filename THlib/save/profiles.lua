@@ -152,7 +152,8 @@ local function checkpoint(bytes)
     local function uint(count) local value=0;local s=take(count);for i=count,1,-1 do value=value*256+s:byte(i) end;return value end
     local function text(count) local size=uint(count);assert(size<=1024*1024,'检查点字段过长');return take(size) end
     assert(take(4)=='STGR' and uint(2)==1,'继续游戏数据版本不兼容')
-    assert(text(2)=='Boss Rush HD','检查点来自其他游戏');uint(2);uint(2);text(4);text(2);text(4)
+    assert(text(2)=='Boss Rush HD','检查点来自其他游戏')
+    assert(uint(2)==plus.REPLAY_GAME_VERSION,'检查点游戏版本不兼容');uint(2);text(4);text(2);text(4)
     local count=uint(2);assert(count>0 and count<=128,'检查点关卡数量无效')
     for _=1,count do
         local stageName=text(2);assert(#stageName>0 and #stageName<1024,'检查点关卡名称无效')
@@ -160,7 +161,7 @@ local function checkpoint(bytes)
         for _,key in ipairs({'score','dead','getsc','graze','saving'}) do assert(type(state[key])=='number' and state[key]>=0,'检查点数值无效：'..key) end
         assert(type(state.current_system)=='string','检查点系统数据无效')
         take(16);text(2)
-        local frames=uint(4);assert(frames<=1000000,'检查点帧数无效');take(frames)
+        local frames=uint(4);assert(frames<=1000000,'检查点帧数无效');take(frames*5)
     end
     assert(position==#bytes+1,'检查点存在多余数据')
 end

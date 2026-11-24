@@ -257,8 +257,6 @@ return function()
             OriginalBalance.unit(o,8,spell_context(o.th08_card_owner or M.owner))
         elseif GameHPScale and GameHPScale.enabled() then
             o.maxhp,o.hp=GameHPScale.health(o,raw,raw)
-        elseif o.is_boss and GameRank then
-            o.maxhp,o.hp=GameRank.health(o,raw,raw)
         end
     end
     local function attach(o,parent,linked)

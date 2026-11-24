@@ -73,7 +73,6 @@ local function binding(action, fallback)
     return setting and setting.keys and setting.keys[action] or fallback
 end
 local function buttonKey(button) return button.action and binding(button.action, button.key) or button.key end
-local function move(keys, action, fallback) keys[binding(action, fallback)] = true end
 local function canDrag()
     -- 侧栏与场地共用相对拖动，不再保留左下角的摇杆区域。
     return lstg.world and player
@@ -116,17 +115,6 @@ local function rebuild()
     if t and t.drag and t.player == player then
         -- 目标单独写入逻辑输入，不再将任意拖拽方向量化为八方向按键。
         I.targetX, I.targetY = t.targetX, t.targetY
-        -- 已有的一字节录像 / 关卡检查点仍沿用方向键，避免继续后改变帧格式。
-        if lstg.var and lstg.var.__input_version~=2 and not (GameNet and GameNet.client()) then
-            local slow=keys[binding('slow',16)] or player.slow==1
-            local threshold=(slow and (player.lspeed or 2) or (player.hspeed or 4))*.5
-            local dx,dy=t.targetX-player.x,t.targetY-player.y
-            if math.abs(dx)>threshold and math.abs(dy)>threshold then threshold=threshold*.70710678 end
-            if dx < -threshold then move(keys,'left',37) end
-            if dx > threshold then move(keys,'right',39) end
-            if dy < -threshold then move(keys,'down',40) end
-            if dy > threshold then move(keys,'up',38) end
-        end
     end
     for key in pairs(keys) do if not old[key] then I.last = key end end
     I.keys = keys
@@ -183,8 +171,7 @@ function I.touch(id, x, y, event)
                     if t.tapTime then
                         local last=I.lastTap
                         if last and last.player==player and t.tapTime-last.time<=tapInterval()
-                            and not controlBlocked(player)
-                            and not (GameRevive and GameRevive.active()) then
+                            and not controlBlocked(player) then
                             I.pulse(binding('spell',88));t.bombTap=true
                         end
                         I.lastTap=nil

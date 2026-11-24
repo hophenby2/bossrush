@@ -88,7 +88,7 @@ for _,machine in ipairs(P.machines(8)) do
     if machine.id:sub(1,4)=='solo' then check(a.key==b.key,'永夜抄单人机体的高低速Bomb保持同一角色') end
 end
 lstg.var.__sequence_system_version=nil
-check(not P.enabled() and balance.cards[7][3408]==balance.entries[7][3408].hp,'旧录像和其他模式保持旧血量')
+check(not P.enabled() and balance.cards[7][3408]==balance.entries[7][3408].hp,'其他模式不启用顺序模式的血量规则')
 lstg.var={__sequence_version=1,__sequence_system_version=1,sequence_key='th10_lunatic',sequence_player='reimua',player_name='reimu_player'}
 item.PlayerInit()
 local spawn=P.spawnItem;local drops={}

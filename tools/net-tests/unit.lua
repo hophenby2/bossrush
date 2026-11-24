@@ -61,7 +61,6 @@ local nativeNew=function(class,...)
 end
 New=nativeNew;lstg.New=New
 ObjList=function(group) local i=0;return function() repeat i=i+1 until not objects[i] or (objects[i]._alive and objects[i].group==group);if objects[i] then return i,objects[i] end end end
-load('THlib/rank.lua')
 Del=function(o) o._alive=false end;ObjFrame=noop;UpdateXY=noop;AfterFrame=noop
 plus=plus or {};load('THlib/plus/Utility.lua');load('THlib/eventListener.lua')
 Forbid=function(x,a,b) return math.max(a,math.min(b,x)) end

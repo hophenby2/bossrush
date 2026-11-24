@@ -114,9 +114,9 @@ end
 check(observed.TH31 and observed.TH34 and observed.TH35,'三个来源均能抽到')
 check(keys(R.draw(17,1,bossFilters))~=keys(R.draw(31415,1,bossFilters)),'不同种子产生不同路线')
 -- 新池的来源、交集筛选、小池拒绝和副本隔离；不通过标题猜测难度。
-local all,count=R.buildPool(R.defaultFilters(nil,6),6)
+local all,count=R.buildPool(R.defaultFilters())
 check(#all==4 and count==410,'新局关闭地灵殿，包含四作410个已核对条目')
-local noTime=R.defaultFilters(nil,6);noTime.cards.survival=false
+local noTime=R.defaultFilters();noTime.cards.survival=false
 local filtered,filteredCount=R.buildPool(noTime)
 local timeIds={[383]=true,[392]=true,[393]=true,[394]=true,[395]=true,[396]=true,
     [3984]=true,[3440]=true,[3442]=true,[3470]=true,[4401]=true,[4434]=true,[3607]=true,[3619]=true,[3620]=true}
@@ -131,36 +131,20 @@ for _,bucket in ipairs(filtered) do for _,e in ipairs(bucket.cards) do
 end end
 check(timeCount==15 and filteredCount==395 and filteredRoads==roadCount,'时符开关精确排除15张，保留全部道中')
 for seed=1,30 do
-    for _,e in ipairs(R.draw(seed,1,noTime,6,true)) do check(not e.survival,'无限模式各轮也遵守时符筛选') end
+    for _,e in ipairs(R.draw(seed,1,noTime,true)) do check(not e.survival,'无限模式各轮也遵守时符筛选') end
 end
-local _,oldTimeCount=R.buildPool(noTime,5)
-check(oldTimeCount==410,'版本5录像保留原卡池，不因时符筛选改变路线')
 local remembered=R.copyFilters(noTime)
 check(not remembered.cards.survival and not noTime.cards.survival,'时符关闭状态进入筛选副本')
-local th36=R.defaultFilters(nil,4);th36.stages={TH36=true}
+local th36=R.defaultFilters();th36.stages={TH36=true}
 local disabled,disabledCount=R.buildPool(th36)
 check(#disabled==0 and disabledCount==0 and not R.copyFilters(th36).stages.TH36,'旧配置不能重新启用地灵殿')
-local historical,historicalCount=R.buildPool(nil,4)
-check(#historical==4 and historicalCount==410,'精简版不再载入地灵殿，版本4旧录像由内容入口拒绝')
-local only36,n36=R.buildPool(th36,4)
-check(#only36==0 and n36==0,'精简版不存在地灵殿候选或资源占位')
-local _,version3=R.buildPool(nil,3)
-check(version3==410,'版本3保持四作410项')
-local _,version7=R.buildPool(nil,7)
-check(version7==351,'版本7录像缺少筛选初态时仍保留Extra/Phantasm')
-local oldRoutes={
-    {2,17,'TH31:409,TH35:3602,TH32:3938,TH32:3912,TH34:4395,TH34:3471,TH32:3955,TH34:3480,TH35:3648,TH31:392'},
-    {3,17,'TH31:409,TH35:3602,TH32:3938,TH32:3912,TH34:3480,TH34:3411,TH32:3955,TH34:3446,TH35:3648,TH31:392'},
-    {3,31415,'TH34:3480,TH31:462,TH32:3925,TH32:3982,TH32:3914,TH31:388,TH32:3932,TH34:4464,TH32:3956,TH34:3406'},
-}
-for _,row in ipairs(oldRoutes) do check(keys(R.draw(row[2],1,nil,row[1]))==row[3],'旧版本相同种子保持原路线') end
 check(not R.defaultFilters('dual').stages.TH36 and not R.defaultFilters('chain').stages.TH36,'历史双Boss/接续不扩大来源')
 local forbidden={[4408]=true,[4439]=true,[4457]=true,[4468]=true,[4470]=true,
     [4471]=true,[4472]=true,[4473]=true,[4475]=true,[4476]=true,[351]=true,[368]=true}
 for _,bucket in ipairs(all) do for _,entry in ipairs(bucket.cards) do
     check(not forbidden[entry.cardId],'Normal/Hard/Last Word/自制不进入新池')
 end end
-local merged=R.defaultFilters(nil,6)
+local merged=R.defaultFilters()
 merged.stages={TH31=false,TH32=false,TH34=true,TH35=false}
 merged.difficulties={lunatic=false,extra=true}
 local mergedPool,mergedCount=R.buildPool(merged)
@@ -172,8 +156,6 @@ for _,entry in ipairs(mergedPool[1].cards) do
     check(entry.difficulty=='extra','Extra与Phantasm共用同一筛选键')
 end
 check(mergedCount==45 and phBoss and phRoad and exBoss,'妖妖梦合并池含原EX与PH的Boss和道中')
-local _,oldCount=R.buildPool(nil,2)
-check(oldCount==387,'版本2录像保留原卡池，不因并入Phantasm重抽路线')
 merged.difficulties={lunatic=true,extra=false}
 local lunatic=R.buildPool(merged)
 for _,entry in ipairs(lunatic[1].cards) do check(entry.originalDifficulty=='lunatic','只选Lunatic不混入Extra/Phantasm') end
@@ -205,8 +187,8 @@ local copy=R.copyFilters(selected);copy.stages.TH31=true
 check(not selected.stages.TH31,'筛选副本不回写菜单/本局快照')
 do
     local menuUI=dofile('THlib/UI/rogue_pool.lua')
-    local remembered,rememberedVersion=scoredata.rogue10_filters,scoredata.rogue10_filters_version
-    scoredata.rogue10_filters=R.defaultFilters(nil,7);scoredata.rogue10_filters_version=7
+    local remembered=scoredata.rogue10_filters
+    scoredata.rogue10_filters=R.defaultFilters()
     local o={timer=0,orot=0};menuUI.fresh(o,'roguelike')
     local function option(group,key)
         for index,entry in ipairs(menuUI.options) do
@@ -236,10 +218,10 @@ do
     menuUI.frame(o);check(not o.pool_options.cards.survival,'触控命中新的时符区域')
     ext.mouse.y=440;menuUI.frame(o);check(not o.pool_expanded,'点击高级选项标题可以折叠')
     ext.mouse.y=survival.y;menuUI.frame(o);check(not o.pool_options.cards.survival,'折叠后的隐藏选项不参与触控命中')
-    check(scoredata.rogue10_filters_version==R.POOL_VERSION and not R.savedFilters().cards.survival,'新版记住用户实际勾选，不继承旧默认')
+    check(not R.savedFilters().cards.survival,'新版记住用户实际勾选，不继承旧默认')
     menu,GetLastKey,ext.mouse,sp.math.PointBoundCheck=oldMenu,oldLast,oldMouse,oldBounds
     KEY,setting=oldKey,oldSetting
-    scoredata.rogue10_filters,scoredata.rogue10_filters_version=remembered,rememberedVersion
+    scoredata.rogue10_filters=remembered
 end
 
 for c,values in pairs(original) do for k,v in pairs(values) do assert(c[k]==v,'原卡参数被改动') end end
@@ -247,12 +229,9 @@ check(true,'抽取不改原卡参数与函数')
 local function simulate(seed,failRound,variant,endless,filters)
     lstg.var={ran_seed=seed,player_name='reimu_player',current_system='ABC'};lstg.tmpvar={};spawned={};musicEvents={};backgroundEvents={}
     R.start(variant,filters)
-    -- 历史十战生命周期仍单独回归；新局无限标记另用下面的跨轮检查覆盖。
-    if not endless then lstg.var.__rogue_endless_version=nil end
     local battle=stage.next_stage;stage.next_stage=nil;stage.current_stage=battle;battle.timer=0;battle.task=nil;battle:init()
     check(lstg.var.current_system=='','仅选人，不启用异变系统')
-    check(lstg.var.__revive_version==0 and lstg.var.revive==nil,'新局禁用答题复活并清除旧状态')
-    check(lstg.var.__rank_version==0 and lstg.var.rank==nil and G.enabled(),'新局禁用Rank并启用阶段HP倍率')
+    check(G.enabled(),'新局启用阶段HP倍率')
     for tick=1,3000 do
         task.Do(battle);battle:frame();battle.timer=battle.timer+1
         for _,entry in ipairs(spawned) do if entry.obj._live then entry.obj.life=entry.obj.life-1;if entry.obj.life<=0 then entry.obj._live=false;entry.died=stage.current_stage.timer end end end
@@ -261,31 +240,7 @@ local function simulate(seed,failRound,variant,endless,filters)
     end
     return battle,lstg.var.rogue_run
 end
-local battle,run=simulate(100)
-check(stage.next_stage==stage.stages[R.RESULT] and run.won and run.completed==10,'十战完成进入成功结算')
-check(#spawned==10,'每次只运行抽中的一张卡，共十张')
-check(#musicEvents==1 and musicEvents[1]==spawned[1].class.bgm,'短流程不提前换曲，首位Boss决定首曲')
-check(#backgroundEvents==1 and backgroundEvents[1]==spawned[1].class._bg,'单 Boss 十战只创建首位 Boss 的关卡背景')
-for i=2,#spawned do
-    check(spawned[i].tick==spawned[i-1].died,'单 Boss 随机十战死亡后立即创建下一位，没有两战之间的固定等待')
-end
-check(not spawned[1].obj.__NoCleanBullet,'普通随机十战沿用原有 Boss 自动消弹开关')
-for i,entry in ipairs(spawned) do local e=run.cards[i];check(entry.card==_sc_pr_table[e.level][e.index].sc_group[1].card,'运行原始卡对象') end
-check(cleared==1,'完成清理续玩点')
-stage.current_stage=stage.next_stage;stage.next_stage=nil;stage.current_stage:init()
-check(scoredata.rogue10.played==1 and scoredata.rogue10.cleared==1 and saved==1,'独立模式记录，不记为主线通关')
-local beforeStop=#stopped
-stage.current_stage:del()
-check(#stopped==beforeStop+1,'离开结算页停止 SCORE，返回菜单和重开共用此生命周期')
-battle,run=simulate(333,3)
-check(#stopped==beforeStop+2,'新局入口也停止残留 SCORE')
-check(stage.next_stage==stage.stages[R.RESULT] and not run.won and run.completed<10,'十次失误结束，失败不算通关')
-stage.current_stage=stage.next_stage;stage.next_stage=nil;stage.current_stage:init()
-check(scoredata.rogue10.played==2 and scoredata.rogue10.cleared==1,'失败次数与通关次数分开')
-replay=true;cleared=0;stage.next_stage=nil;battle.rogue_finished=false;lstg.var.dead=0;run.completed=10
-R.finish(battle,true)
-check(ext.rep_over and ext.pop_pause_menu and not stage.next_stage and cleared==0,'录像结束使用回放菜单，不删玩家续玩点')
-
+local battle,run
 -- 接续模式：达到血量或时间阈值时下一帧创建下一张，旧 Boss 继续存活。
 replay=false;ext.rep_over=nil;ext.pop_pause_menu=nil
 lstg.var={ran_seed=8801,player_name='reimu_player',current_system='ABC'};lstg.tmpvar={};spawned={}
@@ -341,7 +296,7 @@ SetViewMode,ui=setView,oldUI
 local endlessFilters=R.defaultFilters()
 endlessFilters.stages={TH35=true};endlessFilters.difficulties={extra=true};endlessFilters.encounters={road=true}
 local endlessBattle,endlessRun=simulate(777,25,'single',true,endlessFilters)
-check(endlessRun.endless and endlessRun.poolVersion==R.POOL_VERSION,'新局写入当前卡池版本及无限标记')
+check(endlessRun.endless,'单人新局使用无限模式')
 check(endlessRun.completed>=24 and not endlessRun.won,'无限模式超过十战后仍继续')
 check(endlessRun.cycle>=24 and #endlessRun.cards==1,'小池跨轮洗牌只保留当前轮')
 for _,entry in ipairs(spawned) do check(entry.card.card_id==3685,'多轮严格沿用风神录Extra道中筛选') end

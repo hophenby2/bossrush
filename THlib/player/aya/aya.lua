@@ -28,7 +28,7 @@ local defaultFrameEvent = {
         if self.photopre < self.preok and self.cd == 0 then
             self.playsound = false
             if self.slow == 2 then
-                self.photopre = self.photopre + 5 * (GameDrops and GameDrops.rate(self) or 1)
+                self.photopre = self.photopre + 5
                 table.insert(self.charge_sp, { x = self.x + ran:Float(-100, 100), y = self.y + ran:Float(-100, 100),
                                                scale = 1, alpha = 0, timer = 0, v = ran:Float(0.05, 0.08),
                                                rot = ran:Float(0, 360), omiga = ran:Sign() * ran:Float(3, 1) })
@@ -37,7 +37,7 @@ local defaultFrameEvent = {
                     PlaySound("ch00")
                 end
             else
-                self.photopre = self.photopre + 2 * (GameDrops and GameDrops.rate(self) or 1)
+                self.photopre = self.photopre + 2
                 if SequenceResources and SequenceResources.game()==95 then SequenceResources.loopOriginalSound(42,false,self.x)
                 elseif GetSoundState("ch00") == "playing" then
                     StopSound("ch00")
@@ -127,7 +127,7 @@ local defaultFrameEvent = {
             self.nicemoment = self.nicemoment - 1
         end
         if self.cd > 0 then
-            self.cd = max(0,self.cd - (GameDrops and GameDrops.rate(self) or 1))
+            self.cd = max(0,self.cd - 1)
         end
     end }
 }

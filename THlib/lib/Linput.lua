@@ -41,7 +41,7 @@ function GetInput()
             KeyState["shoot"] = not KeyStatePre["shoot"]
         end
         KeyState.touch_x,KeyState.touch_y,KeyState.touch_unlimited=nil,nil,nil
-        if AndroidInput and lstg.var.__input_version==2 then AndroidInput.readMovement(KeyState) end
+        if AndroidInput then AndroidInput.readMovement(KeyState) end
         if SequenceResources and SequenceResources.continueInput then SequenceResources.continueInput(KeyState) end
         -- 记录当前帧的按键
         replayWriter:Record(KeyState)
@@ -97,7 +97,7 @@ end
 
 -- 新移动端流程允许死亡/锁定期间继续拖动；使用已记录的输入，每帧最多积分一次。
 function ApplyPendingTouchMovement(p)
-    if not lstg.var or lstg.var.__touch_always_version~=1 or p._touch_movement_used then return end
+    if not lstg.var or not lstg.var.__touch_always or p._touch_movement_used then return end
     local key=p.key or KeyState
     local speed=p.slow==2 and p.llspeed or p.slow==1 and p.lspeed or p.hspeed
     local dx,dy=TouchInputMovement(p,key,speed or 4)

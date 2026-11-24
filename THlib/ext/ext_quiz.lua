@@ -1,26 +1,5 @@
--- 原 Special、复活与掉落共用题库和实体：中玉横线、垂直分隔弹、随弹下降的文字。
+-- 原 Special 与掉落共用实体：中玉横线、垂直分隔弹、随弹下降的文字。
 local Q={TIME=500,FALL=460,TOP=330,CHOICE_Y=282,QUESTION_Y=358,DEPTH=96,STEP=12}
-Q.questions={
-    {"已知lg x+lg y=2,则x+y的最小值为？", "20", "2", "40", "-20"},
-    {"已知(x-3)²+(y-4)²=9,则x²+y²的最大值为？", "64", "2", "4", "32"},
-    {"已知z=2-i,则5/z为？", "2+i", "(10+5i)/3", "2.5+5i", "2-i"},
-    {"已知tanx=3,则(sin2x+cos2x+1)/2=?", "2/5", "6/5", "5/6", "1/5"},
-    {"已知y=f(x)的图像在点M(0,f(0))处的切线方程为y=-2x,\n则f(0)+f'(0)=?", "-2", "0", "2", "1"},
-    {"已知向量AB=(3,8),A(-1,5),则B的坐标为？", "(2,13)", "(4,3)", "(4,13)", "(2,3)"},
-    {"|lgx|=2的两个根的等比中项为？", "±1", "±100", "±10", "±1000"},
-    {"已知向量a,b满足条件|a|=8,|b|=3,a·b=12,a与b的夹角为？", "60°", "30°", "45°", "120°"},
-}
-function Q.shuffle(count,gen)
-    local input,output={},{}
-    for i=1,count do input[i]=i end
-    for i=1,count do output[i]=table.remove(input,gen:Int(1,#input)) end
-    return output
-end
-function Q.new(index,gen)
-    local row=assert(Q.questions[index]);local order=Q.shuffle(4,gen)
-    local choices={};for i=1,4 do choices[order[i]]=row[i+1] end
-    return {index=index,text=row[1],choices=choices,correct=order[1],age=0,choice=1}
-end
 function Q.answer(x,count)
     count=count or 4
     return math.max(1,math.min(count,1+math.floor((x+192)/(384/count))))
@@ -175,22 +154,6 @@ function Q.clearSelection(key,fading)
     -- 结束时一起移除文字，避免与下一组下落选项重叠。
     local function remove(o) if o and IsValid(o) then object.RawDel(o) end end
     remove(board.mask);remove(board.question);for _,o in ipairs(board.labels) do remove(o) end
-end
-function Q.move(p,key)
-    local w=lstg.world or {pl=-192,pr=192,pb=-224,pt=224}
-    local dx=(key.right and 1 or 0)-(key.left and 1 or 0);local dy=(key.up and 1 or 0)-(key.down and 1 or 0)
-    local speed=key.slow and (p.lspeed or 2) or (p.hspeed or 4)
-    if dx*dy~=0 then speed=speed*0.70710678118655 end
-    dx,dy=dx*speed,dy*speed
-    if TouchInputMovement then
-        local tx,ty=TouchInputMovement(p,key,key.slow and (p.lspeed or 2) or (p.hspeed or 4))
-        if tx then dx,dy=tx,ty end
-    end
-    local x,y=p.x,p.y
-    p.x=math.max(w.pl+8,math.min(w.pr-8,p.x+dx));p.y=math.max(w.pb+16,math.min(w.pt-32,p.y+dy))
-    if p.grazer and IsValid(p.grazer) then p.grazer.x=p.x;p.grazer.y=p.y end
-    if p.sp then for _,v in ipairs(p.sp) do v[1]=v[1]+p.x-x;v[2]=v[2]+p.y-y end end
-    p.supportx=(p.supportx or x)+p.x-x;p.supporty=(p.supporty or y)+p.y-y
 end
 function Q.contact(previous,p,oldAge,age,count,duration,linear)
     local radius=6+math.max(p.A or 0,p.B or 0,3)

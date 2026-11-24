@@ -19,8 +19,7 @@ DoFile(extpath .. "ext_boss.lua")--可能会很傻逼的操作，boss的ui集中
 DoFile(extpath .. "ext_manual.lua")--像天邪鬼那样的弹出界面来说明游戏内容的
 DoFile(extpath .. "ext_other.lua")--一些函数整理
 DoFile(extpath .. "ext_mouse.lua")--鼠标控制
-DoFile(extpath .. "ext_quiz.lua")--原符卡与复活共用题库
-DoFile(extpath .. "ext_revive.lua")--失败前答题续战
+DoFile(extpath .. "ext_quiz.lua")--原符卡与强化掉落共用实体
 
 local replayTicker = 0--控制录像播放速度时有用
 local slowTicker = 0--控制时缓的变量
@@ -210,46 +209,24 @@ local function DoFrame()
         return
     end
     if GameNet then GameNet.beforeLogic() end
-    if GameRevive.active() and ext.GetPauseMenuOrder() then
-        stage.group.frame_pause(stage.current_stage)
-        if stage.next_stage then
-            if SaveResume then SaveResume.afterLogic() end
-            return
-        end
-    end
-    if (GameNet and GameNet.quiz or function(fn,s) return fn(s) end)(GameRevive.frame,stage.current_stage) then
-        if GameDrops then GameDrops.suspend() end
-        if SaveResume then SaveResume.afterLogic() end
-        return
-    end
     --stage和object逻辑
     local perf=AndroidProfiler
     local nopause = (GetCurrentSuperPause() <= 0)
     if nopause or stage.nopause then
-        if GameRank and nopause then GameRank.step() end
         if not stage.current_stage.is_menu and not ext.notUIdraw then
             lstg.system:frame()
         end
         if perf then perf.begin('logic.stage') end
         task.Do(stage.current_stage)
-        -- 主线过关限制也可能在关卡协程内触发答题，本帧立即停止物理更新。
-        if GameRevive.active() then
-            if perf then perf.finish('logic.stage') end
-            if GameDrops then GameDrops.suspend() end
-            if SaveResume then SaveResume.afterLogic() end
-            return
-        end
         stage.current_stage:frame()
         stage.current_stage.timer = stage.current_stage.timer + 1
         if perf then perf.finish('logic.stage') end
     end
-    if GameRank then GameRank.beforeObjects() end
     ObjFrame()
     if SequenceResources and SequenceResources.enabled() then
         SequenceResources.resolveShotHits()
         SequenceResources.flushDamage()
     end
-    if GameRank then GameRank.afterObjects() end
     ext.boss_ui:frame()
     if nopause or stage.nopause then
         BoundCheck()

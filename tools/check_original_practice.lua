@@ -48,7 +48,7 @@ F.install()
 local count=0
 local function check(value,label) assert(value,label);count=count+1 end
 for level,units in pairs(legacy) do
-    for index,unit in ipairs(units) do check(_sc_pr_table[level][index]==unit,'旧录像的注册索引必须原位保留') end
+    for index,unit in ipairs(units) do check(_sc_pr_table[level][index]==unit,'练习视图不改变正式注册数组') end
 end
 for host,n in pairs(hosts) do check(#host.cards==n,'追加练习分段不污染旧整关卡链或随机池') end
 local byId,seen={},{}
@@ -74,36 +74,36 @@ lstg.var.sc_group={34,1}
 check(not catalog.canStart('Spell Practice@Spell Practice',true),'拒绝范围外符卡')
 -- 直接执行真实PracticeStart入口，检查拒绝发生在状态写入前，版本标记先于录像快照。
 local group,snapshot={},nil
-local state={var={rogue_run='原状态',__original_flow_version='旧标记',sc_group={34,1}}}
+local state={var={rogue_run='原状态',sc_group={34,1}}}
 local env=setmetatable({stg=group,lstg=state,setting={},GameNet=false,AndroidInput=false,
     GameDrops={VERSION=7},stage={stages={menu={},['TH34@BossRush']={group={title='menu'}},
         ['Spell Practice@Spell Practice']={group={title='menu'}}}}},{__index=_G})
 env.dofile=function(path)
     local chunk=assert(loadfile(path));setfenv(chunk,env);return chunk()
 end
-env.stage.Set=function(mode,name) snapshot={mode=mode,name=name,version=state.var.__original_flow_version,asl=state.var.__th38_version,mhj3=state.var.__th39_version,bdb=state.var.__th43_version} end
+env.stage.Set=function(mode,name) snapshot={mode=mode,name=name} end
 local entryFile=assert(io.open('THlib/ext/ext_stage_group.lua','rb'))
 local entrySource=entryFile:read('*a');entryFile:close()
 local first=assert(entrySource:find('function stg.PracticeStart(',1,true))
 local last=assert(entrySource:find('function stg.FinishStage()',first,true))
 local entry=assert(loadstring(entrySource:sub(first,last-1)));setfenv(entry,env);entry()
 check(group.PracticeStart('TH06@BossRush',false)==false and not snapshot,'范围外整关不能写入录像')
-check(state.var.rogue_run=='原状态' and state.var.__original_flow_version=='旧标记','拒绝练习不得污染当前状态')
+check(state.var.rogue_run=='原状态','拒绝练习不得污染当前状态')
 check(group.PracticeStart('Spell Practice@Spell Practice',true)==false and not snapshot,'范围外符卡不能绕过入口')
 group.PracticeStart('TH34@BossRush',false)
-check(snapshot.name=='TH34@BossRush' and snapshot.version==F.VERSION,'整关录像开始前保存流程版本')
+check(snapshot.name=='TH34@BossRush','整关练习使用当前入口')
 state.var.sc_group={32,legacy[32][1].index}
 group.PracticeStart('Spell Practice@Spell Practice',true)
 check(snapshot.name=='Spell Practice@Spell Practice' and state.var.cheat==true,'允许五作符卡入口及练习无敌')
 state.var.sc_group={36,1}
 group.PracticeStart('Spell Practice@Spell Practice',true)
-check(snapshot.asl==1,'雪莲华来源版本先于录像快照，避免与旧AEX串线')
+check(snapshot.name=='Spell Practice@Spell Practice','雪莲华练习入口')
 state.var.sc_group={37,1}
 group.PracticeStart('Spell Practice@Spell Practice',true)
-check(snapshot.mhj3==1,'永夜篇来源版本先于录像快照，避免与旧AEX串线')
+check(snapshot.name=='Spell Practice@Spell Practice','永夜篇练习入口')
 state.var.sc_group={41,1}
 group.PracticeStart('Spell Practice@Spell Practice',true)
-check(snapshot.bdb==1,'栖霞园来源版本先于录像快照')
+check(snapshot.name=='Spell Practice@Spell Practice','栖霞园练习入口')
 local expected={137,105,85,129,80,121,91,123,90,128,111,#TH43.units()}
 for i,entry in ipairs(catalog.stages) do
     local units=F.units(entry.level)

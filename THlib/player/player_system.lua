@@ -95,7 +95,7 @@ local defaultKeyEvent = {
     { "shoot", "up", "key.shoot.up", 0, function(self)
         local coop=GameNet and GameNet.host()
         local touch=coop and self.key and self.key.touch_shoot
-            or (not coop and AndroidPlatform and lstg.var.__touch_toggle_version==1)
+            or (not coop and AndroidPlatform)
         if touch or self.__shoot_count <= 0 then
             self.__shoot_count = 0
             self.__shoot_flag = false
@@ -252,7 +252,7 @@ local defaultFrameEvent = {
             self.lh = 1
         end
         if self.nextshoot > 0 then
-            self.nextshoot = max(0,self.nextshoot - (GameDrops and GameDrops.cooldownStep(self) or 1))
+            self.nextshoot = max(0,self.nextshoot - 1)
         end
         if self.nextspell > 0 then
             self.nextspell = self.nextspell - 1
@@ -401,7 +401,7 @@ end
 function system:shoot()
     local p = self.player
     if p.class.shoot then
-        if GameDrops then GameDrops.shoot(p,p.class.shoot) else p.class.shoot(p) end
+        p.class.shoot(p)
     end
 end
 
@@ -418,9 +418,8 @@ local function cancel_contact_bullet(other)
 end
 function system:colli(other)
     local p = self.player
-    local contact=lstg.var.__contact_cancel_version==1
-    local active=p.death==0 or contact and p.protect>0 and (p.death<50 or p.death>90)
-    if active and not p.dialog and (contact or not cheat) and not lstg.var.ON_astral then
+    local active=p.death==0 or p.protect>0 and (p.death<50 or p.death>90)
+    if active and not p.dialog and not lstg.var.ON_astral then
         if p.protect == 0 and not cheat then
             if other.IsBoss and not other.is_combat then
                 --在没有战斗的时候不判定体术
@@ -439,18 +438,13 @@ function system:colli(other)
                 item.PlayerMiss(p)
                 New(player_death_ef, p.x, p.y)
             end
-            if contact then cancel_contact_bullet(other) end
+            cancel_contact_bullet(other)
             return true
         end
         if other.group == 10 and not other.IsBentLaser and not cheat then
             laser.CutOnUnit(other, p)
         end
-        if contact then
-            cancel_contact_bullet(other)
-        elseif other.group == 1 then
-            if OriginalBulletVisual then OriginalBulletVisual.cancel_bullet(other,'Del')
-            else object.Del(other) end
-        end
+        cancel_contact_bullet(other)
     end
     self:doColliAfterEvent(other)
 end

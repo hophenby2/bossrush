@@ -35,7 +35,6 @@ lstg.var.score,lstg.var.man=0,0
 SearchStageLevel={}
 BoxCheck=function(o,l,r,b,t) return o.x>=l and o.x<=r and o.y>=b and o.y<=t end
 AddMoney=function() end
-GameRank=false
 GameDrops=false
 local ef=assert(io.open('THlib/enemy/enemy.lua','rb'));local es=ef:read('*a');ef:close()
 local enemy_start=assert(es:find('local cos, sin = cos, sin',1,true))

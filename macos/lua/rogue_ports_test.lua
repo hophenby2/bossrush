@@ -31,8 +31,6 @@ function T.install()
                 end
             end
         end
-        local legacy=RogueTen.buildPool(nil,9)
-        for _,bucket in ipairs(legacy) do assert(bucket.level<35,'旧录像被加入新作') end
         local function choose(code,predicate,optional)
             for _,bucket in ipairs(pool) do if bucket.code==code then
                 for _,e in ipairs(bucket.cards) do if predicate(e) then return e end end

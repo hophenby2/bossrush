@@ -1,12 +1,12 @@
 -- roguelike 模式持续战斗至生命耗尽；所选卡池抽完后重新洗牌，不重置生命和强化。
 -- 复用原卡的标定值，阶段倍率只作用于运行中的敌机，不改共享卡表、时限或弹幕。
-local R={POOL_VERSION=11,COUNT=10,MISS_LIMIT=10,NAME='RogueTen',BATTLE='RogueTen@RogueTen',RESULT='RogueResult@RogueTen',
+local R={COUNT=10,MISS_LIMIT=10,NAME='RogueTen',BATTLE='RogueTen@RogueTen',RESULT='RogueResult@RogueTen',
     CHAIN_HP=0.15,CHAIN_TIME_FRAMES=3*60}
 R.modes={single={name=R.NAME,battle=R.BATTLE,result=R.RESULT,title='roguelike模式',width=1,record='rogue10'},
     staged={name='RogueTwo',battle='RogueTwo@RogueTwo',result='RogueTwoResult@RogueTwo',title='roguelike模式2',width=1,record='rogue2',count=38,progression=true},
     dual={name='RogueDuo',battle='RogueDuo@RogueDuo',result='RogueDuoResult@RogueDuo',title='双Boss随机十战',width=2,record='rogue_dual10'},
     chain={name='RogueChain',battle='RogueChain@RogueChain',result='RogueChainResult@RogueChain',title='接续模式',width=1,record='rogue_chain10',chain=true}}
-local function misses() return GameRevive and GameRevive.misses() or lstg.var.dead end
+local function misses() return lstg.var.dead end
 local function mode(run) return R.modes[run and run.mode or 'single'] or R.modes.single end
 local function chainDone(b)
     if not IsValid(b) then return true,'gone' end
@@ -61,25 +61,17 @@ R.copyFilters=poolSource.copy
 R.buildPool=poolSource.build
 function R.savedFilters(variant)
     if variant=='staged' then return R.copyFilters(scoredata.rogue2_filters,'staged') end
-    local version=scoredata.rogue10_filters_version
-    -- 升级保留旧筛选，同时让新七作在首次升级后可直接参与新局。
-    if version==8 or version==9 then
-        local filters=R.copyFilters(scoredata.rogue10_filters)
-        for _,source in ipairs(dofile('mod/rogue_ports.lua').sources) do filters.stages[source.code]=true end
-        return filters
-    end
-    -- 11 只排除误收的空占位阶段，筛选项结构不变，保留版本10的勾选。
-    return (version==10 or version==R.POOL_VERSION) and R.copyFilters(scoredata.rogue10_filters) or R.defaultFilters()
+    return R.copyFilters(scoredata.rogue10_filters)
 end
--- 新的单人模式只需一个候选；显式指定宽度时仍校验旧十战模式的卡数。
+-- 单人无限模式只需一个候选；双 Boss 与接续模式校验完整十战所需卡数。
 function R.poolStatus(filters,width,variant)
     if variant=='staged' then return poolSource.stageStatus(filters) end
     return poolSource.status(filters,width and R.COUNT*width or 1)
 end
 R.STAGE_COUNTS=poolSource.STAGE_COUNTS
 R.buildStagePool=poolSource.buildStages
-function R.drawStages(seed,filters,poolVersion)
-    local status,stages=poolSource.stageStatus(filters,poolVersion)
+function R.drawStages(seed,filters)
+    local status,stages=poolSource.stageStatus(filters)
     assert(status.valid,status.message)
     local gen=Rand();gen:Seed(seed)
     local cards={}
@@ -94,36 +86,10 @@ function R.drawStages(seed,filters,poolVersion)
     return cards
 end
 
--- 旧录像初态没有筛选版本，保留旧抽取算法与来源顺序。新局不会走这条路径。
-local sources={{level=29,code='TH31'},{level=32,code='TH34'},{level=33,code='TH35'}}
-local function replayPoolV1()
-    local pool={}
-    for _,source in ipairs(sources) do
-        local bucket={code=source.code,level=source.level,cards={}}
-        for index,unit in ipairs(_sc_pr_table[source.level] or {}) do
-            local first=unit.sc_group and unit.sc_group[1]
-            local label=unit.CardName or ''
-            -- TH34 的最初八张为整段道中载体；其余道中搬运卡由注册标题辨认。
-            local id=first and first.card.card_id
-            local route=label:find('道中',1,true) or (source.level==32 and id and id>=3400 and id<=3407)
-            if first and not route and first.card.is_combat~=false then
-                bucket.cards[#bucket.cards+1]={key=source.code..':'..index,index=index,level=source.level,source=source.code,
-                    cardId=id,title=label~='' and label or (first.card.is_sc and first.card.name or '非符'),spell=first.card.is_sc==true}
-            end
-        end
-        assert(#bucket.cards>0,'随机十战缺少卡池：'..source.code)
-        pool[#pool+1]=bucket
-    end
-    return pool
-end
-function R.draw(seed,width,filters,poolVersion,wholePool)
+function R.draw(seed,width,filters,wholePool)
     width=width or 1;assert(width==1 or width==2)
-    local pool,total
-    if poolVersion==1 then pool=replayPoolV1()
-    else
-        pool,total=R.buildPool(filters or (width==2 and R.defaultFilters('dual',poolVersion) or nil),poolVersion)
-        assert(total>=(wholePool and 1 or R.COUNT*width),'所选随机卡池不足，不能跨池补抽')
-    end
+    local pool,total=R.buildPool(filters or (width==2 and R.defaultFilters('dual') or nil))
+    assert(total>=(wholePool and 1 or R.COUNT*width),'所选随机卡池不足，不能跨池补抽')
     local count=wholePool and total or R.COUNT*width
     local gen=Rand();gen:Seed(seed)
     local cards={}
@@ -149,14 +115,10 @@ function R.start(variant,filters)
     local status=endless and R.poolStatus(options) or R.poolStatus(options,config.width,variant)
     if not status.valid then return false,status.message end
     -- stage.group.Start立即序列化录像初态；筛选必须先写入lstg.var，不能只放在菜单对象里。
-    lstg.var.__rogue_pool_version=R.POOL_VERSION
-    lstg.var.__rogue_preload_version=1
-    -- 是否无限必须进入录像初态，旧十战录像不能因当前模式改动而继续抽卡。
-    lstg.var.__rogue_endless_version=endless and 1 or nil
     lstg.var.rogue_filters=options
     lstg.var.rogue_variant=variant
     lstg.var.rogue_run=nil
-    if variant=='single' then scoredata.rogue10_filters=R.copyFilters(options);scoredata.rogue10_filters_version=R.POOL_VERSION end
+    if variant=='single' then scoredata.rogue10_filters=R.copyFilters(options) end
     if config.progression then scoredata.rogue2_filters=R.copyFilters(options,variant) end
     StopMusic('SCORE')
     lstg.var.current_system=''
@@ -210,7 +172,7 @@ local function runCards(self)
             self.rogue_scene_ready=true
             self.now_music=class.bgm
             if class.bgm and not rogueMusic.start(self,class.bgm) then
-                if run.poolVersion<10 or not rogueMusic.resume(self) then PlayMusic(class.bgm) end
+                if not rogueMusic.resume(self) then PlayMusic(class.bgm) end
             end
         end
         player.protect=math.max(player.protect or 0,90)
@@ -271,7 +233,7 @@ local function runCards(self)
                 run.cycle=run.cycle+1
                 -- 每轮使用独立种子，抽卡不消耗弹幕随机数；只保留当前轮，避免无限积累路线。
                 local seed=(run.seed+(run.cycle-1)*104729)%2147483647
-                run.cards=R.draw(seed,1,run.filters,run.poolVersion,true)
+                run.cards=R.draw(seed,1,run.filters,true)
                 if #run.cards>1 and run.cards[1].cardId==previous.cardId then
                     run.cards[1],run.cards[2]=run.cards[2],run.cards[1]
                 end
@@ -317,24 +279,23 @@ local function register(variant,config)
     local battle=stage.group.AddStage(config.name,config.battle,false)
     battle.displayname=config.title
     battle.wait_for_resources=true
-    battle.revive_miss_limit=R.MISS_LIMIT-1
     function battle:init()
         self.rogue_finished=false
         self.rogue_scene_ready=false
         self.rogue_chain_ghosts=nil
         self:Option()
-        local version=lstg.var.__rogue_pool_version or (ext.replay.IsReplay() and 1 or R.POOL_VERSION)
-        local filters=version>=2 and R.copyFilters(lstg.var.rogue_filters,variant,version) or nil
-        local endless=variant=='single' and lstg.var.__rogue_endless_version==1
+        local filters=R.copyFilters(lstg.var.rogue_filters,variant)
+        local endless=variant=='single'
         local cards
-        if config.progression then cards=R.drawStages(lstg.var.ran_seed,filters,version)
-        else cards=R.draw(lstg.var.ran_seed,config.width,filters,version,endless) end
-        lstg.var.rogue_run={mode=variant,seed=lstg.var.ran_seed,filters=filters,poolVersion=version,total=config.count or R.COUNT,
+        if config.progression then cards=R.drawStages(lstg.var.ran_seed,filters)
+        else cards=R.draw(lstg.var.ran_seed,config.width,filters,endless) end
+        lstg.var.rogue_run={mode=variant,seed=lstg.var.ran_seed,filters=filters,total=config.count or R.COUNT,
             cards=cards,current=0,completed=0,
             endless=endless,cycle=1,cardIndex=0}
         if GameHPScale then GameHPScale.init(lstg.var.rogue_run) end
         -- 曲库取本模式四作的全部原有配乐，不因只选某一Boss而退化成单曲循环。
-        local musicFilters=R.defaultFilters(nil,9);musicFilters.cards.survival=true;musicFilters.encounters.road=true
+        local musicFilters=R.defaultFilters();musicFilters.cards.survival=true;musicFilters.encounters.road=true
+        for _,source in ipairs(dofile('mod/rogue_ports.lua').sources) do musicFilters.stages[source.code]=false end
         rogueMusic.init(lstg.var.rogue_run,R.buildPool(musicFilters))
         self.level=29
         task.New(self,function() runCards(self) end)

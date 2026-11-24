@@ -86,7 +86,7 @@ function H.lives()
     if native then return math.max(0,native.lives+1),9 end
     local s=stage.current_stage
     local limit=lstg.var.rogue_run and RogueTen.MISS_LIMIT or s.AllowMissCount or 10
-    local misses=GameRevive and GameRevive.misses() or lstg.var.dead or 0
+    local misses=lstg.var.dead or 0
     return math.max(0,limit-misses),limit
 end
 function H.resources(x1,x2,top,alpha)
