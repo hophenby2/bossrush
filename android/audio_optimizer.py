@@ -79,7 +79,7 @@ def optimize_music(sources, cache, compression_level=.5, minimum_bitrate=192000,
         raw = source.read_bytes()
         codec = f'music-v2-compression-{compression_level}-min-{minimum_bitrate}-{sf.__version__}-{sf.__libsndfile_version__}'
         if sample_rate or mono:
-            codec += f'-resample-v1-{sample_rate}-mono{mono}'
+            codec += f'-resample-v2-pcm-{sample_rate}-mono{mono}'
         key = hashlib.sha256(str(source).encode() + raw + codec.encode()).hexdigest()
         metadata, target = cache / (key + '.json'), cache / (key + '.ogg')
         if metadata.exists():
@@ -94,28 +94,42 @@ def optimize_music(sources, cache, compression_level=.5, minimum_bitrate=192000,
         if info.duration > 0 and len(raw) * 8 / info.duration > minimum_bitrate:
             target_rate=min(sample_rate or info.samplerate,info.samplerate)
             target_channels=1 if mono else info.channels
+            encoded = io.BytesIO()
             if target_rate!=info.samplerate or target_channels!=info.channels:
+                import numpy as np
                 ffmpeg=shutil.which('ffmpeg')
                 if not ffmpeg:
                     raise RuntimeError('低码率 BGM 档需要 ffmpeg')
-                result=subprocess.run([ffmpeg,'-v','error','-i','pipe:0','-map_metadata','-1',
-                    '-vn','-ar',str(target_rate),'-ac',str(target_channels),'-c:a','libvorbis',
-                    '-q:a','-1','-f','ogg','pipe:1'],input=raw,stdout=subprocess.PIPE,
+                pcm,rate=sf.read(io.BytesIO(raw),dtype='float32',always_2d=True)
+                # ffmpeg 只负责 PCM 重采样，Vorbis 由现有 libsndfile 编码，
+                # 不要求系统 ffmpeg 额外编入 libvorbis，也避免两套 Ogg 解码的首帧差异。
+                result=subprocess.run([ffmpeg,'-v','error','-f','f32le','-ar',str(rate),
+                    '-ac',str(info.channels),'-i','pipe:0','-vn','-ar',str(target_rate),
+                    '-ac',str(target_channels),'-c:a','pcm_f32le','-f','f32le','pipe:1'],
+                    input=pcm.astype('<f4',copy=False).tobytes(),stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,check=True).stdout
+                pcm=np.frombuffer(result,dtype='<f4').reshape(-1,target_channels)
+                expected=round(info.frames*target_rate/info.samplerate)
+                if abs(len(pcm)-expected)>1:
+                    raise RuntimeError(f'BGM重采样改变了时长：{source}')
+                if len(pcm)<expected:
+                    pcm=np.pad(pcm,((0,expected-len(pcm)),(0,0)))
+                with sf.SoundFile(encoded,'w',samplerate=target_rate,channels=target_channels,
+                                  format='OGG',subtype='VORBIS',compression_level=compression_level) as output:
+                    for offset in range(0,expected,32768):
+                        output.write(pcm[offset:min(expected,offset+32768)])
             else:
-                encoded = io.BytesIO()
                 with sf.SoundFile(io.BytesIO(raw)) as audio, sf.SoundFile(
                         encoded, 'w', samplerate=info.samplerate, channels=info.channels,
                         format='OGG', subtype='VORBIS', compression_level=compression_level) as output:
                     for block in audio.blocks(blocksize=32768, dtype='float32', always_2d=True):
                         output.write(block)
-                result = encoded.getvalue()
+            result = encoded.getvalue()
             if len(result) < len(raw) * .95:
                 with sf.SoundFile(io.BytesIO(result)) as decoded:
                     frames = sum(len(block) for block in decoded.blocks(blocksize=32768))
                     expected_frames=round(info.frames*target_rate/info.samplerate)
-                    tolerance=1 if target_rate!=info.samplerate else 0
-                    if (abs(frames-expected_frames)>tolerance or decoded.samplerate!=target_rate
+                    if (frames!=expected_frames or decoded.samplerate!=target_rate
                             or decoded.channels!=target_channels):
                         raise RuntimeError(f'Ogg改变了音乐采样率、声道或帧数：{source}')
                     record.update(packed_frames=frames,packed_sample_rate=decoded.samplerate,
