@@ -239,7 +239,7 @@ function stg.Start(group,loadout,practice)
     lstg.var.__touch_always_version=AndroidInput and not BossRushDesktop and 1 or nil
     lstg.var.__revive_version=0;lstg.var.revive=nil -- 新局禁用答题复活；0明确记录在录像初态。
     lstg.var.__rank_version=0;lstg.var.rank=nil
-    lstg.var.__hp_scale_version=(group._name=='RogueTen' or group._name=='RogueDuo' or group._name=='RogueChain') and 1 or nil
+    lstg.var.__hp_scale_version=(group._name=='RogueTen' or group._name=='RogueTwo' or group._name=='RogueDuo' or group._name=='RogueChain') and 1 or nil
     lstg.var.__rogue_music_version=lstg.var.__hp_scale_version and 1 or nil
     lstg.var.__original_flow_version=group._name=='BossRush' and 1 or nil
     lstg.var.__th38_version=group.sequence_native=='thasl' and 1 or nil

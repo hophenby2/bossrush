@@ -212,6 +212,12 @@ function stage_menu:init()
             menu.FadeIn(menu_player_system_select)
             menu.FadeOut(menu_title)
         end, "Roguelike" },
+        { "roguelike模式2", function()
+            menu_player_system_select:fresh('roguelike2')
+            menu_player_system_select.state = "stage"
+            menu.FadeIn(menu_player_system_select)
+            menu.FadeOut(menu_title)
+        end, "Roguelike 2" },
         { "顺序模式", openSequence, "Original Order" },
         { "查看录像", function()
             replay_loader.Refresh(menu_replay_loader)
@@ -268,7 +274,7 @@ function stage_menu:init()
             end)
             task.New(stage_menu, function()
                 MaskFader()
-                RogueTen.start('single', menu_player_system_select.pool_options)
+                RogueTen.start(menu_player_system_select.pool_variant or 'single', menu_player_system_select.pool_options)
             end)
         elseif start=='original_sequence' then
             if not menu_sequence_select then

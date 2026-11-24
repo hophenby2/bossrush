@@ -3,6 +3,7 @@
 local R={POOL_VERSION=11,COUNT=10,MISS_LIMIT=10,NAME='RogueTen',BATTLE='RogueTen@RogueTen',RESULT='RogueResult@RogueTen',
     CHAIN_HP=0.15,CHAIN_TIME_FRAMES=3*60}
 R.modes={single={name=R.NAME,battle=R.BATTLE,result=R.RESULT,title='roguelike模式',width=1,record='rogue10'},
+    staged={name='RogueTwo',battle='RogueTwo@RogueTwo',result='RogueTwoResult@RogueTwo',title='roguelike模式2',width=1,record='rogue2',count=38,progression=true},
     dual={name='RogueDuo',battle='RogueDuo@RogueDuo',result='RogueDuoResult@RogueDuo',title='双Boss随机十战',width=2,record='rogue_dual10'},
     chain={name='RogueChain',battle='RogueChain@RogueChain',result='RogueChainResult@RogueChain',title='接续模式',width=1,record='rogue_chain10',chain=true}}
 local function misses() return GameRevive and GameRevive.misses() or lstg.var.dead end
@@ -58,7 +59,8 @@ R.sources=poolSource.sources
 R.defaultFilters=poolSource.defaults
 R.copyFilters=poolSource.copy
 R.buildPool=poolSource.build
-function R.savedFilters()
+function R.savedFilters(variant)
+    if variant=='staged' then return R.copyFilters(scoredata.rogue2_filters,'staged') end
     local version=scoredata.rogue10_filters_version
     -- 升级保留旧筛选，同时让新七作在首次升级后可直接参与新局。
     if version==8 or version==9 then
@@ -70,7 +72,27 @@ function R.savedFilters()
     return (version==10 or version==R.POOL_VERSION) and R.copyFilters(scoredata.rogue10_filters) or R.defaultFilters()
 end
 -- 新的单人模式只需一个候选；显式指定宽度时仍校验旧十战模式的卡数。
-function R.poolStatus(filters,width) return poolSource.status(filters,width and R.COUNT*width or 1) end
+function R.poolStatus(filters,width,variant)
+    if variant=='staged' then return poolSource.stageStatus(filters) end
+    return poolSource.status(filters,width and R.COUNT*width or 1)
+end
+R.STAGE_COUNTS=poolSource.STAGE_COUNTS
+R.buildStagePool=poolSource.buildStages
+function R.drawStages(seed,filters,poolVersion)
+    local status,stages=poolSource.stageStatus(filters,poolVersion)
+    assert(status.valid,status.message)
+    local gen=Rand();gen:Seed(seed)
+    local cards={}
+    for number,count in ipairs(R.STAGE_COUNTS) do
+        for _=1,count do
+            local available={}
+            for _,bucket in ipairs(stages[number]) do if #bucket.cards>0 then available[#available+1]=bucket end end
+            local bucket=available[gen:Int(1,#available)]
+            cards[#cards+1]=table.remove(bucket.cards,gen:Int(1,#bucket.cards))
+        end
+    end
+    return cards
+end
 
 -- 旧录像初态没有筛选版本，保留旧抽取算法与来源顺序。新局不会走这条路径。
 local sources={{level=29,code='TH31'},{level=32,code='TH34'},{level=33,code='TH35'}}
@@ -121,9 +143,10 @@ end
 function R.start(variant,filters)
     variant=variant or 'single'
     local config=assert(R.modes[variant])
-    local options=R.copyFilters(variant=='single' and (filters or R.savedFilters()) or R.defaultFilters(variant),variant)
+    local configurable=variant=='single' or config.progression
+    local options=R.copyFilters(configurable and (filters or R.savedFilters(variant)) or R.defaultFilters(variant),variant)
     local endless=variant=='single'
-    local status=endless and R.poolStatus(options) or R.poolStatus(options,config.width)
+    local status=endless and R.poolStatus(options) or R.poolStatus(options,config.width,variant)
     if not status.valid then return false,status.message end
     -- stage.group.Start立即序列化录像初态；筛选必须先写入lstg.var，不能只放在菜单对象里。
     lstg.var.__rogue_pool_version=R.POOL_VERSION
@@ -134,6 +157,7 @@ function R.start(variant,filters)
     lstg.var.rogue_variant=variant
     lstg.var.rogue_run=nil
     if variant=='single' then scoredata.rogue10_filters=R.copyFilters(options);scoredata.rogue10_filters_version=R.POOL_VERSION end
+    if config.progression then scoredata.rogue2_filters=R.copyFilters(options,variant) end
     StopMusic('SCORE')
     lstg.var.current_system=''
     stage.group.Start(stage.groups[config.name])
@@ -165,6 +189,7 @@ local function runCards(self)
     local run=lstg.var.rogue_run
     task.Wait(60)
     local config=mode(run)
+    local count=config.count or R.COUNT
     encounter.warmup(self)
     local function prepare(entry)
         local port=encounter.begin(self,entry)
@@ -235,7 +260,7 @@ local function runCards(self)
         return
     end
     local index=0
-    while run.endless or index<R.COUNT do
+    while run.endless or index<count do
         index=index+1
         if misses()>=R.MISS_LIMIT then R.finish(self,false);return end
         run.current=index
@@ -280,7 +305,7 @@ local function runCards(self)
         end
         if misses()>=R.MISS_LIMIT then R.finish(self,false);return end
         run.completed=index
-        if lstg.SystemLog then lstg.SystemLog('BOSSRUSH_ROGUE: cleared '..index..(run.endless and '' or '/'..R.COUNT)..' '..entry.key) end
+        if lstg.SystemLog then lstg.SystemLog('BOSSRUSH_ROGUE: cleared '..index..(run.endless and '' or '/'..count)..' '..entry.key) end
         encounter.stop(self)
         if config.width==2 then task.Wait(90) end
     end
@@ -301,8 +326,11 @@ local function register(variant,config)
         local version=lstg.var.__rogue_pool_version or (ext.replay.IsReplay() and 1 or R.POOL_VERSION)
         local filters=version>=2 and R.copyFilters(lstg.var.rogue_filters,variant,version) or nil
         local endless=variant=='single' and lstg.var.__rogue_endless_version==1
-        lstg.var.rogue_run={mode=variant,seed=lstg.var.ran_seed,filters=filters,poolVersion=version,
-            cards=R.draw(lstg.var.ran_seed,config.width,filters,version,endless),current=0,completed=0,
+        local cards
+        if config.progression then cards=R.drawStages(lstg.var.ran_seed,filters,version)
+        else cards=R.draw(lstg.var.ran_seed,config.width,filters,version,endless) end
+        lstg.var.rogue_run={mode=variant,seed=lstg.var.ran_seed,filters=filters,poolVersion=version,total=config.count or R.COUNT,
+            cards=cards,current=0,completed=0,
             endless=endless,cycle=1,cardIndex=0}
         if GameHPScale then GameHPScale.init(lstg.var.rogue_run) end
         -- 曲库取本模式四作的全部原有配乐，不因只选某一Boss而退化成单曲循环。
@@ -394,6 +422,7 @@ function panel:render()
     if previous then SetViewMode(previous) end
 end
 register('single',R.modes.single)
+register('staged',R.modes.staged)
 register('dual',R.modes.dual)
 register('chain',R.modes.chain)
 RogueTen=R

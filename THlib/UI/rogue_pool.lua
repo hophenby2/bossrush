@@ -1,12 +1,20 @@
 -- 选关界面右侧的高级选项默认折叠；隐藏时不参与键盘焦点和鼠标命中。
 local U={}
 local options={}
+local stagedOptions={}
 local works={{'TH31','永夜抄'},{'TH32','红魔乡'},{'TH34','妖妖梦'},{'TH35','风神录'},
     {'TH37','幕华祭春雪'},{'TH38','雪莲华'},{'TH39','幕华祭永夜'},{'TH40','夏夜祭'},
     {'TH41','祈华梦'},{'TH42','Like Dreamer'},{'TH43','栖霞园'}}
 for i,work in ipairs(works) do
     options[#options+1]={group='stages',key=work[1],text=work[2],x=505+((i-1)%3)*141,
         y=376-math.floor((i-1)/3)*30,width=133}
+end
+for _,work in ipairs(works) do
+    if work[1]~='TH42' then
+        local i=#stagedOptions
+        stagedOptions[#stagedOptions+1]={group='stages',key=work[1],text=work[2],x=505+(i%3)*141,
+            y=376-math.floor(i/3)*30,width=133}
+    end
 end
 for _,entry in ipairs({
     {group='difficulties',key='lunatic',text='Lunatic / NM',x=505,y=234,width=133},
@@ -20,28 +28,31 @@ for _,entry in ipairs({
 }) do options[#options+1]=entry end
 local groupNames={stages='关卡',difficulties='难度',encounters='Boss / 道中'}
 U.options=options
+U.stagedOptions=stagedOptions
+local function entries(o) return o.pool_variant=='staged' and stagedOptions or options end
 local function over(mouse,entry)
     return sp.math.PointBoundCheck(mouse.x,mouse.y,entry.x,entry.x+(entry.width or 200),entry.y-14,entry.y+14)
 end
-local function refresh(o) o.pool_status=RogueTen.poolStatus(o.pool_options) end
+local function refresh(o) o.pool_status=RogueTen.poolStatus(o.pool_options,nil,o.pool_variant) end
 local function notice(o,message)
     o.pool_notice,o.pool_notice_time=message,180;PlaySound('invalid')
 end
-local function startIndex(o) return o.pool_expanded and #options+2 or 2 end
+local function startIndex(o) return o.pool_expanded and #entries(o)+2 or 2 end
 function U.fresh(o,mode)
     o.pool_options=nil;o.pool_status=nil;o.pool_notice=nil;o.pool_notice_time=0
     o.pool_focus=0;o.pool_expanded=false
     o.pool_mouse_down=ext.mouse:isPress(1)
-    if mode=='roguelike' then
-        o.pool_options=RogueTen.savedFilters()
-        o.simple_title='roguelike模式 · 准备';refresh(o)
+    o.pool_variant=mode=='roguelike2' and 'staged' or 'single'
+    if mode=='roguelike' or mode=='roguelike2' then
+        o.pool_options=RogueTen.savedFilters(o.pool_variant)
+        o.simple_title=RogueTen.modes[o.pool_variant].title..' · 准备';refresh(o)
     end
 end
 function U.expand(o)
     o.pool_expanded=not o.pool_expanded;o.pool_focus=1;PlaySound('select00')
 end
 function U.toggle(o,index)
-    local entry=options[index];if not entry then return end
+    local entry=entries(o)[index];if not entry then return end
     local group=o.pool_options[entry.group]
     if group[entry.key] and not entry.optional then
         local another=false
@@ -49,8 +60,11 @@ function U.toggle(o,index)
         if not another then notice(o,groupNames[entry.group]..'至少保留一项');return end
     end
     group[entry.key]=not group[entry.key]
-    scoredata.rogue10_filters=RogueTen.copyFilters(o.pool_options)
-    scoredata.rogue10_filters_version=RogueTen.POOL_VERSION
+    if o.pool_variant=='staged' then scoredata.rogue2_filters=RogueTen.copyFilters(o.pool_options,'staged')
+    else
+        scoredata.rogue10_filters=RogueTen.copyFilters(o.pool_options)
+        scoredata.rogue10_filters_version=RogueTen.POOL_VERSION
+    end
     o.pool_notice=nil;o.pool_notice_time=0;refresh(o);PlaySound('ok00')
 end
 function U.ready(o)
@@ -71,7 +85,7 @@ function U.frame(o)
     if clicked then
         if sp.math.PointBoundCheck(mouse.x,mouse.y,505,920,423,457) then U.expand(o);return end
         if o.pool_expanded then
-            for index,entry in ipairs(options) do
+            for index,entry in ipairs(entries(o)) do
                 if over(mouse,entry) then o.pool_focus=index+1;U.toggle(o,index);return end
             end
         end
@@ -79,7 +93,7 @@ function U.frame(o)
     if GetLastKey()==KEY.ENTER then o:yes();return end
     if menu:keyYes() or GetLastKey()==setting.keys.shoot then
         if o.pool_focus==1 then U.expand(o)
-        elseif o.pool_expanded and o.pool_focus>=2 and o.pool_focus<=#options+1 then U.toggle(o,o.pool_focus-1)
+        elseif o.pool_expanded and o.pool_focus>=2 and o.pool_focus<=#entries(o)+1 then U.toggle(o,o.pool_focus-1)
         else o:yes() end
         return
     end
@@ -115,10 +129,11 @@ function U.render(o)
     RenderRect('white',505,920,423,457)
     ui:RenderText('title',(o.pool_expanded and '− ' or '+ ')..'高级选项',715,440,.9,white,'centerpoint')
     if o.pool_expanded then
-        for _,heading in ipairs({{'作品',402},{'难度（NM = Nightmare）',260},{'战斗',207},{'卡片类型',154}}) do
+        local headings=o.pool_variant=='staged' and {{'作品',402}} or {{'作品',402},{'难度（NM = Nightmare）',260},{'战斗',207},{'卡片类型',154}}
+        for _,heading in ipairs(headings) do
             ui:RenderText('title',heading[1],505,heading[2],.65,muted,'left','vcenter')
         end
-        for index,entry in ipairs(options) do
+        for index,entry in ipairs(entries(o)) do
             local checked=o.pool_options[entry.group][entry.key]
             local focused=o.pool_focus==index+1
             local hovered=over(ext.mouse,entry)
@@ -129,6 +144,11 @@ function U.render(o)
             ui:RenderText('title',checked and '√' or '□',entry.x+14,entry.y,.72,checked and accent or muted,'centerpoint')
             ui:RenderText('title',entry.text,entry.x+31,entry.y,(entry.width==133 and .58 or .65),checked and white or muted,'left','vcenter')
         end
+    end
+    if o.pool_variant=='staged' then
+        ui:RenderText('title','Lunatic · 符卡 / 非符（含耐久）',715,232,.65,white,'centerpoint')
+        ui:RenderText('title','1～6面：4 / 5 / 6 / 7 / 7 / 9 张',715,200,.65,muted,'centerpoint')
+        ui:RenderText('title','共38张 · 完成后结算',715,168,.65,muted,'centerpoint')
     end
     local state=o.pool_status;local valid=state and state.valid
     local message=o.pool_notice_time>0 and o.pool_notice or (not valid and state and state.message)

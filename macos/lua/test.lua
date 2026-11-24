@@ -7,6 +7,7 @@ function T.install()
     if mode=='rogue-entry-profile' then return assert(RogueEntryProfile).install() end
     if not mode then return end
     if mode=='rogue-ports' then return dofile('macos/rogue_ports_test.lua').install() end
+    if mode=='rogue-staged' then return dofile('macos/rogue_staged_test.lua').install() end
     if mode=='practice-options' then return dofile('macos/practice_options_test.lua').install() end
     if mode=='practice-systems' then return dofile('macos/practice_systems_test.lua').install() end
     local fixedSeed=tonumber(os.getenv('BOSSRUSH_MAC_TEST_SEED') or '')

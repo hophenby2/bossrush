@@ -4,7 +4,7 @@ local min,max=math.min,math.max
 function H.enabled()
     local scene=stage.current_stage
     local run=lstg.var.rogue_run
-    return scene and scene.stage_name=='RogueTen@RogueTen' and run and not run.finished
+    return scene and (scene.stage_name=='RogueTen@RogueTen' or scene.stage_name=='RogueTwo@RogueTwo') and run and not run.finished
 end
 function H.reset() H.pointers,H.current={},{} end
 local function collect()

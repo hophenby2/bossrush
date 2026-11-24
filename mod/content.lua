@@ -2,7 +2,7 @@
 local C={stages={'31','32','33','34','35','37','38','39','40','41','42','43'},ports={},levels={[29]=true,[30]=true,[31]=true,[32]=true,[33]=true,[35]=true,[36]=true,[37]=true,[38]=true,[39]=true,[40]=true,[41]=true}}
 local names={}
 for _,id in ipairs(C.stages) do names['TH'..id..'@BossRush']=true end
-local randomStages={['RogueTen@RogueTen']=true,['RogueDuo@RogueDuo']=true,['RogueChain@RogueChain']=true}
+local randomStages={['RogueTen@RogueTen']=true,['RogueTwo@RogueTwo']=true,['RogueDuo@RogueDuo']=true,['RogueChain@RogueChain']=true}
 function C.supportsRecord(record)
     if type(record)~='table' or type(record.stageName)~='string' then return false end
     local ok,v=pcall(DeSerialize,record.stageExtendInfo)

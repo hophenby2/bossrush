@@ -90,7 +90,7 @@ ui.menu = {
                  "Like Dreamer", -- 40 TH42
                  "栖霞园原作", -- 41 TH43
                  "天空璋AEX" },  -- STAGE_COUNT + 1
-    sntext = { RogueDuo = "双Boss随机十战", RogueChain = "接续模式", RogueTen = "roguelike模式", TH06 = "红魔乡", TH07 = "妖妖梦", TH08 = "永夜抄",
+    sntext = { RogueDuo = "双Boss随机十战", RogueChain = "接续模式", RogueTen = "roguelike模式", RogueTwo = "roguelike模式2", TH06 = "红魔乡", TH07 = "妖妖梦", TH08 = "永夜抄",
                TH09 = "花映塚", TH095 = "文花帖",
                TH10 = "风神录", TH11 = "地灵殿", TH12 = "星莲船",
                TH125 = "文花帖DS", TH128 = "大战争",

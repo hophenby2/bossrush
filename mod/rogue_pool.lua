@@ -5,6 +5,18 @@ P.sources={{level=29,code='TH31',title='永夜抄'},{level=30,code='TH32',title=
     {level=34,code='TH36',title='地灵殿'}}
 local catalog=dofile('mod/rogue_pool_sources.lua')
 local ports=dofile('mod/rogue_ports.lua')
+local stageOrder=dofile('mod/GAME/original/stage_order.lua')
+local stageById={}
+for _,level in ipairs({29,30,32,33}) do
+    local chapters=stageOrder[level]
+    stageById[level]={}
+    for _,chapter in ipairs(chapters) do
+        -- 永夜抄 4A/4B、6A/6B 同属第四、第六面；不将 EX / PH 混入数字面。
+        local number=tonumber(chapter.name:match('^([1-6])[AB]?$'))
+        if number then for _,id in ipairs(chapter.cards) do stageById[level][id]=number end end
+    end
+end
+P.STAGE_COUNTS={4,5,6,7,7,9}
 for _,source in ipairs(ports.sources) do P.sources[#P.sources+1]=source end
 local tags={}
 for code,source in pairs(catalog) do
@@ -21,14 +33,15 @@ end
 local fields={stages={'TH31','TH32','TH34','TH35','TH36','TH37','TH38','TH39','TH40','TH41','TH42','TH43'},difficulties={'lunatic','extra','lastword'},encounters={'boss','road'},cards={'nonspell','spell','survival'}}
 function P.defaults(variant,poolVersion)
     -- 新局关闭TH36选择；仅版本4的历史录像保留当时的五作范围。
-    local single=not variant or variant=='single'
+    local single=not variant or variant=='single' or variant=='staged'
     local historical=poolVersion and poolVersion<7
     -- 版本8的新局默认只选Lunatic；旧录像缺少筛选初态时仍使用当时的Extra默认值。
     local stages={TH31=true,TH32=single,TH34=true,TH35=true,TH36=single and poolVersion==4}
     for _,source in ipairs(ports.sources) do stages[source.code]=single and (not poolVersion or poolVersion>=10) end
+    if variant=='staged' then stages.TH42=false end
     return {stages=stages,
         difficulties={lunatic=true,extra=poolVersion~=nil and poolVersion<8,lastword=false},encounters={boss=true,road=single and historical or false},
-        cards={nonspell=true,spell=true,survival=historical or false}}
+        cards={nonspell=true,spell=true,survival=variant=='staged' or historical or false}}
 end
 function P.copy(filters,variant,poolVersion)
     local defaults=P.defaults(variant,poolVersion)
@@ -52,6 +65,12 @@ function P.copy(filters,variant,poolVersion)
     end
     if poolVersion and poolVersion<6 then out.cards.survival=true end
     if poolVersion and poolVersion<7 then out.cards.nonspell,out.cards.spell=true,true end
+    if variant=='staged' then
+        out.stages.TH42=false
+        out.difficulties={lunatic=true,extra=false,lastword=false}
+        out.encounters={boss=true,road=false}
+        out.cards={nonspell=true,spell=true,survival=true}
+    end
     return out
 end
 function P.isSurvival(unit,kind)
@@ -95,7 +114,8 @@ function P.build(filters,poolVersion)
                     seen[id]=true
                     bucket.cards[#bucket.cards+1]={key=source.code..':'..id,index=index,level=source.level,source=source.code,
                         cardId=id,title=label~='' and label or (first.card.is_sc and first.card.name or '非符'),
-                        spell=first.card.is_sc==true,difficulty=difficulty,originalDifficulty=tag.difficulty,kind=tag.kind,survival=survival}
+                        spell=first.card.is_sc==true,difficulty=difficulty,originalDifficulty=tag.difficulty,kind=tag.kind,survival=survival,
+                        stage=tag.stage or stageById[source.level] and stageById[source.level][id]}
                 end
             end
             -- 某作在所选难度/类型下没有候选时不参与来源抽签，不从别处补进卡。
@@ -103,6 +123,39 @@ function P.build(filters,poolVersion)
         end
     end
     return pool,total
+end
+-- 每一面单独建池：作品筛选后不足时明确拒绝，不补入其他面、其他难度或重复卡。
+function P.buildStages(filters,poolVersion)
+    local pool=P.build(P.copy(filters,'staged',poolVersion),poolVersion)
+    local stages,counts={},{0,0,0,0,0,0}
+    for number=1,6 do stages[number]={} end
+    for _,bucket in ipairs(pool) do
+        local buckets={}
+        for _,entry in ipairs(bucket.cards) do
+            local number=entry.stage
+            if entry.source~='TH42' and entry.originalDifficulty=='lunatic' and entry.kind=='boss' and stages[number] then
+                if not buckets[number] then
+                    buckets[number]={code=bucket.code,level=bucket.level,cards={}}
+                    stages[number][#stages[number]+1]=buckets[number]
+                end
+                local cards=buckets[number].cards
+                cards[#cards+1]=entry;counts[number]=counts[number]+1
+            end
+        end
+    end
+    return stages,counts
+end
+function P.stageStatus(filters,poolVersion)
+    local stages,counts=P.buildStages(filters,poolVersion)
+    local state={valid=true,count=0,need=38,counts=counts}
+    for number,need in ipairs(P.STAGE_COUNTS) do
+        state.count=state.count+counts[number]
+        if counts[number]<need and state.valid then
+            state.valid=false
+            state.message=string.format('第%d面仅%d张，至少需要%d张',number,counts[number],need)
+        end
+    end
+    return state,stages
 end
 function P.status(filters,need)
     local options=P.copy(filters)

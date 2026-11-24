@@ -16,19 +16,19 @@ M.damageUnits={[35]=26/3,[36]=32/5,[37]=32,[38]=28/3,[39]=5/3,[40]=1,[41]=1}
 M.bossDamageUnits={[37]=22}
 function M.tags()
     local out={}
-    local function add(code,id,difficulty,role,survival)
+    local function add(code,id,difficulty,role,survival,chapter)
         if not difficulty then return end
         out[code]=out[code] or {}
         assert(not out[code][id],'新作随机卡池来源重复：'..code..':'..id)
-        out[code][id]={difficulty=difficulty,kind=role=='road' and 'road' or 'boss',survival=survival}
+        out[code][id]={difficulty=difficulty,kind=role=='road' and 'road' or 'boss',survival=survival,stage=tonumber(chapter)}
     end
     for _,pair in ipairs({{'TH37',TH37},{'TH39',TH39}}) do
         local code,work=unpack(pair)
         if work then for _,chapter in ipairs(work.data.chapters) do
             local diff=difficulties[chapter.difficulty]
-            for _,road in ipairs(chapter.roads) do add(code,road.id,diff,'road',false) end
+            for _,road in ipairs(chapter.roads) do add(code,road.id,diff,'road',false,chapter.stage) end
             for _,group in ipairs(chapter.bosses) do for _,meta in ipairs(group.cards) do
-                add(code,meta.id,diff,group.role)
+                add(code,meta.id,diff,group.role,nil,chapter.stage)
             end end
         end end
     end
@@ -36,13 +36,13 @@ function M.tags()
         for id,entry in pairs(TH38.cards) do
             local source=entry.card.asl_source
             local key=source.key or ''
-            add('TH38',id,key:match('^L/') and 'lunatic' or key:match('^EXA/') and 'extra',entry.card.phase_kind)
+            add('TH38',id,key:match('^L/') and 'lunatic' or key:match('^EXA/') and 'extra',entry.card.phase_kind,nil,key:match('^L/stage(%d+)/'))
         end
     end
     local summer=_editor_class.TH40
     if summer then for _,meta in ipairs(summer.data.phases) do
         -- 本后端只导出了原作 L 与 EX；FSC 是对应难度的原生攻击，仍保留。
-        add('TH40',meta.id,meta.chapter=='EX' and 'extra' or 'lunatic',meta.kind=='road' and 'road' or meta.role,meta.survival==true)
+        add('TH40',meta.id,meta.chapter=='EX' and 'extra' or 'lunatic',meta.kind=='road' and 'road' or meta.role,meta.survival==true,meta.chapter)
     end end
     for _,unit in ipairs(_sc_pr_table[39] or {}) do
         local card=unit.sc_group[1].card
@@ -50,7 +50,7 @@ function M.tags()
         if source and (source.stage==7 or source.class and source.class:match(':Lunatic$') or card.phase_kind=='road') then
             local c=source.card
             add('TH41',card.card_id,source.stage==7 and 'extra' or 'lunatic',card.phase_kind,
-                c and c.t1==c.t3 or false)
+                c and c.t1==c.t3 or false,source.stage)
         end
     end
     for _,unit in ipairs(_sc_pr_table[40] or {}) do
@@ -62,7 +62,7 @@ function M.tags()
         end
     end
     if TH43 then for _,row in ipairs(TH43.rows) do
-        add('TH43',row.id,difficulties[row.difficulty],row.role)
+        add('TH43',row.id,difficulties[row.difficulty],row.role,nil,row.chapter)
     end end
     return out
 end

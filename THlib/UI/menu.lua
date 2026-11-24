@@ -573,7 +573,7 @@ function player_system_select:fresh(mode)
     -- 随机模式和调试练习都只选自机；入口一次设置，避免沿用其他流程的系统与卡池状态。
     self.sequence_mode=mode=='original_sequence'
     self.practice_mode=mode=='practice'
-    self.simple_mode = self.practice_mode or mode=='original_sequence' or mode=='roguelike' or mode=='rogue_dual' or mode=='rogue_chain'
+    self.simple_mode = self.practice_mode or mode=='original_sequence' or mode=='roguelike' or mode=='roguelike2' or mode=='rogue_dual' or mode=='rogue_chain'
     self.simple_dual = false
     self.simple_chain = false
     self.simple_title = self.practice_mode and '选择玩家 · 调试练习' or mode=='original_sequence' and '选择玩家 · 顺序模式' or self.simple_mode and "选择玩家 · roguelike模式" or nil
