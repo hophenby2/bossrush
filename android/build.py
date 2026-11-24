@@ -234,8 +234,8 @@ def prepare_assets():
         print(f'字体保留全部Unicode和字形像素，减少{sum(r["source_bytes"]-r["packed_bytes"] for r in records.values() if r["converted"])/1048576:.2f} MiB',flush=True)
     if COMPRESS_AUDIO:
         from audio_optimizer import optimize_audio, optimize_music
-        sources = [p for folder in ['THlib','Resources','mod'] for p in (GAME/folder).rglob('*.wav')
-                   if include_asset(p.relative_to(GAME))]
+        sources = [p for folder in ['THlib','Resources','mod'] for p in (GAME/folder).rglob('*')
+                   if p.suffix.lower() in {'.wav','.flac'} and include_asset(p.relative_to(GAME))]
         audio_variants, records = optimize_audio(sources,CACHE/'vorbis-sounds')
         write_utf8(BUILD/'audio-optimization.json',json.dumps(
             {str(p.relative_to(GAME)):r for p,r in records.items()},ensure_ascii=False,indent=2)+'\n')

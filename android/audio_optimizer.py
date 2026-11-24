@@ -28,15 +28,18 @@ def optimize_audio(sources, cache):
             record = json.loads(metadata.read_text())
             if not record['converted'] or target.exists():
                 return source, target if record['converted'] else None, record
-        # 与原打包器相同：先去掉WAV元数据，再计算DEFLATE level 6后的实际代价。
-        with wave.open(io.BytesIO(raw), 'rb') as wav:
-            params, samples = wav.getparams(), wav.readframes(wav.getnframes())
-        stripped = io.BytesIO()
-        with wave.open(stripped, 'wb') as wav:
-            wav.setparams(params)
-            wav.writeframes(samples)
+        # WAV 去掉元数据后比较实际入包代价；FLAC 也进入相同的音效压缩流程。
+        original=raw
+        if source.suffix.lower()=='.wav':
+            with wave.open(io.BytesIO(raw), 'rb') as wav:
+                params, samples = wav.getparams(), wav.readframes(wav.getnframes())
+            stripped = io.BytesIO()
+            with wave.open(stripped, 'wb') as wav:
+                wav.setparams(params)
+                wav.writeframes(samples)
+            original=stripped.getvalue()
         compressor = zlib.compressobj(6, zlib.DEFLATED, -15)
-        packed_wav = compressor.compress(stripped.getvalue()) + compressor.flush()
+        packed_wav = compressor.compress(original) + compressor.flush()
         pcm, rate = sf.read(io.BytesIO(raw), dtype='float32', always_2d=True)
         encoded = io.BytesIO()
         sf.write(encoded, pcm, rate, format='OGG', subtype='VORBIS', compression_level=.2)
