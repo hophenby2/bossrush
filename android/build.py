@@ -301,7 +301,8 @@ def prepare_assets():
             elif source in music_variants:
                 shutil.copy2(music_variants[source], target)
             elif source in audio_variants:
-                native = relative.with_suffix('.ogg')
+                # 同名 WAV / FLAC 可同时存在，保留原扩展名以免转码副本互相覆盖。
+                native = relative.with_suffix(relative.suffix+'.ogg')
                 target = destination/native
                 if target.exists(): raise RuntimeError(f'优化资源路径冲突：{native}')
                 shutil.copy2(audio_variants[source],target)
