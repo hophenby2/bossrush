@@ -34,8 +34,10 @@ PROFILES = {
             'music_compression':.95,'music_min_bitrate':80000,'sound_compression':.2},
     '750mb': {'max_bytes':750000000,'image_psnr':32,'image_qualities':(40,50,60,70,80,90,95),
               'music_compression':1.0,'music_min_bitrate':56000,'sound_compression':.5},
-    '500mb': {'max_bytes':500000000,'image_psnr':24,'image_qualities':(5,10,20,30,40,50,60,75,85,95),
-              'music_compression':1.0,'music_min_bitrate':0,'music_sample_rate':6000,'music_mono':True,
+    '500mb': {'max_bytes':500000000,'image_psnr':None,'image_qualities':(30,),
+              'image_detail_limit':128,'portrait_detail_limit':256,'image_alpha_step':8,
+              'music_compression':1.0,'music_min_bitrate':0,'music_sample_rate':22050,'music_mono':True,
+              'music_bitrate_kbps':28,
               'sound_compression':1.0},
 }
 sys.path.insert(0, str(ROOT.parent / 'tools'))
@@ -253,7 +255,8 @@ def prepare_assets():
         if COMPRESSION_PROFILE:
             profile=PROFILES[COMPRESSION_PROFILE]
             options.update(compression_level=profile['music_compression'],minimum_bitrate=profile['music_min_bitrate'],
-                           sample_rate=profile.get('music_sample_rate'),mono=profile.get('music_mono',False))
+                           sample_rate=profile.get('music_sample_rate'),mono=profile.get('music_mono',False),
+                           bitrate_kbps=profile.get('music_bitrate_kbps'))
         music_variants, records = optimize_music(music_sources, CACHE/'vorbis-music', **options)
         write_utf8(BUILD/'music-optimization.json', json.dumps(
             {str(p.relative_to(GAME)): r for p, r in records.items()}, ensure_ascii=False, indent=2)+'\n')
@@ -267,7 +270,10 @@ def prepare_assets():
         optimized, records = optimize_images(sources,CACHE/'lossless-images',GAME,LOSSY_IMAGES,
                                              transparent_webp=TRANSPARENT_WEBP,png_only=font_images,
                                              lossy_psnr=profile.get('image_psnr',36),
-                                             lossy_qualities=profile.get('image_qualities',(85,90,95)))
+                                             lossy_qualities=profile.get('image_qualities',(85,90,95)),
+                                             detail_limit=profile.get('image_detail_limit'),
+                                             portrait_detail_limit=profile.get('portrait_detail_limit'),
+                                             alpha_step=profile.get('image_alpha_step',1))
         report = {str(p.relative_to(GAME)):r for p,r in records.items()}
         write_utf8(BUILD/'asset-optimization.json',json.dumps(report,ensure_ascii=False,indent=2)+'\n')
         saved = sum(r['source_zip_bytes']-r['packed_zip_bytes'] for r in records.values())

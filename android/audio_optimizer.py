@@ -1,4 +1,4 @@
-"""安卓入包音频，保留源文件与解码帧数，只替换有包体收益的编码。"""
+"""只修改入包音频副本；音效保留解码帧数，BGM按目标采样率保持时长。"""
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 import hashlib
@@ -71,15 +71,22 @@ def optimize_audio(sources, cache, compression_level=.2):
 
 
 def optimize_music(sources, cache, compression_level=.5, minimum_bitrate=192000,
-                   sample_rate=None, mono=False):
+                   sample_rate=None, mono=False, bitrate_kbps=None):
     import soundfile as sf
     cache.mkdir(parents=True, exist_ok=True)
+    oggenc=None
+    if bitrate_kbps:
+        oggenc=shutil.which('oggenc')
+        if not oggenc:raise RuntimeError('500MB高音质档需要vorbis-tools提供oggenc')
+        encoder_version=subprocess.check_output([oggenc,'--version'],text=True).strip()
 
     def encode(source):
         raw = source.read_bytes()
         codec = f'music-v2-compression-{compression_level}-min-{minimum_bitrate}-{sf.__version__}-{sf.__libsndfile_version__}'
         if sample_rate or mono:
             codec += f'-resample-v2-pcm-{sample_rate}-mono{mono}'
+        if bitrate_kbps:
+            codec += f'-managed-v1-{bitrate_kbps}-{encoder_version}'
         key = hashlib.sha256(str(source).encode() + raw + codec.encode()).hexdigest()
         metadata, target = cache / (key + '.json'), cache / (key + '.ogg')
         if metadata.exists():
@@ -95,7 +102,7 @@ def optimize_music(sources, cache, compression_level=.5, minimum_bitrate=192000,
             target_rate=min(sample_rate or info.samplerate,info.samplerate)
             target_channels=1 if mono else info.channels
             encoded = io.BytesIO()
-            if target_rate!=info.samplerate or target_channels!=info.channels:
+            if target_rate!=info.samplerate or target_channels!=info.channels or bitrate_kbps:
                 import numpy as np
                 ffmpeg=shutil.which('ffmpeg')
                 if not ffmpeg:
@@ -114,10 +121,20 @@ def optimize_music(sources, cache, compression_level=.5, minimum_bitrate=192000,
                     raise RuntimeError(f'BGM重采样改变了时长：{source}')
                 if len(pcm)<expected:
                     pcm=np.pad(pcm,((0,expected-len(pcm)),(0,0)))
-                with sf.SoundFile(encoded,'w',samplerate=target_rate,channels=target_channels,
-                                  format='OGG',subtype='VORBIS',compression_level=compression_level) as output:
-                    for offset in range(0,expected,32768):
-                        output.write(pcm[offset:min(expected,offset+32768)])
+                if bitrate_kbps:
+                    samples=np.clip(np.rint(pcm[:expected]*32768),-32768,32767).astype('<i2')
+                    output=subprocess.run([oggenc,'--quiet','--raw','--raw-bits=16',
+                        '--raw-rate='+str(target_rate),'--raw-chan='+str(target_channels),
+                        '--raw-endianness=0','--managed','--bitrate='+str(bitrate_kbps),
+                        '--serial=1','--output=-','-'],input=samples.tobytes(),
+                        stdout=subprocess.PIPE,stderr=subprocess.PIPE,check=True)
+                    encoded.write(output.stdout)
+                    record.update(target_bitrate_kbps=bitrate_kbps,encoder=encoder_version)
+                else:
+                    with sf.SoundFile(encoded,'w',samplerate=target_rate,channels=target_channels,
+                                      format='OGG',subtype='VORBIS',compression_level=compression_level) as output:
+                        for offset in range(0,expected,32768):
+                            output.write(pcm[offset:min(expected,offset+32768)])
             else:
                 with sf.SoundFile(io.BytesIO(raw)) as audio, sf.SoundFile(
                         encoded, 'w', samplerate=info.samplerate, channels=info.channels,

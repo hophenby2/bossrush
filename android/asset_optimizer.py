@@ -43,7 +43,8 @@ def recompress_png(image, original):
 
 
 def optimize_images(sources, cache, game_root=None, lossy_noncore=False, transparent_webp=False, png_only=(),
-                    lossy_psnr=36, lossy_qualities=(85,90,95)):
+                    lossy_psnr=36, lossy_qualities=(85,90,95), detail_limit=None,
+                    portrait_detail_limit=None, alpha_step=1):
     try:
         import numpy as np
         from PIL import Image, __version__, features
@@ -66,6 +67,8 @@ def optimize_images(sources, cache, game_root=None, lossy_noncore=False, transpa
             version += '-png-only'
         if allow_lossy and (lossy_psnr!=36 or tuple(lossy_qualities)!=(85,90,95)):
             version += f'-psnr{lossy_psnr}-q'+','.join(map(str,lossy_qualities))
+        if allow_lossy and detail_limit and source not in png_only:
+            version += f'-detail-v2-{detail_limit}-{portrait_detail_limit}-alpha{alpha_step}'
         legacy_version=version
         if allow_lossy:
             version += '-rgb-step6'
@@ -100,6 +103,47 @@ def optimize_images(sources, cache, game_root=None, lossy_noncore=False, transpa
                     pixels = rgba.tobytes()
                     record.update(width=rgba.width, height=rgba.height,
                                   rgba_sha256=hashlib.sha256(pixels).hexdigest())
+                    if allow_lossy and detail_limit and source not in png_only:
+                        # 只降低背景/立绘的细节，再还原画布，所有裁图坐标、UV、中心与绘制大小不变。
+                        limit=portrait_detail_limit if '立绘' in category else detail_limit
+                        limit=limit or detail_limit
+                        scale=min(1,limit/max(rgba.size))
+                        detail_size=(max(1,round(rgba.width*scale)),max(1,round(rgba.height*scale)))
+                        detail=rgba.resize(detail_size,Image.Resampling.LANCZOS)
+                        filtered=detail.resize(rgba.size,Image.Resampling.BILINEAR)
+                        values=np.asarray(filtered).copy()
+                        if alpha_step>1:
+                            values[:,:,3]=np.minimum((values[:,:,3].astype('uint16')+alpha_step//2)//alpha_step*alpha_step,255).astype('uint8')
+                        filtered=Image.fromarray(values)
+                        for quality in lossy_qualities:
+                            encoded=io.BytesIO()
+                            filtered.save(encoded,format='WEBP',quality=quality,method=4,exact=True)
+                            result=encoded.getvalue();packed=zip_size(result)
+                            if packed<cost*.98:
+                                selected,cost=result,packed
+                                record.update(format='webp',codec=f'webp-detail{limit}-q{quality}-alpha{alpha_step}',lossy=True)
+                        # 索引色按低细节网格放大，整张画布仍为原尺寸，避免大图重复存储平滑渐变。
+                        palette=detail.quantize(colors=256,method=Image.Quantize.FASTOCTREE,dither=Image.Dither.NONE)
+                        palette=palette.resize(rgba.size,Image.Resampling.NEAREST)
+                        encoded=io.BytesIO();palette.save(encoded,format='PNG',optimize=True,compress_level=9)
+                        result=encoded.getvalue();packed=zip_size(result)
+                        if packed<cost*.98:
+                            selected,cost=result,packed
+                            record.update(format='png',codec=f'png-palette256-detail{limit}',lossy=True)
+                        if selected!=raw:
+                            with Image.open(io.BytesIO(selected)) as decoded:
+                                decoded=decoded.convert('RGBA')
+                                if decoded.size!=rgba.size:raise RuntimeError(f'画布尺寸变化：{source}')
+                                reference=np.asarray(rgba).astype('float32');values=np.asarray(decoded).astype('float32')
+                            visible=(reference[:,:,:3]*reference[:,:,3:4]-values[:,:,:3]*values[:,:,3:4])/255
+                            mse=float(np.mean(visible**2))
+                            record.update(converted=True,packed_bytes=len(selected),packed_zip_bytes=cost,
+                                detail_width=detail_size[0],detail_height=detail_size[1],
+                                alpha_preserved=bool(np.array_equal(reference[:,:,3],values[:,:,3])),
+                                visible_rgb_psnr_db=round(float(10*np.log10(255**2/mse)) if mse else 99,3))
+                            target=cache/(key+'.'+record['format']);target.write_bytes(selected)
+                        metadata.write_text(json.dumps(record,ensure_ascii=False)+'\n')
+                        return source,target if record['converted'] else None,record
                     candidates = [('png-lossless', 'png', recompress_png(image,raw))]
                     opaque = rgba.getchannel('A').getextrema() == (255,255)
                     if source not in png_only and (opaque or transparent_webp):
