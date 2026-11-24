@@ -306,7 +306,7 @@ local function register(variant,config)
         if config.progression then cards=R.drawStages(lstg.var.ran_seed,filters)
         else cards=R.draw(lstg.var.ran_seed,config.width,filters,endless) end
         lstg.var.rogue_run={mode=variant,seed=lstg.var.ran_seed,filters=filters,total=config.count or R.COUNT,
-            cards=cards,current=0,completed=0,
+            cards=cards,current=0,completed=0,enhanced=filters.rules.enhanced,
             endless=endless,cycle=1,cardIndex=0}
         if GameHPScale then GameHPScale.init(lstg.var.rogue_run) end
         -- 曲库取本模式四作的全部原有配乐，不因只选某一Boss而退化成单曲循环。

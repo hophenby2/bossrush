@@ -51,6 +51,9 @@ function H.factor(o)
     return s and (o and o._hp_growth_factor or s.total) or 1
 end
 function H.enter(index)
+    -- 只停止累乘；保留基础倍率1的状态，供新作伤害单位换算和共享血槽使用。
+    local run=lstg.var.rogue_run
+    if run and run.enhanced==false then return end
     local s=state();if not s or index<=s.stage then return end
     assert(index==s.stage+1,'血量倍率阶段号必须连续')
     local factor=1+index/100

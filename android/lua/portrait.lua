@@ -309,7 +309,7 @@ function P.playerSelect(o,pool,render)
         if o.pool_options then
             P.place(715,270,WIDTH/2,P.playerOptionsY())
             P.bind(o,505,920,423,457,function() pool.expand(o) end)
-            if o.pool_expanded then for i,entry in ipairs(pool.options) do
+            if o.pool_expanded then for i,entry in ipairs(o.pool_variant=='staged' and pool.stagedOptions or pool.options) do
                 local index=i
                 P.bind(o,entry.x,entry.x+(entry.width or 200),entry.y-14,entry.y+14,function() pool.toggle(o,index) end)
             end end

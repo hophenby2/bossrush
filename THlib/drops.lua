@@ -16,6 +16,9 @@ local function fresh()
 end
 local function allowDrops(scene)
     scene=scene or (stage and stage.current_stage)
+    local run=lstg.var.rogue_run
+    local group=scene and scene.group
+    if group and (group._name=='RogueTen' or group._name=='RogueTwo') and run and run.enhanced==false then return false end
     return lstg.var.__sequence_version~=1 and not (scene and scene.group and scene.group._name=='RogueChain')
 end
 function D.reset()
@@ -164,7 +167,7 @@ function D.frame(scene)
     local s=peek()
     if not s or not scene or scene.is_menu then GameQuiz.clearSelection('drops');return false end
     if not allowDrops(scene) then
-        -- 接续模式不生成强化选项。
+        -- 当前模式或本局选项关闭强化时，移除选项并清空待发奖励。
         if s.active or #s.queue>0 then s.active=nil;s.queue={} end
         GameQuiz.clearSelection('drops',true);return false
     end

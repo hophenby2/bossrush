@@ -22,11 +22,12 @@ for _,entry in ipairs({
     {group='difficulties',key='lastword',text='Last Word',x=787,y=234,width=133},
     {group='encounters',key='boss',text='Boss',x=505,y=182},
     {group='encounters',key='road',text='道中',x=720,y=182},
-    {group='cards',key='survival',text='时符（耐久卡）',x=505,y=98,optional=true},
-    {group='cards',key='nonspell',text='非符',x=505,y=130,optional=true},
-    {group='cards',key='spell',text='符卡',x=720,y=130,optional=true},
+    {group='cards',key='survival',text='时符（耐久卡）',x=505,y=98},
+    {group='cards',key='nonspell',text='非符',x=505,y=130},
+    {group='cards',key='spell',text='符卡',x=720,y=130},
 }) do options[#options+1]=entry end
-local groupNames={stages='关卡',difficulties='难度',encounters='Boss / 道中'}
+options[#options+1]={group='rules',key='enhanced',text='强化模式',x=720,y=98}
+stagedOptions[#stagedOptions+1]={group='rules',key='enhanced',text='强化模式',x=505,y=130}
 U.options=options
 U.stagedOptions=stagedOptions
 local function entries(o) return o.pool_variant=='staged' and stagedOptions or options end
@@ -54,11 +55,6 @@ end
 function U.toggle(o,index)
     local entry=entries(o)[index];if not entry then return end
     local group=o.pool_options[entry.group]
-    if group[entry.key] and not entry.optional then
-        local another=false
-        for key,enabled in pairs(group) do if key~=entry.key and enabled then another=true;break end end
-        if not another then notice(o,groupNames[entry.group]..'至少保留一项');return end
-    end
     group[entry.key]=not group[entry.key]
     if o.pool_variant=='staged' then scoredata.rogue2_filters=RogueTen.copyFilters(o.pool_options,'staged')
     else
@@ -149,8 +145,8 @@ function U.render(o)
         ui:RenderText('title','1～6面：4 / 5 / 6 / 7 / 7 / 9 张',715,200,.65,muted,'centerpoint')
         ui:RenderText('title','共38张 · 完成后结算',715,168,.65,muted,'centerpoint')
     end
-    local state=o.pool_status;local valid=state and state.valid
-    local message=o.pool_notice_time>0 and o.pool_notice or (not valid and state and state.message)
+    -- 筛选可暂时为空，只有点击开始后才显示开局校验结果。
+    local message=o.pool_notice_time>0 and o.pool_notice
     if message then
         ui:RenderText('title',message,715,o.pool_expanded and 77 or 125,.7,Color(alpha*255,255,170,125),'centerpoint')
     end

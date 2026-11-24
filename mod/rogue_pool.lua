@@ -29,7 +29,7 @@ for code,source in pairs(catalog) do
         end
     end
 end
-local fields={stages={'TH31','TH32','TH34','TH35','TH37','TH38','TH39','TH40','TH41','TH42','TH43'},difficulties={'lunatic','extra','lastword'},encounters={'boss','road'},cards={'nonspell','spell','survival'}}
+local fields={stages={'TH31','TH32','TH34','TH35','TH37','TH38','TH39','TH40','TH41','TH42','TH43'},difficulties={'lunatic','extra','lastword'},encounters={'boss','road'},cards={'nonspell','spell','survival'},rules={'enhanced'}}
 function P.defaults(variant)
     local single=not variant or variant=='single' or variant=='staged'
     local stages={TH31=true,TH32=single,TH34=true,TH35=true}
@@ -37,7 +37,7 @@ function P.defaults(variant)
     if variant=='staged' then stages.TH42=false end
     return {stages=stages,
         difficulties={lunatic=true,extra=false,lastword=false},encounters={boss=true,road=false},
-        cards={nonspell=true,spell=true,survival=variant=='staged'}}
+        cards={nonspell=true,spell=true,survival=variant=='staged'},rules={enhanced=true}}
 end
 function P.copy(filters,variant)
     local defaults=P.defaults(variant)
@@ -48,7 +48,7 @@ function P.copy(filters,variant)
         out[group]={}
         for _,key in ipairs(keys) do
             local value=values[key]
-            if value==nil and group=='cards' and (key=='nonspell' or key=='spell') then value=defaults[group][key] end
+            if value==nil and (group=='rules' or group=='cards' and (key=='nonspell' or key=='spell')) then value=defaults[group][key] end
             out[group][key]=value==true
         end
     end
@@ -140,17 +140,14 @@ function P.stageStatus(filters)
             state.message=string.format('第%d面仅%d张，至少需要%d张',number,counts[number],need)
         end
     end
+    if state.count==0 then state.message='选择的卡池为空' end
     return state,stages
 end
 function P.status(filters,need)
     local options=P.copy(filters)
     local _,count=P.build(options)
     local state={count=count,need=need,valid=false}
-    for _,entry in ipairs({{'stages','关卡'},{'difficulties','难度'},{'encounters','Boss / 道中'}}) do
-        local any=false
-        for _,enabled in pairs(options[entry[1]]) do if enabled then any=true;break end end
-        if not any then state.message=entry[2]..'至少选择一项';return state end
-    end
+    if count==0 then state.message='选择的卡池为空';return state end
     if count<need then
         state.message=string.format('候选仅 %d 张，至少需要 %d 张',count,need)
         return state
