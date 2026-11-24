@@ -449,10 +449,11 @@ local set = SetBGMVolume
 local function PlayMusic(bgm, v, start_time)
     if RogueMusic and RogueMusic.ownsPlayback() then return end
     if not CheckRes("bgm", bgm) then
-        local musicList = musicList
+        local info=assert(musicList[bgm], '未登记的音乐：'..tostring(bgm))
+        local previous=GetResourceStatus()
         SetResourceStatus("global")
-        LoadMusic(bgm, path .. bgm .. ".ogg", musicList[bgm][1], musicList[bgm][2])
-        SetResourceStatus("stage")
+        LoadMusic(bgm, info.path or path .. bgm .. ".ogg", info[1], info[2])
+        SetResourceStatus(previous)
     end
     play(bgm, v, start_time)
 end

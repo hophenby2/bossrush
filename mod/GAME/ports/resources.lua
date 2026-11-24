@@ -50,7 +50,7 @@ return function(assetRoot)
     end
     function Set:AddMusic(name, path, ending, length)
         self:add(4, name, LoadMusic, file(path), ending, length)
-        AddMusic(name, ending, length, name, true)
+        AddMusic(name, ending, length, name, true, file(path))
     end
     function Set:AddEffect(name, path)
         self:add(9, name, LoadFX, file(path))

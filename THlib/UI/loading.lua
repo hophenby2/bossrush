@@ -118,12 +118,26 @@ local function renderLoading(self)
     local portrait=AndroidPortrait and AndroidPortrait.enabled()
     if portrait and not AndroidPortrait.rendering then return AndroidPortrait.loading(self,renderLoading) end
     local center,left,right,barY,tipY,statusY,imageY,imageScale=480,150,810,62.5,170,25,270,1
+    local tipSize=1
     if portrait then
         center=screen.width/2
-        left,right=32,screen.width-32
-        barY,tipY,statusY=screen.height*.2,screen.height*.42,screen.height*.2-40
-        imageY,imageScale=screen.height*.68,screen.width/960
-        -- 完整保留原底图中的元素和比例，把tip、读条及文字移到下方独立区域。
+        left,right=24,screen.width-24
+        imageScale=(right-left)/960
+        tipSize=.9
+        -- 底图、完整tip区域、读条及状态组成居中的连续一组，避免长屏按百分比分散。
+        -- 按整份tip列表预留高度，随机换tip不会让图片和读条上下跳动。
+        local rows,step=1,30*tipSize
+        for _,text in ipairs(TIP or {self.text}) do
+            local lines,lineStep=ui:TipLayout(text,right-left,tipSize)
+            rows,step=max(rows,#lines),lineStep
+        end
+        local imageHeight=540*imageScale
+        local blockHeight=imageHeight+38+(rows-1)*step+52+44+16
+        local top=(screen.height+blockHeight)/2
+        imageY=top-imageHeight/2
+        tipY=top-imageHeight-38
+        barY=tipY-(rows-1)*step-52
+        statusY=barY-44
         SetImageState('white','',Color(255,0,0,0))
         RenderRect('white',0,screen.width,0,screen.height)
     end
@@ -139,7 +153,7 @@ local function renderLoading(self)
     SetImageState('white','',Color(180,255-155*length,255*length,100*length))
     RenderRect('white',innerLeft,innerLeft+length*(innerRight-innerLeft),barY-10.5,barY+10.5)
     SetFontState('Score','',Color(255,255*length,255-28*length,100+32*length))
-    ui:RenderTip(self.text,center,tipY,right-left,1,
+    ui:RenderTip(self.text,center,tipY,right-left,tipSize,
         Color(255,250,128,114+50*sin(self.timer*2)))
     ui:RenderText('title',('%0.2f%% ( %d / %d ) '):format(length*100,min(self.index,self.maxindex),self.maxindex),
         center,barY,.8,Color(255,255*length,255-28*length,100+32*length),'centerpoint')

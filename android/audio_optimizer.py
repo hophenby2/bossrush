@@ -77,7 +77,7 @@ def optimize_music(sources, cache, compression_level=.5, minimum_bitrate=192000,
     oggenc=None
     if bitrate_kbps:
         oggenc=shutil.which('oggenc')
-        if not oggenc:raise RuntimeError('500MB高音质档需要vorbis-tools提供oggenc')
+        if not oggenc:raise RuntimeError('小包定码率音乐需要vorbis-tools提供oggenc')
         encoder_version=subprocess.check_output([oggenc,'--version'],text=True).strip()
 
     def encode(source):

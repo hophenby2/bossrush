@@ -7,7 +7,7 @@ ui.RenderStatusRow=dofile('THlib/UI/status_row.lua')
 ui.NativeHUD=dofile('THlib/UI/native/hud.lua')
 ui.RunHUD=dofile('THlib/UI/run_hud.lua')
 ui.OriginalHUD=dofile('THlib/UI/original_hud.lua')
-ui.version = "26.11.24-compression-tiers"
+ui.version = "26.11.24-visual-fix"
 local LoadImage = LoadImage
 LoadTexture("hint", "THlib\\UI\\hint.png", true)
 LoadImage("hint.bonusfail", "hint", 0, 64, 256, 64)
@@ -152,12 +152,14 @@ function ui:RenderText(ttfname, text, x, y, size, color, ...)
     RenderTTF2(ttfname, text, x, y, size, color, ...)
 end
 -- 按UTF-8字符换行；中文占全角、拉丁字符占半角，横竖屏传入各自可用宽度。
+function ui:TipLayout(text,width,size,font,plain)
+    local charWidth=(font or 'sc_menu')=='sc_menu' and 13 or 16
+    return GameQuiz.wrap((plain and '' or 'Tips : ')..text,width/(charWidth*size)),(charWidth*2+4)*size
+end
 function ui:RenderTip(text,x,y,width,size,color,font,plain)
-    font=font or 'sc_menu'
-    local charWidth=font=='sc_menu' and 13 or 16
-    local lines=GameQuiz.wrap((plain and '' or 'Tips : ')..text,width/(charWidth*size))
+    local lines,step=self:TipLayout(text,width,size,font,plain)
     for i,line in ipairs(lines) do
-        self:RenderText(font,line,x,y-(i-1)*(charWidth*2+4)*size,size,color,'centerpoint')
+        self:RenderText(font or 'sc_menu',line,x,y-(i-1)*step,size,color,'centerpoint')
     end
 end
 

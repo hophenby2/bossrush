@@ -320,9 +320,10 @@ function E.LoadMusicRecord(key)
     local loop=music[key]
     if not loop then return end
     local name='th43/'..key
-    musicList[name]={loop[2],loop[2]-loop[1]}
+    local filename='Resources/th43/music/bgm_'..key..'.ogg'
+    musicList[name]={loop[2],loop[2]-loop[1],path=filename}
     if not has('bgm',name) then
-        LoadMusic(name,'Resources/th43/music/bgm_'..key..'.ogg',loop[2],loop[2]-loop[1])
+        LoadMusic(name,filename,loop[2],loop[2]-loop[1])
     end
     return name
 end

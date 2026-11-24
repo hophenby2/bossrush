@@ -14,7 +14,8 @@ GPU_EXACT_IMAGES={
 
 def noncore_category(path):
     path = str(path).replace('\\', '/')
-    if path in GPU_EXACT_IMAGES:
+    # 加载页含烘焙文字，不能与纯背景一起降细节或有损编码。
+    if path=='THlib/UI/loading.png' or path in GPU_EXACT_IMAGES:
         return None
     if path in DECORATIVE_IMAGES:
         return DECORATIVE_IMAGES[path]

@@ -249,7 +249,7 @@ for _,entry in ipairs(resourceInfo('music')) do
         local ending=loop.ending or loop.beginning+loop.length
         local length=loop.length or ending-loop.beginning
         tracks[entry.name]={id,assets..'res/music/'..entry.filename,ending,length}
-        AddMusic(id,ending,length,id,true)
+        AddMusic(id,ending,length,id,true,tracks[entry.name][2])
     end
 end
 local sounds=api.ResourceSet.Create('THEIS.SE','global')

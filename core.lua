@@ -179,8 +179,9 @@ function CheckMoney()
 end
 
 local j = 1
-function AddMusic(id, loopend, looplen, name, noinbar)
-    musicList[id] = { loopend, looplen, name }
+function AddMusic(id, loopend, looplen, name, noinbar, filename)
+    -- 曲目名与文件名可以不同；重载必须沿用登记路径，不能拼接原作资源标识符。
+    musicList[id] = { loopend, looplen, name, path=filename }
     if not noinbar then
         musicBarList[j] = { id, name, loopend, looplen }
         j = j + 1

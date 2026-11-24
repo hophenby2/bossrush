@@ -34,10 +34,9 @@ PROFILES = {
             'music_compression':.95,'music_min_bitrate':80000,'sound_compression':.2},
     '750mb': {'max_bytes':750000000,'image_psnr':32,'image_qualities':(40,50,60,70,80,90,95),
               'music_compression':1.0,'music_min_bitrate':56000,'sound_compression':.5},
-    '500mb': {'max_bytes':500000000,'image_psnr':None,'image_qualities':(30,),
-              'image_detail_limit':128,'portrait_detail_limit':256,'image_alpha_step':8,
-              'music_compression':1.0,'music_min_bitrate':0,'music_sample_rate':22050,'music_mono':True,
-              'music_bitrate_kbps':28,
+    '500mb': {'max_bytes':500000000,'image_psnr':24,'image_qualities':(5,10,20,30,40,50,60,75,85,95),
+              'music_compression':1.0,'music_min_bitrate':0,'music_sample_rate':11025,'music_mono':True,
+              'music_bitrate_kbps':12,
               'sound_compression':1.0},
 }
 sys.path.insert(0, str(ROOT.parent / 'tools'))
