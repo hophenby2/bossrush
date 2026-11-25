@@ -1,0 +1,21 @@
+{
+  "version": "2026.11.26.2",
+  "problem": "Eliphia符卡背景frame访问self.boss.x时报错，因为宿主Boss桥接创建res.scbg时没有传入所属Boss实例。",
+  "source_contract": "mod/GAME/th43/source/EISlib/boss/definition/Eliphia.lua:29 的init(boss)保存所属对象，第118行用它进行每帧0.1的跟随。",
+  "change": "只在mod/GAME/th43.lua创建符卡背景时把o作为第二个E.New参数传入；原作脚本、发弹、跟随参数和资源不变。",
+  "validation": {
+    "command": "luajit tools/th43-tests/check_spell_background.lua",
+    "before": "正式Boss桥接未向实际Eliphia背景传入实例，绑定断言失败。",
+    "after": "通过：实际桥接绑定、60帧原作背景回调跟随、Boss退出删除背景、重新进入创建独立背景并绑定新实例。",
+    "test_scope": "LuaJIT/5.1桩环境；走正式桥接和原作背景类，宿主Boss系统、行走图/附属攻击与BGM在夹具中隔离。"
+  },
+  "limits": [
+    "按用户要求不运行安卓模拟器验证；没有Android实体手机或其他平台原生实测。",
+    "此专项不证明整关运行或最终渲染像素。"
+  ],
+  "source_sha256": {
+    "mod/GAME/th43.lua": "3b10d1e4f2dc93577e257a1d2abac6d86e8b6d2821ad7b02e964c464fe844a0c",
+    "mod/GAME/th43/source/EISlib/boss/definition/Eliphia.lua": "5065a2555bd5f1bda869aea618eed56250820e734d0510e32cdd0e346ce70a3a",
+    "tools/th43-tests/check_spell_background.lua": "5d2da9f11f4a4c323d689aeade363484751fda30a4046fa9e07ef1ef3f157d4b"
+  }
+}

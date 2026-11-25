@@ -66,7 +66,7 @@ function Card.createFullCardBoss(editor,res,diff,paths,hidden)
         if res.bossLoadRes then res.bossLoadRes(o) end
         init(o,selected or cards)
         if res.scbg then
-            o.th43_spell_background=E.New(res.scbg)
+            o.th43_spell_background=E.New(res.scbg,o)
             R.objects[o.th43_spell_background]=false
             o.bg=o.th43_spell_background
         end
