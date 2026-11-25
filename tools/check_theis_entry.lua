@@ -1,4 +1,4 @@
--- 祈华梦三面 C 线：实际符卡背景绘制和练习加载页的回归，不代替安卓实机检查。
+-- 祈华梦实际资源赋值、成长伤害、三面背景和练习加载页回归，不代替安卓实机检查。
 arg={'theis-entry'}
 local function read(path)
     local f=assert(io.open(path,'rb'));local src=f:read('*a');f:close();return src
@@ -12,11 +12,14 @@ setmetatable(_G,nil)
 AndroidPlatform={}
 GetTextureSize=function() return 512,512 end
 PushRenderTarget,PopRenderTarget,RenderClearViewMode=function() end,function() end,function() end
-local images,draws={},{}
+local images,animations,draws={},{},{}
 local function image(name)
     assert(images[name],'缺少图片资源：'..tostring(name))
 end
 LoadImage=function(name) images[name]=true end
+LoadAnimation=function(name) animations[name]=true end
+SetAnimationState=function(name) assert(animations[name],'缺少动画资源：'..tostring(name)) end
+SetAnimationCenter=SetAnimationState
 LoadImageFromFile=function(name) images[name]=true end
 LoadImageGroupFromFile=function(name,_,_,columns,rows)
     for i=1,columns*rows do images[name..i]=true end
@@ -26,10 +29,13 @@ Render=function(name) image(name) end
 Render4V=function(name,...)
     image(name);draws[#draws+1]={name,...}
 end
-CheckRes=function(kind,name) if kind==2 and images[name] then return 'global' end end
+CheckRes=function(kind,name)
+    if kind==2 and images[name] or kind==3 and animations[name] then return 'global' end
+end
 lstg.CheckRes=CheckRes
 lstg.Color=function() return 0 end
 lstg.sin,lstg.cos=sin,cos;lstg.Rand=function() return ran end
+lstg.IsValid,lstg.SetV=IsValid,SetV
 lstg.world={l=-192,r=192,b=-224,t=224,scrl=32,scrr=416,scrb=16,scrt=464}
 WorldToScreen=function(x,y) return x+224,y+240 end
 GameContent=dofile('mod/content.lua')
@@ -51,6 +57,44 @@ boss.Define=define
 boss.card.add=add
 local E=W.source
 assert(E._editor_class['stage3Cmid_boss2:Lunatic'].cards[2].name=='哀蝶「世俗之盛，信仰之衰」')
+local savedDrops=GameDrops
+local hits={}
+GameDrops={enabled=function() return true end,damage=function(dmg,shot) return dmg*shot.power end}
+local targetClass={take_damage=function(target,dmg) hits[#hits+1]={target,dmg} end}
+local victim={class=targetClass,hp=1500,maxhp=1500,dmg_factor=1,
+    _master={_live=true,class=targetClass},_dmg_transfer=.5}
+local shot={dmg=10,power=2.5,killflag=true,mute=true}
+GameDrops.enabled=function() return false end
+E.enemybase.colli(victim,shot)
+assert(#hits==2 and hits[1][2]==10 and hits[2][2]==5,'非强化入口改变了原作伤害')
+hits={};GameDrops.enabled=function() return true end
+E.enemybase.colli(victim,shot)
+assert(#hits==2 and hits[1][2]==25 and hits[2][2]==12.5,'祈华梦未应用随机模式火力成长或父伤害重复换算')
+assert(shot.dmg==10,'随机火力桥接改写了子弹原始伤害')
+GameDrops=savedDrops
+print('祈华梦成长伤害：原作碰撞/递归转伤、2.5倍火力只计算一次')
+-- 覆盖截图里实际使用的数组回调弹幕类；严格拒绝尚未加载的裸资源名。
+E.lstg.ResourceSet.Find('EISlib.bullet'):Load()
+local savedNew=New
+New=function(class,...)
+    local fields={class=class,_live=true,timer=0,vx=0,vy=0,ax=0,ay=0,omiga=0,rot=0,hscale=1,vscale=1}
+    local o=setmetatable({}, {
+        __index=fields,
+        __newindex=function(_,key,value)
+            if key=='img' then image(value) end
+            fields[key]=value
+        end,
+    })
+    local init=class[1] or class.init;init(o,...)
+    return o
+end
+local bullet=E.stg.newBulletStraight(E.stg.ball_huge,1,true,0,0,2,90)
+assert(bullet.img=='theis/ball_huge_dark1','大玉首次赋图未解析作品命名空间')
+for timer=0,7 do bullet.timer=timer;bullet.class[3](bullet) end
+E.stg.setBulletStyle(bullet,E.stg.knife,5)
+assert(bullet.img=='theis/knife5','数组回调换class后切换弹型丢失命名空间')
+New=savedNew
+print('祈华梦新版弹幕：实际大玉出生、8帧淡入换class与换弹型的严格资源检查通过')
 local placeholders={[70107]=true,[70209]=true,[70341]=true,[70343]=true,[70345]=true,
     [70347]=true,[70349]=true,[70351]=true,[70611]=true,[70719]=true}
 local byId={}

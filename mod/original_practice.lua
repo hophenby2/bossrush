@@ -26,9 +26,18 @@ function P.canStart(name,spell)
     return false
 end
 function P.cards(level)
-    if OriginalStageFlow then return OriginalStageFlow.units(level) end
+    local rows={}
+    if OriginalStageFlow then rows=OriginalStageFlow.units(level)
+    else for index,unit in ipairs(_sc_pr_table[level] or {}) do rows[#rows+1]={index=index,unit=unit} end end
     local out={}
-    for index,unit in ipairs(_sc_pr_table[level] or {}) do out[#out+1]={index=index,unit=unit} end
+    for _,row in ipairs(rows) do
+        local card=row.unit.sc_group[1].card
+        local motion=level==32 and _editor_class.TH34.th07_motion_source[card.card_id]
+        -- 保留原注册索引；空过渡与妖妖梦Normal/Hard分支不作为独立练习候选。
+        if not card.random_empty and not (motion and motion.difficulty and motion.difficulty~=3) then
+            out[#out+1]=row
+        end
+    end
     return out
 end
 function P.chapters(level)

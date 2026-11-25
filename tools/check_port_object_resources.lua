@@ -27,4 +27,13 @@ assert(values[o].a==8 and values[o].b==9,'显式SetAttr没有转换镜像半轴'
 AndroidPlatform=nil;o.a=-7;assert(values[o].a==-7,'改动了Sub原本接受的半轴值')
 local host={};values[host]={};SetAttr(host,'img','ball');assert(values[host].img=='ball','影响了宿主图像名')
 AndroidPlatform={};SetAttr(host,'a',-2);assert(values[host].a==-2,'影响了移植作品之外的属性赋值')
+local rawNext={[3]=function(t) t.img='star' end,is_class=true}
+local rawClass={[1]=function(t) t.img='ball';t.class=rawNext end,is_class=true}
+prepare(rawClass);assert(rawClass.init==nil,'未登记的宿主回调类不应被接管')
+prepare(rawClass,true);local init=rawClass[1]
+prepare(rawClass,true);assert(rawClass[1]==init,'重复登记叠加了初始化包装')
+local raw={};values[raw]={}
+setmetatable(raw,{__index=function(t,k)return values[t][k]end,__newindex=rawSet})
+rawClass[1](raw);assert(raw.img=='theis/ball','数组回调类的首次img赋值未解析')
+raw.class[3](raw);assert(raw.img=='theis/star','原生换class后丢失图像命名空间')
 print('作品对象初始img、元表替换、显式SetAttr与宿主隔离通过')

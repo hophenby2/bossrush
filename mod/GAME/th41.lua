@@ -167,7 +167,8 @@ api.globalimagescale=.5
 api.SetImageScale=function(scale) api.globalimagescale=scale end
 api.wis={}
 api.RegisterClass=function(class)
-    prepareObject(class)
+    -- bullet2直接登记数组回调类，也要在第一次数值回调赋img前绑定作品命名空间。
+    prepareObject(class,true)
     for i,k in ipairs({'init','del','frame','render','colli','kill'}) do class[i]=class[k] or class[i] or empty end
     if AndroidRegisterClass then AndroidRegisterClass(class) end
 end
@@ -389,6 +390,15 @@ load('src/core/render.lua')
 load('src/core/tiles.lua')
 load('EISlib/effect/effect.lua')
 load('EISlib/enemy/enemy.lua')
+local sourceCollision=env.enemybase.colli
+env.enemybase.colli=function(o,shot)
+    if not (shot.dmg and GameDrops and GameDrops.enabled()) then return sourceCollision(o,shot) end
+    -- 原作碰撞入口没有随机模式的火力成长；只换算命中伤害，仍走原作递归转伤与命中演出。
+    env.enemybase.damage(o,GameDrops.damage(shot.dmg,shot))
+    shot.killerenemy=o
+    if not shot.killflag then api.Kill(shot) end
+    if not shot.mute then env.EISlib.Effect.DamageEnemyEffect(o) end
+end
 local bonusDisplay=env.bonus_display
 env.bonus_display=function(x,y,red,blue,green,night,kills,score,...)
     if not resources() then return bonusDisplay(x,y,red,blue,green,night,kills,score,...) end

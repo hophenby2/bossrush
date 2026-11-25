@@ -58735,6 +58735,8 @@ for k, e in ipairs(LIST) do
     end
     ---boss.card.add(sc_group, level, CardName, data_id)：level 29 = TH31 的关卡号。
     card._original_balance=OriginalBalance.entries[8][hp_key]
+    -- Sub51是80帧的无发弹过渡，保留原流程和旧卡号，不作为独立攻击候选。
+    if id==467 then card.random_empty=true end
     if card._original_balance then card.t1,card.t2=card._original_balance.immune,card._original_balance.immune end
     boss.card.add({ { card, band } }, 29, menu_name, id)
     local impl = CARD[cardnum]

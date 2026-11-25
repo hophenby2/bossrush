@@ -1,0 +1,38 @@
+{
+  "version": "2026.11.26.3",
+  "修复": {
+    "祈华梦新版弹幕资源报错": "bullet2的六个原生数组回调类未经过env.Class，首次img赋值前没有绑定命名空间。RegisterClass现明确登记作品所有权并包装数值初始化回调，换class后保持同一对象的解析器。",
+    "人理史强化模式异常耐打": "原卡Lunatic血量1500未变。EISlib重新定义的enemybase_t.colli直接使用shot.dmg，漏过GameDrops.damage的火力成长。现桥接成长伤害，再沿原作damage递归调用take_damage和父对象转伤，保留减伤及模式血量倍率。",
+    "永夜抄二面空过渡": "card_id 467的Sub51只有80帧且不发弹，标记random_empty；不进入独立练习与随机候选，完整关卡仍保留原过渡及索引，正常攻击card_id 465保留。",
+    "妖妖梦练习难度筛选": "原练习列表直接使用全注册表，包含10张显式Normal/Hard分支。现按th07_motion_source.difficulty排除；Lunatic、Extra、Phantasm和历史练习索引保留。随机Lunatic白名单原已排除这10张，本次以实际注册表复核。"
+  },
+  "来源": [
+    "mod/GAME/ports/theis/EISlib/bullet/bullet2.lua：fade_in_init首次赋img、数组回调类及newBulletStraight。",
+    "mod/GAME/ports/theis/EISlib/stage/stage3/bossA/bossA_main.lua：normal1_init_Keine_L调用新版大玉。",
+    "mod/GAME/ports/theis/EISlib/enemy/enemy.lua：enemybase_t.colli、damage及递归转伤。",
+    "mod/GAME/ports/theis/EISlib/stage/stage3/bossA/bossA_mid.lua：Keine1L的人理史1500血量、2/10/25秒时限。",
+    "mod/GAME/th31.lua：二面Sub51短过渡与相邻正常Sub29。",
+    "mod/GAME/th34.lua：th07_motion_source已核对的Normal/Hard实际实现分支。"
+  ],
+  "回归": [
+    {
+      "命令": "luajit tools/check_port_object_resources.lua",
+      "结果": "通过；初始img、元表替换、SetAttr、数组回调登记/去重/换class、安卓半轴及宿主隔离。"
+    },
+    {
+      "命令": "luajit tools/check_theis_entry.lua",
+      "结果": "通过；原作碰撞入口的未强化10/5伤害与强化25/12.5递归转伤，子弹原始dmg不改写；实际大玉出生、8帧淡入换class和换刀弹的严格资源赋值；既有10张空卡、莉莉染色板、C线256片背景、1920帧核爆、练习加载与重试回归。动画及图片采用登记/严格查名桩，未执行原生渲染。"
+    },
+    {
+      "命令": "luajit tools/check_rogue_hp.lua",
+      "结果": "通过，224项；来源血量、阶段累乘、伤害倍率只应用一次及显示时序。"
+    },
+    {
+      "命令": "luajit tools/check_candidate_filters.lua",
+      "结果": "通过；实际练习及single/staged随机池排除467，完整流程保留467与正常攻击465；妖妖梦10张Normal/Hard从练习排除且不在Lunatic随机池，L/EX/PH与历史索引保留。"
+    }
+  ],
+  "android_emulator_tested": false,
+  "android_physical_device_tested": false,
+  "范围": "按用户要求不运行安卓模拟器。离线检查不代表安卓画面或整卡通关实测。"
+}

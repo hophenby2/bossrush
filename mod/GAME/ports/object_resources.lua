@@ -38,8 +38,9 @@ function M.factory(resolve)
     local function class(base,definition,sort)
         local c=Class(base,definition,sort);owned[c]=true;return c
     end
-    local function prepare(c)
-        if not owned[c] or wrapped[c]==c.init then return end
+    local function prepare(c,adopt)
+        if adopt then owned[c]=true end
+        if not owned[c] or wrapped[c] and wrapped[c]==c.init then return end
         local init=c.init or c[1] or empty
         c.init=function(o,...)
             M.bind(o,resolve)
