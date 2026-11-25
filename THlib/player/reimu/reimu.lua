@@ -171,9 +171,20 @@ function trail:frame()
 end
 function trail:render()
     local factor=GameDrops and GameDrops.power(self) or 1
-    for _, s in ipairs(self.smear) do
-        SetImageState(self.img, 'mul+add', s.alpha, 255, 255, 255)
-        Render(self.img, s.x, s.y, s.rot, self.hscale*factor, self.vscale*factor)
+    local draw=lstg.AndroidRenderSprite
+    if draw then
+        -- 安卓直接提交残影的顶点色，避免雷弹逐片改共享图片状态、创建 Color。
+        -- 保持每片残影与弹体的原有绘制顺序、混合和缩放。
+        local h,v=self.hscale*factor,self.vscale*factor
+        local resource=assert(FindResSprite(self.img),self.img)
+        for _,s in ipairs(self.smear) do
+            draw(resource,'mul+add',s.x,s.y,s.rot,h,v,s.alpha,255,255,255)
+        end
+    else
+        for _, s in ipairs(self.smear) do
+            SetImageState(self.img, 'mul+add', s.alpha, 255, 255, 255)
+            Render(self.img, s.x, s.y, s.rot, self.hscale*factor, self.vscale*factor)
+        end
     end
     SetImageState(self.img, '', 100, 255, 255, 255)
     player_bullet_trail.render(self)

@@ -3,10 +3,13 @@ local M=PortObjectResources
 if M then return M end
 M={objects=setmetatable({},{__mode='k'}),metatables=setmetatable({},{__mode='k'}),wrapped=setmetatable({},{__mode='k'})};PortObjectResources=M
 local rawSetAttr=SetAttr
+local abs=math.abs
 function M.set(o,key,value)
-    if key=='img' then
-        local resolve=M.objects[o]
-        if resolve then value=resolve(value) end
+    local resolve=M.objects[o]
+    if resolve then
+        if key=='img' then value=resolve(value)
+        -- Sub 接受随镜像缩放带符号的半轴；x 的判定尺寸只接受非负数。
+        elseif AndroidPlatform and (key=='a' or key=='b') then value=abs(value) end
     end
     return rawSetAttr(o,key,value)
 end
@@ -24,6 +27,7 @@ function M.bind(o,resolve)
     local setter=mt.__newindex or rawSetAttr
     mt.__newindex=function(t,key,value)
         if key=='img' then value=resolve(value) end
+        if AndroidPlatform and (key=='a' or key=='b') then value=abs(value) end
         return setter(t,key,value)
     end
     mappings[original]=mt;M.wrapped[mt]=resolve

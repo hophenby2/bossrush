@@ -45,7 +45,10 @@ function C.shots()
     -- XNA 原作把自机弹半径加到矩形的横纵边界，角落也参与命中。
     -- 因此碰撞阶段使用轴对齐弹框，而不是圆与矩形的圆角相交。
     if boxes then for _,o in ObjList(GROUP.PLAYER_BULLET) do if o.colli then
-        shots[#shots+1]={o,o.rot,o.rect};o.rot,o.rect=0,true
+        shots[#shots+1]={o,o.rot,o.rect,o._original_collision_rot}
+        -- 与旧作 AABB 适配共用命中特效的原始弹道角记录；碰撞用角仍为零。
+        if o._original_collision_rot==nil then o._original_collision_rot=o.rot end
+        o.rot,o.rect=0,true
     end end end
 end
 function C.finish()
@@ -54,7 +57,9 @@ function C.finish()
         if r[4] and o.status~='kill' and o.status~='del' then SetAttr(o,'colli',true) end
     end end
     for i=#shots,1,-1 do
-        local r=shots[i];if IsValid(r[1]) then r[1].rot,r[1].rect=r[2],r[3] end
+        local r=shots[i];if IsValid(r[1]) then
+            r[1].rot,r[1].rect,r[1]._original_collision_rot=r[2],r[3],r[4]
+        end
         shots[i]=nil
     end
 end

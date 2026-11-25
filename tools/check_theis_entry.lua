@@ -64,6 +64,40 @@ assert(#draws==4 and draws[1][1]=='bossring11','宿主公共图片组被错误�
 assert(misc.RenderRing==hostRing,'桥接污染了宿主绘图函数')
 print('祈华梦 C 线实际符卡背景：256 片资源名与原作环形顶点通过')
 
+-- 执行截图报错对象的原始协程；只替换它的附属视觉对象，不改半轴更新的帧序。
+local nuclear=E._editor_class['stage_3_boss_marisa_Spell2_star1_nuclear']
+local rawNew,connect,del=E.New,E._connect,E._del
+E.New=function() return {} end;E._connect=function() end
+E._del=function(o) o.done=true end
+local function actor(strict)
+    local fields={hscale=1,vscale=1,a=1,b=1}
+    local o=setmetatable({}, {
+        __index=function(_,key) return fields[key] end,
+        __newindex=function(_,key,value)
+            if strict and (key=='a' or key=='b') then assert(value>=0,'x 引擎拒绝负半轴') end
+            fields[key]=value
+        end,
+    })
+    if strict then PortObjectResources.bind(o,function(name) return E.lstg.ResourceSet.Resolve(2,name) end) end
+    return o
+end
+local samples=0
+for _,difficulty in ipairs({2,4}) do for _,direction in ipairs({-1,1}) do for _,spin in ipairs({-1,1}) do
+    local original,android=actor(false),actor(true)
+    nuclear.init(original,0,0,difficulty,direction,spin,{flag=0},90,1,255,255,255)
+    nuclear.init(android,0,0,difficulty,direction,spin,{flag=0},90,1,255,255,255)
+    for frame=1,240 do
+        E.task.Do(original);E.task.Do(android)
+        for _,key in ipairs({'hscale','vscale','rot','omiga','colli','done'}) do
+            assert(original[key]==android[key],'半轴兼容改变了原作状态或帧序：'..key)
+        end
+        assert(android.a==math.abs(original.a) and android.b==math.abs(original.b),'判定尺寸偏离原作半轴绝对值')
+        samples=samples+1
+    end
+end end end
+E.New,E._connect,E._del=rawNew,connect,del
+print(('西行妖花风暴核爆对象：%d 帧原始协程、镜像绘制与半轴兼容通过'):format(samples))
+
 -- 实际三面背景继承 object；须由移植桥接登记，加载页才能感知它。
 images.white=true
 ui={RenderText=function() end,RenderTip=function() end}

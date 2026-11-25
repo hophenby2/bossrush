@@ -13,8 +13,13 @@ local p={x=40/7+.1,y=0,A=1};actor.x,actor.y=0,0
 assert(not C.contact(p,actor),'原作点对矩形体术不应扩张自机半径')
 p.x=40/7-.1;assert(C.contact(p,actor))
 C.shots();assert(actor.a==35 and actor.b==50 and actor.rect);assert(shot.rot==0 and shot.rect)
+assert(shot._original_collision_rot==90,'碰撞时未保留生成命中特效所需的弹道角')
 C.finish();assert(actor.a==35 and actor.b==50 and actor.rot==90)
-assert(shot.rot==90 and not shot.rect)
+assert(shot.rot==90 and not shot.rect and shot._original_collision_rot==nil)
+shot._original_collision_rot=123
+C.begin();C.shots();assert(shot._original_collision_rot==123,'覆盖了旧作碰撞先行保存的角度')
+C.finish();assert(shot._original_collision_rot==123,'没有还原旧作碰撞的角度记录')
+shot._original_collision_rot=nil
 actor.native_actor_collision.noDamage=true
 C.begin();C.shots();assert(not actor.colli,'耐久 Boss 不应吸收自机弹');C.finish();assert(actor.colli)
 actor.native_actor_collision.noDamage=false

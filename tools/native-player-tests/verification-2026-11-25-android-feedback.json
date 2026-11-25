@@ -1,0 +1,70 @@
+{
+  "版本": "2026.11.25.8",
+  "修复": [
+    "仅在作品对象的 LuaSTG-x 绑定边界把镜像派生的 a/b 半轴转换为绝对值，保留 hscale/vscale、旋转及原始协程帧序。",
+    "原作受击框适配临时把自机弹 rot 清零时保留 _original_collision_rot，命中特效沿用弹道角；碰撞阶段结束还原原有记录。",
+    "宿主灵梦雷弹残影使用已有 AndroidRenderSprite 资源句柄接口提交顶点色，减少共享图片状态修改及 Color 创建，保留有序绘制及最终图片状态。"
+  ],
+  "LuaJIT检查": [
+    {
+      "命令": "luajit tools/check_port_object_resources.lua",
+      "结果": "通过"
+    },
+    {
+      "命令": "luajit tools/check_theis_entry.lua",
+      "结果": "通过；8组原始核爆协程共1920帧，逐帧对照镜像、旋转、碰撞与生命周期"
+    },
+    {
+      "命令": "luajit tools/native-player-tests/check_actor_collision.lua",
+      "结果": "通过；包含临时角度保存和嵌套记录还原"
+    },
+    {
+      "命令": "luajit tools/native-player-tests/check_reimu_trail_render.lua",
+      "结果": "通过；96组顺序、颜色、混合、缩放、资源句柄和最终图片状态对照"
+    }
+  ],
+  "安卓原生对照": {
+    "设备": "独立 LDPlayer 9 实例；Android x86_64 通过 ARM64 转译运行实际 APK；不是手机实测",
+    "基线": "2026.11.25.7；仅私有 performance_case 诊断增加逐帧计时与第二次 Bomb，不改正式战斗代码",
+    "修改后": "相同 APK、原生库、诊断与素材，替换本次三个正式运行时 Lua 文件",
+    "条件": "benchmark case=3600 frames=600 seed=20261125 bomb=120 secondbomb=480 shoot=0 hold=1；每次重启应用",
+    "战斗状态校验": "3090aeca420960d604477a8a11c352bc7698cc00eb21d5b341e241d923b7a6de",
+    "前后战斗状态一致": true,
+    "前后最终对象数": 1319,
+    "绘制耗时": {
+      "首次扔雷后60帧": {
+        "before_render_ms": 114.35767173334936,
+        "after_render_ms": 91.70901736667207,
+        "reduction_percent": 19.80510273021973,
+        "before_render_peak_ms": 157.97078699995,
+        "after_render_peak_ms": 124.08118199983,
+        "draw_calls_match": true,
+        "vertex_counts_match": true
+      },
+      "第二次扔雷后60帧": {
+        "before_render_ms": 85.14066031667649,
+        "after_render_ms": 70.40761168332212,
+        "reduction_percent": 17.304362661219123,
+        "before_render_peak_ms": 135.70018200005,
+        "after_render_peak_ms": 97.165753999889,
+        "draw_calls_match": true,
+        "vertex_counts_match": true
+      }
+    },
+    "600帧总秒数": {
+      "before": 88.282794,
+      "after": 80.88526
+    },
+    "范围": "一次配对对照。模拟器转译放大绝对耗时；不能外推手机帧率、其他卡片或彻底消除首雷掉帧。"
+  },
+  "未完成或未验证": [
+    "大符札缺失按用户后续指示暂不处理。",
+    "未进行 Android 手机或 macOS 实测。",
+    "tools/check_bullet_visuals.lua 在已有桩环境 THlib/anm/original_sounds.lua:29 因 lstg.PlaySound 缺失而停止，未得出该整套检查通过的结论。"
+  ],
+  "运行时文件SHA256": {
+    "THlib/player/reimu/reimu.lua": "8cca982266eba1df6e2ff027eefcef4ddb912b6e1d25b7db954553358168a036",
+    "THlib/native_actor_collision.lua": "a3be154fb0f9b003c6523ead5bf0c93cfea3c08496c93dc09e7d4b43d1219852",
+    "mod/GAME/ports/object_resources.lua": "015ac4831ac8db7980b65ebdf5f68b244dfb05b0fc809787ef35a85f1ba797ee"
+  }
+}
