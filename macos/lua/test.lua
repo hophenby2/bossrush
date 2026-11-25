@@ -4,6 +4,7 @@ function T.install()
     local mode=os.getenv('BOSSRUSH_MAC_TEST')
     if mode=='original-sounds' then return dofile('macos/original_sounds_test.lua').install() end
     if mode=='starlit-perf' then return dofile('macos/starlit_perf.lua').install() end
+    if mode=='rogue-hp-ring' then return dofile('macos/rogue_hp_ring_test.lua').install() end
     if mode=='rogue-hud-resources' then return dofile('macos/rogue_hud_resources_test.lua').install() end
     if mode=='portrait-layout' then return dofile('macos/portrait_layout_test.lua').install() end
     if mode=='rogue-display' then return dofile('macos/rogue_display_test.lua').install() end

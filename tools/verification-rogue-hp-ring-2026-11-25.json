@@ -1,0 +1,94 @@
+{
+  "date": "2026-11-25",
+  "source_parent_commit": "6665c280a314c5bed5464b083971ead8d18f018a",
+  "source_note": "报告与修复同一提交；逐文件SHA-256标识实际检查的版本。",
+  "scope": "挑战模式独立后端Boss血圈缺失及宿主血圈去重；不改血量、攻击或受伤逻辑。",
+  "source_sha256": {
+    "mod/rogue_boss_hud.lua": "cc7358a96453445ccec5c49164b61ac7de01986c38b9677291db11b1e12ada22",
+    "THlib/enemy/boss_ui.lua": "0a083d4f4e8c5ee32020fbf78efcb9aa47c9c5bc44f1b6b23e07964f9ea8d880",
+    "THlib/ext/ext_boss.lua": "8c348bb668efee1720232c3eaf026a03ab244b6df6ea58e12b47a85e3b3593ae",
+    "macos/lua/rogue_hp_ring_test.lua": "bfbcfdf37bc45a42b4436ba1199a05ce5e40d33e8593038159c29c8268e6cee3",
+    "tools/check_rogue_hp_ring.lua": "f2d334c1473766c16036bf2d21a026757af1f1c7c9aa17bc8a7c9dd1bfe1006c"
+  },
+  "checks": [
+    {
+      "command": "luajit tools/check_rogue_hp_ring.lua",
+      "passed": true,
+      "coverage": "真实血量与坐标、祈华梦原作卡片战斗状态、入场填充、靠近淡化、专用UI隐藏标记、等待/耐久、切卡清理、混沌/挑战入口、Like Dreamer阶段快照及练习模式边界"
+    },
+    {
+      "command": "luajit tools/check_boss_hp_ui.lua",
+      "passed": true,
+      "coverage": "共用血圈、底部血条与指示器，2123项断言"
+    },
+    {
+      "entry": "BOSSRUSH_MAC_TEST=rogue-hp-ring",
+      "backend": "macOS原生Metal",
+      "passed": true,
+      "method": "真实挑战模式按指定8张卡跨作切换，在入场后180逻辑帧逐帧统计portrait_hp_fill的实际Render4V次数，与实际Boss血量、战斗状态和填充进度计算值严格相等；轮流使用横竖布局。",
+      "samples": [
+        {
+          "id": 70102,
+          "portrait": true,
+          "quads": 318,
+          "bosses": 1,
+          "source": "TH41"
+        },
+        {
+          "id": 70101,
+          "portrait": false,
+          "quads": 360,
+          "bosses": 1,
+          "source": "TH41"
+        },
+        {
+          "id": 39001,
+          "portrait": true,
+          "quads": 360,
+          "bosses": 1,
+          "source": "TH39"
+        },
+        {
+          "id": 37004,
+          "portrait": false,
+          "quads": 360,
+          "bosses": 1,
+          "source": "TH37"
+        },
+        {
+          "id": 38002,
+          "portrait": true,
+          "quads": 360,
+          "bosses": 1,
+          "source": "TH38"
+        },
+        {
+          "id": 68002,
+          "portrait": false,
+          "quads": 360,
+          "bosses": 1,
+          "source": "TH40"
+        },
+        {
+          "id": 81402,
+          "portrait": true,
+          "quads": 360,
+          "bosses": 1,
+          "source": "TH43"
+        },
+        {
+          "id": 471,
+          "portrait": false,
+          "quads": 360,
+          "bosses": 1,
+          "source": "TH31"
+        }
+      ],
+      "visual_review": "祈华梦非符竖布局、符卡横布局及幕华祭永夜篇竖布局截图均显示环绕Boss的血圈。"
+    }
+  ],
+  "limits": [
+    "原生运行检查使用隔离存档目录，Android竖屏布局由Mac实际渲染入口模拟。",
+    "未进行Android真机实测，未穷举全部符卡。"
+  ]
+}

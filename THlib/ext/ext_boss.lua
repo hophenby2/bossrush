@@ -46,7 +46,10 @@ function extboss:frame()
 end
 function extboss:render()
     local rogue=RogueBossHUD and RogueBossHUD.enabled()
-    if rogue then RogueBossHUD.prepareRender() end
+    if rogue then
+        RogueBossHUD.prepareRender()
+        RogueBossHUD.renderRings()
+    end
     if not rogue and ui.OriginalHUD and ui.OriginalHUD.enabled() then return end
 
     if stage.current_stage.is_menu then

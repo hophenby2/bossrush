@@ -17,7 +17,11 @@ local hpRing = dofile('THlib/enemy/portrait_hp.lua')
 
 ---@class boss.ui
 boss.ui = Class(object)
-boss.ui.renderHPRing=hpRing.draw
+function boss.ui.renderHPRing(self)
+    -- 随机模式由共用HUD统一绘制，避免宿主Boss出现两层血圈。
+    if RogueBossHUD and RogueBossHUD.enabled() then return end
+    hpRing.draw(self)
+end
 function boss.ui:init(system, b)
     self.layer = LAYER.TOP + 2
     self.boss = b

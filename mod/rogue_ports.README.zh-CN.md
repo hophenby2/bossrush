@@ -56,10 +56,13 @@ Like Dreamer 在随机模式保留原作 Boss 血条，侧栏使用宿主的残�
 
 随机模式底部统一绘制项目原生血条与 Boss 位置指示器，忽略各作关闭宿主血条/箭头的显示标记，耐久阶段也保留显示。祈华梦读取内部 Boss 列表，Like Dreamer 读取其 Boss HUD 的真实阶段快照，不使用练习入口包装对象的占位血量；位置箭头在最后绘制并限制在场地横向边界内。
 
+挑战和混沌模式的 Boss 血圈同样由共用 HUD 绘制，沿用宿主的血弧、进场填充和靠近淡化。祈华梦从原作卡片系统读取战斗状态，其余后端读取实际 Boss 或阶段快照；原作用于关闭专用 HUD 的显示标记不会关闭共用血圈。宿主 Boss 自身的血圈在这两个模式让位共用绘制，避免重复叠加；非战斗、等待与耐久阶段不绘制血圈。练习和顺序模式仍走各自原有 UI。
+
 ## 运行回归
 
 ```sh
 luajit tools/check_rogue_hp.lua
+luajit tools/check_rogue_hp_ring.lua
 luajit tools/check_roguelike.lua
 luajit tools/check_rogue_music.lua
 luajit tools/check_dual_rogue.lua
