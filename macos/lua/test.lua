@@ -2,6 +2,7 @@
 local T={}
 function T.install()
     local mode=os.getenv('BOSSRUSH_MAC_TEST')
+    if mode=='rogue-display' then return dofile('macos/rogue_display_test.lua').install() end
     if mode=='theis-bamboo' then return dofile('macos/theis_bamboo_test.lua').install() end
     if mode=='rogue-ttk-calibration' then return dofile('macos/rogue_ttk_calibration.lua').install() end
     if mode=='dreamer-practice' then return dofile('macos/dreamer_practice_test.lua').install() end

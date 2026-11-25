@@ -576,7 +576,7 @@ function player_system_select:fresh(mode)
     self.simple_mode = self.practice_mode or mode=='original_sequence' or mode=='roguelike' or mode=='roguelike2' or mode=='rogue_dual' or mode=='rogue_chain'
     self.simple_dual = false
     self.simple_chain = false
-    self.simple_title = self.practice_mode and '选择玩家 · 调试练习' or mode=='original_sequence' and '选择玩家 · 顺序模式' or self.simple_mode and "选择玩家 · roguelike模式" or nil
+    self.simple_title = self.practice_mode and '选择玩家 · 调试练习' or mode=='original_sequence' and '选择玩家 · 顺序模式' or self.simple_mode and "选择玩家 · 混沌模式" or nil
     rogue_pool_menu.fresh(self,mode)
     self.unlocksystem = {}
     self.unlockplayer = { true, scoredata.UnlockChiruno or "前往商店购买解锁", scoredata.UnlockAya or "前往商店购买或通关解锁", true }
@@ -765,7 +765,7 @@ function player_system_select:render()
     menu:RenderExit(0, 30, 540, 510, Alpha)
     if AndroidPortrait and AndroidPortrait.rendering then AndroidPortrait.place(240,250,270,screen.height-300) end
     local mx, my, r = 240, 250, 155 + (cur_setting.easyrender and 0 or sin(self.timer * 3) * 2)
-    ui:RenderText("title", (self.simple_mode and (self.simple_title or "选择玩家 · roguelike模式")) or self.title, (self.simple_dual or self.pool_options or AndroidPortrait and AndroidPortrait.rendering) and 240 or Alpha * 200 - 100, 460, (self.simple_dual or self.pool_options) and 1.0 or 1.25,
+    ui:RenderText("title", (self.simple_mode and (self.simple_title or "选择玩家 · 混沌模式")) or self.title, (self.simple_dual or self.pool_options or AndroidPortrait and AndroidPortrait.rendering) and 240 or Alpha * 200 - 100, 460, (self.simple_dual or self.pool_options) and 1.0 or 1.25,
             Color(255 * Alpha, 230, 230, 230), "centerpoint")
     SetImageState("bright_line", "mul+add", Alpha * 255, 255, 255, 255)
     Render("bright_line", Alpha * 200 - 100, 446, 0, 0.5, 0.5)

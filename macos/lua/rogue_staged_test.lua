@@ -14,7 +14,7 @@ function T.install()
     local phase,age=0,0
     local counts,workCounts,plan,selected={},{},{},{}
     local function choose(title)
-        for i,label in ipairs(title.text) do if label=='roguelike模式2' then title.func[i]();return end end
+        for i,label in ipairs(title.text) do if label=='挑战模式' then title.func[i]();return end end
         error('主菜单没有模式2入口')
     end
     local function audit(cards)

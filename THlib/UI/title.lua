@@ -206,18 +206,18 @@ function stage_menu:init()
     end
     local function titleContent()
         local content={
-        { "roguelike模式", function()
-            menu_player_system_select:fresh('roguelike')
-            menu_player_system_select.state = "stage"
-            menu.FadeIn(menu_player_system_select)
-            menu.FadeOut(menu_title)
-        end, "Roguelike" },
-        { "roguelike模式2", function()
+        { "挑战模式", function()
             menu_player_system_select:fresh('roguelike2')
             menu_player_system_select.state = "stage"
             menu.FadeIn(menu_player_system_select)
             menu.FadeOut(menu_title)
-        end, "Roguelike 2" },
+        end, "Challenge" },
+        { "混沌模式", function()
+            menu_player_system_select:fresh('roguelike')
+            menu_player_system_select.state = "stage"
+            menu.FadeIn(menu_player_system_select)
+            menu.FadeOut(menu_title)
+        end, "Chaos" },
         { "顺序模式", openSequence, "Original Order" },
         { "查看录像", function()
             replay_loader.Refresh(menu_replay_loader)

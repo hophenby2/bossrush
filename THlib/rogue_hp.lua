@@ -104,7 +104,8 @@ function H.render(x,y,width,height,align)
     for i,line in ipairs(lines) do
         ui:RenderText('title',line,x,y-(i-1)*gap,scale,Color(oldAlpha,H.rgb(s.shown_stage)),align or 'centerpoint','vcenter')
     end
-    if not a then return end
+    -- 阶段大字显示时，倍率的飞行动画不占用同一个屏幕中心；数值与计时照常推进。
+    if not a or lstg.var.rogue_run.stage_banner then return end
     local t=math.max(0,math.min(1,(a.age-DELAY)/FLIGHT))
     local move=t*t*(3-2*t)
     local alpha=math.min(1,(H.DURATION-a.age)/FADE)*255

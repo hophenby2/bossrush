@@ -114,8 +114,8 @@ function M.nextEndless(run)
     run.overtime_index=run.overtime_index+1
     return deck[run.overtime_card_index]
 end
-local DELAY,FLIGHT,FADE=6,48,6
-local DURATION=DELAY+FLIGHT+FADE
+local titles=dofile('mod/rogue_titles.lua')
+local DURATION=titles.STAGE_DURATION
 function M.announce(run)
     if run.mode~='staged' or run.overtime then return end
     local number,index,count=M.position(run.current)
@@ -132,25 +132,11 @@ function M.frame(run)
     if a.age>=DURATION then run.stage_banner=table.remove(run.banner_queue,1) end
 end
 function M.alpha(run)
-    local a=run.stage_banner
-    return a and math.max(0,math.min(1,(DELAY+FLIGHT-a.age)/FADE))*255 or 255
+    return 255
 end
 function M.render(run)
     local a=run.stage_banner
     if not a then return end
-    local previous=lstg.viewmode
-    SetViewMode('ui')
-    local w=lstg.world
-    local portrait=AndroidPortrait and AndroidPortrait.enabled()
-    local x,y=portrait and (w.scrl+w.scrr)/2 or w.scrl/2,portrait and w.scrt-28 or 270
-    local centerX,centerY=screen.width/2,screen.height/2+72
-    local t=math.max(0,math.min(1,(a.age-DELAY)/FLIGHT))
-    local move=t*t*(3-2*t)
-    local alpha=math.min(1,(DURATION-a.age)/FADE)*255
-    local size=math.min(2.6,(w.scrr-w.scrl-24)/(#a.text*16))
-    local rgb=a.stage==6 and {255,75,85} or {255,255,255}
-    ui:RenderText('title',a.text,centerX+(x-centerX)*move,centerY+(y-centerY)*move,
-        size+(1-size)*move,Color(alpha,unpack(rgb)),'centerpoint')
-    if previous then SetViewMode(previous) end
+    titles.stage(a)
 end
 return M

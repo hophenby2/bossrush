@@ -152,6 +152,7 @@ function sc_pr_menu:frame()
         end
     end
     if self.locked then
+        self.touch_diff=nil
         return
     end
     local mouse = ext.mouse
@@ -182,6 +183,8 @@ function sc_pr_menu:frame()
             self.exit_func()
         end
     else
+        local touch_diff=self.touch_diff;self.touch_diff=nil
+        if touch_diff and touch_diff~=0 then self:adddiffpos(touch_diff,touch_diff<0 and 1 or 2) end
         if menu:keyUp() then
             self:addpos(-1)
         end
@@ -251,6 +254,7 @@ function sc_pr_menu:render()
     if self.alpha == 0 then
         return
     end
+    if not self.locked then sc_pr_menu.touch_owner=self end
     SetViewMode('ui')
     ui:DrawBack(self.alpha, self.timer)
     if AndroidPortrait and AndroidPortrait.rendering then AndroidPortrait.place(480,450,270,screen.height-150,540/960) end

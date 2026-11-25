@@ -140,16 +140,10 @@ function U.render(o)
             ui:RenderText('title',entry.text,entry.x+31,entry.y,(entry.width==133 and .58 or .65),checked and white or muted,'left','vcenter')
         end
     end
-    if o.pool_variant=='staged' then
-        ui:RenderText('title','Lunatic · 非符起交替 · 末张符卡',715,232,.65,white,'centerpoint')
-        ui:RenderText('title','1～6面：4 / 5 / 6 / 7 / 7 / 9 张',715,200,.65,muted,'centerpoint')
-        ui:RenderText('title','共38张 · 候选不足循环/跨面补齐',715,168,.65,muted,'centerpoint')
-    end
     -- 筛选可暂时为空，只有点击开始后才显示开局校验结果。
     local message=o.pool_notice_time>0 and o.pool_notice
     if message then
         ui:RenderText('title',message,715,o.pool_expanded and 77 or 125,.7,Color(alpha*255,255,170,125),'centerpoint')
     end
-    ui:RenderText('title','← → 选择自机',240,80,.7,o.pool_focus==0 and accent or muted,'centerpoint')
 end
 return U

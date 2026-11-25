@@ -90,6 +90,7 @@ function M.itemRender(o)
     if not o.theis_item then return false end
     local img=o.img
     if not o.theis_minor then img='item_'..o.kind..(math.floor(o.ani/6)%3+1) end
+    img=_editor_class.TH41.source.lstg.ResourceSet.Resolve(2,img)
     SetImageState(img,o.theis_minor and 'mul+add' or '',o.theis_minor and 100 or 255,255,255,255)
     Render(img,o.x,o.y,0,o.hscale*.5,o.vscale*.5)
     return true

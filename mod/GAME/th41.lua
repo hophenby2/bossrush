@@ -15,6 +15,7 @@ local function drop(x,y,kind,count)
 end
 local env,load,assets=dofile('mod/GAME/ports/environment.lua')('theis')
 local api=env.lstg
+local resolve=api.ResourceSet.Resolve
 local objects
 local empty=function() end
 local function new(class,...)
@@ -162,10 +163,16 @@ env.PreserveObject=object.Preserve
 api.Log=function(_,message) if lstg.SystemLog then lstg.SystemLog(message) end end
 api.SetImgState=function(o,...) return env.SetImgState(o,...) end
 env.SetImgState=function(o,blend,a,r,g,b)
-    if lstg.CheckRes(2,o.img) then SetImageState(o.img,blend or '',a or 255,r or 255,g or 255,b or 255)
-    elseif lstg.CheckRes(3,o.img) then SetAnimationState(o.img,blend or '',a or 255,r or 255,g or 255,b or 255) end
+    if lstg.CheckRes(2,resolve(2,o.img)) then env.SetImageState(o.img,blend or '',a or 255,r or 255,g or 255,b or 255)
+    elseif lstg.CheckRes(3,resolve(3,o.img)) then env.SetAnimationState(o.img,blend or '',a or 255,r or 255,g or 255,b or 255) end
 end
-api.SetImageState,api.SetAnimationState=SetImageState,SetAnimationState
+for _,spec in ipairs({{'SetImageState',2},{'SetImageCenter',2},{'SetAnimationState',3},
+    {'SetAnimationCenter',3},{'GetTextureSize',1},{'SetTextureSamplerState',1},{'RenderTexture',1},
+    {'RenderRect',2},{'Render4V',2},{'PushRenderTarget',1},{'PopRenderTarget',1},{'PostEffect',1}}) do
+    local name,kind=spec[1],spec[2]
+    env[name]=function(key,...) return _G[name](resolve(kind,key),...) end
+    api[name]=env[name]
+end
 env.LoadTexture=function(name,path,...) return LoadTexture(name,assets..path,...) end
 env.LoadImageFromFile=function(name,path,...) return LoadImageFromFile(name,assets..path,...) end
 env.LoadImageGroupFromFile=function(name,path,...) return LoadImageGroupFromFile(name,assets..path,...) end
@@ -192,23 +199,31 @@ env.SetViewMode=function(mode)
 end
 -- 原作普通贴图以半尺寸绘制，取景仍由宿主负责。
 env.Render=function(img,x,y,rot,sx,sy,...)
-    if lstg.viewmode=='3d' then return Render(img,x,y,rot,sx,sy,...) end
+    if lstg.viewmode=='3d' then return Render(resolve(2,img),x,y,rot,sx,sy,...) end
     local scale=api.globalimagescale
-    return Render(img,x,y,rot,(sx or 1)*scale,(sy or sx or 1)*scale,...)
+    return Render(resolve(2,img),x,y,rot,(sx or 1)*scale,(sy or sx or 1)*scale,...)
 end
 api.Render=env.Render
 env.RenderAnimation=function(img,t,x,y,rot,sx,sy)
     local scale=api.globalimagescale
-    return RenderAnimation(img,t,x,y,rot,(sx or 1)*scale,(sy or sx or 1)*scale)
+    return RenderAnimation(resolve(3,img),t,x,y,rot,(sx or 1)*scale,(sy or sx or 1)*scale)
 end
 api.RenderAnimation=env.RenderAnimation
 env.RenderText=function(font,text,x,y,scale,...)
     return RenderText(font,text,x,y,(scale or 1)*api.globalimagescale,...)
 end
 env.DefaultRenderFunc=function(o)
+    -- 使用原作高清切片；宿主同名弹图尺寸更小，不能再对宿主图应用原作的半尺寸比例。
+    local key=o.img
     local previous=GetImageScale()
     SetImageScale(api.globalimagescale)
-    DefaultRenderFunc(o)
+    if key and lstg.CheckRes(2,resolve(2,key)) then
+        Render(resolve(2,key),o.x,o.y,o.rot,o.hscale,o.vscale)
+    elseif key and lstg.CheckRes(3,resolve(3,key)) then
+        RenderAnimation(resolve(3,key),o.ani,o.x,o.y,o.rot,o.hscale,o.vscale)
+    else
+        DefaultRenderFunc(o)
+    end
     SetImageScale(previous)
 end
 api.DefaultRenderFunc=env.DefaultRenderFunc
@@ -326,7 +341,8 @@ for _,name in ipairs({'GetMusicState','SetBGMVolume','StopMusic','ResumeMusic','
 end
 api.CheckRes=function(kind,name)
     local track=tracks[name]
-    return lstg.CheckRes(api.ResourceSet.kinds[kind] or kind,track and track[1] or name)
+    kind=api.ResourceSet.kinds[kind] or kind
+    return lstg.CheckRes(kind,track and track[1] or resolve(kind,name))
 end
 
 load('src/core/flat_class.lua')

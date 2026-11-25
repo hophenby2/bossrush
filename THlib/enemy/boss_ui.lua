@@ -441,6 +441,7 @@ function sc_name:frame()
     end
 end
 function sc_name:render()
+    if RogueTen and RogueTen.usesTitleOverlay and RogueTen.usesTitleOverlay() then return end
     if ui.OriginalHUD and ui.OriginalHUD.enabled() then return end
     -- 标题使用屏幕 HUD 坐标，保留原入场动画，不继承前一个对象的视口。
     local previous=lstg.viewmode

@@ -54,8 +54,8 @@ function P.clearInput()
     P.controls,P.touches,P.pending={},{},{}
     P.modal,P.menuView,P.rendering,P.owner,P.closeAction=nil,nil,nil,nil,nil
 end
-local function control(o,x1,x2,y1,y2,action,drag)
-    P.controls[#P.controls+1]={owner=o,stage=stage.current_stage,x1=x1,x2=x2,y1=y1,y2=y2,action=action,drag=drag}
+local function control(o,x1,x2,y1,y2,action,drag,swipe)
+    P.controls[#P.controls+1]={owner=o,stage=stage.current_stage,x1=x1,x2=x2,y1=y1,y2=y2,action=action,drag=drag,swipe=swipe}
 end
 local function contains(c,x,y) return x>=c.x1 and x<=c.x2 and y>=c.y1 and y<=c.y2 end
 function P.touch(id,x,y,event)
@@ -71,9 +71,13 @@ function P.touch(id,x,y,event)
     else
         local t=P.touches[id]
         if t then
-            if (x-t.x)^2+(y-t.y)^2>144 then t.moved=true end
+            local dx,dy=x-t.x,y-t.y
+            local slop=t.hit and t.hit.swipe and 400 or 144
+            if dx*dx+dy*dy>slop then t.moved=true end
             if event=='moved' and t.hit and t.hit.drag then
                 P.pending[#P.pending+1]={hit=t.hit,x=x,y=y,drag=true}
+            elseif event=='ended' and t.hit and t.hit.swipe and math.abs(dx)>=48 and math.abs(dx)>math.abs(dy)*1.3 then
+                P.pending[#P.pending+1]={hit=t.hit,swipe=dx<0 and 1 or -1}
             elseif event=='ended' and t.hit and not t.moved and contains(t.hit,x,y) then
                 P.pending[#P.pending+1]={hit=t.hit,x=x,y=y,drag=t.hit.drag~=nil}
             end
@@ -88,7 +92,8 @@ function P.dispatch()
     for _,event in ipairs(pending) do
         local c=event.hit
         if c.stage==stage.current_stage and available(c.owner) then
-            if event.drag then c.drag(event.x,event.y) else c.action(event.x,event.y) end
+            if event.swipe then c.swipe(event.swipe)
+            elseif event.drag then c.drag(event.x,event.y) else c.action(event.x,event.y) end
         end
     end
 end
@@ -158,7 +163,7 @@ function P.bind(o,x1,x2,y1,y2,action,drag)
     control(o,x1,x2,y1,y2,function(x,y) action(localPoint(x,y)) end,drag and function(x,y)
         if v then x,y=(x-v.x)/v.scale,(y-v.y)/v.scale end
         drag(x,y)
-    end)
+    end,P.swipeAction)
 end
 local function shared(o,render,bind,closeAction)
     P.rendering,P.owner,P.closeAction=true,o,closeAction
@@ -321,12 +326,17 @@ end
 function P.playerOptionsY() return math.max(315,screen.height-710) end
 function P.spellPractice(o,render)
     if o.alpha==0 then return end
-    return fields(o,{x=480,y=270},function()
+    local previous=P.swipeAction
+    local function switch(delta) o.touch_diff=(o.touch_diff or 0)+delta end
+    P.swipeAction=switch
+    control(o,0,WIDTH,0,screen.height,function()end,nil,P.swipeAction)
+    local result=fields(o,{x=480,y=270},function()
         return fields(ui.menu,{sc_pr_line_height=48},function()
             return shared(o,render,function()
                 P.place(480,450,WIDTH/2,screen.height-150,WIDTH/960)
-                P.bind(o,0,180,420,480,function() o:adddiffpos(-1,1) end)
-                P.bind(o,780,960,420,480,function() o:adddiffpos(1,2) end)
+                -- 与键盘走同一个逻辑帧入口，点击和手势都不在输入分发中推进菜单动画。
+                P.bind(o,0,180,420,480,function() switch(-1) end)
+                P.bind(o,780,960,420,480,function() switch(1) end)
                 P.place(480,270,WIDTH/2,screen.height/2,.68)
                 for i,entry in ipairs(o._spell) do
                     local chosen=entry
@@ -353,6 +363,8 @@ function P.spellPractice(o,render)
             end)
         end)
     end)
+    P.swipeAction=previous
+    return result
 end
 local function keyboardTouch(o)
     local yOffset=320-(o.alpha or 1)*320

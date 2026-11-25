@@ -2,7 +2,7 @@
 return function(work)
     local scriptRoot = 'mod/GAME/ports/'..work..'/'
     local assetRoot = 'Resources/ports/'..work..'/'
-    local assets = dofile('mod/GAME/ports/resources.lua')(assetRoot)
+    local assets = dofile('mod/GAME/ports/resources.lua')(assetRoot,work=='theis' and 'theis/' or nil)
     local host = _G
     local api = setmetatable({ResourceSet=assets}, {__index=lstg})
     local env = {lstg=api}

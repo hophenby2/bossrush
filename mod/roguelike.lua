@@ -2,12 +2,17 @@
 -- 复用原卡的标定值，阶段倍率只作用于运行中的敌机，不改共享卡表、时限或弹幕。
 local R={COUNT=10,MISS_LIMIT=10,NAME='RogueTen',BATTLE='RogueTen@RogueTen',RESULT='RogueResult@RogueTen',
     CHAIN_HP=0.15,CHAIN_TIME_FRAMES=3*60}
-R.modes={single={name=R.NAME,battle=R.BATTLE,result=R.RESULT,title='roguelike模式',width=1,record='rogue10'},
-    staged={name='RogueTwo',battle='RogueTwo@RogueTwo',result='RogueTwoResult@RogueTwo',title='roguelike模式2',width=1,record='rogue2',count=38,progression=true},
+local titles=dofile('mod/rogue_titles.lua')
+R.modes={single={name=R.NAME,battle=R.BATTLE,result=R.RESULT,title='混沌模式',width=1,record='rogue10'},
+    staged={name='RogueTwo',battle='RogueTwo@RogueTwo',result='RogueTwoResult@RogueTwo',title='挑战模式',width=1,record='rogue2',count=38,progression=true},
     dual={name='RogueDuo',battle='RogueDuo@RogueDuo',result='RogueDuoResult@RogueDuo',title='双Boss随机十战',width=2,record='rogue_dual10'},
     chain={name='RogueChain',battle='RogueChain@RogueChain',result='RogueChainResult@RogueChain',title='接续模式',width=1,record='rogue_chain10',chain=true}}
 local function misses() return lstg.var.dead end
 local function mode(run) return R.modes[run and run.mode or 'single'] or R.modes.single end
+function R.usesTitleOverlay()
+    local run=lstg.var.rogue_run
+    return run and not run.finished and stage.current_stage and stage.current_stage.stage_name==mode(run).battle
+end
 local function chainDone(b)
     if not IsValid(b) then return true,'gone' end
     if not b.is_combat or b.__is_waiting then return false end
@@ -133,7 +138,7 @@ function R.finish(self,won)
     self.rogue_finished=true
     local run=lstg.var.rogue_run
     staged.clearChoice(run)
-    run.stage_banner,run.banner_queue=nil,{}
+    run.stage_banner,run.banner_queue,run.card_title=nil,{},nil
     encounter.stop(self)
     -- 六面已经通关后，无尽挑战耗尽生命仍按胜利结算。
     run.won=run.cleared==true or (not run.endless and won and misses()<R.MISS_LIMIT)
@@ -214,6 +219,7 @@ local function runCards(self)
             local unit=prepare(entry)
             if index==1 then task.Wait(45) end
             local active=spawnSingle(unit)
+            titles.announce(run,entry)
             -- 旧 Boss 死亡时不能清掉仍在战斗的其他 Boss 弹幕，结算 / 爆炸共用此开关。
             for _,b in ipairs(active) do b.__NoCleanBullet=true end
             if previous then holdChainGhost(self,previous,active) end
@@ -264,6 +270,7 @@ local function runCards(self)
                 local owner=RogueDualRuntime.context(card.source,side==1 and 96 or -96)
                 owners[side]=owner;active[side]=owner:spawn(card)
             end
+            titles.announce(run,entry,run.cards[first+1])
             -- 两张不同卡各自结算，不能使用同卡双人的 otherboss 同步逻辑。
             while true do
                 local alive=false
@@ -275,8 +282,10 @@ local function runCards(self)
             end
         else
             active=spawnSingle(unit)
+            titles.announce(run,entry)
             for _,b in ipairs(active) do while IsValid(b) do task.Wait() end end
         end
+        run.card_title=nil
         local cleared=config.progression and not run.overtime and index==count
         if cleared then run.cleared=true;run.completed=index end
         if misses()>=R.MISS_LIMIT then R.finish(self,false);return end
@@ -331,6 +340,7 @@ local function register(variant,config)
         encounter.frame(self.timer)
         if GameHPScale then GameHPScale.frame() end
         staged.frame(lstg.var.rogue_run)
+        titles.frame(lstg.var.rogue_run)
         releaseChainGhosts(self)
         if self.rogue_finished then stage.group.frame(self);return end
         if misses()>=R.MISS_LIMIT then R.finish(self,false);return end
@@ -392,12 +402,12 @@ local function register(variant,config)
     end
 end
 -- 战斗和结算共用数字排版，避免阶段号在不同场景采用不同口径。
-function panel:init() self.group=GROUP.GHOST;self.layer=LAYER.TOP end
+function panel:init() self.group=GROUP.GHOST;self.layer=LAYER.TOP+90 end
 function panel:render()
     local run=lstg.var.rogue_run
     if not run then return end
     if AndroidPortrait and AndroidPortrait.enabled() then
-        AndroidPortrait.roguePanel(run);staged.render(run);return
+        AndroidPortrait.roguePanel(run);staged.render(run);titles.render(run);return
     end
     local previous=lstg.viewmode
     SetViewMode('ui')
@@ -408,6 +418,7 @@ function panel:render()
     end
     if GameHPScale then GameHPScale.render(lstg.world.scrl/2,165) end
     staged.render(run)
+    titles.render(run)
     if previous then SetViewMode(previous) end
 end
 register('single',R.modes.single)

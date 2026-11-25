@@ -118,7 +118,7 @@ local function rebuild()
                 elseif not t.button.toggle then keys[buttonKey(t.button)] = true end
             end
         elseif not t.drag and not t.ignored then
-            I.mouse.down = true; I.mouse.x = t.x; I.mouse.y = t.y
+            I.mouse.down = not t.spellMenu; I.mouse.x = t.x; I.mouse.y = t.y
         end
     end
     if portrait and not menuMode then
@@ -134,10 +134,27 @@ local function rebuild()
     for key in pairs(keys) do if not old[key] then I.last = key end end
     I.keys = keys
 end
+local function spellMenu()
+    local o=sc_pr_menu and sc_pr_menu.touch_owner
+    return o and IsValid(o) and not o.locked and o.alpha>0 and o
+end
 function I.touch(id, x, y, event)
     if AndroidPortrait and AndroidPortrait.touch(id,x,y,event) then return end
     if event == 'ended' or event == 'cancelled' then
         local old = I.touches[id]
+        if event=='ended' and old and old.spellMenu and old.spellMenu==spellMenu() then
+            local dx,dy=x-old.startX,y-old.startY
+            local delta
+            if math.abs(dx)>=48 and math.abs(dx)>math.abs(dy)*1.3 then
+                delta=dx<0 and 1 or -1
+            elseif dx*dx+dy*dy<=400 and y>=440 and y<=460 then
+                delta=math.max(-3,math.min(3,math.floor((x-480)/130+.5)))
+            end
+            if delta and delta~=0 then
+                old.spellMenu.touch_diff=(old.spellMenu.touch_diff or 0)+delta
+                old.ignored=true;I.mouseTap=0;I.wheel=0
+            end
+        end
         if event=='ended' and old and old.drag and old.tapTime and not old.tapMoved and not old.bombTap
             and (x-old.tapX)^2+(y-old.tapY)^2<=144 and clock()-old.tapTime<=tapInterval() and not I.menuMode() then
             I.lastTap={time=old.tapTime,player=old.player}
@@ -156,7 +173,7 @@ function I.touch(id, x, y, event)
     else
         local t = I.touches[id]
         if not t then
-            t = { x = x, y = y }
+            t = { x = x, y = y, startX=x, startY=y, spellMenu=I.menuMode() and spellMenu() }
             local debugKey=I.menuMode() and GameDebug and GameDebug.touchKey(x,y)
             if debugKey and event=='began' then t.button={key=debugKey};I.pulse(debugKey) end
             if GameFeatures and GameFeatures.coop and x>=480 and x<=630 and y>=510 and y<=538 then t.button={key=120};I.pulse(120) end
@@ -211,7 +228,9 @@ function I.touch(id, x, y, event)
             t.targetX = math.max(w.pl+8, math.min(w.pr-8, t.targetX+(x-t.x)*sx))
             t.targetY = math.max(w.pb+16, math.min(w.pt-32, t.targetY+(y-t.y)*sy))
         elseif not t.button and not t.drag and not t.ignored then
-            I.wheel = I.wheel - (y-t.y)*8
+            if not t.spellMenu or math.abs(x-t.startX)<=math.abs(y-t.startY)*1.3 then
+                I.wheel = I.wheel - (y-t.y)*8
+            end
             if t.pauseMenu and (x-t.pauseStartX)^2+(y-t.pauseStartY)^2>64 then t.pauseMoved=true end
         end
         t.x, t.y = x, y
