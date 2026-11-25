@@ -270,7 +270,11 @@ function M.stop(scene)
     if level==37 and TH39 then TH39.runtime.clearAll() end
     for o in pairs(scope.objects) do
         if level==38 and IsValid(o) and o.th38_run then _editor_class.TH40.native.stop(o) end
-        if IsValid(o) then object.RawDel(o) end
+        if IsValid(o) then
+            -- RawDel不调用del；震屏对象须先还原共享偏移并清除tmpvar中的单例引用。
+            if o==lstg.tmpvar.shaker then shaker_maker.del(o) end
+            object.RawDel(o)
+        end
     end
     for i=#boss_group,1,-1 do
         if scope.objects[boss_group[i]] or not IsValid(boss_group[i]) then table.remove(boss_group,i) end
@@ -323,7 +327,10 @@ function M.release()
     cached={} -- 真正离开战斗时由框架统一释放stage池。
     if M.background then
         for o in pairs(M.background.objects) do
-            if IsValid(o) then o.rogueBackgroundScope=nil;o.class=object;object.RawDel(o) end
+            if IsValid(o) then
+                if o==lstg.tmpvar.shaker then shaker_maker.del(o) end
+                o.rogueBackgroundScope=nil;o.class=object;object.RawDel(o)
+            end
         end
     end
     M.background,M.backgroundActive,M.residentReady=nil,nil,nil

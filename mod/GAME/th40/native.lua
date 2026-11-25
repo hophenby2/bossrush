@@ -13,7 +13,12 @@ local Mist=assert(loadfile('mod/GAME/th40/mist.lua'))(N)
 local animatedTypes={[181]='bullet66_',[185]='bullet66_',[182]='bullet64_',[183]='bullet65_',[184]='bullet18-'}
 local function clamp(x,a,b) return max(a,min(b,x)) end
 local function copy(t) local o={};for k,v in pairs(t or {}) do o[k]=v end;return o end
-local function valid(o) return o and not o.th38_removed and (o.th38_host and IsValid(o.owner) or not o.th38_host and IsValid(o)) end
+local function valid(o)
+    if not o then return false end
+    -- 流程宿主是普通表，其余为引擎实例；消弹后先检查实例，不能先读已销毁对象的字段。
+    if type(o)=='table' and rawget(o,'th38_host') then return not o.th38_removed and IsValid(o.owner) end
+    return IsValid(o) and not o.th38_removed
+end
 local function erase(o)
     if o and not o.th38_removed then
         -- 原 BindingObj 被移出列表后仍保留最终坐标；子发射器下一帧仍会跟到那里。
@@ -188,6 +193,8 @@ end,del=function(o) erase(o) end})
 local laserColors={1,3,5,7,9,13,14,15}
 local Line=Class(laser,{init=function(o,run,data)
     laser.init(o,laserColors[(data.type or 0)+1] or 1,0,0,0,0,32,0,16,0,0);o.run=run;for k,v in pairs(data) do o[k]=v end;defaults(o);o.bound=false;o.colli=true;sync(o)
+    -- 原作光束由本后端管理；自机无敌接触不触发宿主CutOnUnit拆分和换组。
+    o._source_laser_no_contact_cut=true
     o.history={};if o.mode~='ray' then for i=1,max(1,o.length or 30) do o.history[i]={o.x,o.y} end end
 end,frame=function() end})
 local Curve=Class(bent_laser,{init=function(o,run,data)

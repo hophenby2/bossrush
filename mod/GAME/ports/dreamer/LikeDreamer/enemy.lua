@@ -1033,6 +1033,12 @@ function EnemyVisualDispatcher.new()
 	return setmetatable({},EnemyVisualDispatcher)
 end
 
+function EnemyVisualDispatcher:prepare(enemy)
+	local early,middle=LikeDreamer.BossEarly,LikeDreamer.BossMiddle
+	if early and early.prepareVisual and early.prepareVisual(enemy) then return end
+	if middle and middle.prepareVisual then middle.prepareVisual(enemy) end
+end
+
 function EnemyVisualDispatcher:renderBoss(enemy)
 	return (LikeDreamer.BossEarly and LikeDreamer.BossEarly.render and
 		LikeDreamer.BossEarly.render(enemy)) or
@@ -1114,6 +1120,7 @@ function enemyClass:init(rt,typeId,hp,x,y,note,parent)
 	if Reward then Reward.configureEnemy(self) end
     self.group=GROUP_ENEMY;self.layer=LAYER_ENEMY;self.bound=false;self.rect=false
     setImage(self);sync(self)
+    visualDispatcher:prepare(self)
     rt.enemiesById[self.entityId]=self;rt.enemyCount=rt.enemyCount+1
     rt.enemyRevision=(rt.enemyRevision or 0)+1
 end
@@ -1169,7 +1176,7 @@ function enemyClass:frame()
 		if self._ldDrawBody==nil then self._ldDrawBody=true end
 		if finished then enemyClass.die(self,true);return end
 		self.age=self.age+1
-		setImage(self);sync(self)
+		setImage(self);sync(self);visualDispatcher:prepare(self)
 		return
 	end
 	behaviorDispatcher:update(self,rt)
@@ -1182,7 +1189,7 @@ function enemyClass:frame()
 	if self.deadRequested or (self.hp<=0 and not isFinalBoss(self.spawnType) and self.spawnType~=0x14c) then
 		if Reward and Reward.beginDeferredEnemyDeath and
 			Reward.beginDeferredEnemyDeath(self) then
-			setImage(self);sync(self);return
+			setImage(self);sync(self);visualDispatcher:prepare(self);return
 		end
 		enemyClass.die(self, false);return
     elseif self.removeRequested then enemyClass.die(self, true);return end
@@ -1194,7 +1201,7 @@ function enemyClass:frame()
     if self.seen and not Core.inside(self.ldX,self.ldY,360) and not isFinalBoss(self.spawnType) and not isMidboss(self.spawnType) then
         enemyClass.die(self, true);return
     end
-    setImage(self);sync(self)
+    setImage(self);sync(self);visualDispatcher:prepare(self)
 end
 
 function enemyClass:render()

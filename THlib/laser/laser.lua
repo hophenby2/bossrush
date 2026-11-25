@@ -218,7 +218,7 @@ end
 ---目前用在player的碰撞
 function laser:CutOnUnit(other)
     -- 原作激光不会因自机无敌接触而裂成无寿命的THlib片段。
-    if self._native_laser_game or self._native_laser_managed or self.th06_width then return end
+    if self._native_laser_game or self._native_laser_managed or self._source_laser_no_contact_cut or self.th06_width then return end
     local x = other.x - self.x
     local y = other.y - self.y
     x = x * cos(self.rot) + y * sin(self.rot)

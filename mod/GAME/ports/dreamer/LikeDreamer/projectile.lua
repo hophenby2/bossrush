@@ -151,7 +151,8 @@ function ProjectileRegistry:prepare(rt)
     local previous = #compact
     for i = 1, previous do
         local projectile = compact[i]
-        if (projectile.active or projectile._deactivatedFrame == frame) and
+        -- 宿主会在帧末销毁Del对象；下一帧摘链前不能读取已失效实例的字段。
+        if lstg.IsValid(projectile) and (projectile.active or projectile._deactivatedFrame == frame) and
            projectile.status ~= "del" and projectile.status ~= "kill" then
             projectile._linkedOrdinal = count
             count = count + 1

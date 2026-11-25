@@ -169,6 +169,7 @@ double androidNow() {
 }
 using namespace lstg;
 #include "original_collision.inc"
+#include "bent_laser_envelope.inc"
 #include "quad_batch.inc"
 #include "model_mesh.inc"
 #include "fog_state.inc"

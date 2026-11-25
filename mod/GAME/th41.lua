@@ -385,6 +385,12 @@ load('THlib/DNHWalkImageSystem.lua')
 load('THlib/enemy/enemy.lua')
 load('THlib/bullet/bullet.lua')
 load('THlib/laser/laser.lua')
+-- 曲线激光直接把纹理名传给原生BentLaserData.Render，不经过图片赋值/Render包装。
+-- 注册时资源尚未加载，须使用确定的作品名称，不能依赖CheckRes进行回退探测。
+for _,name in ipairs({'Add_bentlaser_texture','Add_bentlaser_texture_16','Add_bentlaser_thunder_texture_single'}) do
+    local addTexture=env[name]
+    env[name]=function(id,texture,...) return addTexture(id,resourceName(1,texture),...) end
+end
 load('THlib/editor.lua')
 load('src/core/render.lua')
 load('src/core/tiles.lua')

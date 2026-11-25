@@ -590,6 +590,7 @@ R.classes.beam=Class(laser,{
     init=function(b,s)
         local x,y=projectBullet(s.fx,s.fy)
         laser.init(b,laserColor(s),x,y,-s.sonspeedd,0,max(1,s.longs*SCALE),0,laserWidth(s),0,0)
+        b._source_laser_no_contact_cut=true -- 原作激光不使用宿主的无敌接触切割。
         laserInit(b,s)
     end,
     frame=function(b)
@@ -1198,7 +1199,8 @@ end
 
 function R.jump(c,index,count,target)
     c.jumps[index]=(c.jumps[index] or 0)+1
-    if count==0 or c.jumps[index]<=count then c.time=target end
+    -- 原作Time.Update把目标0视为未配置；不能跳过帝王切开第179帧的首轮实弹。
+    if target~=0 and (count==0 or c.jumps[index]<=count) then c.time=target end
 end
 function R.quake(c,duration,level)
     if c.visual then

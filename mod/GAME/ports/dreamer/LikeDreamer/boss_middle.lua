@@ -1942,6 +1942,11 @@ local function renderGauge(self)
     end
 end
 
+local function validVisualOwner(owner)
+    local engine=rawget(_G,'lstg')
+    if not owner or engine and type(engine.IsValid)=='function' and not engine.IsValid(owner) then return false end
+    return owner.active~=false and owner.status~='del' and owner.status~='kill'
+end
 local gaugeProxyClass
 if type(rawget(_G,"Class"))=="function" and
    type(rawget(_G,"object"))=="table" and
@@ -1959,14 +1964,7 @@ if type(rawget(_G,"Class"))=="function" and
 
     function gaugeProxyClass:frame()
         local owner=self.owner
-        local valid=owner and owner.active~=false and
-            owner.status~="del" and owner.status~="kill"
-        local engine=rawget(_G,"lstg")
-        if valid and engine and type(engine.IsValid)=="function" then
-            valid=engine.IsValid(owner)
-        end
-        if not valid then
-            if owner and owner._bmGaugeProxy==self then owner._bmGaugeProxy=nil end
+        if not validVisualOwner(owner) then
             Del(self)
             return
         end
@@ -1974,11 +1972,11 @@ if type(rawget(_G,"Class"))=="function" and
     end
 
     function gaugeProxyClass:render()
-        if self.owner then renderGauge(self.owner) end
+        if validVisualOwner(self.owner) then renderGauge(self.owner) end
     end
 end
 
-local function renderGaugeOnExactLayer(self)
+local function renderGaugeOnExactLayer(self,prepareOnly)
     if self.spawnType>=0x138 and self.spawnType<=0x14c then return end
     if not self.maxhp or self.maxhp<=0 or not self.radius or self.radius<80 then return end
     if gaugeProxyClass then
@@ -1988,13 +1986,13 @@ local function renderGaugeOnExactLayer(self)
            not engine.IsValid(proxy) then
             proxy=nil
         end
-        if not proxy then
+        if not proxy and prepareOnly then
             proxy=New(gaugeProxyClass,self)
             self._bmGaugeProxy=proxy
         end
         if proxy then return end
     end
-    renderGauge(self)
+    if not prepareOnly then renderGauge(self) end
 end
 
 local visualLayerProxyClass
@@ -2015,13 +2013,7 @@ if type(rawget(_G,"Class"))=="function" and
 
     function visualLayerProxyClass:frame()
         local owner=self.owner
-        local valid=owner and owner.active~=false and
-            owner.status~="del" and owner.status~="kill"
-        local engine=rawget(_G,"lstg")
-        if valid and engine and type(engine.IsValid)=="function" then
-            valid=engine.IsValid(owner)
-        end
-        if not valid then
+        if not validVisualOwner(owner) then
             Del(self)
             return
         end
@@ -2031,7 +2023,7 @@ if type(rawget(_G,"Class"))=="function" and
     function visualLayerProxyClass:render()
         local owner=self.owner
         local visual=LikeDreamer.BossMiddleVisual
-        if owner and visual and visual.render then
+        if validVisualOwner(owner) and visual and visual.render then
             visual.render(owner,self.exactLayer)
         end
     end
@@ -2048,11 +2040,14 @@ function VisualLayerProxyPool.new(proxyClass,ownerField,layersFor)
     },VisualLayerProxyPool)
 end
 
-function VisualLayerProxyPool:ensure(owner)
+function VisualLayerProxyPool:ensure(owner,create)
     local visual=LikeDreamer.BossMiddleVisual
     local layers=visual and self.layersFor(visual,owner)
     if not self.proxyClass or not layers then return false end
-    owner[self.ownerField]=owner[self.ownerField] or {}
+    if not owner[self.ownerField] then
+        if create==false then return false end
+        owner[self.ownerField]={}
+    end
     local proxies=owner[self.ownerField]
     local engine=rawget(_G,"lstg")
     for _,exactLayer in ipairs(layers) do
@@ -2061,7 +2056,7 @@ function VisualLayerProxyPool:ensure(owner)
            not engine.IsValid(proxy) then
             proxy=nil
         end
-        if not proxy then
+        if not proxy and create~=false then
             proxy=New(self.proxyClass,owner,exactLayer)
             proxies[exactLayer]=proxy
         end
@@ -2076,11 +2071,19 @@ local visualLayerProxies=VisualLayerProxyPool.new(
         return visual.extraLayers and visual.extraLayers(owner)
     end)
 
+function M.prepareVisual(self)
+    if not handled[self.spawnType] then return false end
+    if self._bmHidden or not self.img then return true end
+    visualLayerProxies:ensure(self)
+    renderGaugeOnExactLayer(self,true)
+    return true
+end
+
 function M.render(self)
     if not handled[self.spawnType] then return false end
     if self._bmHidden or not self.img then return true end
     local visual=LikeDreamer.BossMiddleVisual
-    local layered=visualLayerProxies:ensure(self)
+    local layered=visualLayerProxies:ensure(self,false)
     local exactLayer=layered and visual and visual.primaryLayer and
         visual.primaryLayer(self) or nil
     if visual and visual.render(self,exactLayer) then

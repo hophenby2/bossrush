@@ -1,4 +1,6 @@
 dofile('mod/GAME/ports/dreamer/LikeDreamer/core.lua')
+local invalid=setmetatable({},{__mode='k'})
+lstg={IsValid=function(o) return not invalid[o] end}
 object={};Class=function(base) return setmetatable({},{__index=base}) end
 GROUP_ENEMY_BULLET,GROUP_GHOST,LAYER_ENEMY_BULLET=2,0,2
 local M=dofile('mod/GAME/ports/dreamer/LikeDreamer/projectile.lua')
@@ -17,5 +19,9 @@ assert(registry:ordinal(d,rt)==1 and registry:spawnPlayerStateTimer(rt,30)==30)
 d.active=false;d._deactivatedFrame=2
 assert(registry:ordinal(e,rt)==2 and registry:activeOrdinal(e,rt)==1)
 rt.frame=3;registry:prepare(rt);assert(#registry.projectiles==2 and registry.projectiles[2]==e)
+local dead=setmetatable({}, {__index=function() error('读取了已被原生引擎销毁的弹体') end})
+registry:register(dead,rt);invalid[dead]=true
+rt.frame=4;registry:prepare(rt)
+assert(#registry.projectiles==2 and registry.projectiles[1]==a and registry.projectiles[2]==e,'原生删除对象未摘链或改变了存活节点顺序')
 registry:prepare({frame=1});assert(#registry.projectiles==0)
 print('Like Dreamer 弹链稳定顺序、终帧保留、下一帧摘链、活动序号和切换恢复通过。')

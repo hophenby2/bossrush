@@ -96,6 +96,10 @@ local function compile(class)
     if class.init then
         for i,k in ipairs(callbacks) do class[i]=class[k] or noop end
     end
+    -- Sub的删除回调会附带原因字符串；原作del的第二参数可能是淡出帧数。
+    -- 仅引擎回调丢弃原因，保留直接调用class.del(o,帧数)的原作语义。
+    local onDelete=class[2] or noop
+    class[2]=function(o) return onDelete(o) end
     class._th43_compiled=true
     if AndroidRegisterClass then AndroidRegisterClass(class) end
 end

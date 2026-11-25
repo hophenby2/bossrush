@@ -811,7 +811,8 @@ function R.tick(c)
 end
 function R.jump(c,index,count,target)
     c.jumps[index]=(c.jumps[index] or 0)+1
-    if count==0 or c.jumps[index]<=count then c.time=target end
+    -- 原作Time.Update仅在gotowhere非0时跳转，0表示未配置目标。
+    if target~=0 and (count==0 or c.jumps[index]<=count) then c.time=target end
 end
 function R.quake(c,duration,level)
     if misc and misc.ShakeScreen then misc.ShakeScreen(duration,level/8) end

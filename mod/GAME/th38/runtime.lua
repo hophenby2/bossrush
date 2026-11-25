@@ -228,6 +228,7 @@ R.classes.beam=Class(laser,{
     init=function(b,s)
         local x,y=project(s.x,s.y)
         laser.init(b,({2,4,6,10,12,14,16,8})[floor(s.color/2)%8+1],x,y,s.direction,0,max(1,s.length*48),0,max(1,s.width*4.8),0,0)
+        b._source_laser_no_contact_cut=true -- 原作激光不使用宿主的无敌接触切割。
         b.asl=s;s.native=b;R.objects[b]=true;b.bound=false;b.vx,b.vy=0,0;sync(b,s)
     end,
     frame=function(b)

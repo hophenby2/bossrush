@@ -532,11 +532,20 @@ replace(pool, '''\tfor (auto i = begin; i < end; ++i)
 \t\tif (moved || omega[i] != 0)
 \t\t\tobj[i]->cm->setTransformDirty(true);
 \t}''')
-# 空分组没有回调；无需创建 Lua 栈记录或唤醒工作线程。
-replace('frameworks/LSTG/Object/GameObjectManager.h',
-        'size_t GetObjectCount()  { return pool.size(); }',
-        'size_t GetObjectCount()  { return pool.size(); }\n'
-        '        const std::set<GameObject*, less_obj>& androidCollisionGroup(size_t group) const { return colliList[group]; }')
+# 两处补丁曾共用同一插入锚点，交错追加后会失去幂等性；合并声明并迁移旧构建缓存。
+manager_header=engine/'frameworks/LSTG/Object/GameObjectManager.h'
+header=manager_header.read_text(encoding='utf-8-sig')
+extensions=(
+    'const std::set<GameObject*, less_obj>& androidCollisionGroup(size_t group) const { return colliList[group]; }',
+    'void androidZeroVelocity(GameObject* p) { pool.vx[p->id]=0;pool.vy[p->id]=0; }',
+)
+for declaration in extensions:
+    header=re.sub(r'^[ \t]*'+re.escape(declaration)+r'[ \t]*\n','',header,flags=re.M)
+anchor='size_t GetObjectCount()  { return pool.size(); }'
+assert header.count(anchor)==1,'对象池扩展声明锚点不唯一'
+header=header.replace(anchor,anchor+'\n'+'\n'.join('        '+d for d in extensions))
+if header!=manager_header.read_text(encoding='utf-8-sig'):
+    manager_header.write_text(header,encoding='utf-8')
 # 原作自机弹的 kill 回调会立即换组并转成命中特效；迭代链表不能跨越该回调。
 replace(manager, '''			for (auto&& pA : colliList[groupA])
 			{
@@ -609,7 +618,4 @@ replace('frameworks/LSTG/Resource/ResTexture.cpp',
         'ResTexture* ResTexture::create(const std::string& name, const std::string& path)\n{',
         'ResTexture* ResTexture::create(const std::string& name, const std::string& path)\n{\n    if (auto* image=androidTakePreparedTexture(path)) {\n        auto* tex=new Texture2D();tex->autorelease();\n        ResTexture* resource=nullptr;\n        if (tex->initWithImage(image)) {\n            resource=new (std::nothrow) ResTexture(name,tex);\n            if(resource) resource->resPath=path;\n        }\n        delete image;return resource;\n    }')
 
-# 批量同步只用于手动积分的移植弹体，保留原引擎的零速度语义。
-replace('frameworks/LSTG/Object/GameObjectManager.h',
-        'size_t GetObjectCount()  { return pool.size(); }',
-        'size_t GetObjectCount()  { return pool.size(); }\n        void androidZeroVelocity(GameObject* p) { pool.vx[p->id]=0;pool.vy[p->id]=0; }')
+# 手动积分弹体的零速度接口与上方碰撞分组接口统一插入。

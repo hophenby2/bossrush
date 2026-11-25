@@ -12,11 +12,12 @@ setmetatable(_G,nil)
 AndroidPlatform={}
 GetTextureSize=function() return 512,512 end
 PushRenderTarget,PopRenderTarget,RenderClearViewMode=function() end,function() end,function() end
-local images,animations,draws={},{},{}
+local textures,images,animations,draws={},{},{},{}
 local function image(name)
     assert(images[name],'缺少图片资源：'..tostring(name))
 end
 LoadImage=function(name) images[name]=true end
+LoadTexture=function(name) textures[name]=true end
 LoadAnimation=function(name) animations[name]=true end
 SetAnimationState=function(name) assert(animations[name],'缺少动画资源：'..tostring(name)) end
 SetAnimationCenter=SetAnimationState
@@ -30,7 +31,7 @@ Render4V=function(name,...)
     image(name);draws[#draws+1]={name,...}
 end
 CheckRes=function(kind,name)
-    if kind==2 and images[name] or kind==3 and animations[name] then return 'global' end
+    if kind==1 and textures[name] or kind==2 and images[name] or kind==3 and animations[name] then return 'global' end
 end
 lstg.CheckRes=CheckRes
 lstg.Color=function() return 0 end
@@ -95,6 +96,25 @@ E.stg.setBulletStyle(bullet,E.stg.knife,5)
 assert(bullet.img=='theis/knife5','数组回调换class后切换弹型丢失命名空间')
 New=savedNew
 print('祈华梦新版弹幕：实际大玉出生、8帧淡入换class与换弹型的严格资源检查通过')
+-- 本体和删除后的淡出都调用原生曲线纹理接口，而不是普通图片Render。
+E.lstg.ResourceSet.Find('THlib.laser'):Load()
+local curveDraws=0
+local data={Render=function(_,texture)
+    assert(textures[texture],'曲线激光缺少纹理：'..tostring(texture))
+    assert(texture=='theis/laser_bent0','曲线激光纹理没有作品前缀')
+    curveDraws=curveDraws+1
+end}
+local curve={data=data,sample=4,index=1,alpha=1,timer=100,node=0,_l=16,layer=0,
+    _blend='',_a=255,_r=255,_g=255,_b=255}
+E.laser_bent.render(curve)
+local effect
+New=function(class,...)
+    effect={class=class};class.init(effect,...);return effect
+end
+E.laser_bent.del(curve);effect.timer=0;effect.class.render(effect)
+New=savedNew
+assert(curveDraws==2,'未覆盖曲线激光本体及淡出绘制')
+print('祈华梦曲线激光：本体及删除淡出的实际纹理名称检查通过')
 local placeholders={[70107]=true,[70209]=true,[70341]=true,[70343]=true,[70345]=true,
     [70347]=true,[70349]=true,[70351]=true,[70611]=true,[70719]=true}
 local byId={}

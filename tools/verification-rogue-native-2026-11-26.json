@@ -1,0 +1,797 @@
+{
+  "日期": "2026-11-26",
+  "版本": "2026.11.26.4",
+  "Android版本序号": 66,
+  "方式": "Windows LuaSTG Sub与独立LDPlayer实例实际运行正式挑战/混沌入口、更新、碰撞、绘制、预载、切卡和返回标题；夹具保护自机、恢复敌机HP，按窗口结束卡片。",
+  "范围限制": [
+    "speed>1仅用于崩溃检查，未测自然游玩通关与手机帧率。",
+    "完成张数按completed计；中途报错的整份配置保留失败状态，前面完成的轮次单独列出。",
+    "Windows两轮挑战38张和两轮混沌24张来自逐次修复过程，不能视为最终版本全量覆盖；最终故障卡定向回归另列。",
+    "Android为arm64在x86_64上的转译模拟器；未在安卓真机或Mac实测。",
+    "源码证据和实际引擎结果仅覆盖记录窗口和接口，不证明所有原作行为已对齐。"
+  ],
+  "修复": [
+    {
+      "问题": "帝王切开首波只有预警",
+      "位置": "mod/GAME/th39/runtime.lua；th37同源时间轴",
+      "处理": "目标0表示不跳转，保留179/599/1019帧的type152实弹触发；不改发弹数量或时间参数。"
+    },
+    {
+      "问题": "跨卡震屏失效对象崩溃",
+      "位置": "mod/rogue_encounter.lua",
+      "处理": "RawDel前调用震屏原有清理，恢复偏移与共享单例。"
+    },
+    {
+      "问题": "Like Dreamer弹体注册表崩溃",
+      "位置": "LikeDreamer/projectile.lua",
+      "处理": "先检查引擎实例有效性，再读取active/status。"
+    },
+    {
+      "问题": "祈华梦曲线激光纹理找不到",
+      "位置": "mod/GAME/th41.lua",
+      "处理": "注册时绑定作品资源名，实际原生Render与删除淡出使用正确纹理。"
+    },
+    {
+      "问题": "原作激光接触无敌自机崩溃",
+      "位置": "THlib/laser/laser.lua；th38/th39/th40",
+      "处理": "原作管理的光束不走宿主CutOnUnit碎片化，避免碰撞回调中换组。"
+    },
+    {
+      "问题": "栖霞园预警线出屏崩溃",
+      "位置": "mod/GAME/th43/runtime.lua",
+      "处理": "隔离引擎删除原因与原作del第二参数淡出帧数，保留显式del(o,帧数)。"
+    },
+    {
+      "问题": "Like Dreamer绘制阶段创建对象崩溃",
+      "位置": "LikeDreamer/boss_early.lua、boss_middle.lua、enemy.lua",
+      "处理": "分层与血条代理在逻辑阶段准备，绘制阶段只读；无效宿主不再解引用。"
+    },
+    {
+      "问题": "安卓曲线激光缺少包络接口",
+      "位置": "android/lua/compat.lua；android/native/bent_laser_envelope.inc",
+      "处理": "补齐Set/GetEnvelope及节点碰撞，保留活动节点和固定宽度语义，不改绘制宽度；完整重编原生库。"
+    },
+    {
+      "问题": "夏夜祭扔雷后读取已删除对象",
+      "位置": "mod/GAME/th40/native.lua",
+      "处理": "原生对象先IsValid再读字段，保留普通表流程宿主的owner判断。"
+    }
+  ],
+  "构建修复": "android/patch_engine.py合并对象池两处相同锚点插入并迁移重复声明；同一引擎连续执行两次后头文件SHA256稳定、两项声明各一次，完整原生编译成功。",
+  "Windows轮次": [
+    {
+      "记录": "stress-multi-win-5",
+      "结果SHA256": "ce55f8eed7d813bcd270836d2d49be153e7d227b7e72155bbc9c1b47845490ec",
+      "整份配置完成": false,
+      "轮次": [
+        {
+          "配置": {
+            "limit": 38,
+            "frames": 600,
+            "mode": "staged",
+            "seed": 2026112602,
+            "speed": 4
+          },
+          "完成张数": 38,
+          "记录卡号": "37001,3901,68005,37004,39010,70208,3909,3635,462,39025,38026,83406,429,68022,68021,39032,446,3670,84409,38029,39037,37036,3648,3955,37044,454,455,37049,85404,3962,395,68044,86410,3666,38058,68046,68056,3600",
+          "扔雷": []
+        },
+        {
+          "配置": {
+            "limit": 24,
+            "frames": 900,
+            "mode": "single",
+            "seed": 2026112603,
+            "speed": 4
+          },
+          "完成张数": 24,
+          "记录卡号": "4466,81405,3608,72036,81401,3666,3941,70336,71122,4434,4404,39006,70403,3667,37059,68047,37033,3662,38036,70350,4393,3650,3649,37021,38057",
+          "扔雷": []
+        },
+        {
+          "配置": {
+            "limit": 38,
+            "frames": 600,
+            "mode": "staged",
+            "seed": 2026112604,
+            "speed": 4
+          },
+          "完成张数": 0,
+          "记录卡号": "37005,3631,4452,81408",
+          "扔雷": []
+        }
+      ],
+      "报错": [
+        {
+          "卡号": 81408,
+          "样本帧": 436,
+          "首行": "mod/GAME/th43/source/EISlib/bullet/laser.lua:1082: attempt to perform arithmetic on local 't' (a string value)"
+        }
+      ],
+      "源指纹": {
+        "files": 3266,
+        "sha256": "0716782afee386b2ee23a3d86122feaf16e4b267380ba2558d92cee81b3771e0"
+      }
+    },
+    {
+      "记录": "stress-final-win-6",
+      "结果SHA256": "00b43b71306e805ac7fa6050e9f4602c0d2734a18b4be627478c728ddd888b9f",
+      "整份配置完成": false,
+      "轮次": [
+        {
+          "配置": {
+            "limit": 38,
+            "speed": 4,
+            "seed": 2026112604,
+            "mode": "staged",
+            "frames": 600
+          },
+          "完成张数": 38,
+          "记录卡号": "37005,3631,4452,81408,68010,4466,39010,70203,3911,37020,70307,4432,3604,68022,38021,84406,4448,3922,4445,70404,70401,3944,3956,39046,70502,4403,70510,85404,38051,86409,39063,39057,86410,86403,369,39053,86402,86406",
+          "扔雷": []
+        },
+        {
+          "配置": {
+            "limit": 24,
+            "speed": 4,
+            "seed": 2026112605,
+            "mode": "single",
+            "frames": 900
+          },
+          "完成张数": 0,
+          "记录卡号": "3904,39057,4466,3900,37045,39010,86402,71121,85401,38062,70308,71323",
+          "扔雷": []
+        }
+      ],
+      "报错": [
+        {
+          "卡号": 71323,
+          "样本帧": 3,
+          "首行": "mod/GAME/ports/dreamer/LikeDreamer/boss_early.lua:2262: illegal operation, lstg object 'layer' property should not be modified in 'lstg.ObjRender'"
+        }
+      ],
+      "源指纹": {
+        "files": 3266,
+        "sha256": "3620b16fbfb32c988ebed81ec024b68daeceec46cc1a293827c5d60798c7dc3d"
+      }
+    },
+    {
+      "记录": "stress-final-chaos-win-7",
+      "结果SHA256": "8f87e08b64f8dc00493b7e78587d64b5d5a711306ceff1c21618091d21171b78",
+      "整份配置完成": true,
+      "轮次": [
+        {
+          "配置": {
+            "frames": 900,
+            "speed": 4,
+            "mode": "single",
+            "seed": 2026112605,
+            "limit": 24
+          },
+          "完成张数": 24,
+          "记录卡号": "3904,39057,4466,3900,37045,39010,86402,71121,85401,38062,70308,71323,4445,3946,3639,39033,83408,369,72039,71624,39018,399,3622,4434",
+          "扔雷": []
+        },
+        {
+          "配置": {
+            "frames": 1400,
+            "capture": true,
+            "speed": 1,
+            "mode": "single",
+            "seed": 2026112601,
+            "cards": [
+              39011
+            ],
+            "limit": 1
+          },
+          "完成张数": 1,
+          "记录卡号": "39011",
+          "扔雷": []
+        },
+        {
+          "配置": {
+            "frames": 900,
+            "bombs": [
+              180,
+              480
+            ],
+            "speed": 2,
+            "mode": "single",
+            "seed": 2026112610,
+            "cards": [
+              37004,
+              72036,
+              70403
+            ],
+            "limit": 3
+          },
+          "完成张数": 3,
+          "记录卡号": "37004,72036,70403",
+          "扔雷": [
+            {
+              "age": 180,
+              "before": 3,
+              "after": 2,
+              "card": 37004,
+              "fired": true
+            },
+            {
+              "age": 480,
+              "before": 2,
+              "after": 1,
+              "card": 37004,
+              "fired": true
+            },
+            {
+              "age": 180,
+              "before": 1,
+              "after": 0,
+              "card": 72036,
+              "fired": true
+            },
+            {
+              "age": 480,
+              "before": 0,
+              "after": 0,
+              "card": 72036,
+              "fired": false
+            },
+            {
+              "age": 180,
+              "before": 1,
+              "after": 0,
+              "card": 70403,
+              "fired": true
+            },
+            {
+              "age": 480,
+              "before": 0,
+              "after": 0,
+              "card": 70403,
+              "fired": false
+            }
+          ]
+        }
+      ],
+      "报错": [],
+      "源指纹": {
+        "files": 3266,
+        "sha256": "0e62ca40baf9df850b882674b3ef0eba2c4816231d26e4db660a9166b1c68833"
+      }
+    },
+    {
+      "记录": "stress-summer-bomb-win-10",
+      "结果SHA256": "dae0423d301f54afb338c1592ebf5ee2ae90c3c192f5dfcdd5e834bf0961cadc",
+      "整份配置完成": true,
+      "轮次": [
+        {
+          "配置": {
+            "bombs": [
+              180,
+              480
+            ],
+            "speed": 4,
+            "cards": [
+              68047
+            ],
+            "frames": 900,
+            "mode": "single",
+            "limit": 1,
+            "seed": 2026112614
+          },
+          "完成张数": 1,
+          "记录卡号": "68047",
+          "扔雷": [
+            {
+              "after": 2,
+              "before": 3,
+              "card": 68047,
+              "fired": true,
+              "age": 180
+            },
+            {
+              "after": 1,
+              "before": 2,
+              "card": 68047,
+              "fired": true,
+              "age": 480
+            }
+          ]
+        }
+      ],
+      "报错": [],
+      "源指纹": {
+        "files": 3266,
+        "sha256": "3b09d39f3b2fd813f873a481337d7b46763c45c5a7dcaf5bc28be2dea3a32ca5"
+      }
+    },
+    {
+      "记录": "stress-envelope-win-8",
+      "结果SHA256": "7b40c928f38b555776143beb1fde72b7521eedaf62c04b80c75d98c814cd1c55",
+      "整份配置完成": true,
+      "轮次": [
+        {
+          "配置": {
+            "seed": 2026112612,
+            "limit": 1,
+            "mode": "single",
+            "cards": [
+              39011
+            ],
+            "speed": 4,
+            "frames": 600
+          },
+          "完成张数": 1,
+          "记录卡号": "39011",
+          "扔雷": []
+        }
+      ],
+      "报错": [],
+      "源指纹": {
+        "files": 3266,
+        "sha256": "0e62ca40baf9df850b882674b3ef0eba2c4816231d26e4db660a9166b1c68833"
+      }
+    }
+  ],
+  "Android轮次": [
+    {
+      "记录": "stress-multi-5",
+      "结果SHA256": "b3ada0c3f3f67ce22b277f54afc70040757cd1926bbfcc8b30274a8d35a7bac4",
+      "整份配置完成": false,
+      "轮次": [
+        {
+          "配置": {
+            "speed": 4,
+            "limit": 38,
+            "mode": "staged",
+            "frames": 360,
+            "seed": 2026112602
+          },
+          "完成张数": 38,
+          "记录卡号": "37001,3901,68005,37004,39010,70208,3909,3635,462,39025,38026,83406,429,68022,68021,39032,446,3670,84409,38029,39037,37036,3648,3955,37044,454,455,37049,85404,3962,395,68044,86410,3666,38058,68046,68056,3600",
+          "扔雷": []
+        },
+        {
+          "配置": {
+            "speed": 4,
+            "limit": 24,
+            "mode": "single",
+            "frames": 600,
+            "seed": 2026112603
+          },
+          "完成张数": 0,
+          "记录卡号": "4466,81405,3608,72036,81401,3666,3941,70336,71122,4434,4404,39006,70403",
+          "扔雷": []
+        }
+      ],
+      "报错": [
+        {
+          "卡号": 70403,
+          "样本帧": 440,
+          "首行": "mod/GAME/ports/theis/src/core/task.lua:57: mod/GAME/ports/theis/THlib/laser/bentlaser.lua:198: attempt to call method 'SetEnvelope' (a nil value)"
+        }
+      ]
+    },
+    {
+      "记录": "stress-final-10",
+      "结果SHA256": "6d674fe55f6013e029df94c93961d16081c3aba85a71efc59f04a954549f8dba",
+      "整份配置完成": true,
+      "轮次": [
+        {
+          "配置": {
+            "limit": 4,
+            "frames": 900,
+            "cards": [
+              70403,
+              71323,
+              81408,
+              68047
+            ],
+            "mode": "single",
+            "seed": 2026112613,
+            "speed": 4
+          },
+          "完成张数": 4,
+          "记录卡号": "70403,71323,81408,68047",
+          "扔雷": []
+        },
+        {
+          "配置": {
+            "limit": 1,
+            "frames": 900,
+            "cards": [
+              68047
+            ],
+            "mode": "single",
+            "bombs": [
+              180,
+              480
+            ],
+            "seed": 2026112614,
+            "speed": 4
+          },
+          "完成张数": 1,
+          "记录卡号": "68047",
+          "扔雷": [
+            {
+              "before": 3,
+              "card": 68047,
+              "after": 2,
+              "age": 180,
+              "fired": true
+            },
+            {
+              "before": 2,
+              "card": 68047,
+              "after": 1,
+              "age": 480,
+              "fired": true
+            }
+          ]
+        },
+        {
+          "配置": {
+            "capture": true,
+            "limit": 1,
+            "frames": 1400,
+            "cards": [
+              39011
+            ],
+            "mode": "single",
+            "seed": 2026112601,
+            "speed": 1
+          },
+          "完成张数": 1,
+          "记录卡号": "39011",
+          "扔雷": []
+        }
+      ],
+      "报错": []
+    },
+    {
+      "记录": "stress-final-11",
+      "结果SHA256": "eb13ddecda357fa64d3dfb73c7938f029010cc1a37d208df57be7ef49e754cfd",
+      "整份配置完成": true,
+      "轮次": [
+        {
+          "配置": {
+            "speed": 4,
+            "cards": [
+              70403
+            ],
+            "mode": "single",
+            "seed": 2026112615,
+            "frames": 900,
+            "limit": 1
+          },
+          "完成张数": 1,
+          "记录卡号": "70403",
+          "扔雷": []
+        },
+        {
+          "配置": {
+            "bombs": [
+              180,
+              480
+            ],
+            "speed": 4,
+            "cards": [
+              68047
+            ],
+            "mode": "single",
+            "seed": 2026112614,
+            "frames": 900,
+            "limit": 1
+          },
+          "完成张数": 1,
+          "记录卡号": "68047",
+          "扔雷": [
+            {
+              "before": 3,
+              "fired": true,
+              "after": 2,
+              "card": 68047,
+              "age": 180
+            },
+            {
+              "before": 2,
+              "fired": true,
+              "after": 1,
+              "card": 68047,
+              "age": 480
+            }
+          ]
+        }
+      ],
+      "报错": []
+    }
+  ],
+  "其他故障复现": [
+    {
+      "记录": "stress-multi-win-1",
+      "结果SHA256": "cbfbf375ab494b61efbe07ac141267789a245d37b0394c81a2bd038815ef057f",
+      "整份配置完成": false,
+      "轮次": [
+        {
+          "配置": {
+            "mode": "staged",
+            "seed": 2026112602,
+            "limit": 38,
+            "frames": 600,
+            "speed": 4
+          },
+          "完成张数": 0,
+          "记录卡号": "37001,3901",
+          "扔雷": []
+        }
+      ],
+      "报错": [
+        {
+          "卡号": 3901,
+          "样本帧": 660,
+          "首行": "[string \"THlib\\lib\\Ltask.lua\"]:34: [string \"THlib\\misc\\misc.lua\"]:230: invalid lstg object"
+        }
+      ]
+    },
+    {
+      "记录": "stress-multi-win-2",
+      "结果SHA256": "5e011c6e2e93461b5a93293926af3605295119d4b7834da4df068552d554ee3a",
+      "整份配置完成": false,
+      "轮次": [
+        {
+          "配置": {
+            "mode": "staged",
+            "seed": 2026112602,
+            "limit": 38,
+            "frames": 600,
+            "speed": 4
+          },
+          "完成张数": 38,
+          "记录卡号": "37001,3901,68005,37004,39010,70208,3909,3635,462,39025,38026,83406,429,68022,68021,39032,446,3670,84409,38029,39037,37036,3648,3955,37044,454,455,37049,85404,3962,395,68044,86410,3666,38058,68046,68056,3600",
+          "扔雷": []
+        },
+        {
+          "配置": {
+            "mode": "single",
+            "seed": 2026112603,
+            "limit": 24,
+            "frames": 900,
+            "speed": 4
+          },
+          "完成张数": 0,
+          "记录卡号": "4466,81405,3608,72036",
+          "扔雷": []
+        }
+      ],
+      "报错": [
+        {
+          "卡号": 72036,
+          "样本帧": 154,
+          "首行": "mod/GAME/ports/dreamer/LikeDreamer/projectile.lua:155: invalid lstg object"
+        }
+      ]
+    },
+    {
+      "记录": "stress-multi-win-3",
+      "结果SHA256": "fb155506968af389f641ddc93d4bfd4b1315d3d9b63f6e3812ee557be5b44e2c",
+      "整份配置完成": false,
+      "轮次": [
+        {
+          "配置": {
+            "mode": "staged",
+            "seed": 2026112602,
+            "limit": 38,
+            "frames": 600,
+            "speed": 4
+          },
+          "完成张数": 38,
+          "记录卡号": "37001,3901,68005,37004,39010,70208,3909,3635,462,39025,38026,83406,429,68022,68021,39032,446,3670,84409,38029,39037,37036,3648,3955,37044,454,455,37049,85404,3962,395,68044,86410,3666,38058,68046,68056,3600",
+          "扔雷": []
+        },
+        {
+          "配置": {
+            "mode": "single",
+            "seed": 2026112603,
+            "limit": 24,
+            "frames": 900,
+            "speed": 4
+          },
+          "完成张数": 0,
+          "记录卡号": "4466,81405,3608,72036,81401,3666,3941,70336,71122,4434,4404,39006,70403",
+          "扔雷": []
+        }
+      ],
+      "报错": [
+        {
+          "卡号": 70403,
+          "样本帧": 443,
+          "首行": "mod/GAME/ports/theis/THlib/laser/bentlaser.lua:49: can't render object with texture 'laser_bent0'."
+        }
+      ]
+    },
+    {
+      "记录": "stress-multi-win-4",
+      "结果SHA256": "344d4c53e4d41bee4ee1a59a08f9bad1f3ad074f44824dfa0664e2d0d88ad4f2",
+      "整份配置完成": false,
+      "轮次": [
+        {
+          "配置": {
+            "frames": 600,
+            "limit": 38,
+            "speed": 4,
+            "mode": "staged",
+            "seed": 2026112602
+          },
+          "完成张数": 38,
+          "记录卡号": "37001,3901,68005,37004,39010,70208,3909,3635,462,39025,38026,83406,429,68022,68021,39032,446,3670,84409,38029,39037,37036,3648,3955,37044,454,455,37049,85404,3962,395,68044,86410,3666,38058,68046,68056,3600",
+          "扔雷": []
+        },
+        {
+          "配置": {
+            "frames": 900,
+            "limit": 24,
+            "speed": 4,
+            "mode": "single",
+            "seed": 2026112603
+          },
+          "完成张数": 0,
+          "记录卡号": "4466,81405,3608,72036,81401,3666,3941,70336,71122,4434,4404,39006,70403,3667,37059,68047",
+          "扔雷": []
+        }
+      ],
+      "报错": [
+        {
+          "卡号": 68047,
+          "样本帧": 338,
+          "首行": "[string \"THlib\\laser\\laser.lua\"]:202: illegal operation, lstg object 'group' property should not be modified in 'lstg.CollisionCheck'"
+        }
+      ],
+      "源指纹": {
+        "files": 3266,
+        "sha256": "eb80167b56ed65275a02b2e0b2f541ac01d76c502af61f6e47feda88c418dbb6"
+      }
+    },
+    {
+      "记录": "stress-summer-bomb-win-9",
+      "结果SHA256": "9e0a31e0f993fa013a06d8ac30c1a1757a524fc8486f783eb7c174339bb84bc7",
+      "整份配置完成": false,
+      "轮次": [
+        {
+          "配置": {
+            "seed": 2026112614,
+            "limit": 1,
+            "bombs": [
+              180,
+              480
+            ],
+            "frames": 900,
+            "speed": 4,
+            "mode": "single",
+            "cards": [
+              68047
+            ]
+          },
+          "完成张数": 0,
+          "记录卡号": "68047",
+          "扔雷": [
+            {
+              "fired": true,
+              "age": 180,
+              "card": 68047,
+              "after": 2,
+              "before": 3
+            }
+          ]
+        }
+      ],
+      "报错": [
+        {
+          "卡号": 68047,
+          "样本帧": 366,
+          "首行": "mod/GAME/th40/native.lua:16: invalid lstg object"
+        }
+      ],
+      "源指纹": {
+        "files": 3266,
+        "sha256": "0e62ca40baf9df850b882674b3ef0eba2c4816231d26e4db660a9166b1c68833"
+      }
+    }
+  ],
+  "曲线激光最终跨平台对比": {
+    "Windows记录": "stress-envelope-win-8",
+    "Android记录": "stress-final-11",
+    "查询次数": 103968,
+    "逐位差异": 0,
+    "包络参数完全相同": true,
+    "查询结果SHA256": "cabfe683d5cc5ae66f118fd022293e7983b556800c3d803207a6889bd1f0118b",
+    "覆盖": "3组包络；单节点/活动节点/改宽/缩短队列；点/圆/旋转椭圆/旋转矩形；普通与固定宽度。stress-final-10中间原生实现尚有旋转判定差异，最终由stress-final-11修正并对比通过。"
+  },
+  "帝王切开实际画面": [
+    {
+      "记录": "stress-final-chaos-win-7",
+      "文件": "stress-emperor-2-1251.png",
+      "SHA256": "fe30b01e50fd968cf01290f1b823132d9dc8caa0ff569bbd823263879a2e6d9f"
+    },
+    {
+      "记录": "stress-final-chaos-win-7",
+      "文件": "stress-emperor-2-411.png",
+      "SHA256": "6d4f6bada64a8f4b2b38c482b75e73623a9119c32581ec8344e9e58598ae3288"
+    },
+    {
+      "记录": "stress-final-chaos-win-7",
+      "文件": "stress-emperor-2-831.png",
+      "SHA256": "012e9b14e9696ff42494887c091d8cdb4864ae26b6b51e24f6630d0d9cb27818"
+    },
+    {
+      "记录": "stress-final-10",
+      "文件": "stress-emperor-3-1251.png",
+      "SHA256": "04c3cc523b04039d5759db84ee4a8a71a19844a5fa28df9315dcd03f99b7b06e"
+    },
+    {
+      "记录": "stress-final-10",
+      "文件": "stress-emperor-3-411.png",
+      "SHA256": "4a9350b0f8b3037aaa5ebc54047744dd7647e0a227834f9e526d3c7814be9602"
+    },
+    {
+      "记录": "stress-final-10",
+      "文件": "stress-emperor-3-831.png",
+      "SHA256": "3e759b5345ac11558351f0574647f25831d9480347511d8b0354a250160932aa"
+    }
+  ],
+  "来源证据": [
+    {
+      "文件": "Time.cs",
+      "用途": "Time.Update第565行，gotowhere非0才跳转；来源只读",
+      "SHA256": "bc51e5fb9f45ba32d61294b0b73f404dcde227391ce0d0a85ebfbbaa0236dd8f"
+    },
+    {
+      "文件": "GameObjectBentLaser.hpp",
+      "用途": "Sub _GetEnvelope",
+      "SHA256": "734b96629f9bfd498eead84210b67e7213bf27f3beff469ba07d934c519a784b"
+    },
+    {
+      "文件": "GameObjectBentLaser.cpp",
+      "用途": "Sub SetEnvelope/CollisionCheck/CollisionCheckW",
+      "SHA256": "5acd08fd36f0a6f46f4289b2128b83da9b9f8c068f2400920c5919f502d1c58a"
+    },
+    {
+      "文件": "LW_BentLaser.cpp",
+      "用途": "Sub碰撞参数直接传原始rot",
+      "SHA256": "e7c3dfedf882b15606384c2495a8426982df57d08120d515a09267431bca202f"
+    }
+  ],
+  "专项回归": {
+    "结果": "8项均返回0",
+    "入口": [
+      "tools/th39-tests/check_global_jump.lua",
+      "tools/check_rogue_resource_cache.lua",
+      "tools/check_theis_entry.lua",
+      "tools/native-player-tests/check_likedreamer_registry.lua",
+      "tools/native-player-tests/check_likedreamer_visual_proxies.lua",
+      "tools/th40-tests/laser.lua",
+      "tools/th43-tests/check_delete_callback.lua",
+      "tools/th43-tests/check_spell_background.lua"
+    ],
+    "附加": "25个变更/新增Lua及Python文件通过LuaJIT仅编译或Python语法检查，git diff --check通过。旧工具的Unix目录枚举在Windows有路径提示，专项断言均返回0；实际运行另见原生轮次。"
+  },
+  "最终修复源码LF归一化SHA256": {
+    "THlib/UI/UI.lua": "0a4ebb4e64f463e39797d9b493aa832ddfe22813f32bf8c4e0aae0172e3b6865",
+    "THlib/laser/laser.lua": "349f192e6a80feda9918994ef1bf03c81676549875e7628e28218aeee0f2fabc",
+    "android/AndroidManifest.xml": "aa5fad241357443a923e85fb68283446f21a93be25a0bc8980ea7a8e00c3b6f2",
+    "android/lua/compat.lua": "bf42d3a34470c036ec056bb95264e6f09ceb2a28f88fd54928bc8011c6e96ed3",
+    "android/native/compat.cpp": "426f41ac6fff5a6ca6f0d532f2ce754668132793a94006583dce3503f09493ac",
+    "android/patch_engine.py": "c84661fb6eb48607cb157ea70e4edba66cb9339e5c5c89fd1265b17938118a8c",
+    "mod/GAME/ports/dreamer/LikeDreamer/boss_early.lua": "03d4fc04483054716892ec7a57328b21b528df88e3ff27b597a0a94b2b74d23a",
+    "mod/GAME/ports/dreamer/LikeDreamer/boss_middle.lua": "4f78974daa89ca53a7173b4c83da9782aba463384cd4e8a88173237ad397117a",
+    "mod/GAME/ports/dreamer/LikeDreamer/enemy.lua": "7e9d24d6d67cd633af7fe7c50dd2cff0f168637d6315dd7e0885b1e674d01d34",
+    "mod/GAME/ports/dreamer/LikeDreamer/projectile.lua": "ccbf9a5a6792abb59caefd88d5764f12993649e6364c8f795e74072975c017c2",
+    "mod/GAME/th37/runtime.lua": "b4c52c11eb07b88c8930b522fd6a20c2edcfd91ec58319f915870543cc9c7c25",
+    "mod/GAME/th38/runtime.lua": "c015878cf5f91e3d6c3c6f8b2d406b796237d92f88f0a394a59f1ea72f70affe",
+    "mod/GAME/th39/runtime.lua": "131cf438d8c046bdcef0256891d70b5db9909477206efa69b016318db1b14448",
+    "mod/GAME/th40/native.lua": "001c242081ee93990e8f0ab7e34c2fefeb622191e24344ec701ff4ce44e04d3b",
+    "mod/GAME/th41.lua": "77130e2a7ee21432971f88f986f4651a28c4a33501e617da0ec20adb79c06a3d",
+    "mod/GAME/th43/runtime.lua": "49cfc92932ded376c07815cdbcd3a46f9c64fa5f24d3f19c19195c5445c7e8c1",
+    "mod/rogue_encounter.lua": "37d4546a814508c08100586097b041c324deff24ef1c74ceb41dc8b3d174ebed",
+    "android/native/bent_laser_envelope.inc": "6758059f205e81747a6679309a0f7d850f2f5008f9ee67a5154abf112d14a6f5"
+  }
+}

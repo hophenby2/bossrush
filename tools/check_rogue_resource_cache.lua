@@ -26,5 +26,16 @@ M.begin(scene,a);resources[1]['theis/medium']=true;M.stop(scene)
 M.begin(scene,b);resources[1]['th43/huge']=true;M.stop(scene)
 assert(not resources[1]['theis/medium'] and resources[1]['th43/huge'],'超总预算应先淘汰较早使用的作品')
 assert(resources[1].host and resources[1]['original/8/enemy'] and resources[2]['original/8/sprite'],'预算淘汰接管了宿主或跨卡ANM资源')
+-- 原生复现：春雪切红魔乡后，Boss击破再次震屏曾写入已RawDel的单例。
+dofile('THlib/misc/misc.lua');lstg.worldoffset={dx=0,dy=0}
+M.begin(scene,a);misc.ShakeScreen(20,1)
+local shaker=assert(lstg.tmpvar.shaker);lstg.worldoffset.dx,lstg.worldoffset.dy=3,-2
+M.stop(scene)
+assert(not IsValid(shaker) and not lstg.tmpvar.shaker,'切卡残留已删除的震屏单例')
+assert(lstg.worldoffset.dx==0 and lstg.worldoffset.dy==0,'切卡残留震屏偏移')
+misc.ShakeScreen(20,2);local nextShaker=assert(lstg.tmpvar.shaker)
+assert(nextShaker~=shaker and IsValid(nextShaker),'下一张卡未创建新的震屏对象')
+M.background={objects={[nextShaker]=true}}
 M.release();assert(resources[1]['th43/huge'],'退出的统一stage释放不应由局部缓存重复处理')
+assert(not lstg.tmpvar.shaker and lstg.worldoffset.dx==0 and lstg.worldoffset.dy==0,'返回标题未清理背景震屏状态')
 print('多作整局驻留、总预算LRU淘汰、宿主/ANM归属隔离与统一退出释放通过')

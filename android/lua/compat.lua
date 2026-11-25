@@ -256,23 +256,36 @@ end)
 -- 旧曲线激光 API 在 x 中拆成节点操作，保留原框架调用方式。
 expose('BentLaserData', function()
     local raw = lstg.GameObjectBentLaser:create()
-    local laser = { raw = raw, width = 1 }
+    local laser = { raw = raw, width = 1, active = {}, envelope = {0,1,0,0} }
     function laser:Update(object, length, width, inactive)
         self.width = width
         self.raw:setNodeLimit(math.max(2, math.floor(length)))
         self.raw:pushHead(object.x, object.y, inactive and inactive > 0 and 0 or width)
+        -- x和Sub均按最旧到最新排列节点；缩短长度时同步移除旧节点的活动状态。
+        local count=self.raw:getNodeCount()
+        local previous=#self.active
+        local removed=previous+1-count
+        if removed>0 then
+            for i=1,count-1 do self.active[i]=self.active[i+removed] end
+            for i=count,previous do self.active[i]=nil end
+        end
+        self.active[count]=not inactive or inactive<=0
     end
     function laser:UpdatePositionByList(list, length, width)
-        self.raw:clear(); self.width = width
+        self.raw:clear(); self.width = width; self.active={}
         self.raw:setNodeLimit(math.max(2, length))
-        for i = length, 1, -1 do self.raw:pushHead(list[i].x, list[i].y, width) end
+        for i = length, 1, -1 do self.raw:pushHead(list[i].x, list[i].y, width);self.active[#self.active+1]=true end
     end
     function laser:SetAllWidth(width) self.width = width; self.raw:setAllWidth(width) end
-    function laser:CollisionCheck(x, y, rotation, a, b)
-        return self.raw:collisionCheckExtendWidth(x, y, math.max(a or 0, b or 0) * 2)
+    function laser:SetEnvelope(height,base,rate,power)
+        self.envelope={native.AndroidBentLaserEnvelopeValues(height,base,rate,power)}
     end
-    function laser:CollisionCheckWidth(x, y, width, rotation, a, b)
-        return self.raw:collisionCheckExtendWidth(x, y, width-self.width+math.max(a or 0, b or 0)*2)
+    function laser:GetEnvelope() return unpack(self.envelope) end
+    function laser:CollisionCheck(x, y, rotation, a, b, rect)
+        return native.AndroidBentLaserCollision(self.raw,x,y,rotation or 0,a or 0,b or 0,rect==true,self.envelope,self.active)
+    end
+    function laser:CollisionCheckWidth(x, y, width, rotation, a, b, rect)
+        return native.AndroidBentLaserCollision(self.raw,x,y,rotation or 0,a or 0,b or 0,rect==true,self.envelope,self.active,width)
     end
     function laser:BoundCheck() return self.raw:boundCheck() end
     function laser:Render(texture, blend, color, x, y, width, height)
