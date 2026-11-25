@@ -1,0 +1,1122 @@
+[
+  {
+    "file": "stage01.ecl",
+    "sub": "Boss2",
+    "address": "0x162c",
+    "time": 0,
+    "sound": 15
+  },
+  {
+    "file": "stage01.ecl",
+    "sub": "BossCard1",
+    "address": "0x22a4",
+    "time": 0,
+    "sound": 7
+  },
+  {
+    "file": "stage01.ecl",
+    "sub": "BossCard2",
+    "address": "0x4098",
+    "time": 0,
+    "sound": 7
+  },
+  {
+    "file": "stage01.ecl",
+    "sub": "BossCard2At1",
+    "address": "0x43ec",
+    "time": 0,
+    "sound": 16
+  },
+  {
+    "file": "stage01.ecl",
+    "sub": "BossCard2At1b",
+    "address": "0x4678",
+    "time": 0,
+    "sound": 16
+  },
+  {
+    "file": "stage01.ecl",
+    "sub": "BossDead",
+    "address": "0x4d6c",
+    "time": 0,
+    "sound": 18
+  },
+  {
+    "file": "stage01.ecl",
+    "sub": "BossDead",
+    "address": "0x4f08",
+    "time": 60,
+    "sound": 18
+  },
+  {
+    "file": "stage01.ecl",
+    "sub": "MBossCard1",
+    "address": "0x76a4",
+    "time": 0,
+    "sound": 7
+  },
+  {
+    "file": "stage01.ecl",
+    "sub": "MBossDead",
+    "address": "0x8610",
+    "time": 0,
+    "sound": 18
+  },
+  {
+    "file": "stage01.ecl",
+    "sha256": "7e7e35760a786f2e00ab426eb7e324e0a8d9bfc6202c2085c4e6c7a8bf15358c"
+  },
+  {
+    "file": "stage02.ecl",
+    "sub": "Boss2",
+    "address": "0x1de4",
+    "time": 0,
+    "sound": 15
+  },
+  {
+    "file": "stage02.ecl",
+    "sub": "BossCard1",
+    "address": "0x47ac",
+    "time": 0,
+    "sound": 7
+  },
+  {
+    "file": "stage02.ecl",
+    "sub": "BossCard2",
+    "address": "0x4e90",
+    "time": 0,
+    "sound": 7
+  },
+  {
+    "file": "stage02.ecl",
+    "sub": "BossCard3",
+    "address": "0x56a4",
+    "time": 0,
+    "sound": 7
+  },
+  {
+    "file": "stage02.ecl",
+    "sub": "BossDead",
+    "address": "0x5e7c",
+    "time": 0,
+    "sound": 18
+  },
+  {
+    "file": "stage02.ecl",
+    "sub": "BossDead",
+    "address": "0x6028",
+    "time": 60,
+    "sound": 18
+  },
+  {
+    "file": "stage02.ecl",
+    "sub": "MBossCard1",
+    "address": "0x8af0",
+    "time": 0,
+    "sound": 7
+  },
+  {
+    "file": "stage02.ecl",
+    "sub": "MBossDead",
+    "address": "0x8e9c",
+    "time": 0,
+    "sound": 18
+  },
+  {
+    "file": "stage02.ecl",
+    "sub": "SpCir00",
+    "address": "0xae04",
+    "time": 0,
+    "sound": 6
+  },
+  {
+    "file": "stage02.ecl",
+    "sub": "SpCir01",
+    "address": "0xb108",
+    "time": 0,
+    "sound": 6
+  },
+  {
+    "file": "stage02.ecl",
+    "sha256": "35fa35920b27bc0ce086bdcd9fa0ca3fe4976ddcfe14bea7a6cb2ff9c1c42d9c"
+  },
+  {
+    "file": "stage03.ecl",
+    "sub": "Boss2",
+    "address": "0x14cc",
+    "time": 0,
+    "sound": 15
+  },
+  {
+    "file": "stage03.ecl",
+    "sub": "Boss3",
+    "address": "0x2ea0",
+    "time": 0,
+    "sound": 15
+  },
+  {
+    "file": "stage03.ecl",
+    "sub": "BossCard1",
+    "address": "0x336c",
+    "time": 0,
+    "sound": 7
+  },
+  {
+    "file": "stage03.ecl",
+    "sub": "BossCard2",
+    "address": "0x4c8c",
+    "time": 0,
+    "sound": 7
+  },
+  {
+    "file": "stage03.ecl",
+    "sub": "BossCard3",
+    "address": "0x5150",
+    "time": 0,
+    "sound": 7
+  },
+  {
+    "file": "stage03.ecl",
+    "sub": "BossCard3L",
+    "address": "0x557c",
+    "time": 0,
+    "sound": 7
+  },
+  {
+    "file": "stage03.ecl",
+    "sub": "BossCard3_at",
+    "address": "0x5f88",
+    "time": 0,
+    "sound": 16
+  },
+  {
+    "file": "stage03.ecl",
+    "sub": "BossCard3_at",
+    "address": "0x6024",
+    "time": 0,
+    "sound": 24
+  },
+  {
+    "file": "stage03.ecl",
+    "sub": "BossCard3_at",
+    "address": "0x642c",
+    "time": 10,
+    "sound": 16
+  },
+  {
+    "file": "stage03.ecl",
+    "sub": "BossCard3_at",
+    "address": "0x64f0",
+    "time": 10,
+    "sound": 24
+  },
+  {
+    "file": "stage03.ecl",
+    "sub": "BossDead",
+    "address": "0x6840",
+    "time": 0,
+    "sound": 18
+  },
+  {
+    "file": "stage03.ecl",
+    "sub": "BossDead",
+    "address": "0x6a00",
+    "time": 60,
+    "sound": 18
+  },
+  {
+    "file": "stage03.ecl",
+    "sub": "MBossCard1",
+    "address": "0x85fc",
+    "time": 0,
+    "sound": 7
+  },
+  {
+    "file": "stage03.ecl",
+    "sub": "MBossDead",
+    "address": "0x91f0",
+    "time": 0,
+    "sound": 18
+  },
+  {
+    "file": "stage03.ecl",
+    "sub": "SpCir01",
+    "address": "0xc570",
+    "time": 0,
+    "sound": 6
+  },
+  {
+    "file": "stage03.ecl",
+    "sha256": "9039c829aa1eb34b2183f5b4d53b6a72236026f98740eb760baad680e9fe016f"
+  },
+  {
+    "file": "stage04.ecl",
+    "sub": "Boss1_at2",
+    "address": "0xf0c",
+    "time": 0,
+    "sound": 15
+  },
+  {
+    "file": "stage04.ecl",
+    "sub": "Boss1_at3",
+    "address": "0x13d0",
+    "time": 0,
+    "sound": 15
+  },
+  {
+    "file": "stage04.ecl",
+    "sub": "Boss2",
+    "address": "0x1a30",
+    "time": 0,
+    "sound": 15
+  },
+  {
+    "file": "stage04.ecl",
+    "sub": "Boss2_at2",
+    "address": "0x1f60",
+    "time": 0,
+    "sound": 15
+  },
+  {
+    "file": "stage04.ecl",
+    "sub": "Boss2_at3",
+    "address": "0x220c",
+    "time": 0,
+    "sound": 15
+  },
+  {
+    "file": "stage04.ecl",
+    "sub": "Boss3",
+    "address": "0x2680",
+    "time": 0,
+    "sound": 15
+  },
+  {
+    "file": "stage04.ecl",
+    "sub": "Boss3_at2",
+    "address": "0x28a0",
+    "time": 0,
+    "sound": 15
+  },
+  {
+    "file": "stage04.ecl",
+    "sub": "Boss3_at3",
+    "address": "0x2acc",
+    "time": 0,
+    "sound": 15
+  },
+  {
+    "file": "stage04.ecl",
+    "sub": "BossCard1",
+    "address": "0x3374",
+    "time": 0,
+    "sound": 7
+  },
+  {
+    "file": "stage04.ecl",
+    "sub": "BossCard2",
+    "address": "0x3d30",
+    "time": 0,
+    "sound": 7
+  },
+  {
+    "file": "stage04.ecl",
+    "sub": "BossCard3",
+    "address": "0x47ec",
+    "time": 0,
+    "sound": 7
+  },
+  {
+    "file": "stage04.ecl",
+    "sub": "BossCard3",
+    "address": "0x4b64",
+    "time": 150,
+    "sound": 7
+  },
+  {
+    "file": "stage04.ecl",
+    "sub": "BossCard3",
+    "address": "0x4d74",
+    "time": 210,
+    "sound": 15
+  },
+  {
+    "file": "stage04.ecl",
+    "sub": "BossCard3",
+    "address": "0x4da4",
+    "time": 265,
+    "sound": 15
+  },
+  {
+    "file": "stage04.ecl",
+    "sub": "BossCard3",
+    "address": "0x4fb4",
+    "time": 315,
+    "sound": 15
+  },
+  {
+    "file": "stage04.ecl",
+    "sub": "BossCard3",
+    "address": "0x4fe4",
+    "time": 360,
+    "sound": 15
+  },
+  {
+    "file": "stage04.ecl",
+    "sub": "BossCard3",
+    "address": "0x5214",
+    "time": 360,
+    "sound": 15
+  },
+  {
+    "file": "stage04.ecl",
+    "sub": "BossCard3",
+    "address": "0x5264",
+    "time": 360,
+    "sound": 15
+  },
+  {
+    "file": "stage04.ecl",
+    "sub": "BossCard3",
+    "address": "0x5494",
+    "time": 360,
+    "sound": 15
+  },
+  {
+    "file": "stage04.ecl",
+    "sub": "BossCard3",
+    "address": "0x54e4",
+    "time": 360,
+    "sound": 15
+  },
+  {
+    "file": "stage04.ecl",
+    "sub": "BossCard3",
+    "address": "0x5714",
+    "time": 360,
+    "sound": 15
+  },
+  {
+    "file": "stage04.ecl",
+    "sub": "BossCard3",
+    "address": "0x58d0",
+    "time": 360,
+    "sound": 15
+  },
+  {
+    "file": "stage04.ecl",
+    "sub": "BossCard3",
+    "address": "0x5a3c",
+    "time": 360,
+    "sound": 15
+  },
+  {
+    "file": "stage04.ecl",
+    "sub": "BossCard4",
+    "address": "0x6adc",
+    "time": 0,
+    "sound": 7
+  },
+  {
+    "file": "stage04.ecl",
+    "sub": "BossCharge",
+    "address": "0x77dc",
+    "time": 0,
+    "sound": 41
+  },
+  {
+    "file": "stage04.ecl",
+    "sub": "BossCharge",
+    "address": "0x7a6c",
+    "time": 0,
+    "sound": 41
+  },
+  {
+    "file": "stage04.ecl",
+    "sub": "BossChargeL",
+    "address": "0x7d40",
+    "time": 0,
+    "sound": 41
+  },
+  {
+    "file": "stage04.ecl",
+    "sub": "BossChargeL",
+    "address": "0x7fd0",
+    "time": 0,
+    "sound": 41
+  },
+  {
+    "file": "stage04.ecl",
+    "sub": "BossDead",
+    "address": "0x8518",
+    "time": 0,
+    "sound": 18
+  },
+  {
+    "file": "stage04.ecl",
+    "sub": "BossDead",
+    "address": "0x86d8",
+    "time": 60,
+    "sound": 18
+  },
+  {
+    "file": "stage04.ecl",
+    "sub": "Girl00",
+    "address": "0xaf10",
+    "time": 0,
+    "sound": 46
+  },
+  {
+    "file": "stage04.ecl",
+    "sub": "Girl01",
+    "address": "0xb108",
+    "time": 0,
+    "sound": 46
+  },
+  {
+    "file": "stage04.ecl",
+    "sub": "Girl04",
+    "address": "0xccb8",
+    "time": 0,
+    "sound": 46
+  },
+  {
+    "file": "stage04.ecl",
+    "sub": "MBossDead",
+    "address": "0xdb6c",
+    "time": 0,
+    "sound": 18
+  },
+  {
+    "file": "stage04.ecl",
+    "sha256": "f96202e57dd67a3cb6aa55d41c3ba0e0a090ecd82772a83f49be03526ecb18d8"
+  },
+  {
+    "file": "stage05.ecl",
+    "sub": "Boss2",
+    "address": "0x22d8",
+    "time": 0,
+    "sound": 15
+  },
+  {
+    "file": "stage05.ecl",
+    "sub": "Boss2Et_at",
+    "address": "0x250c",
+    "time": 0,
+    "sound": 13
+  },
+  {
+    "file": "stage05.ecl",
+    "sub": "Boss3",
+    "address": "0x3208",
+    "time": 0,
+    "sound": 15
+  },
+  {
+    "file": "stage05.ecl",
+    "sub": "BossCard1",
+    "address": "0x3a2c",
+    "time": 0,
+    "sound": 7
+  },
+  {
+    "file": "stage05.ecl",
+    "sub": "BossCard1_at2",
+    "address": "0x3e70",
+    "time": 0,
+    "sound": 24
+  },
+  {
+    "file": "stage05.ecl",
+    "sub": "BossCard2",
+    "address": "0x498c",
+    "time": 0,
+    "sound": 7
+  },
+  {
+    "file": "stage05.ecl",
+    "sub": "BossCard3",
+    "address": "0x5668",
+    "time": 0,
+    "sound": 7
+  },
+  {
+    "file": "stage05.ecl",
+    "sub": "BossCard4",
+    "address": "0x7b2c",
+    "time": 0,
+    "sound": 7
+  },
+  {
+    "file": "stage05.ecl",
+    "sub": "BossDead",
+    "address": "0x87e4",
+    "time": 0,
+    "sound": 18
+  },
+  {
+    "file": "stage05.ecl",
+    "sub": "BossDead",
+    "address": "0x89a4",
+    "time": 60,
+    "sound": 18
+  },
+  {
+    "file": "stage05.ecl",
+    "sub": "MBossCard1",
+    "address": "0xc2d4",
+    "time": 0,
+    "sound": 7
+  },
+  {
+    "file": "stage05.ecl",
+    "sub": "MBossEscape",
+    "address": "0xe120",
+    "time": 0,
+    "sound": 15
+  },
+  {
+    "file": "stage05.ecl",
+    "sha256": "26ddd2feb5b7e0d7c091dc58b309a60e02ef0d9900e2b8b045c91cb2631b8a2b"
+  },
+  {
+    "file": "stage06.ecl",
+    "sub": "Boss",
+    "address": "0x750",
+    "time": 0,
+    "sound": 14
+  },
+  {
+    "file": "stage06.ecl",
+    "sub": "Boss1",
+    "address": "0x9d4",
+    "time": 20,
+    "sound": 41
+  },
+  {
+    "file": "stage06.ecl",
+    "sub": "Boss2",
+    "address": "0xff4",
+    "time": 0,
+    "sound": 15
+  },
+  {
+    "file": "stage06.ecl",
+    "sub": "Boss2",
+    "address": "0x1058",
+    "time": 60,
+    "sound": 41
+  },
+  {
+    "file": "stage06.ecl",
+    "sub": "Boss2",
+    "address": "0x11a4",
+    "time": 180,
+    "sound": 15
+  },
+  {
+    "file": "stage06.ecl",
+    "sub": "Boss3",
+    "address": "0x21e8",
+    "time": 0,
+    "sound": 15
+  },
+  {
+    "file": "stage06.ecl",
+    "sub": "Boss4",
+    "address": "0x2b44",
+    "time": 90,
+    "sound": 15
+  },
+  {
+    "file": "stage06.ecl",
+    "sub": "Boss4",
+    "address": "0x2b7c",
+    "time": 150,
+    "sound": 41
+  },
+  {
+    "file": "stage06.ecl",
+    "sub": "Boss4",
+    "address": "0x2dfc",
+    "time": 510,
+    "sound": 41
+  },
+  {
+    "file": "stage06.ecl",
+    "sub": "Boss4",
+    "address": "0x3094",
+    "time": 810,
+    "sound": 41
+  },
+  {
+    "file": "stage06.ecl",
+    "sub": "BossCard1",
+    "address": "0x4130",
+    "time": 0,
+    "sound": 7
+  },
+  {
+    "file": "stage06.ecl",
+    "sub": "BossCard1_at",
+    "address": "0x44cc",
+    "time": 0,
+    "sound": 16
+  },
+  {
+    "file": "stage06.ecl",
+    "sub": "BossCard1_at",
+    "address": "0x4528",
+    "time": 0,
+    "sound": 16
+  },
+  {
+    "file": "stage06.ecl",
+    "sub": "BossCard1_atH",
+    "address": "0x4b90",
+    "time": 0,
+    "sound": 16
+  },
+  {
+    "file": "stage06.ecl",
+    "sub": "BossCard1_atH",
+    "address": "0x4c58",
+    "time": 0,
+    "sound": 16
+  },
+  {
+    "file": "stage06.ecl",
+    "sub": "BossCard2",
+    "address": "0x5054",
+    "time": 0,
+    "sound": 7
+  },
+  {
+    "file": "stage06.ecl",
+    "sub": "BossCard3",
+    "address": "0x59a0",
+    "time": 0,
+    "sound": 7
+  },
+  {
+    "file": "stage06.ecl",
+    "sub": "BossCard3",
+    "address": "0x5d28",
+    "time": 200,
+    "sound": 41
+  },
+  {
+    "file": "stage06.ecl",
+    "sub": "BossCard3",
+    "address": "0x5d3c",
+    "time": 260,
+    "sound": 15
+  },
+  {
+    "file": "stage06.ecl",
+    "sub": "BossCard3",
+    "address": "0x5efc",
+    "time": 500,
+    "sound": 41
+  },
+  {
+    "file": "stage06.ecl",
+    "sub": "BossCard3",
+    "address": "0x5f10",
+    "time": 560,
+    "sound": 15
+  },
+  {
+    "file": "stage06.ecl",
+    "sub": "BossCard3H",
+    "address": "0x69c0",
+    "time": 0,
+    "sound": 7
+  },
+  {
+    "file": "stage06.ecl",
+    "sub": "BossCard4",
+    "address": "0x72d4",
+    "time": 0,
+    "sound": 7
+  },
+  {
+    "file": "stage06.ecl",
+    "sub": "BossCard4",
+    "address": "0x7534",
+    "time": 80,
+    "sound": 41
+  },
+  {
+    "file": "stage06.ecl",
+    "sub": "BossCard4",
+    "address": "0x7548",
+    "time": 140,
+    "sound": 15
+  },
+  {
+    "file": "stage06.ecl",
+    "sub": "BossCard5",
+    "address": "0x88c0",
+    "time": 0,
+    "sound": 7
+  },
+  {
+    "file": "stage06.ecl",
+    "sub": "BossDead",
+    "address": "0xc5b0",
+    "time": 0,
+    "sound": 18
+  },
+  {
+    "file": "stage06.ecl",
+    "sub": "BossDead",
+    "address": "0xc784",
+    "time": 60,
+    "sound": 18
+  },
+  {
+    "file": "stage06.ecl",
+    "sub": "Girl01_at",
+    "address": "0xd8fc",
+    "time": 0,
+    "sound": 41
+  },
+  {
+    "file": "stage06.ecl",
+    "sha256": "3a0c6fe836e9aefe1eacee709fcc92298121c1fd5460563282af36a698bad803"
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "Boss2",
+    "address": "0x1310",
+    "time": 0,
+    "sound": 15
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "Boss3",
+    "address": "0x1810",
+    "time": 0,
+    "sound": 15
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "Boss4",
+    "address": "0x20d4",
+    "time": 0,
+    "sound": 15
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "Boss5",
+    "address": "0x2680",
+    "time": 0,
+    "sound": 15
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "Boss6",
+    "address": "0x2ba0",
+    "time": 0,
+    "sound": 15
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "Boss7",
+    "address": "0x3464",
+    "time": 0,
+    "sound": 15
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "Boss8",
+    "address": "0x39e0",
+    "time": 0,
+    "sound": 15
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "BossCard1",
+    "address": "0x3d3c",
+    "time": 0,
+    "sound": 7
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "BossCard10",
+    "address": "0x4170",
+    "time": 0,
+    "sound": 7
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "BossCard10",
+    "address": "0x4230",
+    "time": 0,
+    "sound": 15
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "BossCard10_tbl",
+    "address": "0x4ba8",
+    "time": 0,
+    "sound": 15
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "BossCard10_tbl",
+    "address": "0x4d0c",
+    "time": 0,
+    "sound": 15
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "BossCard10_tbl",
+    "address": "0x4e70",
+    "time": 0,
+    "sound": 15
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "BossCard10_tbl",
+    "address": "0x4fd4",
+    "time": 0,
+    "sound": 15
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "BossCard10_tbl",
+    "address": "0x5184",
+    "time": 0,
+    "sound": 15
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "BossCard1_at",
+    "address": "0x5388",
+    "time": 0,
+    "sound": 15
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "BossCard1_at2",
+    "address": "0x5d20",
+    "time": 0,
+    "sound": 16
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "BossCard1_at2b",
+    "address": "0x5f90",
+    "time": 0,
+    "sound": 16
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "BossCard1_at3",
+    "address": "0x624c",
+    "time": 0,
+    "sound": 16
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "BossCard2",
+    "address": "0x65f8",
+    "time": 0,
+    "sound": 7
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "BossCard2_at",
+    "address": "0x6924",
+    "time": 0,
+    "sound": 16
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "BossCard2_at2",
+    "address": "0x6cdc",
+    "time": 0,
+    "sound": 16
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "BossCard3",
+    "address": "0x74cc",
+    "time": 0,
+    "sound": 7
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "BossCard4",
+    "address": "0x7bb4",
+    "time": 0,
+    "sound": 7
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "BossCard5",
+    "address": "0x89e0",
+    "time": 0,
+    "sound": 7
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "BossCard6",
+    "address": "0x94f4",
+    "time": 0,
+    "sound": 7
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "BossCard6_at",
+    "address": "0x99b4",
+    "time": 0,
+    "sound": 41
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "BossCard6_at",
+    "address": "0x99f4",
+    "time": 0,
+    "sound": 16
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "BossCard7",
+    "address": "0xa354",
+    "time": 0,
+    "sound": 7
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "BossCard8",
+    "address": "0xab08",
+    "time": 0,
+    "sound": 7
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "BossCard8_at",
+    "address": "0xaffc",
+    "time": 60,
+    "sound": 15
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "BossCard8_at",
+    "address": "0xb084",
+    "time": 180,
+    "sound": 15
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "BossCard8_at",
+    "address": "0xb124",
+    "time": 260,
+    "sound": 15
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "BossCard9",
+    "address": "0xb370",
+    "time": 0,
+    "sound": 7
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "BossCard9",
+    "address": "0xb430",
+    "time": 0,
+    "sound": 15
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "BossCard9_at",
+    "address": "0xc6dc",
+    "time": 0,
+    "sound": 41
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "BossCard9_at2",
+    "address": "0xca48",
+    "time": 0,
+    "sound": 41
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "BossDead",
+    "address": "0xd1b0",
+    "time": 0,
+    "sound": 18
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "BossDead",
+    "address": "0xd370",
+    "time": 60,
+    "sound": 18
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "MBoss",
+    "address": "0x10af8",
+    "time": 0,
+    "sound": 14
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "MBoss1",
+    "address": "0x10d98",
+    "time": 0,
+    "sound": 14
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "MBossCard1",
+    "address": "0x11584",
+    "time": 0,
+    "sound": 7
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "MBossCard2",
+    "address": "0x11780",
+    "time": 0,
+    "sound": 7
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "MBossCard2",
+    "address": "0x11a00",
+    "time": 120,
+    "sound": 7
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "MBossCard3",
+    "address": "0x12574",
+    "time": 0,
+    "sound": 7
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "MBossCard3",
+    "address": "0x127e8",
+    "time": 90,
+    "sound": 7
+  },
+  {
+    "file": "stage07.ecl",
+    "sub": "MBossDead",
+    "address": "0x13600",
+    "time": 0,
+    "sound": 18
+  },
+  {
+    "file": "stage07.ecl",
+    "sha256": "7a3196ced423156e49bc76c055066650f3edca8fc71c4e3acb94712f78f2b24b"
+  }
+]

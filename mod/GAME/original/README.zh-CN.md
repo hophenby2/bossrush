@@ -25,6 +25,14 @@ TH31、TH32、TH33、TH34、TH35 分别对应永夜抄、红魔乡、文花帖�
 原脚本中仍有历史上的“占位贴图”注释、兼容字段和碰撞样式名。正式原作显示入口
 优先读取上述 ANM，不能仅搜索 `img = "servant"` 就判断运行时仍绘制该占位图。
 
+## 音效
+
+`THlib/anm/original_sounds.lua` 按 `sounds.lua` 的原始 SoundIdx、PCM 和 DirectSound 音量播放五作音效。210 个索引随启动队列预载到全局池，名称包含作品编号，同帧按索引去重；声像直接传给原生接口，避免再经过项目 `PlaySound` 的 `/1024` 换算。练习与随机战斗的攻击音不依赖顺序模式资源账本。
+
+永夜抄共用弹枪现在读取发弹标志及独立的生成/变换音，子弹再生子弹保留原描述符的 0/-1 音效初值。红魔乡沿用 `bulletSound` 选择的索引，禁用音效不抹去上一次选择；文花帖、妖妖梦及永夜抄的明确占位调用改用本作索引。风神录在真实发弹、变换和 `PLAY_SOUND` 记录触发处播放声音；独立蓄力、开符和提示声由 `th10_sounds.lua` 执行原 ECL 的调用、等待、循环和标量，音效状态与弹幕状态及随机流分开。调度数据由 `export_th10_sound_programs.py` 校验原二进制后导出，源点与原件哈希见 `sound_programs_manifest.json`。
+
+专项检查：`luajit tools/th3x-tests/check_original_sounds.lua`；Mac 使用独立 `BOSSRUSH_MAC_DATA` 和 `BOSSRUSH_MAC_TEST=original-sounds` 连续进入五作练习，检查原生音频状态。常规启动不运行这些诊断。
+
 ## 导出
 
 本机使用 `E:\workspace\thtkGUI-th20tr\thtk\thtk-th20` 的 `thdat/thanm/thecl`。

@@ -661,6 +661,7 @@ local function advance(self)
                 self.ex_act = self.ex_act + K_DECEL
                 self.ex_decel_t = 0
             elseif k == K_VEC then
+                if self.ex_idx>1 and self.ex_transform_sound>=0 then OriginalStageVisual.presentation.sound.play(8,self.ex_transform_sound,0) end
                 self.ex_act = self.ex_act + K_VEC
                 ---加速度向量按**生效那一刻**的弹角定死（:345-357）；float1 < −990
                 ---→ 用弹自己的角度（payload: magnitude, angle, durationFrames）。
@@ -671,6 +672,7 @@ local function advance(self)
                 self.ex_vay = math.sin(a) * r.f0 * EX.fm
                 self.ex_vec_t, self.ex_vec_n = 0, r.i0
             elseif k == K_POLAR then
+                if self.ex_idx>1 and self.ex_transform_sound>=0 then OriginalStageVisual.presentation.sound.play(8,self.ex_transform_sound,0) end
                 self.ex_act = self.ex_act + K_POLAR
                 self.ex_pol_t, self.ex_pol_n = 0, r.i0
                 self.ex_pol_ds, self.ex_pol_da = r.f0, r.f1
@@ -792,6 +794,7 @@ local function upd_dir(self, k)
         end
         self.ex_speed = self.ex_dir_spd
         m = self.ex_speed
+        if self.ex_transform_sound>=0 then OriginalStageVisual.presentation.sound.play(8,self.ex_transform_sound,0) end
         self.ex_dir_t = 0
     else
         m = self.ex_speed - self.ex_dir_t * self.ex_speed / self.ex_dir_n
@@ -805,6 +808,7 @@ end
 ---速度换成 bounceSpeed，撞够 bounceLimit 次就把位清掉。
 local function upd_bounce(self)
     if not outside_field(self.x, self.y, self.ex_half) then return end
+    if self.ex_transform_sound>=0 then OriginalStageVisual.presentation.sound.play(8,self.ex_transform_sound,0) end
     if self.x < FIELD_L or self.x >= FIELD_R then
         self.ex_angle = add_norm(PI - self.ex_angle)
     end
@@ -852,6 +856,7 @@ EX.bullet = Class(bullet, {
         self.ex_flags = p.flags
         self.ex_recs = p.recs
         self.ex_idx = p.start or 1
+        self.ex_transform_sound=p.transformSound or -1
         self.ex_act = 0                     -- activeTransformFlags
         ---★ 消失动画的剩余帧数必须**在这里归零**：DESPAWN 记录把它写成 12 之前，
         ---  frame 每帧都要读它（`:497`），漏了就 `compare number with nil`。
@@ -1051,12 +1056,12 @@ end
 ---生成一颗弹（SpawnSingleBullet，BulletManager.cpp:95-270）。调用前请自己判池。
 ---★ 第一参从「发射源」改成**记录表本身**：原作出弹那一刻把描述符整块 memcpy 进弹里，
 ---  一波弹共享同一份拷贝 —— 发射源之后改自己的记录不会动到已经在飞的弹。
-local function spawn_one(recs, x, y, angle, speed, btype, color, flags, start)
+local function spawn_one(recs, x, y, angle, speed, btype, color, flags, start, transformSound)
     local style, half = style_of(btype)
     local b = New(EX.bullet, {
         x = x, y = y, angle = angle, speed = speed,
         style = style, color = color_of(btype, color), half = half,
-        btype = btype, flags = flags, recs = recs, start = start,
+        btype = btype, flags = flags, recs = recs, start = start, transformSound=transformSound,
     })
     EX.pool[#EX.pool + 1] = b
     return b
@@ -1071,6 +1076,9 @@ end
 ---★ 池满 → **整波不生**；波中间生不出来 → 丢掉这一波剩下的（照抄原作）。
 local function spawn_pattern(x, y, d)
     if pool_used() >= EX.POOL_MAX then return end
+    if bit_hit(d.flags or 0,K_SPAWN_SND) then
+        OriginalStageVisual.presentation.sound.play(8,d.spawnSound or 0,x)
+    end
     local aim = aim_at_player(x, y)
     local m = d.aimMode
     local count1 = d.count1 or 1
@@ -1115,7 +1123,7 @@ local function spawn_pattern(x, y, d)
                 end
             end
             spawn_one(d.recs, x, y, add_norm(angle), speed, d.btype, d.color,
-                    d.flags, d.start)
+                    d.flags, d.start, d.transformSound)
         end
     end
 end
@@ -1160,6 +1168,8 @@ function EX.shoot(who, x, y, a)
         speed1 = a.speed1, speed2 = a.speed2, angle = a.angle,
         angleStep = a.step, flags = a.flags, start = a.start,
         recs = copy_records(who),
+        spawnSound=a.spawnSound or who.th08_spawn_sound or 7,
+        transformSound=a.transformSound or who.th08_transform_sound or 25,
     })
 end
 end
@@ -48577,7 +48587,7 @@ unit = class.th08_combat.unit({
     ---所以出屏 / 卡结束走的 RawDel 不掉道具（与原作一致）。
     kill = function(self)
         if self.drop_tbl then item.Dropitem_PFP(self.x, self.y, self.drop_tbl) end
-        PlaySound('enep00', 0.3, self.x / 200, true)
+        OriginalStageVisual.presentation.sound.play(8,2,self.x)
     end,
 })
 
@@ -49647,7 +49657,7 @@ unit = class.th08_combat.unit({
     kill = function(self)
         if self.drop_tbl then item.Dropitem_PFP(self.x, self.y, self.drop_tbl) end
         if self.drop_counts then item.Dropitem_PFP(self.x, self.y, self.drop_counts) end
-        PlaySound('enep00', 0.3, self.x / 200, true)
+        OriginalStageVisual.presentation.sound.play(8,2,self.x)
     end,
 })
 
@@ -50949,7 +50959,7 @@ unit = class.th08_combat.unit({
     kill = function(self)
         if self.drop_tbl then item.Dropitem_PFP(self.x, self.y, self.drop_tbl) end
         if self.drop_counts then item.Dropitem_PFP(self.x, self.y, self.drop_counts) end
-        PlaySound('enep00', 0.3, self.x / 200, true)
+        OriginalStageVisual.presentation.sound.play(8,2,self.x)
     end,
 })
 
@@ -51795,7 +51805,7 @@ unit = class.th08_combat.unit({
         if self.sub==7 or self.sub==11 then SUPP.v=0 end -- 原作死亡回调Sub0。
         if self.drop_tbl then item.Dropitem_PFP(self.x, self.y, self.drop_tbl) end
         if self.drop_counts then item.Dropitem_PFP(self.x, self.y, self.drop_counts) end
-        PlaySound('enep00', 0.3, self.x / 200, true)
+        OriginalStageVisual.presentation.sound.play(8,2,self.x)
     end,
 })
 
@@ -53213,7 +53223,7 @@ local function make_card(build)
         kill = function(self)
             if self.drop_tbl then item.Dropitem_PFP(self.x, self.y, self.drop_tbl) end
             if self.drop_counts then item.Dropitem_PFP(self.x, self.y, self.drop_counts) end
-            PlaySound('enep00', 0.3, self.x / 200, true)
+            OriginalStageVisual.presentation.sound.play(8,2,self.x)
         end,
     })
 
@@ -54210,7 +54220,7 @@ local function make_card(build)
         kill = function(self)
             if self.drop_tbl then item.Dropitem_PFP(self.x, self.y, self.drop_tbl) end
             if self.drop_counts then item.Dropitem_PFP(self.x, self.y, self.drop_counts) end
-            PlaySound('enep00', 0.3, self.x / 200, true)
+            OriginalStageVisual.presentation.sound.play(8,2,self.x)
         end,
     })
 
@@ -55338,7 +55348,7 @@ local function make_card(build)
             end
             if self.drop_tbl then item.Dropitem_PFP(self.x, self.y, self.drop_tbl) end
             if self.drop_counts then item.Dropitem_PFP(self.x, self.y, self.drop_counts) end
-            PlaySound('enep00', 0.3, self.x / 200, true)
+            OriginalStageVisual.presentation.sound.play(8,2,self.x)
         end,
     })
 

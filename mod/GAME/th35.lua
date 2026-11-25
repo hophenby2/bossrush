@@ -93,6 +93,7 @@ OriginalBalance=OriginalBalance or dofile('mod/GAME/original/low_speed_hp.lua')
 _editor_class["TH35"] = {}
 local class = _editor_class["TH35"]
 local flow=dofile('mod/GAME/original/stage_flow.lua')
+function class.t10_sound(id,x) OriginalStageVisual.presentation.sound.play(10,id,x) end
 
 local RAD = 180 / math.pi           -- 弧度 → 角度（引擎的 rot / SetV 是角度制）
 local PI = math.pi
@@ -461,7 +462,7 @@ local TK_SKIP    = 0x80000000
 local TK_BOUNCE_ALL = 0x400
 local TK_BOUNCE_NB  = 0x800          -- 除下边界都反弹
 local TK_BOUNCE_VAR = 0x8000000
----其余 kind（2/4/8/0x400000/0x2000000/0x20000…）
+---其余 kind（2/4/8/0x400000/0x2000000…）
 ---在复原源码的 switch 里落到 default（空操作），本文件按空操作处理。
 
 ---子弹 transform 程序最多 18 条（BulletTransform.cpp:44 `transformIndex >= 18`）
@@ -498,11 +499,13 @@ local function t10_tp_advance(b)
             b.af.decel = true
             b.st.decel = { t = 0 }
         elseif k == TK_VECTOR then
+            if b.ti>1 and (b.transformSound or 24)>=0 then class.t10_sound(b.transformSound or 24,0) end
             b.af.vec = true
             local a = (r.f1 <= -990) and b.angle or ((r.f1 < 990) and r.f1 or t10_aim(b.px, b.py))
             b.st.vec = { t = 0, i0 = r.i0, v0 = r.f0,
                          vx = math.cos(a) * r.f0, vy = math.sin(a) * r.f0 }
         elseif k == TK_POLAR then
+            if b.ti>1 and (b.transformSound or 24)>=0 then class.t10_sound(b.transformSound or 24,0) end
             b.af.polar = true
             b.st.polar = { t = 0, i0 = r.i0, v0 = r.f0, v1 = r.f1 }
         elseif k == TK_REL or k == TK_AIMED or k == TK_ABS then
@@ -531,6 +534,8 @@ local function t10_tp_advance(b)
         elseif k == TK_WAIT then
             b.af.wait = true
             b.st.wait = { t = r.i0 }
+        elseif k == 0x20000 then
+            class.t10_sound(r.i0,b.px)
         elseif k == TK_DESPAWN then
             b.dead = true
         elseif k == TK_STATE8 then
@@ -597,6 +602,7 @@ local function t10_tp_tick(b)
         local mode = b.af.dir
         local spd
         if s.t >= s.i0 then
+            if (b.transformSound or 24)>=0 then class.t10_sound(b.transformSound or 24,0) end
             s.i2 = s.i2 + 1
             if s.i2 >= s.i1 then b.af.dir = nil end
             if mode == TK_REL then
@@ -728,7 +734,7 @@ local function pat_new()
         angle = 0, astep = 0, s1 = 1, s2 = 1,
         c1 = 1, c2 = 1, aim = 0,
         -- EnemyEclDispatcher::etNew：+0x4c0写0x203；+0x2dc的0x40000000是速度2.0。
-        tf = 0x203, ox = 0, oy = 0,
+        tf = 0x203, ox = 0, oy = 0, spawnSound=7, transformSound=24,
         ex = {},
     }
 end
@@ -751,6 +757,7 @@ local function et_copy(e, dst, src)
     d.s1, d.s2 = s.s1, s.s2
     d.c1, d.c2, d.aim = s.c1, s.c2, s.aim
     d.tf, d.ox, d.oy = s.tf, s.ox, s.oy
+    d.spawnSound,d.transformSound=s.spawnSound,s.transformSound
     d.ex = {}
     for i, r in pairs(s.ex) do
         d.ex[i] = { a = r.a, k = r.k, i0 = r.i0, i1 = r.i1, f0 = r.f0, f1 = r.f1 }
@@ -831,7 +838,7 @@ local function t10_spawn_one(p, sx, sy, i1, i2, a2p)
         px = sx, py = sy, angle = angle, speed = speed,
         vx = math.cos(angle) * speed, vy = math.sin(angle) * speed,
         tp = tp, ti = 0, af = {}, st = {}, cull = 10, cancel = 0,
-        eb = b, type=p.type,
+        eb = b, type=p.type, transformSound=p.transformSound or 24,
         spawn=math.floor((p.tf or 0)/2)%2==1 and 8 or (math.floor((p.tf or 0)/4)%2==1 and 15 or (math.floor((p.tf or 0)/8)%2==1 and 25 or 0)),
     }
     b.t10_color = t10_color(p.color, p.type)
@@ -854,6 +861,7 @@ local function et_on(e, slot)
     local p = e.pat[slot]
     local sx, sy = e.ecs.wx + p.ox, e.ecs.wy + p.oy
     if not class.t10_can_fire(e, sx, sy) then return end
+    if math.floor((p.tf or 0)/512)%2==1 then class.t10_sound(p.spawnSound or 7,sx) end
     local a2p = t10_aim(sx, sy)
     for i2 = 0, p.c2 - 1 do
         for i1 = 0, p.c1 - 1 do
@@ -885,6 +893,7 @@ local function fire_slot(o, slot)
     local p = o.pat[slot or 0]
     local sx, sy = o.ecs.wx + p.ox, o.ecs.wy + p.oy
     if not class.t10_can_fire(o, sx, sy) then return end
+    if math.floor((p.tf or 0)/512)%2==1 then class.t10_sound(p.spawnSound or 7,sx) end
     local a2p = t10_aim(sx, sy)
     for i2 = 0, p.c2 - 1 do
         for i1 = 0, p.c1 - 1 do

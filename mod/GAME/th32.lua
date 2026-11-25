@@ -246,7 +246,7 @@ local function shoot(owner, mode, sprite, c, n, layers, v1, v2, a, step, flags, 
         end
         if full then break end
     end
-    if band(flags or 0, 512) ~= 0 then PlaySound("tan00", .1, x / 256, false) end
+    if band(flags or 0, 512) ~= 0 then OriginalStageVisual.presentation.sound.play(6,owner.th06_actor and owner.th06_actor.sound or 7,x) end
 end
 
 local function move_to(b, x, y, frames)
@@ -315,7 +315,7 @@ local function bat_wings(b)
     state.timer=t+1
 end
 local function charge(b)
-    PlaySound("tan00",.1,b.x/256,false) -- 原作106号指令的蓄力提示沿用现有音效接口。
+    OriginalStageVisual.presentation.sound.play(6,5,b.x) -- 原作106号指令的蓄力提示使用本作SoundIdx。
     for _=1,16 do
         particles(b,17,6,0xff8080ff)
         task.Wait(4)
@@ -544,7 +544,7 @@ local function scarlet_shot(b, a)
     scarlet_fan(b, a, PI / 20, 5, 4, 3, 6, 1, 2)
     scarlet_fan(b, a, PI / 8, 10, 3, 2, 1, 2, 0)
     scarlet_fan(b, a, PI / 4, 5, 2, 1, 1, 2, 0)
-    PlaySound("tan00", .1, b.x / 256, false)
+    OriginalStageVisual.presentation.sound.play(6,7,b.x)
 end
 local function aimed_shot(b)
     scarlet_shot(b, atan2(-(player.y - b.y), player.x - b.x))
@@ -709,7 +709,8 @@ function H.pattern(b,mode,sprite,c,n,l,v1,v2,angle,step,flags)
     if not a.muted then H.fire(b) end
 end
 function H.set_sound(b,id)
-    local a=b.th06_actor;a.sound=id
+    local a=b.th06_actor
+    if id>=0 then a.sound=id end
     if a.pattern then
         if id>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512)
         else a.pattern.flags=bit.band(a.pattern.flags,bit.bnot(512)) end
@@ -1215,7 +1216,7 @@ function H.extra(b,v,id,arg,repeated)
                 local py=y-(sin(a1)*(1-u)+sin(a2)*u)*v.f3
                 p.v1=speed+ran:Float(0,p.v2);H.fire(b,px,py);p.v1=speed;p.angle=p.angle-PI/6*q
             end
-            PlaySound("tan00",.1,b.x/256,false)
+            OriginalStageVisual.presentation.sound.play(6,7,b.x)
         end
         v.i2=v.i2+1
     elseif id==3 then
@@ -1251,7 +1252,7 @@ function H.extra(b,v,id,arg,repeated)
                 mx,my=mx*cos(-PI/18)+my*sin(-PI/18),-mx*sin(-PI/18)+my*cos(-PI/18)
                 H.fire(b,b.x+bx+mx,b.y-by-my,p)
             end
-            PlaySound("tan00",.1,b.x/256,false)
+            OriginalStageVisual.presentation.sound.play(6,7,b.x)
         end
         v.i2=v.i2+1
     elseif id==6 then

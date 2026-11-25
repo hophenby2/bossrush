@@ -1,0 +1,74 @@
+{
+  "samples": [
+    {
+      "playing": {
+        "th3x.original.8.7": "playing"
+      },
+      "sounds": {
+        "th3x.original.8.7": 43
+      },
+      "card": 3436
+    },
+    {
+      "playing": {
+        "th3x.original.6.7": "playing",
+        "th3x.original.6.5": "playing"
+      },
+      "sounds": {
+        "th3x.original.6.7": 12,
+        "th3x.original.6.5": 3
+      },
+      "card": 3802
+    },
+    {
+      "playing": {
+        "th3x.original.95.45": "playing",
+        "th3x.original.95.16": "playing",
+        "th3x.original.95.24": "playing"
+      },
+      "sounds": {
+        "th3x.original.95.45": 2,
+        "th3x.original.95.16": 21,
+        "th3x.original.95.24": 3
+      },
+      "card": 523
+    },
+    {
+      "playing": {
+        "th3x.original.7.7": "playing"
+      },
+      "sounds": {
+        "th3x.original.7.7": 103
+      },
+      "card": 3405
+    },
+    {
+      "playing": {
+        "th3x.original.10.16": "playing",
+        "th3x.original.10.7": "playing"
+      },
+      "sounds": {
+        "th3x.original.10.16": 6,
+        "th3x.original.10.7": 297
+      },
+      "card": 3632
+    }
+  ],
+  "passed": true,
+  "platform": "macOS / Apple M4 Max / Metal / LuaJIT",
+  "frames_per_practice": 660,
+  "data_dir": "/var/folders/58/k0cfn6vj2wxd99n6twn9639w0000gn/T/bossrush-original-sounds-8sjs13bv",
+  "limits": [
+    "安卓未连接设备；原生播放状态为Mac实测。",
+    "五张卡覆盖五作入口及跨练习资源切换，不代表穷尽所有卡的音效分支。"
+  ],
+  "source_sha256": {
+    "THlib/anm/original_sounds.lua": "7c932782f97f14df8461c2b80b369698b29ec8abbd91e7bb64b7000e70423c48",
+    "THlib/anm/th10_sounds.lua": "e92b241d2c6e65734840d9a0c83cacb4c38a5b54eef9cdc0112172d25b156950",
+    "mod/GAME/th31.lua": "2ae7b9e033e3a7153e52d5b94e4b96c210c469512b02ed66e5bf0c30cc77f65f",
+    "mod/GAME/th32.lua": "344f0255663557b455156c72061d8efefc0f060857736a1b4dff7dfae53be131",
+    "mod/GAME/th33.lua": "2c91fd77a21ea13babfca4d9c446ba932f81bc9cb98dd72d1b23aa7698e381db",
+    "mod/GAME/th34.lua": "7b3d5767d623c9da108ac9fc8b88a081e1ed90531348f469add187e21339dfdd",
+    "mod/GAME/th35.lua": "327af56adbe07ccbd16b2f5b1d2bee85ab05e33a677a656c0dd71c0c96cfc215"
+  }
+}

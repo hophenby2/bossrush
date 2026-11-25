@@ -951,6 +951,29 @@ function R.backgroundEffect(id,x,y,seed,textureHeights,resources,previewPlayer)
     reset(c)
     return c
 end
+-- 发射器步进没有帧内闭包，使背景和战斗共用的热循环能够稳定编译。
+local function stepEmitter(c,o,ot,bound)
+    o.active=ot>=1 and ot<=o.life
+    if not o.active then return end
+    if o.kind~='rebound' then o.time=ot end
+    o.status,o.statusFrame=c.status,c.statusFrame
+    local mx,my=motion(o,false);o.x,o.y=o.x+mx,o.y+my
+    if o.fx then o.fx=o.fx+mx end;if o.fy then o.fy=o.fy+my end
+    o.bound_source=bound
+    if o.kind~='rebound' and o.Parentevents then o.Parentevents(o,ot,R) end
+    interpolate(o)
+    if o.kind=='batch' or o.kind=='laser' then
+        if o.t>0 and ot%o.t+trunc(rnd(o.rand.t or 0,o))==0 then
+            if bound then emit(o,bound)
+            elseif o.bindid and o.bindid>=0 and (o.kind~='batch' or o.bindid~=o.id) then
+                for _,pair in ipairs(bindingTargets(o)) do
+                    if targetable(c,pair) then emit(o,pair[2]) end
+                end
+            else emit(o) end
+        end
+    else field(o,c,ot) end
+end
+
 function R.tick(c)
     if c.closed then return end
     local reserved=#stateReserve
@@ -977,27 +1000,6 @@ function R.tick(c)
         c.offsetx,c.offsety=center.ox-center.fx,center.oy-center.fy
     else c.offsetx,c.offsety=0,0 end
     c.targets=bindingTargets
-    local function step(o,ot,bound)
-        o.active=ot>=1 and ot<=o.life
-        if not o.active then return end
-        if o.kind~='rebound' then o.time=ot end
-        o.status,o.statusFrame=c.status,c.statusFrame
-        local mx,my=motion(o,false);o.x,o.y=o.x+mx,o.y+my
-        if o.fx then o.fx=o.fx+mx end;if o.fy then o.fy=o.fy+my end
-        o.bound_source=bound
-        if o.kind~='rebound' and o.Parentevents then o.Parentevents(o,ot,R) end
-        interpolate(o)
-        if o.kind=='batch' or o.kind=='laser' then
-            if o.t>0 and ot%o.t+trunc(rnd(o.rand.t or 0,o))==0 then
-                if bound then emit(o,bound)
-                elseif o.bindid and o.bindid>=0 and (o.kind~='batch' or o.bindid~=o.id) then
-                    for _,pair in ipairs(bindingTargets(o)) do
-                        if targetable(c,pair) then emit(o,pair[2]) end
-                    end
-                else emit(o) end
-            end
-        else field(o,c,ot) end
-    end
     for _,o in ipairs(c.emitters) do
         if o.Deepbind and o.bindid and o.bindid>=0 and (o.kind~='batch' or o.bindid~=o.id) then
             for _,pair in ipairs(bindingTargets(o)) do if targetable(c,pair) then
@@ -1009,10 +1011,10 @@ function R.tick(c)
                     child.localTime=child.localTime+1
                     child.x,child.y=pair[2].fx-c.offsetx,pair[2].fy-c.offsety
                     child.fx,child.fy=child.x,child.y
-                    step(child,child.localTime-(child.begin or 1)+1,pair[2])
+                    stepEmitter(c,child,child.localTime-(child.begin or 1)+1,pair[2])
                 end
             end end
-        else step(o,t-(o.begin or 1)+1) end
+        else stepEmitter(c,o,t-(o.begin or 1)+1) end
     end
     -- 原作预置 BarragePool。这里分帧补充尚未使用的新状态，绝不复用仍可能被绑定引用的旧弹体。
     -- 集中生成帧只消耗储备，不在同帧补分配；储备不足仍按原规则完整发弹。
@@ -1093,8 +1095,11 @@ local function visualOrder(a,b)
     return a.serial<b.serial
 end
 local backgroundWhite={255,255,255,1}
-local function backgroundVisible(p,x,y,rot,hs,vs,w,scale)
-    local ca,sa=cos(rot),sin(rot)
+local function backgroundVisible(s,p,x,y,rot,hs,vs,w,scale)
+    local ca,sa=s.clipCos,s.clipSin
+    if s.clipRotation~=rot then
+        ca,sa=cos(rot),sin(rot);s.clipRotation,s.clipCos,s.clipSin=rot,ca,sa
+    end
     hs,vs=hs*scale,vs*scale
     local ox,oy=(p[3]/2-p[5])*hs,(p[6]-p[4]/2)*vs
     local cx,cy=x+ox*ca-oy*sa,y+ox*sa+oy*ca
@@ -1105,9 +1110,41 @@ function R.drawBackground(c,opacity,dx,dy)
     local list=c.drawList
     -- 运动与透明度不改变这里的排序键，只在成员或排序键变化时重排。
     if c.drawDirty~=false or c.drawOrder~=c.pattern.order then
-        for i,s in ipairs(c.particles) do list[i]=s end
-        for i=#list,#c.particles+1,-1 do list[i]=nil end
-        table.sort(list,visualOrder);c.drawDirty=false;c.drawOrder=c.pattern.order
+        -- particles 的加入和压实始终保持 serial 递增。按 layer/Blend 分桶后顺序拼接，
+        -- 等价于 visualOrder，避免每次出生/死亡都对全部粒子做 Lua 比较排序。
+        local buckets=c.drawBuckets
+        if not buckets then buckets={};c.drawBuckets=buckets end
+        local keys=c.drawKeys
+        if not keys then keys={};c.drawKeys=keys end
+        for _,id in ipairs(keys) do
+            local bucket=buckets[id]
+            for blend=1,2 do
+                local items=bucket[blend]
+                for i=#items,1,-1 do items[i]=nil end
+            end
+        end
+        for _,particle in ipairs(c.particles) do
+            local id=particle.layerid
+            local bucket=buckets[id]
+            if not bucket then
+                bucket={{},{}};buckets[id]=bucket;keys[#keys+1]=id
+                table.sort(keys)
+            end
+            local items=bucket[particle.Blend and 2 or 1]
+            items[#items+1]=particle
+        end
+        local count=0
+        for _,id in ipairs(keys) do
+            local bucket=buckets[id]
+            for blend=1,2 do
+                local items=bucket[blend]
+                local first,last,step=1,#items,1
+                if c.pattern.order==1 then first,last,step=#items,1,-1 end
+                for i=first,last,step do count=count+1;list[count]=items[i] end
+            end
+        end
+        for i=#list,count+1,-1 do list[i]=nil end
+        c.drawDirty=false;c.drawOrder=c.pattern.order
     end
     local function project(x,y)
         local px,py=projectBullet(x,y)
@@ -1139,7 +1176,7 @@ function R.drawBackground(c,opacity,dx,dy)
             local layerMasks=masks[s.layerid]
             local scale=layerMasks and #layerMasks>0 and 1 or imageScale
             -- 只裁去整个图像都在视口外的提交，保留对象更新和遮罩事件。
-            if not p or backgroundVisible(p,x,y,rot,hs,vs,world,scale) then
+            if not p or backgroundVisible(s,p,x,y,rot,hs,vs,world,scale) then
                 if not born then img,tex,u,v,shape=texture(s) end
                 local blend=s.Blend and 'mul+add' or ''
                 if tex and layerMasks and #layerMasks>0 then

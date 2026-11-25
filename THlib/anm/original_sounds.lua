@@ -5,6 +5,16 @@ for game,sounds in pairs(dofile('mod/GAME/original/death_sounds.lua')) do
     entries[game]=entries[game] or {}
     for id,entry in pairs(sounds) do entries[game][id]=entry end
 end
+function S.prepare(game,id)
+    local entry=entries[game] and entries[game][id]
+    if not entry then return end
+    local key='th3x.original.'..game..'.'..id
+    if not CheckRes('snd',key) then
+        local pool=GetResourceStatus();SetResourceStatus('global')
+        LoadSound(key,entry[1]);SetResourceStatus(pool)
+    end
+    return key,entry
+end
 function S.play(game,id,x)
     local entry=entries[game] and entries[game][id]
     if not entry then return end
@@ -14,7 +24,18 @@ function S.play(game,id,x)
     local key='th3x.original.'..game..'.'..id
     if S.played[key] then return end
     S.played[key]=true
-    if not CheckRes('snd',key) then LoadSound(key,entry[1]) end
-    PlaySound(key,10^(entry[2]/2000),math.max(-1,math.min(1,(x or 0)/192)))
+    S.prepare(game,id)
+    -- 此处已经是线性音量和[-1,1]声像；全局 PlaySound 会再次把声像除以1024。
+    lstg.PlaySound(key,10^(entry[2]/2000),math.max(-1,math.min(1,(x or 0)/192)))
+end
+-- 与公共弹图一起放入启动加载队列，避免首次发弹时才同步解码波形。
+if LoadRes then
+    for _,game in ipairs({6,7,8,95,10}) do
+        local ids={};for id in pairs(entries[game]) do ids[#ids+1]=id end;table.sort(ids)
+        for _,id in ipairs(ids) do
+            local g,n=game,id
+            LoadRes[#LoadRes+1]=function() S.prepare(g,n) end
+        end
+    end
 end
 return S

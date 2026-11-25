@@ -10054,7 +10054,7 @@ local function TH34_add_stage56_boss()
             local home, away = side*128, -side*128
             local function move(t,e,x,y) bmove(o,t,e,x,224-y) end
             local function beam(a,len,dur,color)
-                PlaySound("lazer00",0.13,o.x/256)
+                OriginalStageVisual.presentation.sound.play(7,13,o.x)
                 return plaser(o.x,o.y,-a,{sprite=1,spr=1,color=color or 6,w=16,sOff=16,eOff=len,
                     sLen=len,tStart=phase=="final" and 120 or 30,dur=dur,tEnd=16,hbStart=16,hbEnd=16,flags=4})
             end
@@ -10188,7 +10188,7 @@ local function TH34_add_stage56_boss()
                 spr = 1, color=mirror and 4 or 2, flags=4, w = 32, sOff = 24, eOff = 540, sLen = 540,
                 tStart = 120, dur = 270 + 10 * k, tEnd = 30, hbStart = 100, hbEnd = 20 })
         end
-        PlaySound("lazer00", 0.13, self.x / 256)      -- 原作 sub48/sub49 的 PLAY_SOUND 13
+        OriginalStageVisual.presentation.sound.play(7,13,self.x)      -- 原作 sub48/sub49 的 PLAY_SOUND 13
         task.New(self, function()
             for _ = 1, 120 do task.Wait(1) end         -- sub48/49 的 t=0..119
             for j = 0, 299 do                          -- t=120 起 300 轮 SET_LASER_ANGLE
@@ -13281,7 +13281,7 @@ local function TH34_add_stage56_boss()
                 if t==120 then
                     for _,p in ipairs(o.players) do p._box=box5(32,48,352,128) end
                     for role=1,3 do NativeVisual.instrument_signal(o.owner,role,'wander') end
-                    PlaySound('power0',0.35,o.owner.x/256)
+                    OriginalStageVisual.presentation.sound.play(7,5,o.owner.x)
                 elseif t==166 then V.main_script(o.owner,7,'stg4enm',129)
                 elseif t==354 then
                     V.main_script(o.players[2],7,'stg4enm',135)
@@ -14065,7 +14065,7 @@ local function TH34_add_stage56_boss()
             self._box = box5(32,48,352,128)
             while true do
                 ---①sub25：SUB_CALL 2（120 帧）＋ 4 组环 ＋ SUB_RET 前的 60 帧
-                PlaySound("power0", 0.35, self.x / 256)
+                OriginalStageVisual.presentation.sound.play(7,5,self.x)
                 task.Wait(120)
                 ---★★★ 原作 sub25 的每一「组」都是 **E/N/H/L 四行**（同一 t=0、只差
                 ---skipInstrOnDifficulty：索引 6/7/8/9、13/14/15/16、20/21/22/23、27/28/29/30）。
@@ -14096,7 +14096,7 @@ local function TH34_add_stage56_boss()
                 bmove(self, 60, 4, 64, 64)
                 task.Wait(110)
                 ---③MOVE 之后紧接着 sub21（SUB_CALL 2 的 120 帧 ＋ 61 帧）
-                PlaySound("power0", 0.35, self.x / 256)
+                OriginalStageVisual.presentation.sound.play(7,5,self.x)
                 task.Wait(120)
                 ---★ sub21 前两圈 flags=3（0x03 含 T1）⇒ 挂 `INIT_BULLET_CMD 0 1 0 -1 -1 -1 -1`
                 ---（爆速段）。后四圈 flags=0/2 不含 T1 ⇒ 不挂。
@@ -14122,7 +14122,7 @@ local function TH34_add_stage56_boss()
                 end
                 task.Wait(3)
                 ---⑤sub24（SUB_CALL 2 的 120 帧 ＋ 60 帧）
-                PlaySound("power0", 0.35, self.x / 256)
+                OriginalStageVisual.presentation.sound.play(7,5,self.x)
                 task.Wait(120)
                 ---★ sub24 前两圈 flags=5=0x05（含 T1、不含其它命令位）⇒ 挂爆速段
                 ---`INIT_BULLET_CMD 0 1 0 -1 -1 -1 -1`（前 17 帧 speed = 5 − t·5/16 + 自身速率）。
@@ -14160,7 +14160,7 @@ local function TH34_add_stage56_boss()
             local OFF = { 0, 0.261799, 0.523599, -0.785398, -0.523599, -0.261799 }
             task.Wait(120)                                   -- t=120 → t=240
             while true do
-                PlaySound("power0", 0.35, self.x / 256)       -- SUB_CALL 2（gI0=20 ⇒ 80 帧）
+                OriginalStageVisual.presentation.sound.play(7,5,self.x)       -- SUB_CALL 2（gI0=20 ⇒ 80 帧）
                 task.Wait(80)
                 local a = aimth(self)
                 for k = 1, 6 do
@@ -14263,7 +14263,7 @@ local function TH34_add_stage56_boss()
         end
         ---原作 sub33：SUB_CALL 2（120 帧）＋ 60 拍、每 2 帧放一个雪点。
         local function sub33(g)
-            PlaySound("power0", 0.35, self.x / 256)
+            OriginalStageVisual.presentation.sound.play(7,5,self.x)
             task.Wait(120)
             local step = g / 30
             local a0 = aimth(self) + g
@@ -14434,7 +14434,7 @@ local function TH34_add_stage56_boss()
             ---t=480 的 SUB_CALL 2 才在墙钟 120 起步 ⇒ 桩件里先补这 120 帧序奏。
             task.Wait(120)
             while true do
-                PlaySound("power0", 0.35, self.x / 256)     -- 480: SUB_CALL 2（120 帧）
+                OriginalStageVisual.presentation.sound.play(7,5,self.x)     -- 480: SUB_CALL 2（120 帧）
                 task.Wait(120)
                 task.Wait(30)                              -- → 510
                 ice(ran:Float(0, 0.392699) + 1.1781, 0.0349066)
@@ -14450,7 +14450,7 @@ local function TH34_add_stage56_boss()
                 drift(self, 0.7, 60)                       -- 680
                 task.Wait(60)                              -- → 740
                 drift(self, 0.7, 60)                       -- 740
-                PlaySound("power0", 0.35, self.x / 256)     -- 740: SUB_CALL 2（120 帧）
+                OriginalStageVisual.presentation.sound.play(7,5,self.x)     -- 740: SUB_CALL 2（120 帧）
                 task.Wait(120)
                 task.Wait(30)                              -- → 770
                 ice(1.9635 - ran:Float(0, 0.392699), -0.0349066)
@@ -14513,7 +14513,7 @@ local function TH34_add_stage56_boss()
         end
         ---原作 sub33：SUB_CALL 2（120 帧）＋ 60 拍、每 2 帧一个雪点。
         local function sub33(g)
-            PlaySound("power0", 0.35, self.x / 256)
+            OriginalStageVisual.presentation.sound.play(7,5,self.x)
             task.Wait(120)
             local step = g / 30
             local a0 = aimth(self) + g
@@ -14584,7 +14584,7 @@ local function TH34_add_stage56_boss()
         end
         ---原作 sub40：SUB_CALL 2（120 帧）后放 3 个冰桌，再漂 90 帧 ×0.6（t=240 返回）。
         local function sub40(g0, g1, g2)
-            PlaySound("power0", 0.35, self.x / 256)
+            OriginalStageVisual.presentation.sound.play(7,5,self.x)
             task.Wait(120)
             local cx, cy = self.x, self.y
             for k = 0, 2 do
@@ -14687,10 +14687,10 @@ local function TH34_add_stage56_boss()
             end
             local function wave(w, f3, n, charge)
                 if charge then
-                    PlaySound("power0", 0.35, self.x / 256)
+                    OriginalStageVisual.presentation.sound.play(7,5,self.x)
                     task.Wait(48)
                 end
-                PlaySound("lazer00", 0.13, self.x / 256)
+                OriginalStageVisual.presentation.sound.play(7,13,self.x)
                 local ww = w
                 for _ = 1, n do
                     ripple(self.x, self.y, PI / 2, ww, 0.8)
@@ -14791,10 +14791,10 @@ local function TH34_add_stage56_boss()
             ---原作 sub56：一次 SUB_CALL 56。
             local function wave(w, f3, n, charge)
                 if charge then
-                    PlaySound("power0", 0.35, self.x / 256)
+                    OriginalStageVisual.presentation.sound.play(7,5,self.x)
                     task.Wait(48)
                 end
-                PlaySound("lazer00", 0.13, self.x / 256)
+                OriginalStageVisual.presentation.sound.play(7,13,self.x)
                 local ww = w
                 for _ = 1, n do
                     gear(self.x, self.y, -PI / 2, ww, 0.5)
@@ -14933,7 +14933,7 @@ local function TH34_add_stage56_boss()
                 task.Wait(40)
                 ---SUB_CALL 42：先 SUB_CALL 2（gi0=10 / gi1=3 ⇒ 每 4 帧一发粒子、共 10 发
                 ---+ PLAY_SOUND 5，冻结 40 帧），返回后再每 6 帧一只凤凰火（共 8 只）。
-                PlaySound("power0", 0.35, self.x / 256)
+                OriginalStageVisual.presentation.sound.play(7,5,self.x)
                 task.Wait(40)
                 for k = 1, 8 do
                     head(k % 2 == 1)                     -- 34(大,sub28) / 35(小,sub29)
@@ -15012,7 +15012,7 @@ local function TH34_add_stage56_boss()
             ---紧接 t=240 的 SUB_CALL 2（gi0=30 / gi1=4 ⇒ 30×4 帧粒子 + PLAY_SOUND 5）
             ---再冻 120 帧；JUMP 的落点（t=240 的 SPAWN_ENEMY_REL 32）才从 f=240 起算。
             task.Wait(120)
-            PlaySound("power0", 0.35, self.x / 256)
+            OriginalStageVisual.presentation.sound.play(7,5,self.x)
             task.Wait(120)
             while true do
                 ---相对循环起点的出生时刻：0/60/70/190/200/280/380/400（一次 420 帧）
@@ -15021,14 +15021,14 @@ local function TH34_add_stage56_boss()
                 head(false)
                 task.Wait(10)
                 head(true)                   -- t=310 的发（在原作排在 SUB_CALL 2 之前）
-                PlaySound("power0", 0.35, self.x / 256)   -- 原作 t=310 SUB_CALL 2（gi0=10 ⇒ 40 帧）
+                OriginalStageVisual.presentation.sound.play(7,5,self.x)   -- 原作 t=310 SUB_CALL 2（gi0=10 ⇒ 40 帧）
                 task.Wait(120)               -- 含 SUB_CALL 2 的 40 帧
                 head(false)
                 task.Wait(10)
                 head(true)
                 task.Wait(80)
                 head(false)                  -- t=480 的发（同样排在 SUB_CALL 2 之前）
-                PlaySound("power0", 0.35, self.x / 256)   -- 原作 t=480 SUB_CALL 2（gi0=10 ⇒ 40 帧）
+                OriginalStageVisual.presentation.sound.play(7,5,self.x)   -- 原作 t=480 SUB_CALL 2（gi0=10 ⇒ 40 帧）
                 task.Wait(100)               -- 含 SUB_CALL 2 的 40 帧
                 head(true)
                 task.Wait(20)
@@ -15062,7 +15062,7 @@ local function TH34_add_stage56_boss()
             ---原作 sub51 的一整段（含 80 帧粒子），共 164 帧。
             ---开头 `SUB_CALL 2`（gi0=20 / gi1=1 ⇒ 20 发粒子、冻结 80 帧 + PLAY_SOUND 5）。
             local function rings()
-                PlaySound("power0", 0.35, self.x / 256)
+                OriginalStageVisual.presentation.sound.play(7,5,self.x)
                 task.Wait(80)
                 local function C40(th, sp)
                     return { type = 0x40, flag = 0, dur = 120, loop = 1,
@@ -15197,13 +15197,13 @@ local function TH34_add_stage56_boss()
                     sub57(A[k], v0, G[i])
                 end
                 bmove(self,50,4,0,96)
-                if charge then PlaySound("power0",.35,self.x/256) end
+                if charge then OriginalStageVisual.presentation.sound.play(7,5,self.x) end
                 task.Wait(50)
             end
             ---原作 SUB_CALL 2（sub56 里 gi0=30 / gi1=4）：音效 + 每 4 帧一发粒子、
             ---共 30 发，把调用方冻结 30×4 = 120 帧（本文件统一按 PlaySound + 等 120 帧建模）。
             local function sub2()
-                PlaySound("power0", 0.35, self.x / 256)
+                OriginalStageVisual.presentation.sound.play(7,5,self.x)
                 task.Wait(120)
             end
             task.Wait(120)              -- 原作 t=0..120 的 MOVE_POS_TIME 120（enter1b 同帧）
@@ -15214,7 +15214,7 @@ local function TH34_add_stage56_boss()
                 sub2()                  -- 原作 f=340 SUB_CALL 2
                 chen_trail(self)
                 pass({4,3,2,1,5},1.8,true)
-                PlaySound("power0", 0.35, self.x / 256)
+                OriginalStageVisual.presentation.sound.play(7,5,self.x)
                                         -- ↑ 原作 t=390 的第三次 SUB_CALL 2（gi0=10 / gi1=8 ⇒ 40 帧）
                 task.Wait(80)           -- 原作 t=400..480（RUN_EX_INS / JUMP 回 t=240）
             end
@@ -15329,7 +15329,7 @@ local function TH34_add_stage56_boss()
             end
             ---原作 SUB_CALL 2（sub58 的 gi0=30 ⇒ 冻结 120 帧：音效 + 粒子）。
             local function sub2()
-                PlaySound("power0", 0.35, self.x / 256)
+                OriginalStageVisual.presentation.sound.play(7,5,self.x)
                 task.Wait(120)
             end
             task.Wait(120)              -- 原作 t=0..120 的 MOVE_POS_TIME 120（enter1b 同帧）
@@ -15492,7 +15492,7 @@ local function TH34_add_stage56_boss()
             ---原作 SUB_CALL 2（sub64 的 gi0=30 ⇒ 冻结 120 帧：音效 + 粒子）。
             ---它是**循环头**（JUMP 落点是 SET_INT *gi0 30），所以每个周期都要走一遍。
             local function sub2()
-                PlaySound("power0", 0.35, self.x / 256)
+                OriginalStageVisual.presentation.sound.play(7,5,self.x)
                 task.Wait(120)
             end
             ---jump(sx,sy)：SET_POS 到绝对点。
@@ -15611,7 +15611,7 @@ local function TH34_add_stage56_boss()
             ---原作 SUB_CALL 2（sub66 的 gi0=30 ⇒ 冻结 120 帧：音效 + 粒子）。
             ---它是**循环头**（JUMP 落点是 SET_INT *gi0 30），每个周期都要走一遍。
             local function sub2()
-                PlaySound("power0", 0.35, self.x / 256)
+                OriginalStageVisual.presentation.sound.play(7,5,self.x)
                 task.Wait(120)
             end
             ---原作 moveAngle（10045）：上一帧移动处理后的方向（我们的口径）。
@@ -15992,9 +15992,9 @@ local function TH34_add_stage56_boss()
             end
             ---原作 sub49：一次 SUB_CALL 49（120 帧冻结后放 n 朵花，朝向整圈均分）。
             local function wave(th0, av, v, n)
-                PlaySound("power0", 0.35, self.x / 256)
+                OriginalStageVisual.presentation.sound.play(7,5,self.x)
                 task.Wait(120)
-                PlaySound("lazer00", 0.13, self.x / 256)
+                OriginalStageVisual.presentation.sound.play(7,13,self.x)
                 local d = 2 * PI / n
                 for k = 0, n - 1 do
                     flower(self.x, self.y, th0 + k * d, av, v)
@@ -16326,19 +16326,19 @@ local function TH34_add_stage56_boss()
         end
         task.New(self, function()
             task.Wait(120)                              -- 原作 t=120 的 MOVE_POS_TIME + 开卡
-            PlaySound("power0", 0.35, self.x / 256)     -- 原作 t=240 SUB_CALL 2（gI0=30）
+            OriginalStageVisual.presentation.sound.play(7,5,self.x)     -- 原作 t=240 SUB_CALL 2（gI0=30）
             task.Wait(120)                              -- SUB_CALL 2：30 次 × 4 帧
             while true do
                 firebird(burst30); task.Wait(10)        -- t=240 → 250
                 firebird(burst31); task.Wait(10)        -- t=250 → 260
                 firebird(burst30)
-                PlaySound("power0", 0.35, self.x / 256) -- t=260 SUB_CALL 2（gI0=10）
+                OriginalStageVisual.presentation.sound.play(7,5,self.x) -- t=260 SUB_CALL 2（gI0=10）
                 task.Wait(40)                           -- SUB_CALL 2：10 次 × 4 帧
                 task.Wait(40)                           -- t=260 → 300
                 firebird(burst31); task.Wait(10)        -- t=300 → 310
                 firebird(burst30); task.Wait(10)        -- t=310 → 320
                 firebird(burst31)
-                PlaySound("power0", 0.35, self.x / 256) -- t=320 SUB_CALL 2（gI0=10）
+                OriginalStageVisual.presentation.sound.play(7,5,self.x) -- t=320 SUB_CALL 2（gI0=10）
                 task.Wait(40)                           -- SUB_CALL 2：10 次 × 4 帧
                 task.Wait(30)                           -- t=320 → 350
                 firebird(burst30); task.Wait(10)        -- t=350 → 360

@@ -1467,7 +1467,7 @@ do  -- 71 幽雅「死出の誘蛾灯」（ecl17_a，幽幽子，组 1a 第 1 �
             if b then b.ring_spin = spin end
         end
         -- transformFlags 的 0x200 = PLAY_SPAWN_SOUND：一整圈只响一声（BulletManager.cpp:717-723）。
-        PlaySound("tan00", 0.1, owner.x / 256, false)
+        OriginalStageVisual.presentation.sound.play(95,7,owner.x)
     end
 
     ---主弹幕（Sub4 = ins_117(0,4) 的**子 ECL 上下文**，不是子敌机）：一条上下文、一轮两组。
@@ -1506,7 +1506,7 @@ do  -- 71 幽雅「死出の誘蛾灯」（ecl17_a，幽幽子，组 1a 第 1 �
                     SpawnPhoto(514,AIM_STYLE, AIM_COLOR, owner.x, owner.y, AIM_SPEED,
                             -i * 360 / AIM_COUNT, true, 0, false)
                 end
-                PlaySound("tan00", 0.1, owner.x / 256, false)
+                OriginalStageVisual.presentation.sound.play(95,7,owner.x)
                 task.Wait(max(AIM_GAP_MIN,
                         AIM_GAP_BASE - AIM_GAP_STEP * photo_index(AIM_LIMIT)))
             end
@@ -1531,7 +1531,7 @@ do  -- 71 幽雅「死出の誘蛾灯」（ecl17_a，幽幽子，组 1a 第 1 �
             task.MoveTo(0, BOSS_HOME_Y, ENTRY_TIME, EASE_OUT)
             ---到这里是原作第 130 帧（Sub2 的 ins_52(3) 调用 Sub3），
             ---而 Sub3 的 t=0 同时起主弹幕上下文并响一声（ins_106(5)）。
-            PlaySound("tan00", 0.1, self.x / 256, false)
+            OriginalStageVisual.presentation.sound.play(95,7,self.x)
             ring_begin(self)
             ---Sub3 的 t=600（第 730 帧）：亮卡名 → 起自机狙大圈 + 放出蛾。
             ---（我们这边卡名由符卡系统在开场就亮，所以这里只做后两件。）
@@ -1764,7 +1764,7 @@ do  -- 73 蝶符「鳳蝶紋の死槍」（ecl17_b，幽幽子，组 1a 第 2 �
             local speed=ran:Float(VOLLEY_SPEED2,VOLLEY_SPEED1)
             SpawnPhoto(512,VOLLEY_STYLE, ex_color(color, 1), x, y,speed,angle,false,0,false)
         end
-        PlaySound("tan00", 0.1, x / 256, false)
+        OriginalStageVisual.presentation.sound.play(95,7,x)
     end
 
 ---蝶形子机（Sub5 的本体）。自己做自己的回收：起飞后活 DRONE_LIFE 帧就淡出，
@@ -1856,9 +1856,10 @@ do  -- 73 蝶符「鳳蝶紋の死槍」（ecl17_b，幽幽子，组 1a 第 2 �
     ---和「死符」那一张的 Sub4/Sub5 是同一份装饰 —— sprite 拿不到 ⇒ 按文件头差异 1)
     ---交给符卡背景，这里不实现（它也不发弹）。
     local function run_sub9(owner)
-        PlaySound("tan00", 0.1, owner.x / 256, false)   -- ins_106
+        OriginalStageVisual.presentation.sound.play(95,15,owner.x)  -- Sub9 的第一条 ins_106(15)
         clear_screen()                                  -- ins_102
         clear_drones()                                  -- ins_85
+        OriginalStageVisual.presentation.sound.play(95,5,owner.x) -- Sub9 的第二条 ins_106(5)
         for _ = 1, SUB9_FILE_DELAY do                   -- Sub9 的 +60（@Sub9_124 之前）
             if st.dead then return end
             task.Wait(1)
@@ -1926,7 +1927,7 @@ do  -- 73 蝶符「鳳蝶紋の死槍」（ecl17_b，幽幽子，组 1a 第 2 �
             if not tok.alive or st.dead then return end
             ---到这里是原作第 130 帧：Sub2 的 ins_52(3) 调 Sub3，
             ---而 Sub3 的 t=0 就是 ins_106(5)（一个定位置的音效）。
-            PlaySound("tan00", 0.1, self.x / 256, false)
+            OriginalStageVisual.presentation.sound.play(95,7,self.x)
             while tok.alive and not st.dead do
                 for _, w in ipairs(WAVES) do
                     if not step(w.delay) then return end
@@ -2039,7 +2040,7 @@ do  -- 75 死符「酔人の生、死の夢幻」（ecl17_c，幽幽子，组 1a
         end
         -- flags 的 0x200 = PLAY_SPAWN_SOUND：整圈只响一声（BulletManager.cpp:717-723），
         -- 与逐发的出场音不同。
-        PlaySound("tan00", 0.1, x / 256, false)
+        OriginalStageVisual.presentation.sound.play(95,7,x)
     end
 
     ---一条发弹上下文（Sub7 或 Sub8）：先等自己的相位，然后每 28 帧一圈。
@@ -2069,7 +2070,7 @@ do  -- 75 死符「酔人の生、死の夢幻」（ecl17_c，幽幽子，组 1a
             task.MoveTo(0, BOSS_HOME_Y, ENTRY_TIME, EASE_OUT)
             ---到这里是原作第 130 帧：Sub2 在 t=130 CALL Sub3，而 Sub3 的 t=0 同时
             ---起两股整圈弹、开扫动循环、响一声（ins_106(5)，一个定位置的音效）。
-            PlaySound("tan00", 0.1, self.x / 256, false)
+            OriginalStageVisual.presentation.sound.play(95,7,self.x)
             ring_stream(self, RING_PHASE, RING_STYLE_A, RING_COLOR_A)
             ring_stream(self, 0, RING_STYLE_B, RING_COLOR_B)
             while true do
@@ -2247,7 +2248,7 @@ do  -- 77 「死蝶浮月」（ecl17_d，幽幽子，组 1a 第 4 张）
             if b then b.spin,b.sg_tag=spin,1 end
         end
         -- flags 的 0x200 = PLAY_SPAWN_SOUND：整圈只响一声（BulletManager.cpp:717-723）。
-        PlaySound("tan00", 0.1, x / 256, false)
+        OriginalStageVisual.presentation.sound.play(95,7,x)
     end
 
 ---一股双色环（Sub5）：每 RING_PERIOD 帧两圈（相隔 RING_PHASE 帧），两圈反向自转。
@@ -2278,7 +2279,7 @@ do  -- 77 「死蝶浮月」（ecl17_d，幽幽子，组 1a 第 4 张）
             SpawnPhoto(514,TICK_STYLE, TICK_COLOR, owner.x, owner.y, TICK_SPEED,
                     base - i * 360 / TICK_COUNT, false, 0, false)
         end
-        PlaySound("tan00", 0.1, owner.x / 256, false)
+        OriginalStageVisual.presentation.sound.play(95,7,owner.x)
     end
 
     ---一根扇激光（原作 ins_153，PhotoEffect.cpp 的 PhotoRotatingLaserView）。
@@ -2356,7 +2357,7 @@ do  -- 77 「死蝶浮月」（ecl17_d，幽幽子，组 1a 第 4 张）
             task.MoveTo(0, BOSS_HOME_Y, ENTRY_TIME, EASE_OUT)
             ---到这里是原作第 130 帧：Sub2 的 t=130 同时 ins_52(3)（Sub3 本体脚本，含
             ---ins_83(4) 放 4 只死蝶）和 Sub4（扫动 + Sub5 的双色环）。
-            PlaySound("tan00", 0.1, self.x / 256, false)
+            OriginalStageVisual.presentation.sound.play(95,7,self.x)
             moths[#moths+1]=New(class.dead_moth,self)
             ---Sub3 的 t=320（第 450 帧）：起 Sub6，第一轮 48 根激光扇。
             ---（Sub6 的 t=0 就摆好 ins_153、开始 120 帧前摇 ⇒ 「起扇」就是这一帧。）
@@ -2510,7 +2511,7 @@ do  -- 72 密符「御大師様の秘鍵」（ecl16_b，八云蓝，组 2a 第 1
                     KEY_AIM0 + off, false, 0, false)
         end
         -- flags 的 0x200 = PLAY_SPAWN_SOUND：一次只响一声（BulletManager.cpp:717-723）。
-        PlaySound("tan00", 0.1, key.x / 256, false)
+        OriginalStageVisual.presentation.sound.play(95,7,key.x)
     end
 
     -- Sub7每次DEC_JUMP都把time重设为10，最后一轮在t12退出；
@@ -2634,7 +2635,7 @@ do  -- 72 密符「御大師様の秘鍵」（ecl16_b，八云蓝，组 2a 第 1
             task.MoveTo(0, BOSS_HOME_Y, ENTRY_TIME, EASE_OUT)
             ---到这里是原作第 130 帧：Sub2 的 t=130 是 ins_104（亮卡名）+ ins_52(3)
             ---（Sub3 = 起点两个子上下文、每 60 帧一次挪位）。
-            PlaySound("tan00", 0.1, self.x / 256, false)
+            OriginalStageVisual.presentation.sound.play(95,7,self.x)
             aim_stream(self)
             key_stream(self)
             scoot(self)
@@ -2768,7 +2769,7 @@ do  -- 74 行符「八千万枚護摩」（ecl16_c，八云蓝，组 2a 第 2 �
                     fan_angle(base, i, FAN_COUNT, FAN_STEP), false, 0, false)
         end
         -- flags 的 0x200 = PLAY_SPAWN_SOUND：整扇只响一声（BulletManager.cpp:717-723）。
-        PlaySound("tan00", 0.1, x / 256, false)
+        OriginalStageVisual.presentation.sound.play(95,7,x)
     end
 
     ---一小圈（Sub6）：圈数 = 1 + photoIndex/3，相位每圈重抽（原作 angle = rand(-π,π)）。
@@ -2834,7 +2835,7 @@ do  -- 74 行符「八千万枚護摩」（ecl16_c，八云蓝，组 2a 第 2 �
             task.Wait(ENTRY_WAIT)
             task.MoveTo(0, BOSS_HOME_Y, ENTRY_TIME, EASE_OUT)
             ---到这里是原作第 130 帧：Sub2 的 t=130 是 ins_104（亮卡名）+ ins_52(3)。
-            PlaySound("tan00", 0.1, self.x / 256, false)
+            OriginalStageVisual.presentation.sound.play(95,7,self.x)
             fan_stream(self)
             ring_stream(self)
         end)
@@ -2998,7 +2999,7 @@ do  -- 76 超人「飛翔役小角」（ecl16_d，八云蓝，组 2a 第 3 张�
                     speed=photo_index(PHOTO_LIMIT)*DIVE_SPEED_MUL
                     accel=DIVE_ACCEL
                     cloud_stream(owner)
-                    PlaySound("tan00",0.1,owner.x/256,false)
+                    OriginalStageVisual.presentation.sound.play(95,7,owner.x)
                 end
                 -- ECL检查/传送之后UpdateMovement同帧加速并积分。
                 speed=speed+accel
@@ -3019,7 +3020,7 @@ do  -- 76 超人「飛翔役小角」（ecl16_d，八云蓝，组 2a 第 3 张�
             task.Wait(ENTRY_WAIT)
             task.MoveTo(BOSS_HOME_X, BOSS_HOME_Y, ENTRY_TIME, EASE_OUT)
             ---到这里是原作第 130 帧：Sub2 的 t=130 是 ins_104（亮卡名）+ ins_52(3)。
-            PlaySound("tan00", 0.1, self.x / 256, false)
+            OriginalStageVisual.presentation.sound.play(95,7,self.x)
             flight(self)
         end)
     end
@@ -3194,7 +3195,7 @@ do  -- 100 禁忌「フォービドゥンフルーツ」（ecl22_a，芙兰，�
         end
         if not repeat_corners then fire_ring(owner.x,owner.y,color,body_count,BODY_SPEED) end
         -- flags 的 0x200 = PLAY_SPAWN_SOUND：整波只响一声。
-        PlaySound("tan00", 0.1, owner.x / 256, false)
+        OriginalStageVisual.presentation.sound.play(95,7,owner.x)
     end
 
     ---一个发弹上下文（= Sub6 / Sub7）：立刻一轮，然后 t=60 / t=120 各再看一次
@@ -3335,7 +3336,7 @@ do  -- 101 禁忌「禁じられた遊び」（ecl22_b，芙兰，组 3a 第 2 �
             end
         end
         ex_ring(BIG_STYLE, BIG_COLOR, owner.x, owner.y, BIG_COUNT, BIG_SPEED, -ring_base)
-        PlaySound("tan00", 0.1, owner.x / 256, false)
+        OriginalStageVisual.presentation.sound.play(95,7,owner.x)
     end
 
     ---第 4 波额外的 8 根：漂移 = 朝自机 0.5 px/帧（ins_38(playerAngle, 0.5)）。
@@ -3560,7 +3561,7 @@ do  -- 102 境符「色と空の境界」（ecl23_a，紫，组 4a 第 1 张）
                         fv0 = fv0 + math.rad(FAN_STEP)
                     end
                     fv1 = fv1 + math.rad(random and -FAN_STEP1 or FAN_STEP1)
-                    PlaySound("tan00", 0.1, owner.x / 256, false)
+                    OriginalStageVisual.presentation.sound.play(95,7,owner.x)
                     task.Wait(FAN_INTERVAL)
                 end
             end)
@@ -3595,7 +3596,7 @@ do  -- 102 境符「色と空の境界」（ecl23_a，紫，组 4a 第 1 张）
                 task.Wait(120)
                 local toks = start_fan_children(self, false)
                 task.Wait(110)
-                PlaySound("tan00", 0.1, self.x / 256, false)
+                OriginalStageVisual.presentation.sound.play(95,7,self.x)
                 task.Wait(50)
                 stop_children(toks)
                 task.Wait(60)
@@ -3606,7 +3607,7 @@ do  -- 102 境符「色と空の境界」（ecl23_a，紫，组 4a 第 1 张）
                 task.Wait(120)
                 toks = start_fan_children(self, true)
                 task.Wait(110)
-                PlaySound("tan00", 0.1, self.x / 256, false)
+                OriginalStageVisual.presentation.sound.play(95,7,self.x)
                 task.Wait(50)
                 stop_children(toks)
                 task.Wait(60)
@@ -3684,7 +3685,7 @@ do  -- 103 境符「波と粒の境界」（ecl23_b，紫，组 4a 第 2 张）
                     SpawnPhoto(514,RING_STYLE, RING_COLOR, owner.x, owner.y,
                             speed, -math.deg(a), false, 0, false)
                 end
-                PlaySound("tan00", 0.1, owner.x / 256, false)
+                OriginalStageVisual.presentation.sound.play(95,7,owner.x)
                 fv0 = (fv0+fv1+math.pi)%(2*math.pi)-math.pi
                 fv1 = (fv1+ACCEL+math.pi)%(2*math.pi)-math.pi
                 task.Wait(1)
@@ -3853,7 +3854,7 @@ do  -- 104 貴人「サンジェルマンの忠告」（ecl24_a，妹红，组 5
             task.Wait(ENTRY_WAIT)
             task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
             ---Sub2 的 t=130：亮卡名 + 起 Sub3。
-            PlaySound("tan00", 0.1, self.x / 256, false)
+            OriginalStageVisual.presentation.sound.play(95,7,self.x)
             main_script(self)
         end)
     end
@@ -3963,7 +3964,7 @@ do  -- 105 蓬莱「瑞江浦嶋子と五色の瑞亀」（ecl24_b，妹红，�
                     fire_sub5(ox + 32 * cx, oy + 32 * cy, pa, pi)
                     fire_sub5(ox + 72 * cx, oy + 72 * cy, pa, pi)
                 end
-                PlaySound("tan00", 0.1, owner.x / 256, false)
+                OriginalStageVisual.presentation.sound.play(95,7,owner.x)
                 owner.y=field_y(math.max(BOX_LO,math.min(BOX_HI,field_y(owner.y)+DISPLACE)))
                 task.Wait(30)
             end
@@ -4006,7 +4007,7 @@ do  -- 105 蓬莱「瑞江浦嶋子と五色の瑞亀」（ecl24_b，妹红，�
             task.Wait(ENTRY_WAIT)
             task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
             ---Sub2 的 t=130：亮卡名 + 起 Sub3。
-            PlaySound("tan00", 0.1, self.x / 256, false)
+            OriginalStageVisual.presentation.sound.play(95,7,self.x)
             main_script(self)
         end)
     end
@@ -4107,7 +4108,7 @@ do  -- 106 鬼気「濛々迷霧」（ecl25_a，萃香，组 6a 第 1 张）
                             base - i * 360 / BIG_COUNT, false, 0, false,
                             nil, nil, nil, big_accel_frame)
                 end
-                PlaySound("tan00", 0.1, owner.x / 256, false)
+                OriginalStageVisual.presentation.sound.play(95,7,owner.x)
                 task.Wait(BIG_GAP)
             end
         end)
@@ -4164,7 +4165,7 @@ do  -- 106 鬼気「濛々迷霧」（ecl25_a，萃香，组 6a 第 1 张）
             task.Wait(ENTRY_WAIT)
             task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
             ---Sub2 的 t=130：亮卡名 + 起 Sub3。
-            PlaySound("tan00", 0.1, self.x / 256, false)
+            OriginalStageVisual.presentation.sound.play(95,7,self.x)
             main_script(self)
         end)
     end
@@ -4287,7 +4288,7 @@ do  -- 107 「百万鬼夜行」（ecl25_b，萃香，组 6a 第 2 张）
                         SpawnPhoto(514,style, color, owner.x, owner.y, speed,
                                 base - ph - i * RING_STEP, false, 0, false)
                     end
-                    PlaySound("tan00", 0.1, owner.x / 256, false)
+                    OriginalStageVisual.presentation.sound.play(95,7,owner.x)
                 end
                 task.Wait(gap)
             end
@@ -4339,7 +4340,7 @@ do  -- 107 「百万鬼夜行」（ecl25_b，萃香，组 6a 第 2 张）
             task.Wait(ENTRY_WAIT)
             task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
             ---Sub2 的 t=130：亮卡名 + 起 Sub3。
-            PlaySound("tan00", 0.1, self.x / 256, false)
+            OriginalStageVisual.presentation.sound.play(95,7,self.x)
             main_script(self)
         end)
     end
@@ -4398,7 +4399,7 @@ end
 ---flags 的 0x200 = PLAY_SPAWN_SOUND：整条 ins_86..94 响一次（BulletManager.cpp:717-723）。
 local function sg_snd(x, flags)
     if flags and math.floor(flags / 0x200) % 2 == 1 then
-        PlaySound("tan00", 0.1, x / 256, false)
+        OriginalStageVisual.presentation.sound.play(95,7,x)
     end
 end
 
@@ -4856,7 +4857,7 @@ do  -- 91 嘘言「タン・オブ・ウルフ」（ecl21_a，映姬，组 8a �
             end
             while live() do
                 drop_gun()
-                PlaySound('tan00',0.1,owner.x/256,false)
+                OriginalStageVisual.presentation.sound.play(95,7,owner.x)
                 if not wait(60) then return end
                 gun={alive=true};sub4(owner,gun)
                 if not wait(60) then return end
@@ -5038,7 +5039,7 @@ do  -- 92 死歌「八重霧の渡し」（ecl20_b，小町，组 7a 第 2 张�
             task.Wait(ENTRY_WAIT)
             task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
             ---Sub3 的 t=0。
-            PlaySound("tan00", 0.1, self.x / 256, false)
+            OriginalStageVisual.presentation.sound.play(95,7,self.x)
             local tok = { alive = true }                -- slot0/slot2 共用一个取消开关
             sub4(self, tok)
             sub5(self, tok)
@@ -5289,7 +5290,7 @@ do  -- 93 審判「十王裁判」（ecl21_b，映姬，组 8a 第 2 张）
             end
             if not live() then return end
             if reset then sg_clear(lasers);if not wait(30) then return end end
-            PlaySound('tan00',0.1,owner.x/256,false)
+            OriginalStageVisual.presentation.sound.play(95,7,owner.x)
             while live() do
                 local ta,tb={alive=true},{alive=true}
                 active_guns={ta,tb};a(owner,ta);b(owner,tb)
@@ -5513,7 +5514,7 @@ do  -- 94 古雨「黄泉中有の旅の雨」（ecl20_c，小町，组 7a 第 3
             task.Wait(ENTRY_WAIT)
             task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
             ---Sub3 的 t=0。
-            PlaySound("tan00", 0.1, self.x / 256, false)
+            OriginalStageVisual.presentation.sound.play(95,7,self.x)
             local tok = { alive = true }
             sub4(self, tok)
             sub5(self, tok)
@@ -5761,7 +5762,7 @@ do  -- 96 死価「プライス・オブ・ライフ」（ecl20_d，小町，组
                 local color = (base0 > 0) and 2 or 1
                 SpawnPhoto(33298,sg_visual(square,23), ex_color(color, 23), sx, sy, BULLET_SPEED0,
                         -base, false, 0, false, nil, nil, nil, accel_hook)
-                PlaySound("tan00", 0.1, sx / 256, false)     -- flags 的 0x200
+                OriginalStageVisual.presentation.sound.play(95,7,sx)     -- flags 的 0x200
                 if photo_index(PHOTO_LIMIT)>=BIG_AT then
                     if n>=BIG_EVERY then
                         local a0=ran:Float(-math.pi,math.pi)
@@ -5769,7 +5770,7 @@ do  -- 96 死価「プライス・オブ・ライフ」（ecl20_d，小町，组
                             SpawnPhoto(514,sg_visual(square,23),ex_color(1,23),sx,sy,BIG_SPEED,
                                 -math.deg(a0+i*math.pi/5),false,0,false)
                         end
-                        PlaySound('tan00',.1,sx/256,false)
+                        OriginalStageVisual.presentation.sound.play(95,7,sx)
                         n=0
                     end
                     n=n+1
@@ -5794,7 +5795,7 @@ do  -- 96 死価「プライス・オブ・ライフ」（ecl20_d，小町，组
                                 BOUNCE_SPEED, -math.deg(a0 + i * math.pi / 8),
                                 false, 0, false) -- 原作flags514未开启反弹记录
                     end
-                    PlaySound("tan00", 0.1, owner.x / 256, false)
+                    OriginalStageVisual.presentation.sound.play(95,7,owner.x)
                 end
                 task.Wait(BOUNCE_PERIOD)
             end
@@ -5995,7 +5996,7 @@ do  -- 97 審判「浄頗梨審判　-射命丸文-」（ecl21_d，映姬，组 
                             SUB4_BACK_SPEED, -(a0 + i * (360 / SUB4_BACK_COUNT)),
                             false, 0, false, nil, nil, nil, chdir_hook(f0))
                 end
-                PlaySound("tan00", 0.1, owner.x / 256, false)   -- flags 642 的 0x200
+                OriginalStageVisual.presentation.sound.play(95,7,owner.x)   -- flags 642 的 0x200
                 task.Wait(SUB4_GAP)
             end
         end)
@@ -6033,7 +6034,7 @@ do  -- 97 審判「浄頗梨審判　-射命丸文-」（ecl21_d，映姬，组 
                 v0 = v0 + ran:Float(0, 1) * v1
                 if v0 > SWEEP_MAX then v1 = -SWEEP_DELTA end
                 if v0 < SWEEP_MIN then v1 = SWEEP_DELTA end
-                PlaySound("tan00", 0.1, owner.x / 256, false)   -- ins_106(15)
+                OriginalStageVisual.presentation.sound.play(95,15,owner.x)   -- ins_106(15)
                 burst(owner, SPRAY_A[1], SPRAY_A[2])
                 if not glide(owner, g, -192, field_y(v0), SWEEP_SPEED_FRAMES) then return end
                 task.Wait(10)                                   -- t=60 → t=100
@@ -6042,7 +6043,7 @@ do  -- 97 審判「浄頗梨審判　-射命丸文-」（ecl21_d，映姬，组 
                 v0 = v0 + ran:Float(0, 1) * v1
                 if v0 > SWEEP_MAX then v1 = -SWEEP_DELTA end
                 if v0 < SWEEP_MIN then v1 = SWEEP_DELTA end
-                PlaySound("tan00", 0.1, owner.x / 256, false)
+                OriginalStageVisual.presentation.sound.play(95,7,owner.x)
                 burst(owner, SPRAY_B[1], SPRAY_B[2])
                 if not glide(owner, g, 192, field_y(v0), SWEEP_SPEED_FRAMES) then return end
                 task.Wait(10)
@@ -6068,7 +6069,7 @@ do  -- 97 審判「浄頗梨審判　-射命丸文-」（ecl21_d，映姬，组 
                 if not alive(g) then return end
                 task.Wait(60)                               -- t=210 → t=270
                 if not alive(g) then return end
-                PlaySound("tan00", 0.1, owner.x / 256, false)   -- ins_106(15)
+                OriginalStageVisual.presentation.sound.play(95,15,owner.x)   -- ins_106(15)
                 glide(owner, g, player.x, player.y, DASH_FRAMES)     -- t=270 → t=310
             end
         end)
@@ -6100,7 +6101,7 @@ do  -- 97 審判「浄頗梨審判　-射命丸文-」（ecl21_d，映姬，组 
             for _ = 1, 3 do                                 -- t=340 / 380 / 420
                 if not alive(g) then return end
                 sg_move(owner, st, player.x, player.y, DASH_FRAMES, sg_ease(EASE_INOUT))
-                PlaySound("tan00", 0.1, owner.x / 256, false)   -- ins_106(15)
+                OriginalStageVisual.presentation.sound.play(95,15,owner.x)   -- ins_106(15)
                 sg_shot(88, sg_style(7), 6, owner.x, owner.y,
                         RUSH_COUNT, 1, RUSH_SPEED, 1, 0, 0, true, 514)
                 task.Wait(DASH_FRAMES)
@@ -6116,14 +6117,14 @@ do  -- 97 審判「浄頗梨審判　-射命丸文-」（ecl21_d，映姬，组 
             for _ = 1, 3 do                                 -- t=670 / 710 / 750
                 if not alive(g) then return end
                 sg_move(owner, st, player.x, player.y, DASH_FRAMES, sg_ease(EASE_INOUT))
-                PlaySound("tan00", 0.1, owner.x / 256, false)
+                OriginalStageVisual.presentation.sound.play(95,7,owner.x)
                 sg_shot(86, sg_style(7), 6, owner.x, owner.y,
                         FAN_GROUP, 8, FAN_SPEED1, FAN_SPEED2, 0, FAN_STEP_DEG, true, 514)
                 task.Wait(DASH_FRAMES)
             end
             if not alive(g) then return end
             sg_move(owner, st, 0, field_y(144), DASH_FRAMES, sg_ease(EASE_INOUT))  -- t=790
-            PlaySound("tan00", 0.1, owner.x / 256, false)
+            OriginalStageVisual.presentation.sound.play(95,7,owner.x)
             task.Wait(DASH_FRAMES)                          -- → t=830
             task.Wait(2)                                    -- → t=832，回 t=90
         end
@@ -6589,7 +6590,7 @@ do  -- 80 永琳 非符（ecl18_a，永琳，组 9a 第 1 张）
             task.Wait(ENTRY_WAIT)
             task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
             ---到这里是原作第 130 帧：Sub3 的 t=0 是 ins_106(5)（定位置的音效）。
-            PlaySound("tan00", 0.1, self.x / 256, false)
+            OriginalStageVisual.presentation.sound.play(95,7,self.x)
             task.Wait(START_AT)
             run_sub4(self)
         end)
@@ -6694,7 +6695,7 @@ do  -- 81 新難題「月のイルメナイト」（ecl19_a，辉夜，组 10a �
             task.Wait(ENTRY_WAIT)
             task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
             ---到这里是原作第 130 帧：亮卡名 + Sub3 的 t=0（ins_106(5) 音效 + 起 Sub4）。
-            PlaySound("tan00", 0.1, self.x / 256, false)
+            OriginalStageVisual.presentation.sound.play(95,7,self.x)
             run_sub4(self)
             while not st.dead do
                 ---Sub3 的 t=120 / t=240 循环：每 120 帧一次 60 px 的「远离自机」游走。
@@ -6814,7 +6815,7 @@ do  -- 82 薬符「胡蝶夢丸ナイトメア」（ecl18_b，永琳，组 9a �
                     local sx, sy = self.x + m * cos(oa), self.y + m * sin(oa)
                     SpawnPhoto(536,sg_visual(ellipse, 3), ex_color(color, 3), sx, sy, EMIT_SPEED,
                             sg_deg(ran:Float(-math.pi, math.pi)), false, 0, false)
-                    PlaySound("tan00", 0.1, sx / 256, false)   -- flags 536 的 0x200
+                    OriginalStageVisual.presentation.sound.play(95,7,sx)   -- flags 536 的 0x200
                     task.Wait(gap)
                 end
                 object.RawDel(self)
@@ -6874,7 +6875,7 @@ do  -- 82 薬符「胡蝶夢丸ナイトメア」（ecl18_b，永琳，组 9a �
             task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
             ---到这里是原作第 130 帧：亮卡名 + Sub3 的 t=0（ins_106(5)）。
             while not st.dead do
-                PlaySound("tan00", 0.1, self.x / 256, false)
+                OriginalStageVisual.presentation.sound.play(95,7,self.x)
                 task.Wait(BURST_AT)
                 if st.dead then return end
                 run_burst(self)
@@ -6991,7 +6992,7 @@ do  -- 83 新難題「エイジャの赤石」（ecl19_b，辉夜，组 10a 第 
                     sg_shot(86, sg_style(17), BIG_COLOR, owner.x, owner.y,
                             b[1], 1, b[2], 1.5, 0, b[3], true, 514)
                 end
-                PlaySound("tan00", 0.1, owner.x / 256, false)   -- t=64 的 ins_106(16)
+                OriginalStageVisual.presentation.sound.play(95,16,owner.x)   -- t=64 的 ins_106(16)
                 task.Wait(SUB4_CYCLE - SUB4_FIRE)
             end
         end)
@@ -7005,7 +7006,7 @@ do  -- 83 新難題「エイジャの赤石」（ecl19_b，辉夜，组 10a 第 
                 spawn_ex_laser_straight(owner, lasers, SUB5_INDEX, owner.x, owner.y,
                         -math.deg(ran:Float(-math.pi, math.pi)),
                         SUB5_LEN,SUB5_W,SUB5_SPEED,1,2)
-                PlaySound("tan00", 0.1, owner.x / 256, false)   -- ins_106(24)
+                OriginalStageVisual.presentation.sound.play(95,24,owner.x)   -- ins_106(24)
                 local gap = SUB5_GAP_BASE - SUB5_GAP_STEP * photo_index(PHOTO_LIMIT)
                 if gap < 1 then gap = 1 end
                 task.Wait(gap + SUB5_GAP_EXTRA)
@@ -7027,7 +7028,7 @@ do  -- 83 新難題「エイジャの赤石」（ecl19_b，辉夜，组 10a 第 
             task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
             ---到这里是原作 Sub2 的 t=130 = Sub3 的 t=0：
             ---ins_106(5) 一声 + 起 Sub4 与 5 份 Sub5（每 10 帧一条）。
-            PlaySound("tan00", 0.1, self.x / 256, false)
+            OriginalStageVisual.presentation.sound.play(95,7,self.x)
             run_sub4(self)
             run_sub5(self)
             for _ = 1, SUB5_N - 1 do
@@ -7155,7 +7156,7 @@ do  -- 84 錬丹「水銀の海」（ecl18_c，永琳，组 9a 第 3 张）
             task.Wait(ENTRY_WAIT)
             task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
             ---到这里是原作 Sub2 的 t=130 = Sub3 的 t=0。
-            PlaySound("tan00", 0.1, self.x / 256, false)   -- Sub3 t=0 的 ins_106(5)
+            OriginalStageVisual.presentation.sound.play(95,5,self.x)   -- Sub3 t=0 的 ins_106(5)
             task.Wait(60)
             if st.dead then return end
             run_sub6(self)                                  -- ins_117(0,6)
@@ -7302,7 +7303,7 @@ do  -- 85 新難題「金閣寺の一枚天井」（ecl19_c，辉夜，组 10a �
             task.Wait(ENTRY_WAIT)
             task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
             ---到这里是原作 Sub2 的 t=130 = Sub3 的 t=0。
-            PlaySound("tan00", 0.1, self.x / 256, false)   -- Sub3 t=0 的 ins_106(5)
+            OriginalStageVisual.presentation.sound.play(95,5,self.x)   -- Sub3 t=0 的 ins_106(5)
             task.Wait(60)
             if st.dead then return end
             run_sub4(self)
@@ -7435,7 +7436,7 @@ do  -- 86 秘薬「仙香玉兎」（ecl18_d，永琳，组 9a 第 4 张）
             task.Wait(ENTRY_WAIT)
             task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
             ---到这里是原作 Sub2 的 t=130 = Sub3 的 t=0。
-            PlaySound("tan00", 0.1, self.x / 256, false)   -- Sub3 t=0 的 ins_106(5)
+            OriginalStageVisual.presentation.sound.play(95,5,self.x)   -- Sub3 t=0 的 ins_106(5)
             run_sub4(self)                                  -- ins_117(0,4)
             task.Wait(60)
             if st.dead then return end
@@ -7591,7 +7592,7 @@ do  -- 87 新難題「ミステリウム」（ecl19_d，辉夜，组 10a 第 4 �
             task.Wait(ENTRY_WAIT)
             task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
             ---到这里是原作 Sub2 的 t=130 = Sub3 的 t=0。
-            PlaySound("tan00", 0.1, self.x / 256, false)   -- Sub3 t=0 的 ins_106(5)
+            OriginalStageVisual.presentation.sound.play(95,5,self.x)   -- Sub3 t=0 的 ins_106(5)
             task.Wait(60)
             if st.dead then return end
             run_sub6(self)                                  -- t=60 的 ins_117(0,6)
@@ -13479,6 +13480,7 @@ do  -- 21 上白沢慧音 光符「アマテラス」（ecl5_a，组 21a 第 1 �
         sub4_gen = sub4_gen + 1
         local my = sub4_gen
         task.New(owner, function()
+            OriginalStageVisual.presentation.sound.play(95,24,owner.x)
             local speed = SPEED0
             for _ = 1, ROUNDS0 + photo_index(PHOTO_LIMIT) do
                 if st.dead or my ~= sub4_gen then return end
@@ -13489,7 +13491,7 @@ do  -- 21 上白沢慧音 光符「アマテラス」（ecl5_a，组 21a 第 1 �
                     spawn_ex_laser_straight(owner, lasers, BEAM_COLOR_A, owner.x + ox, owner.y + oy,
                             -math.deg(a),BEAM_LEN,BEAM_WIDTH,speed,1,6)
                 end
-                PlaySound("tan00", 0.1, owner.x / 256, false)   -- ins_106
+                OriginalStageVisual.presentation.sound.play(95,16,owner.x)   -- ins_106
                 task.Wait(PASS_GAP)
                 if st.dead or my ~= sub4_gen then return end
                 base = base + BEAM_STEP2
@@ -13499,7 +13501,7 @@ do  -- 21 上白沢慧音 光符「アマテラス」（ecl5_a，组 21a 第 1 �
                     spawn_ex_laser_straight(owner, lasers, BEAM_COLOR_B, owner.x + ox, owner.y + oy,
                             -math.deg(a),BEAM_LEN,BEAM_WIDTH,speed,1,2)
                 end
-                PlaySound("tan00", 0.1, owner.x / 256, false)
+                OriginalStageVisual.presentation.sound.play(95,16,owner.x)
                 speed = speed + SPEED_STEP
                 task.Wait(CYCLE - PASS_GAP)
             end
@@ -13611,7 +13613,7 @@ do  -- 23 上白沢慧音 包符「昭和の雨」（ecl5_b，组 21a 第 2 张�
                 local th = ran:Float(-math.pi, math.pi)         -- ins_38 的极角
                 local ox, oy = sg_off(r, th)                    -- ins_38
                 local x, y = owner.x + ox, owner.y + oy * 0.5   -- ins_18：exF1 ÷ 2
-                PlaySound("tan00", 0.1, x / 256, false)         -- ins_106(16)
+                OriginalStageVisual.presentation.sound.play(95,16,x)         -- ins_106(16)
                 ---ins_146 的角 = 原始角 0 + 自机角（EclRunTargetPhoto.inl:21-36）。
                 spawn_ex_laser_straight(owner, lasers, RAIN_ROW, x, y,
                         -sg_aim(x,y),RAIN_LEN,RAIN_W,RAIN_SPEED,1,6)
@@ -13758,7 +13760,7 @@ do  -- 25 上白沢慧音 葵符「水戸の光圀」（ecl5_c，组 21a 第 3 �
                     if not IsValid(self) then return end
                     spawn_ex_laser_straight(owner, lasers, ORB_ROW, self.x, self.y, sg_deg(a),
                             ORB_LEN0+ORB_LEN_STEP*photo_index(PHOTO_LIMIT),ORB_W,ORB_SPEED,7,2)
-                    PlaySound("tan00", 0.1, self.x / 256, false)    -- ins_106(7)
+                    OriginalStageVisual.presentation.sound.play(95,7,self.x)    -- ins_106(7)
                     a=a+(dx<0 and ORB_TURN or -ORB_TURN)
                     task.Wait(ORB_FIRE_GAP)
                 end
@@ -13907,7 +13909,7 @@ do  -- 27 上白沢慧音 倭符「邪馬台の国」（ecl5_d，组 21a 第 4 �
     ---Sub4/Sub5：一次 12 根旋转激光（同一帧放完，基准角每根 +30°）。
     local function wheel(owner, th_av)
         local base = -math.pi
-        PlaySound("tan00", 0.1, owner.x / 256, false)       -- ins_106(16)
+        OriginalStageVisual.presentation.sound.play(95,16,owner.x)       -- ins_106(16)
         for _ = 1, WHEEL_N do
             if st.dead then return end
             spawn_ex_laser(owner, lasers, WHEEL_ROW, owner.x, owner.y, sg_deg(base),

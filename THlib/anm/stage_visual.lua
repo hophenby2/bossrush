@@ -6,6 +6,7 @@ local games={ [29]=8,[30]=6,[31]=95,[32]=7,[33]=10 }
 local roles={}
 S.adapters={}
 S.presentation=dofile('THlib/anm/presentation.lua')
+local sourceSound=dofile('THlib/anm/th10_sounds.lua')
 S.death=dofile('THlib/anm/original_death.lua')
 roles[8]={Nightbug={'stg1enm',0,'eff01'},Lorelei={'stg2enm',0,'eff02'},
     Kamishirasawa={'stg3enm',0,'eff03'},Kamishirasawa2={'stg8enm',0,'eff08'},
@@ -419,6 +420,7 @@ function S.bind_source(o,game,key,preserve,events_override)
     if adapter and adapter.bind and adapter.bind(o,key)==false then return false end
     S.death.bind(o,game)
     S.presentation.bind(o,game,key)
+    sourceSound.bind(o,game,key)
     if game==95 then o.layer=LAYER.ENEMY-.1 end
     if not preserve then
         o._original_actor=nil;o._original_no_sprite=true;o._original_hidden=false
@@ -432,6 +434,7 @@ function S.visual_program(game,key)
     return {game=game,key=key,file=key:match('^([^:]+)'),cfg=source_data[game][key],index=1}
 end
 function S.source_frame(o,clock,program)
+    if not program then sourceSound.advance(o,clock,S.presentation.sound.play) end
     if not program and not o.th08_manual_presentation then S.presentation.advance(o,clock) end
     if o._original_presentation_carrier then return end
     if not program and OriginalCollision then OriginalCollision.events(o,clock) end

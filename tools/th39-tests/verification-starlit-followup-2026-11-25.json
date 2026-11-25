@@ -1,0 +1,298 @@
+{
+  "card": 39008,
+  "pattern": "146",
+  "frames": 2700,
+  "platform": "macOS / Apple M4 Max / Metal / LuaJIT",
+  "note": "真实渲染、碰撞和音效；带采样和分项探针。Android无连接设备，未作安卓帧率承诺。",
+  "before": {
+    "cpu_windows_ms": [
+      [
+        43.915,
+        174.793,
+        850.997
+      ],
+      [
+        45.452,
+        168.278,
+        857.436
+      ],
+      [
+        6.782,
+        9.864,
+        15.122
+      ],
+      [
+        9.142,
+        10.14,
+        10.872
+      ],
+      [
+        9.295,
+        10.312,
+        11.032
+      ],
+      [
+        8.091,
+        10.289,
+        12.208
+      ],
+      [
+        11.579,
+        14.238,
+        22.152
+      ],
+      [
+        9.961,
+        11.879,
+        14.343
+      ],
+      [
+        10.132,
+        13.471,
+        18.792
+      ],
+      [
+        13.388,
+        16.714,
+        19.933
+      ],
+      [
+        8.918,
+        10.582,
+        15.591
+      ],
+      [
+        12.18,
+        15.316,
+        21.086
+      ],
+      [
+        11.142,
+        14.381,
+        15.338
+      ]
+    ],
+    "battle_windows": [
+      {
+        "fps": 59.8,
+        "logic_ms": 6.126,
+        "render_ms": 0.6,
+        "submit_ms": 0.088
+      },
+      {
+        "fps": 60.7,
+        "logic_ms": 8.954,
+        "render_ms": 0.154,
+        "submit_ms": 0.029
+      },
+      {
+        "fps": 60.0,
+        "logic_ms": 9.166,
+        "render_ms": 0.11,
+        "submit_ms": 0.026
+      },
+      {
+        "fps": 60.4,
+        "logic_ms": 4.993,
+        "render_ms": 3.07,
+        "submit_ms": 0.069
+      },
+      {
+        "fps": 61.1,
+        "logic_ms": 7.137,
+        "render_ms": 4.416,
+        "submit_ms": 0.101
+      },
+      {
+        "fps": 59.5,
+        "logic_ms": 6.018,
+        "render_ms": 3.913,
+        "submit_ms": 0.079
+      },
+      {
+        "fps": 60.7,
+        "logic_ms": 5.839,
+        "render_ms": 4.263,
+        "submit_ms": 0.09
+      },
+      {
+        "fps": 61.8,
+        "logic_ms": 8.575,
+        "render_ms": 4.788,
+        "submit_ms": 0.11
+      },
+      {
+        "fps": 60.6,
+        "logic_ms": 5.007,
+        "render_ms": 3.882,
+        "submit_ms": 0.086
+      },
+      {
+        "fps": 61.4,
+        "logic_ms": 7.421,
+        "render_ms": 4.731,
+        "submit_ms": 0.11
+      },
+      {
+        "fps": 61.6,
+        "logic_ms": 6.817,
+        "render_ms": 4.295,
+        "submit_ms": 0.1
+      }
+    ],
+    "trace_flushes": 21517,
+    "mcode_failures": 21516,
+    "vm_samples": {
+      "N": 340,
+      "G": 24,
+      "I": 15,
+      "J": 2935,
+      "C": 218
+    },
+    "state_sha256": "e1f125aadfa7a31f15083a31489d233fda00037fba559637db76caca2c6f6ba0",
+    "case_elapsed_s": 58.42778,
+    "peak_objects": 1410,
+    "data_dir": "/var/folders/58/k0cfn6vj2wxd99n6twn9639w0000gn/T/bossrush-starlit-before-fzmct2bv",
+    "average_battle_cpu_ms": 10.055454545454545
+  },
+  "after": {
+    "cpu_windows_ms": [
+      [
+        46.565,
+        128.799,
+        461.952
+      ],
+      [
+        31.778,
+        141.897,
+        395.09
+      ],
+      [
+        4.841,
+        8.463,
+        10.93
+      ],
+      [
+        4.513,
+        5.771,
+        7.195
+      ],
+      [
+        4.793,
+        5.98,
+        8.136
+      ],
+      [
+        3.582,
+        5.515,
+        5.983
+      ],
+      [
+        4.723,
+        6.598,
+        7.254
+      ],
+      [
+        5.493,
+        7.684,
+        10.549
+      ],
+      [
+        3.457,
+        4.877,
+        5.755
+      ],
+      [
+        4.494,
+        6.289,
+        7.209
+      ],
+      [
+        4.283,
+        6.455,
+        8.018
+      ]
+    ],
+    "battle_windows": [
+      {
+        "fps": 60.1,
+        "logic_ms": 4.062,
+        "render_ms": 0.742,
+        "submit_ms": 0.137
+      },
+      {
+        "fps": 60.1,
+        "logic_ms": 2.711,
+        "render_ms": 1.782,
+        "submit_ms": 0.128
+      },
+      {
+        "fps": 48.2,
+        "logic_ms": 2.783,
+        "render_ms": 1.994,
+        "submit_ms": 4.286
+      },
+      {
+        "fps": 47.6,
+        "logic_ms": 2.041,
+        "render_ms": 1.522,
+        "submit_ms": 4.566
+      },
+      {
+        "fps": 60.0,
+        "logic_ms": 2.815,
+        "render_ms": 1.888,
+        "submit_ms": 0.146
+      },
+      {
+        "fps": 48.3,
+        "logic_ms": 3.286,
+        "render_ms": 2.187,
+        "submit_ms": 4.279
+      },
+      {
+        "fps": 60.0,
+        "logic_ms": 1.947,
+        "render_ms": 1.492,
+        "submit_ms": 0.136
+      },
+      {
+        "fps": 60.0,
+        "logic_ms": 2.589,
+        "render_ms": 1.888,
+        "submit_ms": 0.145
+      },
+      {
+        "fps": 60.1,
+        "logic_ms": 2.552,
+        "render_ms": 1.716,
+        "submit_ms": 0.134
+      }
+    ],
+    "trace_flushes": 1,
+    "mcode_failures": 0,
+    "vm_samples": {
+      "C": 404,
+      "N": 763,
+      "G": 11,
+      "I": 103,
+      "J": 83
+    },
+    "state_sha256": "e1f125aadfa7a31f15083a31489d233fda00037fba559637db76caca2c6f6ba0",
+    "case_elapsed_s": 49.788302,
+    "peak_objects": 1410,
+    "data_dir": "/var/folders/58/k0cfn6vj2wxd99n6twn9639w0000gn/T/bossrush-starlit-jit-ee4neee4",
+    "average_battle_cpu_ms": 4.464333333333333
+  },
+  "state_equal": true,
+  "limits": [
+    "Mac原生采样；未连接安卓设备。",
+    "修复后有3个Metal提交阻塞窗口为47.6–48.3FPS，提交均值4.28–4.57ms；不据此承诺所有平台恒定60FPS。",
+    "启动和入场已从CPU均值统计中排除，原始窗口完整保留。"
+  ],
+  "source_sha256": {
+    "android/lua/main.lua": "f9bb628efffb896b4993cd411aeddeffcab0f05297d8fde8fa78bdcde19f7f2e",
+    "mod/GAME/th39/runtime.lua": "3d00f62dc787512af4d661ad70ac1921c543570bf0b2374be405980e29091258",
+    "macos/lua/starlit_perf.lua": "9af629393bd16514bbc4d026ffe5278de46abd7aa40ee3a8724c3384823ecd88"
+  }
+}

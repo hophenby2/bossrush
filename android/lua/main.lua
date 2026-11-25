@@ -9,6 +9,11 @@ __G__TRACKBACK__ = function(message)
 end
 local bootError = __G__TRACKBACK__
 local function bootstrap()
+-- Apple Silicon 的 MAP_JIT 不能依赖不断申请小块机器码页；Android 也使用同一有界缓存。
+-- 在启动脚本产生热 trace 前确定区域大小，避免满一小块就编译失败、全量 flush、再编译。
+if jit and jit.status() then
+    require('jit.opt').start('sizemcode=16384','maxmcode=16384','maxtrace=8000')
+end
 local bootClock = lstg.AndroidClock or os.clock
 local bootStart = bootClock()
 local function startupMark(phase)
