@@ -1,0 +1,69 @@
+{
+  "version": "2026.11.26.1",
+  "修复": {
+    "祈华梦莉莉出场报错": "宿主桥接类不经过作品对象的img包装。染色板从裸名改为ResourceSet.Name(2,...)生成的theis/theis_board_color；不添加全局裸名别名。",
+    "红魔乡缺音效": "导出器把106号EFFECT_SOUND列入忽略项。现输出原始SoundIdx和原始等待顺序，共294个可达子程序中的261处指令。吸血鬼幻想、红色的幻想乡保留协程补上对应的5号蓄力声。",
+    "杀人玩偶转向": "时停用零速度冻结宿主对象，ExInsStage56Func4改向后未更新解除时停的恢复缓存。现更新保存速度并保持冻结用速度为零，不改角度、速度大小或抽样规则。",
+    "空占位候选": "按原始卡类与索引隐藏10张无发弹的退场保护/未完成卡；保留卡号和注册索引，练习和随机池使用已有筛选入口。"
+  },
+  "placeholder_card_ids": [
+    70107,
+    70209,
+    70341,
+    70343,
+    70345,
+    70347,
+    70349,
+    70351,
+    70611,
+    70719
+  ],
+  "来源": [
+    "祈华梦EISlib/stage/stage2/s2_boss_defined.lua:5844 后续卡只有MoveTo，没有发弹。",
+    "祈华梦EISlib/stage/stage3/bossA/bossA_mid.lua、bossB/bossB_mid.lua、bossC/bossC_mid.lua：退场后添加保护非符。",
+    "th06/src/EclManager.cpp:ECL_OPCODE_EFFECT_SOUND直接调用原始SoundIdx。",
+    "th06/src/EnemyEclInstr.cpp:ExInsStage56Func4同时改angle与velocity。",
+    "th06/src/BulletManager.cpp:OnUpdate在isTimeStopped时直接返回，保留原始velocity。"
+  ],
+  "回归": [
+    {
+      "命令": "luajit tools/check_theis_entry.lua",
+      "结果": "通过；严格图片赋值/染色板绘制，10张空卡不进入实际练习/随机筛选，旧编号索引和相邻攻击保留；包含既有三面背景与1920帧核爆协程检查。"
+    },
+    {
+      "命令": "luajit tools/th32-tests/native.lua unit",
+      "结果": "通过；修复前时停改向恢复后vx为+2，预期为-2；修复后通过。覆盖再次时停、加速度缓存、两张保留协程的120帧音效时机及原有弹体几何检查。"
+    },
+    {
+      "命令": "python tools/th32-tests/check_effect_sounds.py <原始th06 ECL目录>",
+      "结果": "通过；294个正式子程序与导出器一致，261处106号指令的原始编号逐项一致。"
+    },
+    {
+      "命令": "python tools/th32-tests/program_conformance.py <原始th06 ECL目录> --card 3957 --frames 900",
+      "结果": "通过；静态程序和原生ECL参照器事件一致。"
+    },
+    {
+      "命令": "python tools/th32-tests/program_conformance.py <原始th06 ECL目录> --frames 600",
+      "结果": "通过；100段带原生元数据的流程，逐帧事件和对象峰值一致。此项不证明全部弹体轨迹或整卡通关。"
+    },
+    {
+      "命令": "luajit tools/th3x-tests/check_original_sounds.lua",
+      "结果": "通过；210个SoundIdx预载，额外覆盖红魔乡全部32个编号/音量/声像，风神录137入口各6000帧。此处播放为接口桩，不代表可听音频实测。"
+    },
+    {
+      "命令": "python tools/th32-tests/expand.py <原始th06 ECL目录> --write --programs-only",
+      "结果": "再次运行字节一致；只再生成子程序，保留校准卡表、素材选择与桥接数据。"
+    }
+  ],
+  "验证限制": [
+    "按用户要求停止安卓模拟器验证，已中断未完成的基线启动并关闭独立实例；不记为通过。",
+    "本次结论来自原作源码、原始ECL及LuaJIT离线检查；未做Android手机或其他平台原生实测。",
+    "夹具卡数从旧的106修正为正式源码的105（91段Boss与14段道中），没有调整正式注册数量。"
+  ],
+  "source_sha256": {
+    "mod/GAME/th32.lua": "4fe9b323fc447591ca3770d955a69b7fc2466887dc8a69488581707aae8c572d",
+    "mod/GAME/th41.lua": "df392fc36c1ac16b670af6b91a30d33503a42e5cee422c4ec9340dcd914412cf",
+    "tools/th32-tests/expand.py": "8b6c81f96b0d828b5f37e1a650ccfe332d48ecced283a827a5c59393042f081d",
+    "tools/th32-tests/reference_vm.lua": "0a49f34de37e1d65649069d800ac1b50673ad3ae009d1b6930da401af300734e"
+  }
+}

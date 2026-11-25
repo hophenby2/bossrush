@@ -325,7 +325,7 @@ function W.loadPlayerResources()
 end
 env.player_board_ch=Class(object,{
     init=function(o,r,g,b,duration)
-        o.img='theis_board_color'
+        o.img=resourceName(2,'theis_board_color')
         o.group,o.layer=GROUP.GHOST,LAYER.ENEMY-2
         o.bound,o.colli=false,false
         o.r,o.g,o.b,o.duration=r,g,b,duration
@@ -558,6 +558,15 @@ for key,class in pairs(env._editor_class) do
     end
 end
 table.sort(classKeys)
+-- 原作退场后的保护卡，以及二面尚未实现的后续非符，都没有发弹。
+-- 保留注册编号供旧录像/存档读取，练习和随机模式的候选入口统一隐藏。
+local placeholderIndex={
+    ['stage1mid_boss:Lunatic']=4,['stage2mid_boss:Lunatic']=6,
+    ['stage6boss:Lunatic']=22,stage7boss=38,
+}
+for _,route in ipairs({'A','B','C'}) do for actor=1,2 do
+    placeholderIndex['stage3'..route..'mid_boss'..actor..':Lunatic']=4
+end end
 for number=1,7 do
     local chapter=register.chapter(W,number==7 and 'EX' or number,'祈华梦 '..(number==7 and 'Extra' or '第'..number..'面'),'THEIS_s'..number)
     chapter.number=number
@@ -588,9 +597,7 @@ for number=1,7 do
                         finish(guard)
                     end,{stage=number,class=key,index=index,card=source},source.is_sc)
                     card.hp=source.hp
-                    -- 原作退场保护用的工具非只有空init/del；保留练习索引，排除随机抽取。
-                    card.random_empty=(key=='stage1mid_boss:Lunatic' and index==4
-                        or (key=='stage6boss:Lunatic' or key=='stage7boss') and index==#class.cards) or nil
+                    if placeholderIndex[key]==index then card.practice_hidden,card.random_empty=true,true end
                 end
             end
         end

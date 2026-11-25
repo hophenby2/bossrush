@@ -9,7 +9,7 @@ from source import Source,catalogue,road_catalogue
 REG={-10001:'v.i0',-10002:'v.i1',-10003:'v.i2',-10004:'v.i3',-10005:'v.f0',-10006:'v.f1',-10007:'v.f2',-10008:'v.f3',-10009:'v.c0',-10010:'v.c1',-10011:'v.c2',-10012:'v.c3',-10013:'(a.stage==7 and 4 or 3)',-10014:'a.rank',-10015:'(b.x+192)',-10016:'(224-b.y)',-10017:'a.z',-10018:'(player.x+192)',-10019:'(224-player.y)',-10020:'0',-10021:'H.player_angle(b)',-10022:'a.phase',-10023:'H.distance(b)',-10024:'H.life(b)',-10025:'(a.meta.shot or 0)'}
 COND={29:'<',30:'<=',31:'==',32:'>',33:'>=',34:'~='}
 CALLCOND={37:'<',38:'<=',39:'==',40:'>',41:'>=',42:'~='}
-VISUAL={0,97,98,99,100,101,102,106,107,109,110,117,118,119,120,124,125,126,127,128,129,130,136}
+VISUAL={0,97,98,99,100,101,102,107,109,110,117,118,119,120,124,125,126,127,128,129,130,136}
 
 def lit(v):
     if v is None:return 'nil'
@@ -92,6 +92,7 @@ def statement(stage,r,target):
     if op==82:return [f'a.extra={{{vals(x)}}}'],False
     if op==83:return ['H.cancel(b)'],False
     if op==84:return [f'H.set_sound(b,{value(x[0])})'],False
+    if op==106:return [f'H.play_sound(b,{value(x[0])})'],False
     if op in(85,86):return [f'H.laser(b,{lit(op==86)},{vals(x)})'],False
     if op==87:return [f'a.laser_index={value(x[0])}'],False
     if op in(88,89):return [f'H.rotate_laser(b,{value(x[0])},{value(x[1])},{lit(op==89)})'],False
@@ -219,10 +220,26 @@ def generate(source,cards):
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('data',type=Path);p.add_argument('--write',action='store_true');p.add_argument('--output',type=Path)
+    p.add_argument('--programs-only',action='store_true',help='只更新原始ECL子程序，保留已校准的卡表和桥接数据；与--write一起使用')
     args=p.parse_args();source=Source(args.data);cards=catalogue(source);out=generate(source,cards)
+    if args.programs_only and not args.write:p.error('--programs-only需要--write')
     if args.output:args.output.write_text(out+'\n',encoding='utf-8')
     if args.write:
-        path=Path('mod/GAME/th32.lua');text=path.read_text(encoding='utf-8-sig')
+        path=Path('mod/GAME/th32.lua')
+        if args.programs_only:
+            raw=path.read_bytes()
+            for stage,subs in reachable(source,cards,road_catalogue(source)).items():
+                for sub in sorted(subs):
+                    program=routine(source,stage,sub).encode('utf-8')
+                    start=raw.index(program.split(b'\n',1)[0])
+                    footer=raw.index(f'    P[{stage}][{sub}]=B.part1'.encode(),start)
+                    end=raw.index(b'\nend',footer)+len(b'\nend')
+                    newline=b'\r\n' if b'\r\n' in raw[start:end] else b'\n'
+                    raw=raw[:start]+program.replace(b'\n',newline)+raw[end:]
+            path.write_bytes(raw)
+            print('已更新ECL子程序；卡表、显示和桥接数据保持原样')
+            return
+        text=path.read_text(encoding='utf-8-sig')
         if '-- TH06_EXPANDED_START' in text:
             start=text.index('-- TH06_EXPANDED_START');end=text.index('-- TH06_EXPANDED_END',start)+len('-- TH06_EXPANDED_END')
             text=text[:start]+out+text[end:]

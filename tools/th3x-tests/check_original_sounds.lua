@@ -16,6 +16,15 @@ assert(#calls==5,'同帧去重或跨作隔离失效')
 for _,c in ipairs(calls)do assert(c[3]==.5,'声像被重复缩放');assert(c[2]>0 and c[2]<1)end
 stage.current_stage.timer=1;S.play(6,22,-192)
 assert(calls[6][1]=='th3x.original.6.22' and calls[6][3]==-1,'bulletSound编号或声像错误')
+local redSounds=dofile('mod/GAME/original/sounds.lua')[6]
+for id=0,31 do
+    stage.current_stage.timer=id+2
+    S.play(6,id,0)
+    local call=calls[#calls]
+    assert(call[1]=='th3x.original.6.'..id and call[2]==10^(redSounds[id][2]/2000) and call[3]==0,
+        '红魔乡SoundIdx映射、原音量或声像错误：'..id)
+end
+assert(#calls==38,'红魔乡32种SoundIdx未全部发出')
 local T=dofile('THlib/anm/th10_sounds.lua')
 player={x=0,y=-180}
 local function owner()return {x=0,y=100,ecs={off={x=0,y=124},base={x=0,y=0}}}end

@@ -39,10 +39,67 @@ dofile('THlib/misc/misc.lua')
 local hostRing=misc.RenderRing
 local define=boss.Define
 boss.Define=function(id,name,bgm,bg,...) return define(id,name,bgm,bg or background,...) end
+local add=boss.card.add
+local entries={}
+boss.card.add=function(group,level,title,id,...)
+    local result=add(group,level,title,id,...)
+    entries[#entries+1]={CardName=title,sc_group={{card=group[1][1]}}}
+    return result
+end
 local W=dofile('mod/GAME/th41.lua')
 boss.Define=define
+boss.card.add=add
 local E=W.source
 assert(E._editor_class['stage3Cmid_boss2:Lunatic'].cards[2].name=='哀蝶「世俗之盛，信仰之衰」')
+local placeholders={[70107]=true,[70209]=true,[70341]=true,[70343]=true,[70345]=true,
+    [70347]=true,[70349]=true,[70351]=true,[70611]=true,[70719]=true}
+local byId={}
+for index,unit in ipairs(entries) do
+    local card=unit.sc_group[1].card;byId[card.card_id]={card=card,index=index}
+end
+for id in pairs(placeholders) do
+    local row=assert(byId[id],'空占位卡的旧注册或编号被移除')
+    assert(row.card.practice_hidden and row.card.random_empty,'空占位卡仍进入候选：'..id)
+end
+-- 使用实际练习与随机池的筛选入口，检查隐藏占位卡时不重排原注册索引。
+local oldTable,oldFlow=_sc_pr_table,OriginalStageFlow
+_sc_pr_table={[39]=entries};OriginalStageFlow=nil
+local flow=dofile('mod/GAME/original/stage_flow.lua')
+flow.installed=true;flow.order={[39]=W.order}
+local visible={}
+for _,row in ipairs(flow.units(39)) do
+    local id=row.unit.sc_group[1].card.card_id
+    assert(not placeholders[id] and row.index==byId[id].index,'练习入口保留占位卡或改变了索引')
+    visible[id]=true
+end
+local pool=dofile('mod/rogue_pool.lua')
+local filters=pool.defaults();filters.stages={TH41=true};filters.difficulties.extra=true
+filters.encounters.road=false;filters.cards.survival=true
+local candidates=pool.build(filters)
+local selected={}
+for _,bucket in ipairs(candidates) do for _,entry in ipairs(bucket.cards) do
+    assert(not placeholders[entry.cardId],'随机候选保留了空占位卡')
+    selected[entry.cardId]=true
+end end
+for _,id in ipairs({70106,70207,70208,70340,70610,70718}) do
+    assert(visible[id] and selected[id],'误删有实际攻击的相邻阶段：'..id)
+end
+_sc_pr_table,OriginalStageFlow=oldTable,oldFlow
+print('祈华梦候选：10 张退场/未完成占位卡隐藏，原编号、索引和相邻攻击保留')
+-- 莉莉出场的宿主桥接类不经过作品对象的 img 赋值包装，必须直接使用已加载的名称。
+E.lstg.ResourceSet.Find('THEIS.StageEffects'):Load()
+local boardFields={timer=150}
+local board=setmetatable({}, {
+    __index=boardFields,
+    __newindex=function(_,key,value)
+        if key=='img' then image(value) end
+        boardFields[key]=value
+    end,
+})
+E.player_board_ch.init(board,0,255,0,300)
+assert(board.img=='theis/theis_board_color','莉莉出场染色板未使用作品命名空间')
+E.player_board_ch.render(board)
+print('祈华梦莉莉出场：严格图片赋值与染色板绘制通过')
 -- 原作 C 线符卡背景的自定义层每帧绘制 4 圈，每圈 64 片。
 local bg={};E.s3C_boss.scbg.init(bg);bg.alpha=1
 E.s3C_boss.scbg.render(bg)

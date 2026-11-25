@@ -89,6 +89,7 @@ return function(H,P,data)
             elseif op==103 then b.a,b.b,b.rect=get(x[1])/2,get(x[2])/2,true
             elseif op==104 then a.collidable=x[1]~=0
             elseif op==105 then a.damageable=x[1]~=0
+            elseif op==106 then H.play_sound(b,x[1])
             elseif op==107 then a.death_mode=get(x[1])
             elseif op==108 then a.death=P[stage][x[1]]
             elseif op==111 then if not a.main then H.set_life(b,get(x[1])) end

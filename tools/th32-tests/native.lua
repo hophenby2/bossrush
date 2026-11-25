@@ -10,7 +10,7 @@ _G.SetAttr=function(b,k,v) rawset(b,k,v) end
 _G.BossWalkImageSystem=function() return {SetImageInList=noop,frame=noop,render=noop} end
 -- 本测试对照 ECL 的运动/发弹事件；ANM 另由真实播放器与 Windows 引擎验证。
 _G.OriginalStageVisual={th06_script=function(o) o._original_actor={vm={data={sprites={}},rotation={0,0,0}},slots={}} end,poses=noop,slot=noop,tick=noop,
-    presentation={new_effect=function() return {vm={scale={}}} end,clear=noop}}
+    presentation={new_effect=function() return {vm={scale={}}} end,clear=noop,sound={play=noop}}}
 _G.OriginalANM={interrupt=noop}
 _G.enemy={init=function(b,style,hp) b.hp=hp;b.maxhp=hp;b._wisys={frame=noop,render=noop};b._a=255;b._r=255;b._g=255;b._b=255 end,render=noop}
 _G.item={obj={}}
@@ -62,7 +62,7 @@ _G.boss = {Define=function(key,name,bgm,bg,xy,sc,img,level) _editor_boss[key..le
     add=function(group,level,name,id) local c=group[1][1];c.card_id=id;cards[#cards+1]={card=c,id=id};table.insert(_editor_boss[group[1][2]..level].cards,c) end,
 }}
 dofile('mod/GAME/th32.lua')
-assert(#cards==106,'必须是 91 段 Boss 战、14 段道中和原有自制卡')
+assert(#cards==105,'必须是 91 段 Boss 战和 14 段道中')
 
 if mode=='program' then
     local function up(fn,name)
@@ -285,6 +285,22 @@ if mode=='unit' then
     H.extra(b,a.context,0,1,false);frozen.class.frame(frozen);approx(frozen.vx,.01)
     local tick=frozen.th06_tick;s.time_stopped=true;frozen.class.frame(frozen);approx(frozen.vx,0);assert(frozen.th06_tick==tick)
     s.time_stopped=false;frozen.class.frame(frozen);approx(frozen.vx,.02)
+    -- 原作 ExInsStage56Func4 在时停中同时改 angle 和 velocity，解除时停不能恢复旧方向。
+    b,a,s=actor();player.x,player.y=100,0
+    local knife=single(s,6,1,-160,0,0,2,0)
+    H.time_stop(b,true);knife.class.frame(knife)
+    assert(knife.th06_paused and knife.vx==0 and knife.vy==0)
+    H.extra(b,a.context,4,2,false)
+    approx(knife.th06_angle,math.pi)
+    knife.class.frame(knife);approx(knife.vx,0);approx(knife.vy,0)
+    H.time_stop(b,false);knife.class.frame(knife)
+    approx(knife.vx,-2);approx(knife.vy,0)
+    -- 多次时停和带加速度的弹也必须保留最新的速度，不把冻结用的零速度写回逻辑缓存。
+    H.time_stop(b,true);knife.class.frame(knife)
+    knife.th06_flags=16;knife.th06_ex={100,.01,0};knife.th06_ax,knife.th06_ay=.01,0
+    H.set_velocity(knife,math.pi/2,3);knife.class.frame(knife)
+    H.time_stop(b,false);knife.class.frame(knife)
+    approx(knife.vx,.01);approx(knife.vy,-3)
     local function pattern() return {mode='fan',sprite=3,c=2,n=1,l=1,v1=1,v2=.2,angle=0,step=0,flags=0} end
     b,a,s=actor();a.pattern=pattern();a.context.i2=0;a.context.i3=300;a.context.f3=60
     H.extra(b,a.context,2,0,true)
@@ -341,6 +357,22 @@ if mode=='unit' then
     front=carrier();H.road_init(front,road[4004]);H.road_del(front)
     for _=1,600 do H.road_mid_tick({stage=3,meta={group=6}}) end
     back=carrier();H.road_init(back,road[4005]);assert(back.th06_actor.context.epoch==0 and back.t3==2049);H.road_del(back)
+    local oldSound=OriginalStageVisual.presentation.sound.play
+    for _,id in ipairs({3808,369}) do
+        local card
+        for _,entry in ipairs(cards) do if entry.id==id then card=entry.card end end
+        local run=assert(getup(card.init,'run'))
+        local played,now={},0
+        OriginalStageVisual.presentation.sound.play=function(game,sound)
+            if sound==5 then played[#played+1]={game,now} end
+        end
+        local owner={x=0,y=0,_live=true}
+        local co=coroutine.create(function() run(owner) end)
+        for frame=0,120 do now=frame;local ok,err=coroutine.resume(co);assert(ok,err) end
+        assert(played[1] and played[1][1]==6 and played[1][2]==120,'保留的六面协程遗漏原始蓄力音效')
+    end
+    OriginalStageVisual.presentation.sound.play=oldSound
+    print('通过：吸血鬼幻想/红色的幻想乡保留协程的原始蓄力音效时机')
     print('通过：道中随机范围、首次执行后镜像、可击破和掉落、非冻结轴追时、冻结轴续接及独立练习')
     print('通过：连续转向、三次反弹、时停、冻结解冻、五角星、皇家烈焰、激光衍生、笼中鸟唤醒和最终符 HP/时间狂暴')
     print('通过：原生对象、24/32 帧出场、向量加速、曲率、全池衍生/唤醒、640 弹上限、一次反弹、48 段激光及清理')

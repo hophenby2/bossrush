@@ -521,6 +521,7 @@ do
     local function run(b)
         begin(b, 108)
         while true do
+            OriginalStageVisual.presentation.sound.play(6,5,b.x) -- Sub35 的120帧直接音效。
             shoot(b, "aim", 9, 1, 8, 1, 7, 2, 0, -PI / 10, 516)
             local left = 48
             while left > 0 do
@@ -587,6 +588,7 @@ do
     local function run(b)
         begin(b, 128)
         while true do
+            OriginalStageVisual.presentation.sound.play(6,5,b.x) -- Sub44 的180帧，扣除开卡60帧epoch。
             shoot(b, "ring", 9, 1, 14, 4, 4, 1.8, ran:Float(-PI, PI), -PI / 10, 512)
             drift(b, 2.5, 60); trail(b, 20, 10); awaken(b, true)
             shoot(b, "ring", 9, 1, 12, 1, 2, 1, ran:Float(-PI, PI), -PI / 200,
@@ -715,6 +717,10 @@ function H.set_sound(b,id)
         if id>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512)
         else a.pattern.flags=bit.band(a.pattern.flags,bit.bnot(512)) end
     end
+end
+function H.play_sound(b,id)
+    H.trace(b,"sound",id)
+    OriginalStageVisual.presentation.sound.play(6,id,b.x)
 end
 function H.fire(b,x,y,pattern)
     local a=b.th06_actor
@@ -1143,6 +1149,11 @@ end
 function H.set_velocity(p,a,v)
     velocity(p,a,v)
     if band(p.th06_flags,16)~=0 then p.th06_vx,p.th06_vy=p.vx,p.vy else p.th06_vx,p.th06_vy=nil,nil end
+    -- 原作时停保留 velocity；宿主暂置零后，要同步更新解除时停所恢复的速度。
+    if p.th06_paused then
+        p.th06_pause_vx,p.th06_pause_vy=p.vx,p.vy
+        p.vx,p.vy=0,0
+    end
 end
 function H.bat(b)
     local a=b.th06_actor
@@ -1547,6 +1558,7 @@ do
         v.f3=0.019999999552965164
         a.extra={-1,-1,-1,-1,0.019999999552965164,-999.0,-1.0,-1.0}
         H.pattern(b,4,0,v.i0,28,1,0.0,0.0,v.f0,0.0,21)
+        H.play_sound(b,9)
         return
     end
     P[1][4]=B.part1
@@ -1568,6 +1580,7 @@ do
         v.f0=ran:Float(0,6.2831854820251465)
         v.f0=(v.f0)-(3.1415927410125732)
         H.pattern(b,4,2,v.i0,24,1,v.f1,0.699999988079071,v.f0,0.0,5)
+        H.play_sound(b,9)
         return
     end
     P[1][5]=B.part1
@@ -1581,6 +1594,7 @@ do
         H.wait(b,v,0)
         a.speed=0.0;a.mode="velocity"
         H.trace(b,"spell_end")
+        H.play_sound(b,18)
         H.interval(b,0,false)
         a.bounds=nil
         a.collidable=false
@@ -1638,10 +1652,12 @@ do
         H.wait(b,v,80)
         H.wait(b,v,100)
         H.wait(b,v,130)
+        H.play_sound(b,6)
         H.wait(b,v,160)
         H.pattern(b,3,1,6,16,7,2.0,1.0,0.0,0.0,9)
         H.sprite(b,133)
         H.wait(b,v,192)
+        H.play_sound(b,8)
         v.i0=3
         v.f0=2.0
         v.c0=2
@@ -1668,11 +1684,14 @@ do
         H.wait(b,v,384)
         H.move_to(b,60,64.0,96.0,0.0,1)
         H.wait(b,v,394)
+        H.play_sound(b,6)
         H.wait(b,v,414)
         H.pattern(b,3,1,10,16,7,2.0,1.0,0.0,0.0,9)
         H.wait(b,v,444)
         H.pattern(b,3,1,13,16,7,2.0,1.0,0.0,0.0,9)
+        H.play_sound(b,8)
         H.wait(b,v,476)
+        H.play_sound(b,8)
         H.wait(b,v,516)
         H.wait(b,v,526)
         H.move_to(b,60,192.0,80.0,0.0,1)
@@ -1694,12 +1713,15 @@ do
         H.wait(b,v,708)
         H.move_to(b,60,320.0,96.0,0.0,1)
         H.wait(b,v,718)
+        H.play_sound(b,6)
         H.wait(b,v,738)
         H.pattern(b,3,1,6,16,7,2.0,1.0,0.0,0.0,9)
         H.wait(b,v,768)
         H.pattern(b,3,1,2,16,7,2.0,1.0,0.0,0.0,9)
         H.sprite(b,133)
+        H.play_sound(b,8)
         H.wait(b,v,800)
+        H.play_sound(b,8)
         H.wait(b,v,840)
         H.sprite(b,134)
         v.f0=(v.f0)+(0.5)
@@ -1746,6 +1768,7 @@ do
         a.laser_index=1
         H.laser(b,false,0,6,2.7488934993743896,0.0,0.0,500.0,500.0,32.0,30,120,16,30,14,0)
         H.wait(b,v,150)
+        H.play_sound(b,16)
         v.c0=120
         return B.part3(b,v)
     end
@@ -1810,18 +1833,25 @@ do
         H.move_dir(b,60,a.angle,a.speed,1)
         H.wait(b,v,12)
         H.pattern(b,1,3,2,1,10,6.0,1.0,0.0,0.09817477315664291,4)
+        H.play_sound(b,8)
         H.wait(b,v,20)
         H.pattern(b,1,3,1,2,10,6.0,1.0,0.0,0.09817477315664291,4)
+        H.play_sound(b,8)
         H.wait(b,v,28)
         H.pattern(b,1,3,2,2,10,6.0,1.0,0.0,0.09817477315664291,4)
+        H.play_sound(b,8)
         H.wait(b,v,36)
         H.pattern(b,1,3,1,3,10,6.0,1.0,0.0,0.09817477315664291,4)
+        H.play_sound(b,8)
         H.wait(b,v,44)
         H.pattern(b,1,3,2,3,10,6.0,1.0,0.0,0.09817477315664291,4)
+        H.play_sound(b,8)
         H.wait(b,v,52)
         H.pattern(b,1,3,1,4,10,6.0,1.0,0.0,0.09817477315664291,4)
+        H.play_sound(b,8)
         H.wait(b,v,60)
         H.pattern(b,1,3,2,5,10,6.0,1.0,0.0,0.09817477315664291,4)
+        H.play_sound(b,8)
         H.wait(b,v,180)
         v.i0=H.random_int(3)
         if (v.i0)==(0) then H.call(b,v,P[1][13],0,0.0) end
@@ -1842,18 +1872,25 @@ do
         H.move_dir(b,60,a.angle,a.speed,1)
         H.wait(b,v,60)
         H.pattern(b,3,1,6,24,2,4.0,1.0,0.0,0.13089969754219055,4)
+        H.play_sound(b,8)
         H.wait(b,v,68)
         H.pattern(b,3,0,5,24,1,3.0,1.0,0.0,0.0,2)
+        H.play_sound(b,8)
         H.wait(b,v,76)
         H.pattern(b,3,1,6,24,2,2.0,1.0,0.0,-0.13089969754219055,4)
+        H.play_sound(b,8)
         H.wait(b,v,84)
         H.pattern(b,3,0,5,24,1,3.0,1.0,0.0,0.0,2)
+        H.play_sound(b,8)
         H.wait(b,v,92)
         H.pattern(b,3,1,6,32,2,4.0,1.0,0.0,0.13089969754219055,4)
+        H.play_sound(b,8)
         H.wait(b,v,100)
         H.pattern(b,3,0,5,24,1,3.0,1.0,0.0,0.0,2)
+        H.play_sound(b,8)
         H.wait(b,v,108)
         H.pattern(b,3,1,6,32,2,2.0,1.0,0.0,-0.13089969754219055,4)
+        H.play_sound(b,8)
         H.wait(b,v,228)
         v.i0=H.random_int(3)
         if (v.i0)==(0) then H.call(b,v,P[1][12],0,0.0) end
@@ -1874,6 +1911,7 @@ do
         H.move_dir(b,60,a.angle,a.speed,1)
         H.wait(b,v,80)
         H.pattern(b,1,2,2,5,16,5.0,1.0,0.0,0.06544984877109528,8)
+        H.play_sound(b,7)
         H.wait(b,v,110)
         H.pattern(b,3,1,6,48,3,4.0,1.0,0.0,0.06544984877109528,4)
         H.wait(b,v,200)
@@ -1911,6 +1949,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,2)
         H.pattern(b,1,1,10,3,3,v.f0,1.0,v.f1,0.06544984877109528,4)
+        H.play_sound(b,8)
         v.f0=(v.f0)+(0.25)
         v.f1=(v.f1)+(0.06544984877109528)
         v.c0=v.c0-1
@@ -1932,6 +1971,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,4)
         H.pattern(b,1,1,10,3,3,v.f0,1.0,v.f1,0.06544984877109528,4)
+        H.play_sound(b,8)
         v.f0=(v.f0)+(0.25)
         v.f1=(v.f1)+(-0.06544984877109528)
         v.c0=v.c0-1
@@ -2007,6 +2047,7 @@ do
         H.particles(b,3,2,-8355585)
         H.wait(b,v,10)
         H.particles(b,3,2,-128)
+        H.play_sound(b,7)
         v.c0=v.c0-1
         if v.c0>0 then v.time=0;return B.part2(b,v) end
         return B.part3(b,v)
@@ -2014,6 +2055,7 @@ do
     function B.part3(b,v)
         local a=b.th06_actor
         H.wait(b,v,10)
+        H.play_sound(b,18)
         H.trace(b,"spell_end")
         if not a.main then H.set_life(b,0) end
         H.wait(b,v,3010)
@@ -2033,24 +2075,37 @@ do
         H.move_dir(b,60,a.angle,a.speed,1)
         H.wait(b,v,12)
         H.pattern(b,1,1,10,7,8,3.0,1.0,0.0,0.09817477315664291,4)
+        H.play_sound(b,8)
         H.wait(b,v,20)
         H.laser(b,true,0,6,0.0,0.0,0.0,500.0,500.0,16.0,120,60,16,120,14,0)
+        H.play_sound(b,8)
         H.wait(b,v,28)
         H.laser(b,true,0,6,0.0,0.0,0.0,500.0,500.0,16.0,120,60,16,120,14,0)
+        H.play_sound(b,8)
         H.wait(b,v,36)
         H.laser(b,true,0,6,0.0,0.0,0.0,500.0,500.0,16.0,120,60,16,120,14,0)
+        H.play_sound(b,8)
         H.wait(b,v,44)
         H.laser(b,true,0,6,0.0,0.0,0.0,500.0,500.0,16.0,120,60,16,120,14,0)
+        H.play_sound(b,8)
         H.wait(b,v,52)
         H.laser(b,true,0,6,0.0,0.0,0.0,500.0,500.0,16.0,120,60,16,120,14,0)
+        H.play_sound(b,8)
         H.wait(b,v,60)
         H.laser(b,true,0,6,0.0,0.0,0.0,500.0,500.0,16.0,120,60,16,120,14,0)
+        H.play_sound(b,8)
         H.wait(b,v,124)
+        H.play_sound(b,16)
         H.wait(b,v,132)
+        H.play_sound(b,16)
         H.wait(b,v,140)
+        H.play_sound(b,16)
         H.wait(b,v,148)
+        H.play_sound(b,16)
         H.wait(b,v,156)
+        H.play_sound(b,16)
         H.wait(b,v,164)
+        H.play_sound(b,16)
         H.wait(b,v,224)
         v.i0=H.random_int(3)
         if (v.i0)==(0) then H.call(b,v,P[1][19],0,0.0) end
@@ -2072,10 +2127,13 @@ do
         H.wait(b,v,60)
         H.sprite(b,136)
         H.pattern(b,3,2,10,48,2,3.0,1.5,0.0,0.0,4)
+        H.play_sound(b,8)
         H.wait(b,v,90)
         H.pattern(b,3,0,10,32,2,3.5999999046325684,1.5,0.0,0.0,2)
+        H.play_sound(b,8)
         H.wait(b,v,120)
         H.pattern(b,3,2,10,48,2,3.0,1.5,0.0,0.0,4)
+        H.play_sound(b,8)
         H.wait(b,v,240)
         v.i0=H.random_int(3)
         if (v.i0)==(0) then H.call(b,v,P[1][18],0,0.0) end
@@ -2097,10 +2155,13 @@ do
         H.wait(b,v,60)
         H.pattern(b,1,2,13,16,2,3.0,1.0,0.0,0.13089969754219055,8)
         H.sprite(b,136)
+        H.play_sound(b,7)
         H.wait(b,v,80)
         H.pattern(b,1,2,13,23,2,3.0,1.0,0.0,0.13089969754219055,8)
+        H.play_sound(b,7)
         H.wait(b,v,100)
         H.pattern(b,1,2,13,20,2,3.0,1.0,0.0,0.13089969754219055,8)
+        H.play_sound(b,7)
         H.wait(b,v,220)
         v.i0=H.random_int(3)
         if (v.i0)==(0) then H.call(b,v,P[1][19],0,0.0) end
@@ -2136,6 +2197,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,2)
         H.pattern(b,1,1,10,4,3,v.f0,1.0,v.f1,0.14279966056346893,4)
+        H.play_sound(b,8)
         v.f0=(v.f0)+(0.25)
         v.f1=(v.f1)+(0.14279966056346893)
         v.c0=v.c0-1
@@ -2157,6 +2219,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,4)
         H.pattern(b,1,1,10,4,3,v.f0,1.0,v.f1,0.14279966056346893,4)
+        H.play_sound(b,8)
         v.f0=(v.f0)+(0.25)
         v.f1=(v.f1)+(-0.14279966056346893)
         v.c0=v.c0-1
@@ -2225,6 +2288,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,124)
         H.pattern(b,1,1,7,1,3,v.f0,0.800000011920929,v.f1,0.06544984877109528,4)
+        H.play_sound(b,8)
         v.f0=(v.f0)+(0.20000000298023224)
         v.f1=(v.f1)+(-0.14279966056346893)
         v.c0=v.c0-1
@@ -2261,6 +2325,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,128)
         H.pattern(b,1,1,8,1,3,v.f0,0.800000011920929,v.f1,0.06544984877109528,4)
+        H.play_sound(b,8)
         v.f0=(v.f0)+(0.20000000298023224)
         v.f1=(v.f1)+(-0.15707963705062866)
         v.c0=v.c0-1
@@ -2309,16 +2374,19 @@ do
         H.pattern(b,3,2,6,28,2,3.0,1.0,0.0,0.0,68)
         a.extra={40,1,-1,-1,-1.5707963705062866,1.5,-1.0,-1.0}
         H.pattern(b,3,2,6,28,2,3.0,1.0,0.11219973862171173,0.0,68)
+        H.play_sound(b,9)
         H.wait(b,v,180)
         a.extra={40,1,-1,-1,-1.5707963705062866,1.5,-1.0,-1.0}
         H.pattern(b,3,2,10,28,2,3.0,1.0,0.0,0.0,68)
         a.extra={40,1,-1,-1,1.5707963705062866,1.5,-1.0,-1.0}
         H.pattern(b,3,2,10,28,2,3.0,1.0,0.11219973862171173,0.0,68)
+        H.play_sound(b,9)
         H.wait(b,v,240)
         a.extra={40,1,-1,-1,1.5707963705062866,1.5,-1.0,-1.0}
         H.pattern(b,3,2,2,28,2,3.0,1.0,0.0,0.0,68)
         a.extra={40,1,-1,-1,-1.5707963705062866,1.5,-1.0,-1.0}
         H.pattern(b,3,2,2,28,2,3.0,1.0,0.11219973862171173,0.0,68)
+        H.play_sound(b,9)
         a.extra={60,1,-1,-1,0.0,-1.0,-1.0,-1.0}
         H.wait(b,v,300)
         H.rand_angle(b,-3.1415927410125732,3.1415927410125732,true)
@@ -2358,6 +2426,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,304)
         H.pattern(b,1,1,6,1,1,v.f0,0.0,v.f1,0.09817477315664291,132)
+        H.play_sound(b,8)
         v.f0=(v.f0)+(0.20000000298023224)
         v.f1=(v.f1)+(-0.14279966056346893)
         v.c0=v.c0-1
@@ -2662,6 +2731,7 @@ do
     function B.part1(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.play_sound(b,6)
         H.wait(b,v,40)
         v.c0=48
         v.f0=1.5
@@ -2673,6 +2743,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,40)
         H.pattern(b,4,4,10,4,2,v.f0,v.f1,v.f2,0.0,5)
+        H.play_sound(b,9)
         v.f0=(v.f0)+(0.05000000074505806)
         H.wait(b,v,41)
         v.f1=(v.f1)+(-0.019999999552965164)
@@ -2695,6 +2766,7 @@ do
     function B.part1(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.play_sound(b,6)
         H.wait(b,v,40)
         v.c0=48
         v.f0=1.5
@@ -2706,6 +2778,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,40)
         H.pattern(b,4,4,2,4,2,v.f0,v.f1,v.f2,0.0,5)
+        H.play_sound(b,9)
         v.f0=(v.f0)+(0.05000000074505806)
         H.wait(b,v,41)
         v.f1=(v.f1)+(-0.019999999552965164)
@@ -2728,6 +2801,7 @@ do
     function B.part1(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.play_sound(b,6)
         H.wait(b,v,40)
         v.c0=16
         return B.part2(b,v)
@@ -2738,6 +2812,7 @@ do
         a.extra={40,1,-1,-1,0.0,4.0,-1.0,-1.0}
         H.pattern(b,1,5,15,9,2,5.5,2.0,0.0,0.19634954631328583,132)
         H.pattern(b,1,5,6,9,1,3.5,2.0,0.0,0.19634954631328583,4)
+        H.play_sound(b,9)
         H.wait(b,v,50)
         v.c0=v.c0-1
         if v.c0>0 then v.time=40;return B.part2(b,v) end
@@ -2932,6 +3007,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,41)
         v.f0=(H.player_angle(b))+(0.0)
+        H.play_sound(b,8)
         H.pattern(b,2,5,6,1,1,5.0,1.0,v.f0,v.f1,4)
         H.wait(b,v,43)
         H.pattern(b,2,5,6,2,1,4.5,1.0,v.f0,v.f1,4)
@@ -2977,13 +3053,16 @@ do
         H.move_dir(b,60,a.angle,a.speed,1)
         a.extra={60,1,-1,-1,0.0,4.0,-1.0,-1.0}
         H.pattern(b,3,1,6,24,2,2.0,1.0,0.0,0.0,4)
+        H.play_sound(b,8)
         v.i0=(v.c3)*(3)
         v.time=v.time+(v.i0)
         H.wait(b,v,41)
         H.pattern(b,3,5,15,32,1,5.0,1.0,0.0,0.0,132)
+        H.play_sound(b,8)
         v.time=v.time+(v.i0)
         H.wait(b,v,61)
         H.pattern(b,3,1,6,16,2,2.0,1.0,0.0,0.0,4)
+        H.play_sound(b,8)
         v.i0=(v.c3)*(5)
         v.time=v.time+(v.i0)
         H.wait(b,v,101)
@@ -3044,6 +3123,7 @@ do
     function B.part2(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.play_sound(b,8)
         v.i0=(v.c3)+(20)
         H.pattern(b,3,1,6,v.i0,2,4.0,1.0,0.0,0.0,4)
         H.wait(b,v,10)
@@ -3076,6 +3156,7 @@ do
     function B.part2(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.play_sound(b,16)
         H.laser(b,true,0,6,0.0,4.0,0.0,0.0,192.0,6.0,0,9999,30,0,30,0)
         H.laser(b,true,0,5,0.39269909262657166,4.0,0.0,0.0,192.0,6.0,0,9999,30,0,30,0)
         H.laser(b,true,0,5,-0.39269909262657166,4.0,0.0,0.0,192.0,6.0,0,9999,30,0,30,0)
@@ -3136,6 +3217,7 @@ do
         H.particles(b,3,2,-8355585)
         H.wait(b,v,10)
         H.particles(b,3,2,-128)
+        H.play_sound(b,7)
         v.c0=v.c0-1
         if v.c0>0 then v.time=0;return B.part2(b,v) end
         return B.part3(b,v)
@@ -3143,6 +3225,7 @@ do
     function B.part3(b,v)
         local a=b.th06_actor
         H.wait(b,v,10)
+        H.play_sound(b,18)
         H.trace(b,"spell_end")
         if not a.main then H.set_life(b,0) end
         H.wait(b,v,3010)
@@ -3204,6 +3287,7 @@ do
         v.i2=(v.c3)+(13)
         a.extra={60,1,-1,-1,v.f2,v.f0,-1.0,-1.0}
         H.pattern(b,4,5,6,v.i2,v.i3,5.0,1.5,v.f1,0.0,260)
+        H.play_sound(b,9)
         H.wait(b,v,140)
         v.c0=v.c0-1
         if v.c0>0 then v.time=120;return B.part3(b,v) end
@@ -3270,14 +3354,19 @@ do
         v.i0=(v.c3)+(16)
         H.wait(b,v,125)
         H.pattern(b,9,1,6,v.i0,1,4.0,1.0,3.1415927410125732,-3.1415927410125732,4)
+        H.play_sound(b,9)
         H.wait(b,v,130)
         H.pattern(b,9,1,2,v.i0,1,4.0,1.0,3.1415927410125732,-3.1415927410125732,4)
+        H.play_sound(b,9)
         H.wait(b,v,135)
         H.pattern(b,9,1,10,v.i0,1,4.0,1.0,3.1415927410125732,-3.1415927410125732,4)
+        H.play_sound(b,9)
         H.wait(b,v,140)
         H.pattern(b,9,1,13,v.i0,1,4.0,1.0,3.1415927410125732,-3.1415927410125732,4)
+        H.play_sound(b,9)
         H.wait(b,v,145)
         H.pattern(b,9,1,14,v.i0,1,4.0,1.0,3.1415927410125732,-3.1415927410125732,4)
+        H.play_sound(b,9)
         v.c0=v.c0-1
         if v.c0>0 then v.time=120;return B.part3(b,v) end
         return B.part4(b,v)
@@ -3328,6 +3417,7 @@ do
     function B.part10(b,v)
         local a=b.th06_actor
         H.wait(b,v,295)
+        H.play_sound(b,9)
         v.c0=v.c0-1
         if v.c0>0 then v.time=265;return B.part5(b,v) end
         return B.part11(b,v)
@@ -3353,6 +3443,7 @@ do
         a.damageable=false
         a.phase=0
         H.particles(b,12,1,-8355585)
+        H.play_sound(b,7)
         a.rank_lo,a.rank_hi,a.rank_n1_lo,a.rank_n1_hi,a.rank_n2_lo,a.rank_n2_hi=-0.5,0.30000001192092896,0,4,0,0
         H.wait(b,v,60)
         H.cancel(b);H.reset_rank(a);H.trace(b,"spell",6)
@@ -3382,6 +3473,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,190)
         H.extra(b,v,1,128,false)
+        H.play_sound(b,9)
         v.c0=v.c0-1
         if v.c0>0 then v.time=180;return B.part3(b,v) end
         return B.part4(b,v)
@@ -3523,6 +3615,7 @@ do
     function B.part3(b,v)
         local a=b.th06_actor
         H.wait(b,v,70)
+        H.play_sound(b,22)
         return B.part4(b,v)
     end
     function B.part4(b,v)
@@ -3560,6 +3653,7 @@ do
         v.f1=ran:Float(0,1.0)
         v.f1=(v.f1)+(1.0)
         H.pattern(b,1,1,2,24,3,v.f1,1.0,0.0,0.22439947724342346,4)
+        H.play_sound(b,8)
         v.f2=ran:Float(0,1.5707963705062866)
         v.f2=(v.f2)+(0.7853981852531433)
         H.wait(b,v,100)
@@ -3628,6 +3722,7 @@ do
     function B.part3(b,v)
         local a=b.th06_actor
         H.wait(b,v,70)
+        H.play_sound(b,22)
         return B.part4(b,v)
     end
     function B.part4(b,v)
@@ -3667,6 +3762,7 @@ do
         a.accel=0.0;a.mode="velocity"
         a.extra={-1,-1,-1,-1,0.02500000037252903,1.5707963705062866,-1.0,-1.0}
         H.pattern(b,9,3,15,22,1,2.0,0.30000001192092896,0.0,-3.1415927410125732,25)
+        H.play_sound(b,22)
         v.f2=ran:Float(0,1.5707963705062866)
         v.f2=(v.f2)+(0.7853981852531433)
         a.angle,a.speed=v.f2,1.5;a.mode="velocity"
@@ -3739,6 +3835,7 @@ do
     function B.part1(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.play_sound(b,25)
         H.sprite(b,64)
         v.c1=trunc((v.i0)/(2))
         return B.part2(b,v)
@@ -3756,6 +3853,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,2)
         H.anm_slot(b,4,66)
+        H.play_sound(b,7)
         a.rotate_anm=false
         H.sprite(b,64)
         return
@@ -3787,6 +3885,7 @@ do
         v.f0=(v.f0)+(v.f2)
         v.f2=ran:Float(0,24.0)
         v.f1=(v.f1)+(v.f2)
+        H.play_sound(b,8)
         H.wait(b,v,28)
         v.c1=v.c1-1
         if v.c1>0 then v.time=20;return B.part2(b,v) end
@@ -3809,6 +3908,7 @@ do
         v.c1=8
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
         H.pattern(b,4,1,2,96,1,1.100000023841858,0.6000000238418579,0.0,0.0,4)
+        H.play_sound(b,26)
         H.wait(b,v,10)
         return
     end
@@ -3881,6 +3981,7 @@ do
     function B.part8(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.play_sound(b,27)
         v.c2=6
         return B.part9(b,v)
     end
@@ -3920,6 +4021,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         a.speed=0.0;a.mode="velocity"
+        H.play_sound(b,18)
         H.drop_item(b,5)
         H.call(b,v,P[3][16],0,0.0)
     end
@@ -4012,6 +4114,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         H.pattern(b,3,5,2,v.i0,1,v.f2,0.6000000238418579,v.f0,0.0,4)
+        H.play_sound(b,7)
         v.cmp=(v.i1)-(0)
         if v.cmp~=0 then v.time=0;return B.part6(b,v) end
         return B.part5(b,v)
@@ -4043,6 +4146,7 @@ do
         H.rand_angle(b,-3.1415927410125732,3.1415927410125732,true)
         a.speed=5.0;a.mode="velocity"
         H.move_dir(b,40,a.angle,a.speed,3)
+        H.play_sound(b,25)
         H.sprite(b,64)
         v.c0=16
         v.f1=0.039269909262657166
@@ -4083,6 +4187,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,6)
         H.anm_slot(b,4,66)
+        H.play_sound(b,7)
         H.sprite(b,64)
         return
     end
@@ -4173,14 +4278,17 @@ do
         v.f0=ran:Float(0,6.2831854820251465)
         v.f0=(v.f0)-(3.1415927410125732)
         H.pattern(b,4,3,5,20,3,3.0,2.0,v.f0,0.2617993950843811,4)
+        H.play_sound(b,8)
         v.f0=ran:Float(0,6.2831854820251465)
         v.f0=(v.f0)-(3.1415927410125732)
         H.wait(b,v,70)
         H.pattern(b,4,3,6,16,2,3.0,2.0,v.f0,0.2617993950843811,4)
+        H.play_sound(b,8)
         v.f0=ran:Float(0,6.2831854820251465)
         v.f0=(v.f0)-(3.1415927410125732)
         H.wait(b,v,140)
         H.pattern(b,4,3,5,20,3,3.0,2.0,v.f0,0.2617993950843811,4)
+        H.play_sound(b,8)
         return
     end
     P[3][22]=B.part1
@@ -4194,10 +4302,13 @@ do
         H.wait(b,v,0)
         a.extra={-1,-1,-1,-1,0.02500000037252903,1.5707963705062866,-1.0,-1.0}
         H.pattern(b,9,3,6,20,1,2.0,0.30000001192092896,0.0,-3.1415927410125732,25)
+        H.play_sound(b,7)
         H.wait(b,v,70)
         H.pattern(b,9,3,6,16,1,2.0,0.30000001192092896,0.0,-3.1415927410125732,25)
+        H.play_sound(b,7)
         H.wait(b,v,140)
         H.pattern(b,9,3,6,20,1,2.0,0.30000001192092896,0.0,-3.1415927410125732,25)
+        H.play_sound(b,7)
         return
     end
     P[3][23]=B.part1
@@ -4212,10 +4323,13 @@ do
         v.f0=ran:Float(0,6.2831854820251465)
         v.f0=(v.f0)-(3.1415927410125732)
         H.pattern(b,9,3,5,32,1,4.0,1.2999999523162842,3.1415927410125732,-3.1415927410125732,2)
+        H.play_sound(b,9)
         H.wait(b,v,70)
         H.pattern(b,9,3,5,16,1,4.0,1.2999999523162842,3.1415927410125732,-3.1415927410125732,2)
+        H.play_sound(b,9)
         H.wait(b,v,140)
         H.pattern(b,9,3,5,24,1,4.0,1.2999999523162842,3.1415927410125732,-3.1415927410125732,2)
+        H.play_sound(b,9)
         return
     end
     P[3][24]=B.part1
@@ -4258,6 +4372,7 @@ do
     function B.part4(b,v)
         local a=b.th06_actor
         H.wait(b,v,70)
+        H.play_sound(b,22)
         return B.part5(b,v)
     end
     function B.part5(b,v)
@@ -4342,6 +4457,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         H.pattern(b,9,5,6,3,1,1.0,0.30000001192092896,0.0,-3.1415927410125732,19)
+        H.play_sound(b,22)
         H.wait(b,v,2)
         v.c0=v.c0-1
         if v.c0>0 then v.time=0;return B.part2(b,v) end
@@ -4380,6 +4496,7 @@ do
     function B.part3(b,v)
         local a=b.th06_actor
         H.wait(b,v,21)
+        H.play_sound(b,9)
         H.wait(b,v,71)
         a.extra={60,1,-1,-1,2.4434609413146973,4.0,-1.0,-1.0}
         v.c0=6
@@ -4399,6 +4516,7 @@ do
     function B.part5(b,v)
         local a=b.th06_actor
         H.wait(b,v,92)
+        H.play_sound(b,9)
         return
     end
     P[3][28]=B.part1
@@ -4481,6 +4599,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         v.c3=(v.c3)+(1)
+        H.play_sound(b,24)
         H.wait(b,v,7)
         v.time=0;return B.part2(b,v)
     end
@@ -4576,6 +4695,7 @@ do
         H.pattern(b,2,5,11,1,1,1.5,0.30000001192092896,v.f2,0.5235987901687622,19)
         v.f2=(v.f2)+(1.5707963705062866)
         H.pattern(b,2,5,8,1,1,1.5,0.30000001192092896,v.f2,0.5235987901687622,19)
+        H.play_sound(b,22)
         v.f0=(v.f0)+(0.1745329201221466)
         v.f0=normal_angle(v.f0)
         H.wait(b,v,1)
@@ -4609,6 +4729,7 @@ do
         v.f2=(v.f2)+(1.5707963705062866)
         a.extra={-1,-1,-1,-1,0.024000000208616257,0.7853981852531433,-1.0,-1.0}
         H.pattern(b,9,5,14,2,1,1.2000000476837158,0.30000001192092896,v.f2,0.09817477315664291,19)
+        H.play_sound(b,22)
         v.f0=(v.f0)-(0.5235987901687622)
         v.f0=normal_angle(v.f0)
         H.wait(b,v,23)
@@ -4639,6 +4760,7 @@ do
         v.c3=0
         a.phase=0
         H.particles(b,12,1,-8355585)
+        H.play_sound(b,7)
         H.wait(b,v,60)
         H.cancel(b);H.reset_rank(a);H.trace(b,"spell",13)
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
@@ -4737,6 +4859,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,65)
         v.c3=v.c3 + 1
+        H.play_sound(b,22)
         H.wait(b,v,66)
         v.time=60;return B.part2(b,v)
     end
@@ -4772,6 +4895,7 @@ do
         H.particles(b,3,2,-8355585)
         H.wait(b,v,10)
         H.particles(b,3,2,-128)
+        H.play_sound(b,7)
         v.c0=v.c0-1
         if v.c0>0 then v.time=0;return B.part2(b,v) end
         return B.part3(b,v)
@@ -4779,6 +4903,7 @@ do
     function B.part3(b,v)
         local a=b.th06_actor
         H.wait(b,v,10)
+        H.play_sound(b,18)
         H.trace(b,"spell_end")
         if not a.main then H.set_life(b,0) end
         H.wait(b,v,3010)
@@ -4831,6 +4956,7 @@ do
         v.f0=ran:Float(0,6.2831854820251465)+-3.1415927410125732
         v.f1=ran:Float(0,1.0)+1.0
         H.pattern(b,4,4,6,16,1,v.f1,0.0,v.f0,0.09817477315664291,4)
+        H.play_sound(b,7)
         H.wait(b,v,36)
         v.c0=v.c0-1
         if v.c0>0 then v.time=30;return B.part2(b,v) end
@@ -5102,6 +5228,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,70)
         H.pattern(b,4,2,6,9,3,3.200000047683716,1.7999999523162842,v.f0,0.0,4)
+        H.play_sound(b,7)
         v.f0=(v.f0)+(v.f1)
         H.wait(b,v,78)
         v.c0=v.c0-1
@@ -5168,6 +5295,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,70)
         H.pattern(b,4,2,6,3,2,2.0999999046325684,1.399999976158142,v.f0,0.0,4)
+        H.play_sound(b,7)
         v.f0=(v.f0)+(v.f1)
         H.wait(b,v,78)
         v.c0=v.c0-1
@@ -5268,6 +5396,7 @@ do
     function B.part10(b,v)
         local a=b.th06_actor
         H.wait(b,v,30)
+        H.play_sound(b,8)
         H.wait(b,v,80)
         v.c0=v.c0-1
         if v.c0>0 then v.time=30;return B.part2(b,v) end
@@ -5320,6 +5449,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,30)
         H.pattern(b,3,3,6,32,3,3.0,1.0,0.0,0.0,5)
+        H.play_sound(b,8)
         H.wait(b,v,80)
         v.c0=v.c0-1
         if v.c0>0 then v.time=30;return B.part2(b,v) end
@@ -5359,6 +5489,7 @@ do
         H.wait(b,v,30)
         H.pattern(b,5,0,10,11,1,1.2000000476837158,1.0,0.0,0.0,5)
         H.pattern(b,3,3,10,11,1,1.2000000476837158,1.0,v.f1,0.0,5)
+        H.play_sound(b,8)
         H.wait(b,v,80)
         v.c0=v.c0-1
         if v.c0>0 then v.time=30;return B.part2(b,v) end
@@ -5410,6 +5541,7 @@ do
         H.wait(b,v,120)
         H.laser(b,false,0,6,1.5707963705062866,0.0,0.0,500.0,500.0,32.0,90,120,16,70,14,0)
         H.pattern(b,3,4,6,32,2,1.2000000476837158,0.0,0.0,0.09817477315664291,4)
+        H.play_sound(b,16)
         H.wait(b,v,320)
         H.anm_interrupt(b,nil,1)
         H.wait(b,v,440)
@@ -5424,6 +5556,7 @@ do
     function B.part1(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.play_sound(b,5)
         a.interactable=false
         H.sprite(b,64)
         H.anm_slot(b,0,16)
@@ -5470,6 +5603,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         v.f1=ran:Float(0,6.2831854820251465)+-3.1415927410125732
+        H.play_sound(b,5)
         v.c0=8
         return B.part2(b,v)
     end
@@ -5479,6 +5613,7 @@ do
         a.extra={-1,-1,-1,-1,0.024000000208616257,-999.0,-1.0,-1.0}
         H.pattern(b,4,9,1,8,1,1.2000000476837158,1.0,v.f1,0.0,20)
         v.f1=(v.f1)+(v.f0)
+        H.play_sound(b,7)
         H.wait(b,v,20)
         v.c0=v.c0-1
         if v.c0>0 then v.time=0;return B.part2(b,v) end
@@ -5817,6 +5952,7 @@ do
     function B.part4(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.play_sound(b,16)
         v.c0=180
         v.i0=0
         return B.part5(b,v)
@@ -5880,6 +6016,7 @@ do
     function B.part11(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.play_sound(b,16)
         return B.part12(b,v)
     end
     function B.part12(b,v)
@@ -5979,6 +6116,7 @@ do
     function B.part4(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.play_sound(b,16)
         v.c0=180
         v.i0=0
         return B.part5(b,v)
@@ -6042,6 +6180,7 @@ do
     function B.part11(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.play_sound(b,16)
         return B.part12(b,v)
     end
     function B.part12(b,v)
@@ -6141,6 +6280,7 @@ do
     function B.part4(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.play_sound(b,16)
         v.c0=150
         v.i0=0
         return B.part5(b,v)
@@ -6204,6 +6344,7 @@ do
     function B.part11(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.play_sound(b,16)
         return B.part12(b,v)
     end
     function B.part12(b,v)
@@ -6303,6 +6444,7 @@ do
     function B.part4(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.play_sound(b,16)
         v.c0=140
         v.i0=0
         return B.part5(b,v)
@@ -6366,6 +6508,7 @@ do
     function B.part11(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.play_sound(b,16)
         return B.part12(b,v)
     end
     function B.part12(b,v)
@@ -6465,6 +6608,7 @@ do
     function B.part4(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.play_sound(b,16)
         v.c0=180
         v.i0=0
         return B.part5(b,v)
@@ -6528,6 +6672,7 @@ do
     function B.part11(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.play_sound(b,16)
         return B.part12(b,v)
     end
     function B.part12(b,v)
@@ -6627,6 +6772,7 @@ do
     function B.part4(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.play_sound(b,16)
         v.c0=180
         v.i0=0
         return B.part5(b,v)
@@ -6690,6 +6836,7 @@ do
     function B.part11(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.play_sound(b,16)
         return B.part12(b,v)
     end
     function B.part12(b,v)
@@ -6789,6 +6936,7 @@ do
     function B.part4(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.play_sound(b,16)
         v.c0=150
         v.i0=0
         return B.part5(b,v)
@@ -6852,6 +7000,7 @@ do
     function B.part11(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.play_sound(b,16)
         return B.part12(b,v)
     end
     function B.part12(b,v)
@@ -6951,6 +7100,7 @@ do
     function B.part4(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.play_sound(b,16)
         v.c0=140
         v.i0=0
         return B.part5(b,v)
@@ -7014,6 +7164,7 @@ do
     function B.part11(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.play_sound(b,16)
         return B.part12(b,v)
     end
     function B.part12(b,v)
@@ -7465,6 +7616,7 @@ do
         a.death_mode=2
         a.death=P[4][41]
         H.particles(b,12,1,-8355585)
+        H.play_sound(b,7)
         H.wait(b,v,120)
         a.damageable=true
         if (v.i2)==(0) then H.call(b,v,P[4][55],0,0.0) end
@@ -7496,6 +7648,7 @@ do
         a.death_mode=3
         a.death=P[4][60]
         H.particles(b,12,1,-8355585)
+        H.play_sound(b,7)
         H.wait(b,v,120)
         a.damageable=true
         if (v.i3)==(0) then H.call(b,v,P[4][55],0,0.0) end
@@ -7545,6 +7698,7 @@ do
         a.extra={128,-1,-1,-1,0.0,-0.02454369328916073,-1.0,-1.0}
         v.f0=ran:Float(0,6.2831854820251465)+-3.1415927410125732
         a.extra={128,-1,-1,-1,0.0,0.02454369328916073,-1.0,-1.0}
+        H.play_sound(b,9)
         H.wait(b,v,128)
         v.c0=v.c0-1
         if v.c0>0 then v.time=120;return B.part3(b,v) end
@@ -7602,6 +7756,7 @@ do
         v.f0=ran:Float(0,6.2831854820251465)+-3.1415927410125732
         a.extra={128,-1,-1,-1,0.0,-0.02454369328916073,-1.0,-1.0}
         H.pattern(b,4,7,0,v.i0,2,2.5,1.2000000476837158,v.f0,0.13089969754219055,32)
+        H.play_sound(b,9)
         H.wait(b,v,128)
         v.c0=v.c0-1
         if v.c0>0 then v.time=120;return B.part3(b,v) end
@@ -7660,6 +7815,7 @@ do
         a.extra={128,-1,-1,-1,0.0,-0.02454369328916073,-1.0,-1.0}
         H.pattern(b,4,7,0,v.i0,2,2.0,1.0,v.f0,0.13089969754219055,32)
         H.pattern(b,9,9,0,6,1,4.0,0.699999988079071,3.1415927410125732,-3.1415927410125732,0)
+        H.play_sound(b,9)
         H.wait(b,v,128)
         v.c0=v.c0-1
         if v.c0>0 then v.time=120;return B.part3(b,v) end
@@ -7720,6 +7876,7 @@ do
         v.f1=(0.0)-(v.f0)
         H.laser(b,true,0,6,v.f1,4.0,0.0,0.0,96.0,6.0,0,9999,30,0,30,0)
         v.f0=(v.f0)-(0.02617993950843811)
+        H.play_sound(b,17)
         H.wait(b,v,130)
         v.c0=v.c0-1
         if v.c0>0 then v.time=120;return B.part3(b,v) end
@@ -7742,6 +7899,7 @@ do
         H.pattern(b,1,6,3,10,1,2.5,0.699999988079071,v.f0,0.22439947724342346,0)
         v.i0=v.c3
         v.i0=(v.i0)+(1)
+        H.play_sound(b,9)
         H.wait(b,v,140)
         v.c0=v.c0-1
         if v.c0>0 then v.time=130;return B.part5(b,v) end
@@ -7801,6 +7959,7 @@ do
         v.f1=(0.0)-(v.f0)
         H.laser(b,true,0,6,v.f1,0.0,0.0,640.0,640.0,8.0,20,50,10,20,10,0)
         v.f0=(v.f0)-(0.02617993950843811)
+        H.play_sound(b,17)
         H.wait(b,v,130)
         v.c0=v.c0-1
         if v.c0>0 then v.time=120;return B.part3(b,v) end
@@ -7823,6 +7982,7 @@ do
         H.pattern(b,1,9,1,10,1,3.799999952316284,0.699999988079071,v.f0,0.3141592741012573,0)
         v.f1=ran:Float(0,0.1745329201221466)+-0.0872664600610733
         v.f0=(v.f0)-(v.f1)
+        H.play_sound(b,9)
         H.wait(b,v,140)
         v.c0=v.c0-1
         if v.c0>0 then v.time=130;return B.part5(b,v) end
@@ -7877,6 +8037,7 @@ do
         H.wait(b,v,120)
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
         a.extra={-1,-1,-1,-1,0.012000000104308128,2.356194496154785,-1.0,-1.0}
+        H.play_sound(b,26)
         return B.part4(b,v)
     end
     function B.part4(b,v)
@@ -7959,6 +8120,7 @@ do
         a.extra={-1,-1,-1,-1,0.012000000104308128,0.7853981852531433,-1.0,-1.0}
         H.pattern(b,9,5,13,15,1,2.0,0.30000001192092896,3.1415927410125732,-3.1415927410125732,19)
         H.pattern(b,9,5,13,12,1,2.0,0.30000001192092896,3.1415927410125732,-3.1415927410125732,19)
+        H.play_sound(b,26)
         return B.part4(b,v)
     end
     function B.part4(b,v)
@@ -8042,6 +8204,7 @@ do
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
         a.extra={-1,-1,-1,-1,0.00800000037997961,1.5707963705062866,-1.0,-1.0}
         H.pattern(b,9,5,11,30,1,2.0,0.30000001192092896,3.1415927410125732,-3.1415927410125732,19)
+        H.play_sound(b,26)
         return B.part4(b,v)
     end
     function B.part4(b,v)
@@ -8113,6 +8276,7 @@ do
         H.wait(b,v,120)
         v.f0=ran:Float(0,3.1415927410125732)+-1.5707963705062866
         a.extra={180,1,-1,-1,v.f0,1.399999976158142,-1.0,-1.0}
+        H.play_sound(b,22)
         v.cmp=((224-player.y))-((224-b.y))
         if v.cmp>=0 then v.time=120;return B.part4(b,v) end
         return B.part3(b,v)
@@ -8160,6 +8324,7 @@ do
         v.f0=ran:Float(0,3.1415927410125732)+-1.5707963705062866
         a.extra={50,2,-1,-1,v.f0,2.200000047683716,-1.0,-1.0}
         H.pattern(b,9,1,12,15,1,3.299999952316284,2.299999952316284,3.1415927410125732,0.0,67)
+        H.play_sound(b,22)
         v.cmp=((224-player.y))-((224-b.y))
         if v.cmp>=0 then v.time=120;return B.part4(b,v) end
         return B.part3(b,v)
@@ -8207,6 +8372,7 @@ do
         v.f0=ran:Float(0,3.1415927410125732)+-1.5707963705062866
         a.extra={90,1,-1,-1,v.f0,1.7999999523162842,-1.0,-1.0}
         H.pattern(b,9,1,12,18,1,2.4000000953674316,1.0,3.1415927410125732,0.0,67)
+        H.play_sound(b,22)
         v.cmp=((224-player.y))-((224-b.y))
         if v.cmp>0 then v.time=120;return B.part4(b,v) end
         return B.part3(b,v)
@@ -8285,6 +8451,7 @@ do
     function B.part4(b,v)
         local a=b.th06_actor
         H.wait(b,v,120)
+        H.play_sound(b,8)
         H.wait(b,v,160)
         v.time=120;return B.part2(b,v)
     end
@@ -8322,6 +8489,7 @@ do
         a.extra={60,1,-1,-1,v.f1,v.f0,-1.0,-1.0}
         v.f0=ran:Float(0,6.2831854820251465)+-3.1415927410125732
         H.pattern(b,4,3,15,10,3,6.0,0.5,v.f0,0.0,257)
+        H.play_sound(b,8)
         H.wait(b,v,170)
         v.time=120;return B.part2(b,v)
     end
@@ -8361,6 +8529,7 @@ do
         H.wait(b,v,120)
         v.f0=ran:Float(0,6.2831854820251465)+-3.1415927410125732
         H.pattern(b,4,7,0,20,2,2.5,0.699999988079071,v.f0,0.13089969754219055,0)
+        H.play_sound(b,9)
         H.wait(b,v,128)
         v.c0=v.c0-1
         if v.c0>0 then v.time=120;return B.part3(b,v) end
@@ -8384,6 +8553,7 @@ do
         v.i0=(v.i0)+(24)
         a.extra={130,1,-1,-1,v.f0,2.0,-1.0,-1.0}
         H.pattern(b,9,1,13,v.i0,1,2.4000000953674316,1.0,3.1415927410125732,0.0,67)
+        H.play_sound(b,22)
         H.wait(b,v,198)
         v.c0=v.c0-1
         if v.c0>0 then v.time=188;return B.part5(b,v) end
@@ -8434,6 +8604,7 @@ do
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
         a.extra={-1,-1,-1,-1,0.012000000104308128,2.356194496154785,-1.0,-1.0}
         H.pattern(b,9,7,0,22,1,2.5,0.30000001192092896,3.1415927410125732,-3.1415927410125732,19)
+        H.play_sound(b,26)
         return B.part4(b,v)
     end
     function B.part4(b,v)
@@ -8579,9 +8750,11 @@ do
         v.i0=(v.i0)+(28)
         a.extra={90,-1,-1,-1,0.003000000026077032,0.012271846644580364,-1.0,-1.0}
         H.pattern(b,3,3,14,v.i0,2,1.5,0.800000011920929,v.f0,0.3490658402442932,37)
+        H.play_sound(b,7)
         H.wait(b,v,140)
         a.extra={90,-1,-1,-1,0.003000000026077032,-0.012271846644580364,-1.0,-1.0}
         H.pattern(b,3,3,8,v.i0,2,1.5,0.800000011920929,v.f0,-0.3490658402442932,37)
+        H.play_sound(b,7)
         H.wait(b,v,160)
         v.c0=v.c0-1
         if v.c0>0 then v.time=120;return B.part3(b,v) end
@@ -8630,6 +8803,7 @@ do
         a.offsetx,a.offsety,a.offsetz=v.f0,v.f1,0.0
         v.f0=ran:Float(0,2.0)+1.600000023841858
         H.pattern(b,2,9,2,3,1,v.f0,0.800000011920929,1.5707963705062866,0.5235987901687622,4)
+        H.play_sound(b,7)
         v.i0=math.fmod(v.c3,18)
         v.cmp=(v.i0)-(7)
         if v.cmp~=0 then v.time=120;return B.part4(b,v) end
@@ -8649,6 +8823,7 @@ do
         v.f0=ran:Float(0,3.1415927410125732)+-1.5707963705062866
         a.extra={180,1,-1,-1,v.f0,1.7000000476837158,-1.0,-1.0}
         H.pattern(b,9,1,11,24,1,2.4000000953674316,1.0,3.1415927410125732,-3.1415927410125732,2)
+        H.play_sound(b,22)
         v.c3=v.c3 + 1
         H.wait(b,v,140)
         v.time=120;return B.part2(b,v)
@@ -8685,6 +8860,7 @@ do
         H.particles(b,3,2,-8355585)
         H.wait(b,v,10)
         H.particles(b,3,2,-128)
+        H.play_sound(b,7)
         v.c0=v.c0-1
         if v.c0>0 then v.time=0;return B.part2(b,v) end
         return B.part3(b,v)
@@ -8692,6 +8868,7 @@ do
     function B.part3(b,v)
         local a=b.th06_actor
         H.wait(b,v,10)
+        H.play_sound(b,18)
         H.trace(b,"spell_end")
         if not a.main then H.set_life(b,0) end
         H.wait(b,v,3010)
@@ -9139,6 +9316,7 @@ do
     function B.part1(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.play_sound(b,5)
         a.interactable=false
         H.sprite(b,128)
         H.anm_slot(b,0,16)
@@ -9192,6 +9370,7 @@ do
     function B.part1(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.play_sound(b,5)
         v.c0=10
         return B.part2(b,v)
     end
@@ -9200,6 +9379,7 @@ do
         H.wait(b,v,0)
         H.pattern(b,2,8,3,8,1,3.200000047683716,1.0,v.f1,0.28559932112693787,0)
         v.f1=(v.f1)+(v.f0)
+        H.play_sound(b,7)
         H.wait(b,v,8)
         v.c0=v.c0-1
         if v.c0>0 then v.time=0;return B.part2(b,v) end
@@ -9227,6 +9407,7 @@ do
         H.wait(b,v,0)
         H.pattern(b,2,4,2,5,3,2.0,1.0,v.f1,0.04487989470362663,0)
         v.f1=(v.f1)+(v.f0)
+        H.play_sound(b,7)
         H.wait(b,v,3)
         v.c0=v.c0-1
         if v.c0>0 then v.time=0;return B.part2(b,v) end
@@ -9247,6 +9428,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         a.speed=0.0;a.mode="velocity"
+        H.play_sound(b,18)
         H.drop_item(b,5)
         H.call(b,v,P[5][17],0,0.0)
     end
@@ -10247,6 +10429,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,120)
         v.c0=32
+        H.play_sound(b,5)
         return B.part3(b,v)
     end
     function B.part3(b,v)
@@ -10271,6 +10454,7 @@ do
         H.wait(b,v,304)
         v.c0=8
         v.repeat_func=nil
+        H.play_sound(b,5)
         return B.part5(b,v)
     end
     function B.part5(b,v)
@@ -10316,6 +10500,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,120)
         v.c0=32
+        H.play_sound(b,5)
         return B.part3(b,v)
     end
     function B.part3(b,v)
@@ -10342,6 +10527,7 @@ do
         H.wait(b,v,284)
         v.c0=8
         v.repeat_func=nil
+        H.play_sound(b,5)
         return B.part5(b,v)
     end
     function B.part5(b,v)
@@ -10387,6 +10573,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,120)
         v.c0=32
+        H.play_sound(b,5)
         return B.part3(b,v)
     end
     function B.part3(b,v)
@@ -10411,6 +10598,7 @@ do
         H.wait(b,v,254)
         v.c0=6
         v.repeat_func=nil
+        H.play_sound(b,5)
         return B.part5(b,v)
     end
     function B.part5(b,v)
@@ -10457,6 +10645,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,120)
         v.c0=32
+        H.play_sound(b,5)
         return B.part3(b,v)
     end
     function B.part3(b,v)
@@ -10484,6 +10673,7 @@ do
         H.wait(b,v,254)
         v.c0=6
         v.repeat_func=nil
+        H.play_sound(b,5)
         return B.part5(b,v)
     end
     function B.part5(b,v)
@@ -10588,6 +10778,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,120)
         H.call(b,v,P[5][48],0,0.0)
+        H.play_sound(b,5)
         H.call(b,v,P[5][49],0,0.0)
         H.extra(b,v,4,1,false)
         a.interactable=false
@@ -10597,6 +10788,7 @@ do
         H.move_dir(b,60,a.angle,a.speed,1)
         H.wait(b,v,140)
         v.c0=7
+        H.play_sound(b,5)
         return B.part3(b,v)
     end
     function B.part3(b,v)
@@ -10650,6 +10842,7 @@ do
         H.particles(b,3,2,-8355585)
         H.wait(b,v,10)
         H.particles(b,3,2,-128)
+        H.play_sound(b,7)
         v.c0=v.c0-1
         if v.c0>0 then v.time=0;return B.part2(b,v) end
         return B.part3(b,v)
@@ -10657,6 +10850,7 @@ do
     function B.part3(b,v)
         local a=b.th06_actor
         H.wait(b,v,10)
+        H.play_sound(b,18)
         H.trace(b,"spell_end")
         if not a.main then H.set_life(b,0) end
         H.wait(b,v,3010)
@@ -10813,6 +11007,7 @@ do
         v.f0=ran:Float(0,6.2831854820251465)+-3.1415927410125732
         a.death_mode=1
         a.death=P[6][6]
+        H.play_sound(b,7)
         H.pattern(b,3,2,6,60,2,3.200000047683716,1.0,0.0,0.0,4)
         a.accel=0.0;a.mode="velocity"
         v.f0=ran:Float(0,1.5707963705062866)+0.7853981852531433
@@ -10848,6 +11043,7 @@ do
         v.f0=ran:Float(0,6.2831854820251465)+-3.1415927410125732
         a.death_mode=1
         a.death=P[6][6]
+        H.play_sound(b,7)
         H.pattern(b,3,2,6,60,1,1.600000023841858,1.0,0.0,0.0,4)
         a.accel=0.0;a.mode="velocity"
         v.f0=ran:Float(0,1.5707963705062866)+0.7853981852531433
@@ -10864,6 +11060,7 @@ do
     function B.part1(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.play_sound(b,5)
         a.interactable=false
         H.sprite(b,128)
         H.anm_slot(b,0,16)
@@ -10969,6 +11166,7 @@ do
     function B.part1(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.play_sound(b,5)
         v.c0=12
         return B.part2(b,v)
     end
@@ -10977,6 +11175,7 @@ do
         H.wait(b,v,0)
         H.pattern(b,2,8,3,12,1,4.800000190734863,1.0,v.f1,0.2617993950843811,0)
         v.f1=(v.f1)+(v.f0)
+        H.play_sound(b,7)
         H.wait(b,v,4)
         v.c0=v.c0-1
         if v.c0>0 then v.time=0;return B.part2(b,v) end
@@ -11005,6 +11204,7 @@ do
         v.f1=ran:Float(0,6.2831854820251465)+-3.1415927410125732
         v.f2=ran:Float(0,6.2831854820251465)+-3.1415927410125732
         a.extra={60,1,-1,-1,v.f2,-999.0,-1.0,-1.0}
+        H.play_sound(b,22)
         H.wait(b,v,1)
         H.pattern(b,2,4,2,9,1,2.5,1.0,v.f1,0.03490658476948738,66)
         v.c0=v.c0-1
@@ -11026,6 +11226,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         a.speed=0.0;a.mode="velocity"
+        H.play_sound(b,18)
         H.drop_item(b,3)
         H.call(b,v,P[6][13],0,0.0)
     end
@@ -11074,6 +11275,7 @@ do
         H.wait(b,v,120)
         H.pattern(b,9,3,6,9,1,6.0,3.0,3.1415927410125732,0.0,4)
         H.pattern(b,9,3,6,12,1,5.0,3.0,0.0,-3.1415927410125732,4)
+        H.play_sound(b,7)
         H.wait(b,v,124)
         v.time=120;return B.part2(b,v)
     end
@@ -11236,6 +11438,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         v.c1=8
+        H.play_sound(b,5)
         v.c0=20
         return B.part2(b,v)
     end
@@ -11251,6 +11454,7 @@ do
     function B.part3(b,v)
         local a=b.th06_actor
         H.wait(b,v,5)
+        H.play_sound(b,7)
         H.pattern(b,1,9,0,1,1,6.0,1.2000000476837158,0.0,0.0,4)
         v.f0=(H.player_angle(b))-(0.09817477315664291)
         v.f1=(H.player_angle(b))+(0.09817477315664291)
@@ -11298,6 +11502,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         v.c1=8
+        H.play_sound(b,5)
         v.c0=20
         v.f2=0.0
         return B.part2(b,v)
@@ -11314,6 +11519,7 @@ do
     function B.part3(b,v)
         local a=b.th06_actor
         H.wait(b,v,5)
+        H.play_sound(b,7)
         H.pattern(b,2,9,0,1,1,7.0,1.2000000476837158,v.f2,0.0,4)
         v.f0=(v.f2)-(0.09817477315664291)
         v.f1=(v.f2)+(0.09817477315664291)
@@ -11378,6 +11584,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         v.c1=8
+        H.play_sound(b,5)
         v.c0=20
         v.f2=3.1415927410125732
         return B.part2(b,v)
@@ -11394,6 +11601,7 @@ do
     function B.part3(b,v)
         local a=b.th06_actor
         H.wait(b,v,5)
+        H.play_sound(b,7)
         H.pattern(b,2,9,0,1,1,7.0,1.2000000476837158,v.f2,0.0,4)
         v.f0=(v.f2)-(0.09817477315664291)
         v.f1=(v.f2)+(0.09817477315664291)
@@ -11637,6 +11845,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         v.c1=5
+        H.play_sound(b,5)
         v.c0=20
         return B.part2(b,v)
     end
@@ -11785,6 +11994,7 @@ do
     function B.part2(b,v)
         local a=b.th06_actor
         H.wait(b,v,120)
+        H.play_sound(b,5)
         v.c0=16
         return B.part3(b,v)
     end
@@ -11920,6 +12130,7 @@ do
     function B.part2(b,v)
         local a=b.th06_actor
         H.wait(b,v,120)
+        H.play_sound(b,5)
         v.i0=math.fmod(v.c3,2)
         H.pattern(b,1,9,1,8,1,7.0,2.0,0.0,-0.3141592741012573,516)
         v.c0=48
@@ -12020,11 +12231,13 @@ do
         H.move_to(b,120,192.0,112.0,0.0,1)
         H.wait(b,v,120)
         a.damageable=true
+        H.play_sound(b,5)
         return B.part2(b,v)
     end
     function B.part2(b,v)
         local a=b.th06_actor
         H.wait(b,v,120)
+        H.play_sound(b,5)
         v.c0=16
         return B.part3(b,v)
     end
@@ -12040,18 +12253,23 @@ do
     function B.part4(b,v)
         local a=b.th06_actor
         H.wait(b,v,124)
+        H.play_sound(b,7)
         v.f2=H.player_angle(b)
         H.call(b,v,P[6][37],0,0.0)
         H.wait(b,v,130)
+        H.play_sound(b,7)
         v.f2=H.player_angle(b)
         H.call(b,v,P[6][37],0,0.0)
         H.wait(b,v,136)
+        H.play_sound(b,7)
         v.f2=H.player_angle(b)
         H.call(b,v,P[6][37],0,0.0)
         H.wait(b,v,142)
+        H.play_sound(b,7)
         v.f2=H.player_angle(b)
         H.call(b,v,P[6][37],0,0.0)
         H.wait(b,v,148)
+        H.play_sound(b,7)
         v.f2=H.player_angle(b)
         H.call(b,v,P[6][37],0,0.0)
         H.rand_angle(b,-3.1415927410125732,3.1415927410125732,true)
@@ -12065,6 +12283,7 @@ do
     function B.part5(b,v)
         local a=b.th06_actor
         H.wait(b,v,154)
+        H.play_sound(b,7)
         H.call(b,v,P[6][37],0,0.0)
         v.f2=(v.f2)+(0.39269909262657166)
         v.f2=normal_angle(v.f2)
@@ -12076,9 +12295,11 @@ do
     function B.part6(b,v)
         local a=b.th06_actor
         H.wait(b,v,237)
+        H.play_sound(b,7)
         v.f2=H.player_angle(b)
         H.call(b,v,P[6][37],0,0.0)
         H.wait(b,v,243)
+        H.play_sound(b,7)
         v.f2=H.player_angle(b)
         H.call(b,v,P[6][37],0,0.0)
         H.rand_angle(b,-3.1415927410125732,3.1415927410125732,true)
@@ -12092,6 +12313,7 @@ do
     function B.part7(b,v)
         local a=b.th06_actor
         H.wait(b,v,249)
+        H.play_sound(b,7)
         H.call(b,v,P[6][37],0,0.0)
         v.f2=(v.f2)-(0.39269909262657166)
         v.f2=normal_angle(v.f2)
@@ -12222,6 +12444,7 @@ do
     function B.part2(b,v)
         local a=b.th06_actor
         H.wait(b,v,180)
+        H.play_sound(b,5)
         a.extra={1,-1,-1,-1,-1.0,-1.0,-1.0,-1.0}
         v.f0=ran:Float(0,6.2831854820251465)+-3.1415927410125732
         H.pattern(b,4,9,1,10,1,2.0,1.0,v.f0,-0.015707964077591896,2560)
@@ -12307,6 +12530,7 @@ do
     function B.part2(b,v)
         local a=b.th06_actor
         H.wait(b,v,180)
+        H.play_sound(b,5)
         v.f0=ran:Float(0,6.2831854820251465)+-3.1415927410125732
         a.extra={120,-1,-1,-1,0.023000000044703484,0.02454369328916073,-1.0,-1.0}
         H.pattern(b,4,9,1,14,4,4.0,1.7999999523162842,v.f0,-0.3141592741012573,512)
@@ -12377,6 +12601,7 @@ do
         H.particles(b,3,2,-8355585)
         H.wait(b,v,10)
         H.particles(b,3,2,-128)
+        H.play_sound(b,7)
         v.c0=v.c0-1
         if v.c0>0 then v.time=0;return B.part2(b,v) end
         return B.part3(b,v)
@@ -12384,6 +12609,7 @@ do
     function B.part3(b,v)
         local a=b.th06_actor
         H.wait(b,v,10)
+        H.play_sound(b,18)
         H.trace(b,"spell_end")
         if not a.main then H.set_life(b,0) end
         H.wait(b,v,3010)
@@ -12729,6 +12955,7 @@ do
         a.speed=0.0;a.mode="velocity"
         H.wait(b,v,70)
         H.pattern(b,1,1,2,11,3,4.0,3.0,0.0,0.4487989544868469,3)
+        H.play_sound(b,7)
         H.wait(b,v,130)
         a.accel=0.05000000074505806;a.mode="velocity"
         a.angular=0.05235987901687622;a.mode="velocity"
@@ -12757,6 +12984,7 @@ do
         H.wait(b,v,70)
         H.pattern(b,1,1,2,3,4,6.0,2.0,0.0,0.06544984877109528,3)
         H.pattern(b,1,1,2,2,3,6.599999904632568,2.0999999046325684,0.0,0.06544984877109528,3)
+        H.play_sound(b,7)
         H.wait(b,v,130)
         a.accel=0.05000000074505806;a.mode="velocity"
         a.angular=0.009817477315664291;a.mode="velocity"
@@ -12786,6 +13014,7 @@ do
         H.wait(b,v,70)
         H.pattern(b,1,3,2,7,4,5.0,1.0,0.0,0.06544984877109528,3)
         H.pattern(b,1,3,2,6,3,4.599999904632568,1.100000023841858,0.0,0.06544984877109528,3)
+        H.play_sound(b,7)
         H.wait(b,v,130)
         a.accel=0.05000000074505806;a.mode="velocity"
         a.angular=0.009817477315664291;a.mode="velocity"
@@ -12874,6 +13103,7 @@ do
         H.wait(b,v,30)
         v.f0=ran:Float(0,6.2831854820251465)+-3.1415927410125732
         H.pattern(b,4,0,2,16,1,1.2000000476837158,1.0,v.f0,0.0,3)
+        H.play_sound(b,7)
         H.wait(b,v,41)
         v.c0=v.c0-1
         if v.c0>0 then v.time=30;return B.part2(b,v) end
@@ -12915,6 +13145,7 @@ do
         H.wait(b,v,30)
         v.f0=ran:Float(0,6.2831854820251465)+-3.1415927410125732
         H.pattern(b,9,0,2,20,1,1.7999999523162842,0.6000000238418579,3.1415927410125732,-3.1415927410125732,3)
+        H.play_sound(b,7)
         H.wait(b,v,42)
         v.c0=v.c0-1
         if v.c0>0 then v.time=30;return B.part2(b,v) end
@@ -12948,6 +13179,7 @@ do
         H.wait(b,v,30)
         v.c3=0
         a.interactable=true
+        H.play_sound(b,7)
         v.c0=6
         return B.part2(b,v)
     end
@@ -12956,6 +13188,7 @@ do
         H.wait(b,v,30)
         v.f0=ran:Float(0,6.2831854820251465)+-3.1415927410125732
         H.pattern(b,1,0,6,9,1,1.600000023841858,0.6000000238418579,0.0,0.3141592741012573,3)
+        H.play_sound(b,7)
         H.wait(b,v,50)
         v.c0=v.c0-1
         if v.c0>0 then v.time=30;return B.part2(b,v) end
@@ -12997,6 +13230,7 @@ do
         H.wait(b,v,30)
         v.f0=ran:Float(0,6.2831854820251465)+-3.1415927410125732
         H.pattern(b,1,0,6,1,4,2.5,1.0,0.0,0.0,3)
+        H.play_sound(b,7)
         H.wait(b,v,50)
         v.c0=v.c0-1
         if v.c0>0 then v.time=30;return B.part2(b,v) end
@@ -13038,6 +13272,7 @@ do
         H.wait(b,v,30)
         v.f0=ran:Float(0,6.2831854820251465)+-3.1415927410125732
         H.pattern(b,4,0,2,10,3,2.200000047683716,0.6000000238418579,v.f0,0.0,3)
+        H.play_sound(b,7)
         H.wait(b,v,60)
         v.c0=v.c0-1
         if v.c0>0 then v.time=30;return B.part2(b,v) end
@@ -13112,6 +13347,7 @@ do
     function B.part4(b,v)
         local a=b.th06_actor
         H.wait(b,v,120)
+        H.play_sound(b,24)
         v.i0=math.fmod(v.c3,32)
         v.cmp=(v.i0)-(7)
         if v.cmp~=0 then v.time=120;return B.part6(b,v) end
@@ -13965,6 +14201,7 @@ do
         H.wait(b,v,120)
         a.laser_index=0
         H.laser(b,false,1,2,-2.9845130443573,0.0,32.0,420.0,388.0,24.0,60,800,20,60,18,0)
+        H.play_sound(b,16)
         v.c0=120
         v.f3=-2.9845130443573
         v.f2=-1.4137166738510132
@@ -13974,6 +14211,7 @@ do
         H.wait(b,v,240)
         a.laser_index=0
         H.laser(b,false,1,2,1.5707963705062866,0.0,32.0,400.0,368.0,24.0,60,800,20,60,18,0)
+        H.play_sound(b,16)
         v.c0=60
         return B.part3(b,v)
     end
@@ -14013,6 +14251,7 @@ do
         H.wait(b,v,242)
         a.laser_index=0
         H.laser(b,false,1,2,1.5707963705062866,0.0,32.0,400.0,368.0,24.0,60,800,20,60,18,0)
+        H.play_sound(b,16)
         H.wait(b,v,302)
         H.move_to(b,90,32.0,50.0,0.0,1)
         v.c0=64
@@ -14023,6 +14262,7 @@ do
         H.move_to(b,120,192.0,80.0,0.0,1)
         a.laser_index=0
         H.laser(b,false,1,2,-0.15707963705062866,0.0,32.0,400.0,368.0,24.0,60,800,20,60,18,0)
+        H.play_sound(b,16)
         v.c0=120
         v.f3=-0.15707963705062866
         v.f2=-1.7278759479522705
@@ -14178,6 +14418,7 @@ do
         a.damageable=true
         v.repeat_func=10
         v.c0=32
+        H.play_sound(b,5)
         return B.part2(b,v)
     end
     function B.part2(b,v)
@@ -14232,6 +14473,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,373)
         H.interval(b,0,true)
+        H.play_sound(b,5)
         H.wait(b,v,473)
         H.pattern(b,4,6,3,40,3,3.0,1.0,v.f0,0.06283185631036758,512)
         H.wait(b,v,563)
@@ -14290,6 +14532,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,450)
         H.interval(b,0,true)
+        H.play_sound(b,5)
         H.wait(b,v,550)
         H.pattern(b,4,6,3,40,3,3.0,1.0,v.f0,0.0,512)
         H.wait(b,v,640)
@@ -14353,6 +14596,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,350)
         H.interval(b,0,true)
+        H.play_sound(b,5)
         H.wait(b,v,450)
         H.pattern(b,4,6,6,8,10,5.0,1.0,0.0,0.0,512)
         H.wait(b,v,540)
@@ -14416,6 +14660,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,400)
         H.interval(b,0,true)
+        H.play_sound(b,5)
         H.wait(b,v,500)
         H.pattern(b,1,6,5,7,5,3.200000047683716,1.0,0.0,0.3141592741012573,512)
         H.wait(b,v,590)
@@ -14508,6 +14753,7 @@ do
         a.damageable=true
         v.repeat_func=15
         v.c0=32
+        H.play_sound(b,5)
         return B.part2(b,v)
     end
     function B.part2(b,v)
@@ -14905,6 +15151,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,120)
         v.c0=30
+        H.play_sound(b,5)
         return B.part3(b,v)
     end
     function B.part3(b,v)
@@ -14919,6 +15166,7 @@ do
     function B.part4(b,v)
         local a=b.th06_actor
         H.wait(b,v,122)
+        H.play_sound(b,7)
         H.spawn(b,7,51,(b.x+192),(224-b.y),2.356194496154785,102,-2,10)
         H.spawn(b,7,51,(b.x+192),(224-b.y),2.7488934993743896,114,-2,10)
         H.spawn(b,7,51,(b.x+192),(224-b.y),3.1415927410125732,113,-2,10)
@@ -14930,6 +15178,7 @@ do
         a.speed=2.5;a.mode="velocity"
         H.move_dir(b,90,a.angle,a.speed,1)
         v.c0=30
+        H.play_sound(b,5)
         return B.part5(b,v)
     end
     function B.part5(b,v)
@@ -14944,6 +15193,7 @@ do
     function B.part6(b,v)
         local a=b.th06_actor
         H.wait(b,v,184)
+        H.play_sound(b,7)
         H.spawn(b,7,51,-32.0,336.0,-0.5890486240386963,104,-2,10)
         H.wait(b,v,194)
         H.spawn(b,7,52,-32.0,304.0,-0.5890486240386963,106,-2,10)
@@ -14962,6 +15212,7 @@ do
         a.speed=2.5;a.mode="velocity"
         H.move_dir(b,90,a.angle,a.speed,1)
         H.wait(b,v,394)
+        H.play_sound(b,7)
         H.spawn(b,7,51,416.0,336.0,3.337942123413086,104,-2,10)
         H.wait(b,v,404)
         H.spawn(b,7,52,416.0,304.0,3.337942123413086,106,-2,10)
@@ -14976,6 +15227,7 @@ do
         H.wait(b,v,454)
         H.spawn(b,7,51,416.0,144.0,3.337942123413086,102,-2,10)
         H.wait(b,v,594)
+        H.play_sound(b,7)
         H.spawn(b,7,51,-32.0,336.0,0.0,104,-2,10)
         H.wait(b,v,604)
         H.spawn(b,7,51,416.0,304.0,3.1415927410125732,106,-2,10)
@@ -15178,6 +15430,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,120)
         v.c0=30
+        H.play_sound(b,5)
         return B.part3(b,v)
     end
     function B.part3(b,v)
@@ -15193,6 +15446,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,122)
         a.extra={2,-1,-1,-1,-1.0,-1.0,-1.0,-1.0}
+        H.play_sound(b,7)
         v.f2=-2.356194496154785
         H.call(b,v,P[7][55],0,0.0)
         v.f2=-1.9634953737258911
@@ -15208,6 +15462,7 @@ do
         H.move_to(b,90,288.0,96.0,0.0,1)
         H.wait(b,v,292)
         a.extra={1,-1,-1,-1,-1.0,-1.0,-1.0,-1.0}
+        H.play_sound(b,7)
         v.f2=0.7853981852531433
         H.call(b,v,P[7][55],0,0.0)
         v.f2=0.39269909262657166
@@ -15223,6 +15478,7 @@ do
         H.move_to(b,60,96.0,96.0,0.0,1)
         H.wait(b,v,412)
         a.extra={1,-1,-1,-1,-1.0,-1.0,-1.0,-1.0}
+        H.play_sound(b,7)
         v.f2=2.356194496154785
         H.call(b,v,P[7][55],0,0.0)
         v.f2=2.7488934993743896
@@ -15245,6 +15501,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,532)
         a.extra={1,-1,-1,-1,-1.0,-1.0,-1.0,-1.0}
+        H.play_sound(b,7)
         v.f2=-1.5707963705062866
         H.call(b,v,P[7][55],0,0.0)
         H.wait(b,v,556)
@@ -15258,6 +15515,7 @@ do
         H.move_to(b,60,192.0,128.0,0.0,1)
         H.wait(b,v,646)
         v.c0=30
+        H.play_sound(b,5)
         H.particles(b,17,6,-8355585)
         H.wait(b,v,648)
         v.c0=v.c0-1
@@ -15268,6 +15526,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,648)
         a.extra={1,-1,-1,-1,-1.0,-1.0,-1.0,-1.0}
+        H.play_sound(b,7)
         v.f2=2.356194496154785
         H.call(b,v,P[7][55],0,0.0)
         v.f2=3.1415927410125732
@@ -15398,6 +15657,7 @@ do
     function B.part2(b,v)
         local a=b.th06_actor
         H.wait(b,v,120)
+        H.play_sound(b,5)
         H.spawn(b,7,58,64.0,288.0,288.0,10,-2,10)
         H.spawn(b,7,58,320.0,160.0,160.0,10,-2,10)
         H.wait(b,v,210)
@@ -15446,6 +15706,7 @@ do
     function B.part8(b,v)
         local a=b.th06_actor
         H.wait(b,v,231)
+        H.play_sound(b,5)
         H.spawn(b,7,58,64.0,160.0,160.0,10,-2,10)
         H.spawn(b,7,58,320.0,288.0,288.0,10,-2,10)
         H.wait(b,v,321)
@@ -15494,6 +15755,7 @@ do
     function B.part14(b,v)
         local a=b.th06_actor
         H.wait(b,v,332)
+        H.play_sound(b,5)
         H.spawn(b,7,58,64.0,128.0,288.0,10,-2,10)
         H.spawn(b,7,58,320.0,128.0,288.0,10,-2,10)
         H.wait(b,v,422)
@@ -15579,6 +15841,7 @@ do
         H.laser(b,false,1,6,1.5707963705062866,0.0,0.0,216.0,216.0,24.0,60,800,20,60,18,0)
         a.laser_index=3
         H.laser(b,false,1,6,3.1415927410125732,0.0,0.0,216.0,216.0,24.0,60,800,20,60,18,0)
+        H.play_sound(b,16)
         v.f1=(384.0)-((b.x+192))
         v.cmp=((b.x+192))-(192.0)
         if v.cmp>=0 then v.time=30;return B.part3(b,v) end
@@ -15756,6 +16019,7 @@ do
         v.repeat_func=10
         a.survival=true
         H.particles(b,12,1,-32640)
+        H.play_sound(b,14)
         a.invisible=true
         a.interactable=false
         a.damageable=false
@@ -15934,6 +16198,7 @@ do
     function B.part9(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.play_sound(b,7)
         return
     end
     P[7][61]=B.part1
@@ -16057,6 +16322,7 @@ do
     function B.part9(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.play_sound(b,7)
         return
     end
     P[7][62]=B.part1
@@ -16180,6 +16446,7 @@ do
     function B.part9(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.play_sound(b,7)
         return
     end
     P[7][63]=B.part1
@@ -16304,6 +16571,7 @@ do
     function B.part9(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.play_sound(b,7)
         return
     end
     P[7][64]=B.part1
@@ -16429,6 +16697,7 @@ do
     function B.part9(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.play_sound(b,7)
         return
     end
     P[7][65]=B.part1
@@ -16553,6 +16822,7 @@ do
         a.damageable=true
         v.repeat_func=10
         v.c0=30
+        H.play_sound(b,5)
         return B.part2(b,v)
     end
     function B.part2(b,v)
@@ -16631,6 +16901,7 @@ do
         H.particles(b,3,2,-8355585)
         H.wait(b,v,10)
         H.particles(b,3,2,-128)
+        H.play_sound(b,7)
         v.c0=v.c0-1
         if v.c0>0 then v.time=0;return B.part2(b,v) end
         return B.part3(b,v)
@@ -16638,6 +16909,7 @@ do
     function B.part3(b,v)
         local a=b.th06_actor
         H.wait(b,v,10)
+        H.play_sound(b,18)
         H.trace(b,"spell_end")
         if not a.main then H.set_life(b,0) end
         H.wait(b,v,3010)
