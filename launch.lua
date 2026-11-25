@@ -172,6 +172,7 @@ default_setting = {
     touchBombInterval = 100, -- 双击起点间隔，毫秒
     touchUnlimited = false,
     touchSlowMode = 1, -- 竖屏低速按钮：1点击切换，2按住低速，3按住高速。
+    androidPortraitLayout = {}, -- 按战斗区域比例保存按钮及库存的位置。
     androidNativeResolution = false, -- 安卓默认使用720像素高的渲染面，可在设置中恢复原生。
     keys = {
         up = KEY.UP,

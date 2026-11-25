@@ -421,6 +421,11 @@ function RenderFunc()
         EndScene()
         return
     end
+    if AndroidPortrait and AndroidPortrait.editor then
+        -- 编辑页使用独立空画布，场景对象、音乐栏和淡出遮罩不参与绘制。
+        BeginScene();SetViewMode('ui');RenderClear(Color(255,0,0,0))
+        AndroidPortrait.editor:render();EndScene();return
+    end
     if GameNet and GameNet.client() then
         BeginScene();GameNet.clientRender();GameNet.render();EndScene();return
     end

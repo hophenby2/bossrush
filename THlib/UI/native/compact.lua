@@ -21,7 +21,9 @@ end
 local function label(str,x,y,align)
     ui:RenderText('title',tostring(str),x,y,.85,Color(255,232,242,252),align,'vcenter')
 end
-local function slots(s,life,y)
+local function slots(s,life,y,anchor)
+    if s.level==36 then C.snow=C.snow or dofile('mod/GAME/th38/hud_data.lua') end
+    if s.level==38 then C.summer=C.summer or dofile('mod/GAME/th40/hud_data.lua') end
     local level=s.level
     local n=life and s.life or s.bombs
     local classic=level==35 or level==37 or level==41
@@ -31,8 +33,8 @@ local function slots(s,life,y)
     if level==35 or level==37 then cap=10 end
     if level==40 then cap=life and 9 or 3;full=life and min(9,max(0,s.life+1)) or min(3,max(0,s.bombs)) end
     local gap=24
-    local start=screen.width/2-cap*gap/2+30
-    label(life and '残机' or level==36 and '结界' or level==40 and 'Mental' or 'Bomb',start-13,y,'right')
+    local start=anchor or screen.width/2-cap*gap/2+30
+    if not anchor then label(life and '残机' or level==36 and '结界' or level==40 and 'Mental' or 'Bomb',start-13,y,'right') end
     local function icon(i,on)
         local x=start+i*gap
         local c=Color(on and 255 or 57,255,255,255)
@@ -67,9 +69,9 @@ local function slots(s,life,y)
             end
         end
     end
-    for i=0,cap-1 do icon(i,i<full) end
+    if anchor then icon(0,true) else for i=0,cap-1 do icon(i,i<full) end end
     local suffix=classic and n%5>0 and (' + %d/5'):format(n%5) or ''
-    label(tostring(full)..suffix,start+gap*cap+7,y,'left')
+    label((anchor and 'x' or '')..tostring(full)..suffix,anchor and start+29 or start+gap*cap+7,y,'left')
 end
 function C.height() return 120 end
 function C.banner()
@@ -79,7 +81,6 @@ function C.banner()
     if s.level==38 then C.summer=C.summer or dofile('mod/GAME/th40/hud_data.lua') end
     local band=screen.height-lstg.world.scrt
     local top=screen.height-band/2+32
-    slots(s,true,top);slots(s,false,top-32)
     local val
     if s.level==35 or s.level==38 then val=('灵力  %.2f / 4.00'):format(s.power/100)
     elseif s.level==36 then val=('残机碎片  %d / %d'):format(s.fragments,NativePlayers.lifeThreshold(s))
@@ -88,6 +89,10 @@ function C.banner()
     elseif s.level==41 then val=('蓝点  %d     碎片  %d / 6'):format(s.points,s.rankChips) end
     label(val or ('擦弹  %d'):format(lstg.var.graze or 0),screen.width/2,top-64,'center')
     return true
+end
+function C.inventory(life,x,y)
+    local s=NativePlayers.state()
+    if s then slots(s,life,y,x) end
 end
 function C.lower(x,y)
     local s=NativePlayers.state()

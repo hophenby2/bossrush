@@ -28,12 +28,20 @@ local menuButtons = {
 }
 local portraitPause={key=27,x=34,y=0,radius=28,label='暂停'}
 local portraitSlow={key=16,action='slow',radius=30,label='低速'}
+local portraitBomb={key=88,action='spell',radius=30,label='Bomb',pulse=true}
 local cheatButton={cheat=true,radius=24,label='无敌'}
 function I.slowMode()
     local mode=setting and setting.touchSlowMode
     return mode==2 and 2 or mode==3 and 3 or 1
 end
+function I.loading()
+    local current=stage and stage.current_stage
+    return ui and ui.ResourceLoading and ui.ResourceLoading.state~=nil
+        or current and current.stage_name=='init'
+        or stage and stage.next_stage and stage.next_stage.stage_name=='init' or false
+end
 local function activeButtons(menuMode)
+    if I.loading() then return {} end
     local portrait=AndroidPortrait and AndroidPortrait.enabled()
     local list=menuMode and menuButtons or buttons
     if portrait then
@@ -41,7 +49,8 @@ local function activeButtons(menuMode)
         portraitPause.x,portraitPause.y=AndroidPortrait.pauseButton()
         portraitSlow.x,portraitSlow.y=AndroidPortrait.slowButton()
         portraitSlow.toggle=I.slowMode()==1
-        list={portraitPause,portraitSlow}
+        portraitBomb.x,portraitBomb.y=AndroidPortrait.bombButton()
+        list={portraitPause,portraitSlow,portraitBomb}
     end
     if not menuMode and not BossRushDesktop and GameDebug and GameDebug.canToggleCheat() then
         -- 竖屏用完整屏幕右上角，避开场地内的阶段数与血量倍率；横屏放在暂停左侧。
@@ -139,6 +148,7 @@ local function spellMenu()
     return o and IsValid(o) and not o.locked and o.alpha>0 and o
 end
 function I.touch(id, x, y, event)
+    if I.loading() then return end
     if AndroidPortrait and AndroidPortrait.touch(id,x,y,event) then return end
     if event == 'ended' or event == 'cancelled' then
         local old = I.touches[id]
@@ -189,7 +199,8 @@ function I.touch(id, x, y, event)
                     t.button = button
                     if event=='began' then
                         if button.cheat then GameDebug.toggleCheat()
-                        elseif button.toggle then I.toggles[button.action]=not I.toggles[button.action] end
+                        elseif button.toggle then I.toggles[button.action]=not I.toggles[button.action]
+                        elseif button.pulse then I.pulse(buttonKey(button)) end
                     end
                     if button.key == 27 then I.pulse(27) end
                     break
@@ -255,6 +266,7 @@ function I.readMovement(out)
 end
 local previousMode, previousStage, previousPlayer
 function I.beginFrame()
+    if I.loading() then I.reset(true);return end
     if AndroidPortrait then AndroidPortrait.dispatch() end
     local mode = I.menuMode()
     -- 暂停/切后台只释放触点并暂时屏蔽开关，回来沿用；回标题才清除开关。
@@ -309,6 +321,8 @@ function I.install(scene)
     cc.Director:getInstance():getEventDispatcher():addEventListenerWithSceneGraphPriority(listener, scene)
 end
 function I.render()
+    if I.loading() then return end
+    if AndroidPortrait and AndroidPortrait.editor then return end
     if AndroidPortrait then AndroidPortrait.coverOutside() end
     local portrait=AndroidPortrait and AndroidPortrait.enabled()
     local covering=portrait and AndroidPortrait.covering
@@ -320,7 +334,7 @@ function I.render()
         local active
         if b.cheat then active=cheat==true else active=GetKeyState(buttonKey(b)) end
         local stateful=b.cheat or b.action=='slow'
-        if b==portraitSlow then
+        if b==portraitSlow or b==portraitBomb then
             AndroidPortrait.drawSlowButton(b,active)
         elseif not portrait or b.cheat then
             local fill=stateful and (active and Color(235,165,245,195) or Color(210,32,42,55))

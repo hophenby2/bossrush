@@ -115,7 +115,9 @@ function H.portraitLower(x,buttonY,alpha)
     local scale=.8
     for i,key in ipairs({'power','bombs','lives'}) do
         local y=top+(i-1)*24
-        R.view(x,y,scale,function()
+        local rowX=x
+        if key~='power' and AndroidPortrait then rowX,y=AndroidPortrait.elementPosition(key=='lives' and 'life' or 'bombs') end
+        R.view(rowX,y,scale,function()
             if key=='power' then
                 label(g,key,0,0,alpha)
                 R.text(g,g==10 and ('%.2f'):format(s.power/20) or tostring(s.power),labelWidth(g,key)+6,0,.85,1,nil,alpha)

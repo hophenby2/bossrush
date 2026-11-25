@@ -28,6 +28,7 @@ local function other_setting_default()
     cs.touchSlowMode = ds.touchSlowMode
     cs.androidNativeResolution = ds.androidNativeResolution
     cs.androidPortrait = ds.androidPortrait
+    cs.androidPortraitLayout = DeSerialize(Serialize(ds.androidPortraitLayout or {}))
 
 end
 
@@ -160,11 +161,11 @@ function setting_button:frame()
             local mouse = ext.mouse
             local key = GetLastKey()
             if (key == setting.keys.left) or (key == setting.keys.right) or key == setting.keys.shoot or key == KEY.ENTER then
-                cur_setting[self.name] = not cur_setting[self.name]
+                if not self.action then cur_setting[self.name] = not cur_setting[self.name] end
                 self.otherfunction()
                 PlaySound('select00')
             end
-            if key == KEY.R then
+            if key == KEY.R and not self.action then
                 cur_setting[self.name] = default_setting[self.name]
                 self.otherfunction()
             end
@@ -173,7 +174,7 @@ function setting_button:frame()
             local height = y2 - y1
             if mouse:isDown(1) then
                 if sp.math.PointBoundCheck(mouse.x, mouse.y, x2 - width / 12 - height / 3 * 2, x2 - width / 12, y1 + height / 6, y2 - height / 6) then
-                    cur_setting[self.name] = not cur_setting[self.name]
+                    if not self.action then cur_setting[self.name] = not cur_setting[self.name] end
                     self.otherfunction()
                     PlaySound('select00')
                 end
@@ -198,6 +199,10 @@ function setting_button:render(alpha)
         RenderRect("white", x1 + 1, x2 - 1, y1 + 1, y2 - 1)
         ui:RenderText("big_text", self.display_name, x1 + width / 12, y1 + height / 2,
                 height * 0.7 / 80, Color(alpha * 255, r, g, b), "left", "vcenter")
+        if self.action then
+            ui:RenderText("title", "调整", x2-width/12, y1+height/2, .7, Color(alpha*255,r,g,b), "right", "vcenter")
+            return
+        end
         SetImageState("white", "", alpha * 255, 0, 0, 0)
         misc.SectorRender(x2 - width / 12 - height / 3 + 1, y1 + height / 2 - 1, height / 3, height / 2.7, 0, 360, 6)
         SetImageState("white", "", alpha * 255, r, g, b)
@@ -362,12 +367,26 @@ function game_setting:init(exit)
                 end) or nil,
         })
     end
+    if AndroidPortrait then
+        local items=self.menus[#self.menus].setting_item
+        local item=Newsetting_button("竖屏战斗布局", "androidPortraitLayout", _line,x2,y2-h2*5,y2-h2*4, nil,function()
+            AndroidPortrait.editLayout(self)
+        end)
+        item.action=true
+        items[#items+1]=item
+    end
     self.menus[self.pos1].choosing = true
     self.menus[self.pos1].setting_item[self.pos2].choosing = true
     self.curb_size = 0
     self.maxb_size = 0
 end
 function game_setting:frame()
+    if AndroidPortrait and AndroidPortrait.pendingEditor==self and AndroidPortrait.enabled() then
+        AndroidPortrait.pendingEditor=nil;AndroidPortrait.editLayout(self)
+    end
+    if AndroidPortrait and AndroidPortrait.editor and AndroidPortrait.editor.owner==self then
+        AndroidPortrait.editor:frame();return
+    end
     task.Do(self)
     if SpellNames then SpellNames.refresh(cur_setting.spellNameLanguage) end
     SetSEVolume(cur_setting.sevolume / 100)
@@ -493,6 +512,9 @@ function game_setting:frame()
     end
 end
 function game_setting:render()
+    if AndroidPortrait and AndroidPortrait.editor and AndroidPortrait.editor.owner==self then
+        return -- 编辑页由独立空画布绘制。
+    end
     if AndroidPortrait and AndroidPortrait.enabled() and not AndroidPortrait.rendering then return AndroidPortrait.settings(self,game_setting.render) end
     if self.alpha == 0 then
         return

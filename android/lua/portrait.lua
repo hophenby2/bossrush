@@ -67,7 +67,7 @@ function P.touch(id,x,y,event)
             if c.stage==stage.current_stage and available(c.owner) and (not P.modal or c.owner==P.modal) and contains(c,x,y) then hit=c;break end
         end
         P.touches[id]={hit=hit,x=x,y=y}
-        if hit and hit.drag then P.pending[#P.pending+1]={hit=hit,x=x,y=y,drag=true} end
+        if hit and hit.drag then P.pending[#P.pending+1]={hit=hit,x=x,y=y,drag=true,phase="began"} end
     else
         local t=P.touches[id]
         if t then
@@ -75,7 +75,9 @@ function P.touch(id,x,y,event)
             local slop=t.hit and t.hit.swipe and 400 or 144
             if dx*dx+dy*dy>slop then t.moved=true end
             if event=='moved' and t.hit and t.hit.drag then
-                P.pending[#P.pending+1]={hit=t.hit,x=x,y=y,drag=true}
+                P.pending[#P.pending+1]={hit=t.hit,x=x,y=y,drag=true,phase="moved"}
+            elseif (event=='ended' or event=='cancelled') and t.hit and t.hit.drag then
+                P.pending[#P.pending+1]={hit=t.hit,x=x,y=y,drag=true,phase=event}
             elseif event=='ended' and t.hit and t.hit.swipe and math.abs(dx)>=48 and math.abs(dx)>math.abs(dy)*1.3 then
                 P.pending[#P.pending+1]={hit=t.hit,swipe=dx<0 and 1 or -1}
             elseif event=='ended' and t.hit and not t.moved and contains(t.hit,x,y) then
@@ -93,7 +95,7 @@ function P.dispatch()
         local c=event.hit
         if c.stage==stage.current_stage and available(c.owner) then
             if event.swipe then c.swipe(event.swipe)
-            elseif event.drag then c.drag(event.x,event.y) else c.action(event.x,event.y) end
+            elseif event.drag then c.drag(event.x,event.y,event.phase) else c.action(event.x,event.y) end
         end
     end
 end
@@ -160,9 +162,9 @@ function P.bind(o,x1,x2,y1,y2,action,drag)
         if v then return (x-v.x)/v.scale,(y-v.y)/v.scale end
         return x,y
     end
-    control(o,x1,x2,y1,y2,function(x,y) action(localPoint(x,y)) end,drag and function(x,y)
+    control(o,x1,x2,y1,y2,function(x,y) action(localPoint(x,y)) end,drag and function(x,y,phase)
         if v then x,y=(x-v.x)/v.scale,(y-v.y)/v.scale end
-        drag(x,y)
+        drag(x,y,phase)
     end,P.swipeAction)
 end
 local function shared(o,render,bind,closeAction)
@@ -286,7 +288,8 @@ function P.settings(o,render)
                     end)
                 else
                     P.bind(o,x1,x2,y1,y2,function()
-                        chooseSetting(o,o.pos1,index);cur_setting[item.name]=not cur_setting[item.name]
+                        chooseSetting(o,o.pos1,index)
+                        if not item.action then cur_setting[item.name]=not cur_setting[item.name] end
                         item.otherfunction();PlaySound('select00')
                     end)
                 end
@@ -472,33 +475,33 @@ end
 function P.hud(alpha)
     SetViewMode('ui')
     local w=lstg.world
-    local _,buttonY=P.slowButton()
+    local lifeX,lifeY=P.elementPosition('life')
+    local bombX,bombY=P.elementPosition('bombs')
     local native=ui.OriginalHUD and ui.OriginalHUD.portraitLower
-        and ui.OriginalHUD.portraitLower(w.scrl+12,buttonY,alpha)
+        and ui.OriginalHUD.portraitLower(w.scrl+12,w.scrb+232,alpha)
     if NativePlayers and NativePlayers.state() then
-        ui.NativeHUD.compact.lower(w.scrl+15,buttonY+64)
+        ui.NativeHUD.compact.inventory(true,lifeX,lifeY)
+        ui.NativeHUD.compact.inventory(false,bombX,bombY)
+        ui.NativeHUD.compact.lower(w.scrl+15,w.scrb+280)
         P.score(alpha)
         return
     end
-    local x,y=w.scrl+18,buttonY+48
     local count=GameDrops.bombsEnabled() and ((GameNet and GameNet.host()) and 2 or 1) or 0
-    local lives=ui.RunHUD.lives()
-    -- 左下角竖排，生命在上、Bomb在下；一颗星配阿拉伯数字。
-    local lifeY=y+count*30
     if not native then
-        GameDrops.renderStar('star_big2',x,lifeY,20,1,alpha)
-        label('x'..lives,x+17,lifeY,.85,alpha,{255,110,120},'left')
-    end
-    for slot=1,native and 0 or count do
-        local bombs=GameDrops.bombState(slot)
-        local bombY=y+(count-slot)*30
-        GameDrops.renderStar('star_big10',x,bombY,20,1,alpha)
-        label((count==2 and 'P'..slot..' ' or '')..'x'..bombs,x+17,bombY,.85,alpha,{110,235,145},'left')
+        P.drawInventory('life',lifeX,lifeY,ui.RunHUD.lives(),alpha)
+        for slot=1,count do
+            P.drawInventory('bombs',bombX,bombY-(slot-1)*30,GameDrops.bombState(slot),alpha,count==2 and 'P'..slot..' ' or '')
+        end
     end
     if not lstg.var.rogue_run then
         P.score(alpha)
         if not lstg.var.__sequence_version then label('×1',w.scrr-14,w.scrt-28,1,alpha,{230,241,250},'right') end
     end
+end
+function P.drawInventory(id,x,y,value,alpha,prefix)
+    local life=id=='life'
+    GameDrops.renderStar(life and 'star_big2' or 'star_big10',x,y,20,1,alpha)
+    label((prefix or '')..'x'..value,x+17,y,.85,alpha,life and {255,110,120} or {110,235,145},'left')
 end
 function P.score(alpha)
     local w=lstg.world
@@ -506,9 +509,32 @@ function P.score(alpha)
     local width=lstg.var.rogue_run and 200 or w.scrr-w.scrl-140
     label(value,(w.scrl+w.scrr)/2,w.scrt-28,math.min(3,width/(#value*16)),alpha,{230,241,250})
 end
-function P.slowButton()
+-- 坐标相对战斗区域保存，横竖屏切换和不同长宽比不会把控件留在屏外。
+function P.elementPosition(id,layout)
     local w=lstg.world
-    return w.scrl+42,w.scrb+P.BOSS_BOTTOM_INSET+34
+    local defaults={slow={42,P.BOSS_BOTTOM_INSET+34},bomb={42,P.BOSS_BOTTOM_INSET+102},life={24,P.BOSS_BOTTOM_INSET+196},bombs={24,P.BOSS_BOTTOM_INSET+166}}
+    local d=assert(defaults[id])
+    local saved=(layout or setting.androidPortraitLayout or {})[id]
+    local x,y=w.scrl+d[1],w.scrb+d[2]
+    if type(saved)=='table' and type(saved.x)=='number' and type(saved.y)=='number' then
+        x=w.scrl+saved.x*(w.scrr-w.scrl);y=w.scrb+saved.y*(w.scrt-w.scrb)
+    end
+    local left,right,bottom,top=30,30,P.BOSS_BOTTOM_INSET+30,30
+    if id=='life' or id=='bombs' then left,right,bottom,top=14,108,P.BOSS_BOTTOM_INSET+16,16 end
+    return math.max(w.scrl+left,math.min(w.scrr-right,x)),math.max(w.scrb+bottom,math.min(w.scrt-top,y))
+end
+function P.slowButton() return P.elementPosition('slow') end
+function P.bombButton() return P.elementPosition('bomb') end
+function P.editLayout(owner)
+    if not P.enabled() then
+        -- 此页按实际竖屏战斗区域预览，先通过设置切换屏幕方向。
+        P.pendingEditor=owner
+        cur_setting.androidPortrait=true;setting.androidPortrait=true
+        ChangeVideoMode2(cur_setting)
+        return
+    end
+    P.editorModule=P.editorModule or dofile('android/portrait_layout.lua')(P)
+    P.editor=P.editorModule.open(owner)
 end
 function P.drawSlowButton(b,active)
     -- 开启时亮色实心、关闭时深色底，文字同步反色，抬手后仍能分辨切换状态。
