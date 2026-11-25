@@ -38,6 +38,9 @@ local function new(class,...)
     -- 即使出生时两轴相等也必须保留椭圆类型，否则生长后会出现大块圆形判定。
     if AndroidPlatform and o.rect==false then o.rect='ellipse' end
     o.theis_port_object=true
+    -- 三面等原作背景直接继承 object，未经过 background.init；
+    -- 在桥接层统一登记，练习加载页才能在场景建好后退出。
+    if class.rogue_stage_background==W.level then lstg.tmpvar.bg=o end
     if o.group==GROUP.ENEMY or o.group==GROUP.NONTJT then
         (NativeActorCollision or dofile('THlib/native_actor_collision.lua')).preserve(o)
     end
@@ -184,6 +187,11 @@ for _,spec in ipairs({{'SetImageState',2},{'SetImageCenter',2},{'SetAnimationSta
     local name,kind=spec[1],spec[2]
     env[name]=function(key,...) return _G[name](resolve(kind,key),...) end
     api[name]=env[name]
+end
+-- 宿主 RenderRing 内部持有自己的 Render4V，不会经过本作的绘图包装。
+-- 先按第一片解析组名前缀，保留宿主的分片、顶点和原作混合状态。
+env.misc.RenderRing=function(img,...)
+    return misc.RenderRing(resolve(2,img..'1'):sub(1,-2),...)
 end
 env.LoadTexture=function(name,path,...) return LoadTexture(resourceName(1,name),assets..path,...) end
 env.LoadImageFromFile=function(name,path,...) return LoadImageFromFile(resourceName(2,name),assets..path,...) end

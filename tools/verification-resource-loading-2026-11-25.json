@@ -1,0 +1,18 @@
+{
+  "version": "2026.11.25.7",
+  "runtime": "LuaJIT 5.1 语义，Windows 本地脚本检查",
+  "passed": [
+    "tools/check_resource_loading.lua：执行实际加载控制器和主循环；关卡/符卡练习及 single/staged/dual/chain 加载期间不推进战斗任务、对象、输入、碰撞和音乐逻辑时钟；八倍速不积累隐藏帧；中途资源任务、完成画面及恢复通过",
+    "tools/check_android_startup.lua：慢帧、暂停恢复、原作时缓和录像手动快进通过",
+    "tools/check_theis_entry.lua：C 线实际符卡背景 256 个片段的资源名与顶点、宿主资源隔离、三面背景登记和重复进入通过",
+    "tools/check_port_resource_reuse.lua：global/stage 资源复用与卸载通过",
+    "tools/check_port_object_resources.lua：对象图片前缀、元表替换和宿主隔离通过"
+  ],
+  "existing_suite_limitations": [
+    "tools/check_roguelike.lua 在旧的四作 410 项卡池常量断言处停止，尚未执行其生命周期分支；未据此声称全套通过",
+    "tools/check_rogue_staged.lua 在旧的卡池不足断言处停止，未据此声称全套通过",
+    "tools/check_rogue_preload.lua 的桩缺少 RogueEncounter.spellOnly，在永夜背景建立前停止；未据此声称全套通过"
+  ],
+  "android_device_tested": false,
+  "notes": "安装包大小、SHA-256、原生构建和包内资源校验结果另随实际交付包保存；本报告不代表安卓实机运行验证。"
+}

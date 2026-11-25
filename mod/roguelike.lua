@@ -163,7 +163,8 @@ local function runCards(self)
     task.Wait(60)
     local config=mode(run)
     local count=config.count or R.COUNT
-    encounter.warmup(self)
+    -- 正常入口已在独立资源任务中预载；续玩重建和独立工具入口仍可自行准备。
+    if not self.rogue_resources_ready then self:prepareResources() end
     local function prepare(entry)
         local port=encounter.begin(self,entry)
         if GameHPScale then GameHPScale.enter(run.current) end
@@ -308,8 +309,12 @@ local function register(variant,config)
     local group=stage.group.New('menu',{},config.name,false)
     local battle=stage.group.AddStage(config.name,config.battle,false)
     battle.displayname=config.title
-    battle.wait_for_resources=true
+    function battle:prepareResources()
+        encounter.warmup(self)
+        self.rogue_resources_ready=true
+    end
     function battle:init()
+        self.rogue_resources_ready=false
         self.rogue_finished=false
         self.rogue_scene_ready=false
         self.rogue_chain_ghosts=nil

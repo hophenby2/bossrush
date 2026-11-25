@@ -194,6 +194,8 @@ local function DoFrame()
         ChangeGameStage()
         if NativeTime then NativeTime.reset() end
     end
+    -- 允许切场景和同步初始化，但加载画面撤下之前不消费输入或推进任何战斗帧。
+    if ui.ResourceLoading and ui.ResourceLoading.state then return end
     if RogueEncounter and RogueEncounter.preloading() then return end
     if NativeTime and not NativeTime.allowFrame() then return end
     if SaveResume and not SaveResume.beforeLogic() then return end
@@ -218,6 +220,10 @@ local function DoFrame()
         end
         if perf then perf.begin('logic.stage') end
         task.Do(stage.current_stage)
+        if RogueEncounter and RogueEncounter.preloading() then
+            if perf then perf.finish('logic.stage') end
+            return
+        end
         stage.current_stage:frame()
         stage.current_stage.timer = stage.current_stage.timer + 1
         if perf then perf.finish('logic.stage') end
@@ -338,6 +344,11 @@ function FrameFunc()
         GameNet.clientFrame();return false
     end
     if ui.ResourceLoading and ui.ResourceLoading.beforeFrame() then return false end
+    if ui.ResourceLoading and ui.ResourceLoading.state then
+        -- 加载入口只执行一次场景初始化，不经过倍率、录像和音乐逻辑时钟。
+        if stage.next_stage then DoFrame() end
+        return false
+    end
     -- 预载仅占显示帧，不消费录像输入或推进战斗时钟；缓存命中不会改变录像帧序。
     if RogueEncounter and RogueEncounter.preloadFrame() then
         return false

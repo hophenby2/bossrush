@@ -185,13 +185,34 @@ function L.beforeFrame()
         if mask_fader.mode then mask_fader.time=0 end
         return false
     end
-    if s.preload and not RogueEncounter.preloading() then L.ready();return true end
-    if RogueEncounter and RogueEncounter.preloading() then s.index=2 end
+    if s.preload then
+        if RogueEncounter.preloading() then s.index=2;RogueEncounter.preloadFrame()
+        else L.ready() end
+        return true
+    end
+    if s.initialized then
+        -- 只推进独立的资源准备协程；关卡任务、自机和对象帧均由主循环冻结。
+        if RogueEncounter and RogueEncounter.preloading() then
+            s.index=2
+            RogueEncounter.preloadFrame()
+        elseif s.prepare then
+            task.Do(s.prepare)
+            if s.prepared then s.prepare=nil end
+        end
+        L.afterFrame()
+        return true
+    end
     return false
 end
 function L.stageReady()
     local s=L.state
-    if s and s.target==stage.current_stage then s.index=1;s.initialized=true end
+    if not s or s.target~=stage.current_stage then return end
+    s.index=1;s.initialized=true
+    local scene=stage.current_stage
+    if scene.prepareResources then
+        s.prepare={}
+        task.New(s.prepare,function() scene:prepareResources();s.prepared=true end)
+    else s.prepared=true end
 end
 function L.ready()
     local s=L.state
@@ -200,13 +221,9 @@ end
 function L.afterFrame()
     local s=L.state
     if not s or s.done or not s.initialized or s.target~=stage.current_stage then return end
-    if s.target.wait_for_resources or RogueEncounter and RogueEncounter.preloading() then return end
-    if setting.displayBG==false then L.ready();return end
-    if IsValid(lstg.tmpvar.bg) then L.ready();return end
-    -- 关闭背景或由原作自行绘制场景时，以真正进入画面的Boss为就绪标志。
-    for _,b in ipairs(boss_group) do
-        if IsValid(b) and not b.hide and not b._sequence_road_carrier and b.y<=lstg.world.t then L.ready();return end
-    end
+    if not s.prepared or RogueEncounter and RogueEncounter.preloading() then return end
+    -- 初始化及资源任务完成即就绪，不再通过推进战斗等待背景或 Boss 入场。
+    L.ready()
 end
 function L.render()
     local s=L.state

@@ -74,7 +74,8 @@ void bossrush_luajit_mcode_stats(uint64_t *out)
             path.write_text(content, encoding='utf-8', newline='\n')
 
     toolchain = next(p for p in (ndk / 'toolchains/llvm/prebuilt').iterdir() if p.is_dir()) / 'bin'
-    make = shutil.which('make') or shutil.which('mingw32-make')
+    # Windows 的 MSYS make 会再次拆解 Python 传入的引号和含空格变量；优先使用原生 Make。
+    make = (shutil.which('mingw32-make') or shutil.which('make')) if os.name == 'nt' else shutil.which('make')
     if not make:
         raise RuntimeError('构建LuaJIT需要GNU Make，以及本机C编译器；可用BOSSRUSH_HOST_CC指定')
     host_cc = os.environ.get('BOSSRUSH_HOST_CC') or next(
@@ -85,7 +86,13 @@ void bossrush_luajit_mcode_stats(uint64_t *out)
             path = path.with_name(path.name + ('.cmd' if name.endswith('clang') else '.exe'))
         return '"' + path.as_posix() + '"'
 
-    subprocess.run([make, '-C', str(source / 'src'), '-j', str(jobs),
+    shell_args = []
+    if os.name == 'nt':
+        shell = shutil.which('sh')
+        if not shell:
+            raise RuntimeError('Windows构建LuaJIT需要MSYS2的sh加入PATH')
+        shell_args = ['SHELL=' + Path(shell).as_posix()]
+    subprocess.run([make, '-C', str(source / 'src'), '-j', str(jobs), *shell_args,
                     'BUILDMODE=static', 'TARGET_SYS=Linux', 'HOST_CC=' + host_cc,
                     'CC=' + command('aarch64-linux-android28-clang'),
                     'TARGET_AR=' + command('llvm-ar') + ' rcus',
