@@ -1,0 +1,211 @@
+{
+  "version": "26.11.25-fireworks",
+  "card": 39004,
+  "pattern": "143",
+  "seed": 739,
+  "native_platform": "macOS / Apple M4 Max / Metal / LuaJIT",
+  "source_evidence": [
+    "THMHJ.Restored Batch.cs:834-863 深绑定副本存于父弹体 batchs，Time.cs 循环不清除该副本",
+    "THMHJ.Restored Barrage.cs:1029-1067 出生雾贴图、15帧和大图缩放；919-954 自然消失30帧",
+    "THMHJ.PartII.Restored Batch.cs:1707-1722 父弹体保留 batch 副本"
+  ],
+  "before": {
+    "peak_objects": 3650,
+    "logic_frames": 2700,
+    "elapsed_seconds": 51.923737874953,
+    "battle_windows": [
+      {
+        "cpu_mean_ms": 6.008,
+        "cpu_p95_ms": 7.259,
+        "cpu_p99_ms": 11.761,
+        "fps": 58.4,
+        "logic_ms": 2.564,
+        "render_ms": 3.408,
+        "submit_ms": 0.117
+      },
+      {
+        "cpu_mean_ms": 8.736,
+        "cpu_p95_ms": 12.628,
+        "cpu_p99_ms": 13.306,
+        "fps": 60.7,
+        "logic_ms": 5.035,
+        "render_ms": 3.668,
+        "submit_ms": 0.108
+      },
+      {
+        "cpu_mean_ms": 10.743,
+        "cpu_p95_ms": 17.061,
+        "cpu_p99_ms": 23.228,
+        "fps": 60.4,
+        "logic_ms": 6.434,
+        "render_ms": 4.276,
+        "submit_ms": 0.117
+      },
+      {
+        "cpu_mean_ms": 14.376,
+        "cpu_p95_ms": 28.773,
+        "cpu_p99_ms": 31.248,
+        "fps": 53.2,
+        "logic_ms": 8.489,
+        "render_ms": 5.857,
+        "submit_ms": 0.13
+      },
+      {
+        "cpu_mean_ms": 13.022,
+        "cpu_p95_ms": 21.144,
+        "cpu_p99_ms": 24.269,
+        "fps": 60.0,
+        "logic_ms": 8.059,
+        "render_ms": 4.932,
+        "submit_ms": 0.244
+      },
+      {
+        "cpu_mean_ms": 10.478,
+        "cpu_p95_ms": 14.056,
+        "cpu_p99_ms": 20.125,
+        "fps": 61.3,
+        "logic_ms": 6.385,
+        "render_ms": 4.059,
+        "submit_ms": 0.116
+      },
+      {
+        "cpu_mean_ms": 16.334,
+        "cpu_p95_ms": 31.489,
+        "cpu_p99_ms": 47.338,
+        "fps": 50.4,
+        "logic_ms": 9.792,
+        "render_ms": 6.511,
+        "submit_ms": 0.151
+      },
+      {
+        "cpu_mean_ms": 12.768,
+        "cpu_p95_ms": 18.502,
+        "cpu_p99_ms": 21.954,
+        "fps": 61.2,
+        "logic_ms": 8.018,
+        "render_ms": 4.722,
+        "submit_ms": 0.119
+      },
+      {
+        "cpu_mean_ms": 10.679,
+        "cpu_p95_ms": 14.789,
+        "cpu_p99_ms": 19.134,
+        "fps": 61.2,
+        "logic_ms": 6.634,
+        "render_ms": 4.013,
+        "submit_ms": 0.111
+      }
+    ],
+    "worst_full_window_cpu_p99_ms": 47.338
+  },
+  "after": {
+    "peak_objects": 1311,
+    "logic_frames": 2700,
+    "elapsed_seconds": 47.680791040882,
+    "battle_windows": [
+      {
+        "cpu_mean_ms": 4.448,
+        "cpu_p95_ms": 6.753,
+        "cpu_p99_ms": 8.108,
+        "fps": 60.4,
+        "logic_ms": 2.411,
+        "render_ms": 2.0,
+        "submit_ms": 0.091
+      },
+      {
+        "cpu_mean_ms": 7.2,
+        "cpu_p95_ms": 12.762,
+        "cpu_p99_ms": 16.185,
+        "fps": 60.5,
+        "logic_ms": 4.375,
+        "render_ms": 2.794,
+        "submit_ms": 0.116
+      },
+      {
+        "cpu_mean_ms": 5.654,
+        "cpu_p95_ms": 8.897,
+        "cpu_p99_ms": 11.286,
+        "fps": 60.4,
+        "logic_ms": 3.452,
+        "render_ms": 2.175,
+        "submit_ms": 0.117
+      },
+      {
+        "cpu_mean_ms": 7.094,
+        "cpu_p95_ms": 12.762,
+        "cpu_p99_ms": 16.144,
+        "fps": 60.9,
+        "logic_ms": 4.337,
+        "render_ms": 2.724,
+        "submit_ms": 0.122
+      },
+      {
+        "cpu_mean_ms": 7.286,
+        "cpu_p95_ms": 10.732,
+        "cpu_p99_ms": 13.795,
+        "fps": 60.5,
+        "logic_ms": 4.493,
+        "render_ms": 2.764,
+        "submit_ms": 0.114
+      },
+      {
+        "cpu_mean_ms": 7.144,
+        "cpu_p95_ms": 11.79,
+        "cpu_p99_ms": 16.3,
+        "fps": 60.3,
+        "logic_ms": 4.451,
+        "render_ms": 2.662,
+        "submit_ms": 0.279
+      },
+      {
+        "cpu_mean_ms": 7.721,
+        "cpu_p95_ms": 12.456,
+        "cpu_p99_ms": 22.719,
+        "fps": 60.3,
+        "logic_ms": 4.918,
+        "render_ms": 2.769,
+        "submit_ms": 0.14
+      },
+      {
+        "cpu_mean_ms": 8.913,
+        "cpu_p95_ms": 13.462,
+        "cpu_p99_ms": 16.676,
+        "fps": 49.2,
+        "logic_ms": 5.562,
+        "render_ms": 3.319,
+        "submit_ms": 4.094
+      }
+    ],
+    "worst_full_window_cpu_p99_ms": 22.719
+  },
+  "checks": {
+    "fireworks_cycles": 4,
+    "max_new_stars_per_frame": 37,
+    "initial_three_frames": [
+      37,
+      31,
+      25
+    ],
+    "parent_to_star_delay_frames": [
+      304,
+      305,
+      306
+    ],
+    "birth_mist_frames": 15,
+    "natural_fade_frames": 30,
+    "spring_binding_cycles": 3,
+    "spring_original_172_trajectory_samples": 11773,
+    "spring_original_172_max_error_px": 7.853e-05,
+    "cancelled_parent_firing": false
+  },
+  "source_sha256": {
+    "mod/GAME/th39/runtime.lua": "95b49a78296efa905b07af9f1909a5e88542424ff188be7553cef0d2fbd0b4f1",
+    "mod/GAME/th37/runtime.lua": "f8d80e71b2af75b51e8466823ad19f28c780fd842b88d476bf78ff72c2753965",
+    "tools/th39-tests/check_fireworks.lua": "b7c1beb5cbfbdb39e98ac2bca89f33f8035797827db26aa5d0264c99dc9ed548",
+    "tools/th37-tests/check_binding_loop.lua": "a4b8c6f4c9d668fa8988d4da2e26d38909ef2f9f7c09dba8c24c589b34b3f645"
+  },
+  "limits": [
+    "Mac为实际引擎运行，Android仅做安装包检查，未连接安卓设备",
+    "每5秒统计窗口不是逐帧性能轨迹；修复后末窗口submit均值4.094ms、fps49.2，其他完整窗口fps60.3–60.9"
+  ]
+}

@@ -731,12 +731,19 @@ local function field(o,c,t)
     end
 end
 local function reset(c)
+    local bindings={}
     for _,o in ipairs(c.emitters or {}) do
         o.active=false;for _,child in pairs(o.children) do child.active=false end
+        bindings[o.kind..':'..o.parentid..':'..o.id]=o.children
     end
     local initial=c.pattern.center
     c.emitters={};c.center=copy{fx=initial[1],fy=initial[2],ox=initial[1],oy=initial[2],speed=initial[3],speedd=initial[4],aspeed=initial[5],aspeedd=initial[6],is_center=true,host=c.host}
-    for _,spec in ipairs(c.pattern.emitters) do c.emitters[#c.emitters+1]=emitter(spec,c) end
+    for _,spec in ipairs(c.pattern.emitters) do
+        local e=emitter(spec,c)
+        -- 深绑定的事件和插值状态随父弹体存活，不能在总时间轴循环时丢失。
+        e.children=bindings[e.kind..':'..e.parentid..':'..e.id] or e.children
+        c.emitters[#c.emitters+1]=e
+    end
     -- Layer.Update先作用于已有弹体，再生成新弹；新生魂不能提前吃到出生帧的力场。
     local order={force=1,rebound=2,cover=3,laser=4,batch=5}
     table.sort(c.emitters,function(a,b)

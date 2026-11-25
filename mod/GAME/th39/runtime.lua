@@ -348,6 +348,22 @@ local function texture(s)
     end
     return R.sprite(name,key,x,y,p[3],p[4],p[5],p[6]),tex,x,y,p
 end
+local mistProfiles={}
+local function birthTexture(s)
+    local p=profile(s.pattern,s.type)
+    local born=s.age/15
+    if p and p[3]<=72 and p[8]>=0 then
+        local color=p[8]
+        local fog=mistProfiles[color]
+        if not fog then fog={color*32,0,32,30,16,15};mistProfiles[color]=fog end
+        local img=R.sprite('mhj3_birth_mist_'..color,'mist',fog[1],0,32,30,16,15)
+        local scale=(p[3]/20+1.5*(1-born))*SCALE
+        return img,'mhj3_tex_mist',fog[1],0,fog,scale,scale
+    end
+    local img,tex,u,v,shape=texture(s)
+    local extra=p and p[3]>72 and 1-born or 0
+    return img,tex,u,v,shape,(s.wscale<0 and -1 or 1)*(abs(s.wscale)+extra)*SCALE,(s.hscale<0 and -1 or 1)*(abs(s.hscale)+extra)*SCALE
+end
 function R.loadPattern(id)
     if not R.patterns[id] then R.patterns[id]=dofile('mod/GAME/th39/'..(id:sub(1,1)=='e' and 'player_patterns/' or 'patterns/')..id..'.lua') end
     R.patterns[id].audio=patternAudio[id:sub(1,1)=='e' and id or 'b'..id]
@@ -359,7 +375,7 @@ local function bindingTargets(o)
 end
 local function targetable(c,pair)
     local b,s=pair[1],pair[2]
-    return b and live(c,b) and s.kind~='laser' and (not s.Mist or s.age>15)
+    return b and live(c,b) and not s.dis and s.kind~='laser' and (not s.Mist or s.age>15)
 end
 local function projected(b)
     local s=b.mhj
@@ -399,9 +415,12 @@ local function clean(b)
     end
     R.objects[b]=nil;object.RawDel(b)
 end
+local function fadeScale(value,delta)
+    if delta>0 then return value>0 and value+delta or value-delta end
+    return value>0 and min(100,max(0,value+delta)) or max(-100,min(0,value-delta))
+end
 local function updateParticle(s)
     s.age=s.age+1
-    if s.age>(s.life or 1)+(s.Mist and 15 or 0) then return false end
     local t=s.age-(s.Mist and 15 or 0)
     s.status,s.statusFrame=s.controller.status,s.controller.statusFrame
     if t>0 then
@@ -422,7 +441,15 @@ local function updateParticle(s)
         end
         s.maskEntered=0
         interpolate(s)
-        if t>s.life then return false end
+        if t>s.life then
+            if not s.Dispel or s.type<=0 or t>s.life+30 then return false end
+            -- Barrage.Update 的自然消失仍推进事件与运动，保留 30 帧淡出。
+            s.alpha=max(0,s.alpha-4)
+            local p=profile(s.pattern,s.type)
+            local shrink=s.controller.highlightDispel==false or s.type<=#D.bulletTypes and p and p[3]<=72
+            local delta=shrink and -.06 or .06
+            s.wscale,s.hscale=fadeScale(s.wscale,delta),fadeScale(s.hscale,delta)
+        end
     end
     return true
 end
@@ -453,7 +480,14 @@ R.classes.projectile=Class(bullet,{
     end,
     render=function(b)
         if b._a<=0 then return end
-        local s=b.mhj;local img=texture(s)
+        local s=b.mhj
+        if s.Mist and s.age<=15 then
+            local img,_,_,_,_,hs,vs=birthTexture(s)
+            SetImageState(img,b._blend,b._a,b._r,b._g,b._b)
+            Render(img,b.x,b.y,b.rot,hs,vs)
+            return
+        end
+        local img=texture(s)
         if s.renderImage~=img then b.img=img;s.renderImage=img end
         if RenderSourceObjectImage then RenderSourceObjectImage(img,b,b._blend,b._a,b._r,b._g,b._b)
         else
@@ -863,10 +897,18 @@ local function field(o,c,t)
     end
 end
 local function reset(c)
-    for _,e in ipairs(c.emitters or {}) do e.active=false end
+    local bindings={}
+    for _,e in ipairs(c.emitters or {}) do
+        e.active=false;bindings[e.kind..':'..e.parentid..':'..e.id]=e.children
+    end
     c.emitters={};c.center=copy{fx=c.pattern.center[1],fy=c.pattern.center[2],speed=c.pattern.center[3],speedd=c.pattern.center[4],aspeed=c.pattern.center[5],aspeedd=c.pattern.center[6],is_center=true,host=c.host}
     if c.visual then c.center.ox,c.center.oy=c.originX,c.originY end
-    for _,spec in ipairs(c.pattern.emitters) do c.emitters[#c.emitters+1]=emitter(spec,c) end
+    for _,spec in ipairs(c.pattern.emitters) do
+        local e=emitter(spec,c)
+        -- 原作深绑定副本归父弹体所有，Time.total 循环只重建根发射器。
+        e.children=bindings[e.kind..':'..e.parentid..':'..e.id] or e.children
+        c.emitters[#c.emitters+1]=e
+    end
 end
 function R.controller(host,id,road,configs)
     local p=R.loadPattern(id)
@@ -1071,18 +1113,21 @@ function R.drawBackground(c,opacity,dx,dy)
             local x,y=project(s.fx,s.fy)
             local rot=-((s.Withspeedd and math.deg(math.atan2(s.my or 0,s.mx or 0)) or s.head or 0)+90)
             local hs,vs=s.wscale*SCALE,s.hscale*SCALE
+            local img,tex,u,v,shape
+            local born=s.Mist and s.age<=15
+            if born then img,tex,u,v,shape,hs,vs=birthTexture(s);p=shape end
             local layerMasks=masks[s.layerid]
             local scale=layerMasks and #layerMasks>0 and 1 or imageScale
             -- 只裁去整个图像都在视口外的提交，保留对象更新和遮罩事件。
             if not p or backgroundVisible(p,x,y,rot,hs,vs,world,scale) then
-                local img,tex,u,v,profile=texture(s)
+                if not born then img,tex,u,v,shape=texture(s) end
                 local blend=s.Blend and 'mul+add' or ''
                 if tex and layerMasks and #layerMasks>0 then
                     local color=Color(a,r,g,b)
                     local ca,sa=cos(rot),sin(rot)
-                    local w,h=profile[3],profile[4]
+                    local w,h=shape[3],shape[4]
                     local function vertex(px,py)
-                        local dx,dy=(px-profile[5])*hs,(profile[6]-py)*vs
+                        local dx,dy=(px-shape[5])*hs,(shape[6]-py)*vs
                         return {x+dx*ca-dy*sa,y+dx*sa+dy*ca,.5,u+px,v+py,color}
                     end
                     Mask.draw(layerMasks,tex,blend,{vertex(0,0),vertex(w,0),vertex(w,h),vertex(0,h)})

@@ -26,6 +26,10 @@ python3 tools/th39-tests/export.py \
 
 ## 验证
 
+流星花火的深绑定副本按原作 `Batch.Shoot` 归父弹体所有，跨 840 帧循环保留事件、插值与本地时钟，避免重复创建分支和集中爆炸。春雪篇同类副本也保留事件状态；两作的本地时间推进仍各自沿用对应原作规则。永夜普通弹和背景/死亡特效共用原作 15 帧出生雾的贴图、尺寸及大图缩放，寿命到期保留 `Dispel` 的 30 帧尾段；已消除父弹体停止作为绑定发弹源。
+
+专项回归：`luajit tools/th39-tests/check_fireworks.lua` 覆盖流星花火四轮、父子链、三帧 37/31/25 发、跨循环 8 帧间隔、普通弹/特效出生雾、大图翻转、消失尾段和消弹后绑定；`luajit tools/th37-tests/check_binding_loop.lua` 检查春雪跨三轮循环的深绑定事件状态。
+
 ```sh
 luajit tools/check_sequence_mode.lua
 luajit tools/check_slim.lua
