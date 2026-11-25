@@ -16,6 +16,7 @@ local TIP = {
 _G.TIP = TIP
 
 function pausemenu:init()
+    self.focus_bgmlist=nil
     self.kill = true
 
     self.pos = 1
@@ -383,8 +384,9 @@ function pausemenu:FlyOut()
 end
 
 function pausemenu:PauseSound()
+    self.bgmlist=self.focus_bgmlist or {}
+    self.focus_bgmlist=nil
     if not ext.sc_pr then
-        self.bgmlist = {}--先清空列表
         for _, v in pairs(EnumRes2('bgm')) do
             if GetMusicState(v) == "playing" then
                 PauseMusic(v)
@@ -392,7 +394,6 @@ function pausemenu:PauseSound()
             end
         end
     else
-        self.bgmlist = {}--先清空列表
         for _, v in pairs(EnumRes2('bgm')) do
             if GetMusicState(v) == "playing" then
                 self.bgmlist[v] = true--标记
@@ -410,11 +411,13 @@ function pausemenu:PauseSound()
 end
 
 function pausemenu:ResumeSound()
+    self.focus_bgmlist=nil
     if not ext.sc_pr then
         for _, v in pairs(EnumRes2('bgm')) do
             if GetMusicState(v) ~= 'stopped' and self.bgmlist[v] then
-                --ResumeMusic(v)
-                if ext.music[v] then PlayMusic(v, 1, ext.music[v].timer / 60) else ext.ResumeMusic(v) end--防止暂停时出现的音乐卡顿情况
+                -- 移动端继续原音源；PlayMusic会重载，并被模式2的曲目所有权拦截。
+                if AndroidInput then ResumeMusic(v)
+                elseif ext.music[v] then PlayMusic(v,1,ext.music[v].timer/60) else ext.ResumeMusic(v) end
             end
         end
     else

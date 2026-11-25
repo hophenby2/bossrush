@@ -238,7 +238,7 @@ local previousMode, previousStage, previousPlayer
 function I.beginFrame()
     if AndroidPortrait then AndroidPortrait.dispatch() end
     local mode = I.menuMode()
-    -- 普通暂停只释放触点并暂时屏蔽开关，继续时沿用；回标题 / 切后台则清除开关。
+    -- 暂停/切后台只释放触点并暂时屏蔽开关，回来沿用；回标题才清除开关。
     if previousMode ~= nil and previousMode ~= mode then I.reset(true) end
     if ext and ext.StageIsMenu() then I.toggles={};previousStage,previousPlayer=nil,nil end
     local currentStage = stage and stage.current_stage

@@ -209,28 +209,10 @@ local function start()
         if capture then capture.suppress=old end
         return endScene()
     end
-    local pausedMusic = {}
     function AndroidBack() AndroidInput.pulse(27) end
-    function AndroidFocus(active)
-        if not active then
-            if GameNet and GameNet.active() then GameNet.togglePause(true) end
-            if SaveResume then SaveResume.flush('切到后台') end
-            pauseCache.invalidate()
-            AndroidInput.reset()
-            -- 暂停菜单已打开时不再排队暂停，避免恢复游戏后重复弹出。
-            if ext and not ext.StageIsMenu() and ext.pause_menu and ext.pause_menu:IsKilled() then
-                ext.pop_pause_menu = true
-            end
-            for _, name in ipairs(EnumRes2('bgm')) do
-                if GetMusicState(name) == 'playing' then pausedMusic[name] = true; PauseMusic(name) end
-            end
-            if scoredata then SaveScoreData(); SaveSpellCardData() end
-        else
-            uiFpsStart, uiFpsFrames = lstg.AndroidClock(), 0
-            for name in pairs(pausedMusic) do ResumeMusic(name) end
-            pausedMusic = {}
-        end
-    end
+    AndroidFocus=load('game/android/focus.lua')(pauseCache,function()
+        uiFpsStart,uiFpsFrames=lstg.AndroidClock(),0
+    end)
     FocusLoseFunc = function() AndroidFocus(false) end
     local frames, previousStage = 0, false
     local clock = lstg.AndroidClock

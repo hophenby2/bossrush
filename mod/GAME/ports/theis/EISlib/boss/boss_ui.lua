@@ -408,6 +408,7 @@ end
 local _host_instance
 
 local function check_host(ui, boss)
+	if RogueEncounter and RogueEncounter.enabled(39) then return end
 	if not IsValid(_host_instance) then
 		_host_instance = New(_host)
 	end

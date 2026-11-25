@@ -22,6 +22,9 @@ local function new(class,...)
         local x,y=...;return P.pickup(x,y,class.theis_pickup,1)
     end
     local o=New(assert(class,'祈华梦对象类缺失'),...)
+    -- Sub 的 false 是椭圆；x 的 false 是只取 a 的圆。竹干/竹节会继续修改 a、b，
+    -- 即使出生时两轴相等也必须保留椭圆类型，否则生长后会出现大块圆形判定。
+    if AndroidPlatform and o.rect==false then o.rect='ellipse' end
     o.theis_port_object=true
     if o.group==GROUP.ENEMY or o.group==GROUP.NONTJT then
         (NativeActorCollision or dofile('THlib/native_actor_collision.lua')).preserve(o)

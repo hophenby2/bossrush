@@ -17,6 +17,11 @@ end
 expose('Dist', function(...) return native.Dist(points(...)) end)
 expose('Angle', function(...) return native.Angle(points(...)) end)
 
+-- x 的 Sign 用 uint32 做 0*2-1，负号在64位Lua整数中变成4294967295。
+-- Int(0,1)消耗相同的一次随机数，先转为Lua有符号数再计算，所有Rand实例共用修正。
+local randomMethods=getmetatable(native.Rand())
+function randomMethods:Sign() return self:Int(0,1)*2-1 end
+
 -- APK内的脚本不是普通文件；loadfile也必须走资源路径，并保留“只编译、不执行”的语义。
 -- TH35俯冲与TH36各模块还会给返回的chunk传入上下文，不能直接替换成dofile。
 loadfile = function(path)

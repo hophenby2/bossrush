@@ -153,7 +153,7 @@ local function start(number, first)
     end
     -- 随机模式使用宿主残机、强化和阶段倍率；原作侧栏会遮住它们并显示另一套库存。
     if not (RogueEncounter and RogueEncounter.enabled(40)) then L.SideHud.create(rt) end
-    if L.BossHud then L.BossHud.create(rt) end
+    if L.BossHud and not (RogueEncounter and RogueEncounter.enabled(40)) then L.BossHud.create(rt) end
     if L.Presentation then L.Presentation.create(rt) end
     local bossMusic='ld_bgm_Boss'..math.min(5,math.floor((number+1)/2))
     if first>=checkpoints[number][#checkpoints[number]] then
