@@ -32,6 +32,19 @@ end
 local number = "number"
 local type = type
 
+-- 显式卸载也可能发生在同一关、同一个计时内。图像缓存按资源代数更新，
+-- 不以关卡切换代替资源生命周期，也不为每粒子弹反复查询原生资源池。
+local removeResource=lstg.RemoveResource
+lstg.ResourceGeneration=0
+function lstg.RemoveResource(pool,...)
+    local kind=...
+    if kind==nil or kind==1 or kind==2 or kind=='tex' or kind=='img' then
+        lstg.ResourceGeneration=lstg.ResourceGeneration+1
+    end
+    return removeResource(pool,...)
+end
+RemoveResource=lstg.RemoveResource
+
 -- 引擎按 stage/global 查找同名图片；脚本侧的 UV、尺寸与颜色缓存也必须跟随资源池。
 -- 否则祈华梦的 star_big2 退出后会留下已释放图集的 UV，覆盖宿主的全局星形。
 local function imageCache()

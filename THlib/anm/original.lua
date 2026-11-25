@@ -6,6 +6,7 @@ local rad, floor, min, max = math.pi/180, math.floor, math.min, math.max
 local cache = {}
 local resource_scope,resource_epoch=nil,0
 local resource_timer=-1
+local resource_generation
 local draw_sequence=0
 local op6 = { [0]='delete','sprite','scale','alpha','packed_color','jump','nop','flipx','flipy',
     'rotation','omega','growth','fade','additive','normal','static','sprite_random','position',
@@ -267,8 +268,10 @@ function A.sprite_resource(v)
     if not s then error('原作ANM精灵缺失：'..v.data.key..'/'..v.sprite) end
     local scope=stage and stage.current_stage
     local timer=scope and scope.timer or 0
-    -- 重试会复用同一张 stage 表，但 ext.lua 会清空 stage 资源池并把 timer 归零。
-    if scope~=resource_scope or timer<resource_timer then
+    -- 同关切卡也会卸载图像；必须同时跟踪显式卸载，不能只看stage表及timer。
+    local generation=lstg.ResourceGeneration or 0
+    if scope~=resource_scope or timer<resource_timer or generation~=resource_generation then
+        resource_generation=generation
         resource_scope=scope;resource_epoch=resource_epoch+1
         -- 图像句柄随stage资源池释放，避免ANM元数据缓存把上一关纹理永久留在内存中。
         for _,data in pairs(cache) do

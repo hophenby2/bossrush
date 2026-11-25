@@ -10,18 +10,57 @@ function M.prepareTexture(path)
     if not M.warming and not M.constructingBackground then preload.texture(path) end
 end
 M.preloadIdle=preload.idle
-local cached
--- 只保留最近一作，切换作品前全部释放，避免原作未加前缀的别名互相覆盖。
+-- 同一局保留多个作品的缓存，只在总预算超限时按最近使用顺序淘汰。
+local cached,cacheClock={},0
 local cacheBudget=192*1024*1024
-local function release(resources)
-    for kind=9,1,-1 do for name in pairs(resources[kind] or {}) do
+local resourcePrefixes={
+    [35]={'mhj2_'},[36]={'asl_','th38_unity_'},[37]={'mhj3_'},
+    [38]={'th38.','TH40_scene_'},[39]={'theis/','theis_'},[40]={'ld_'},[41]={'th43/'},
+}
+local function ownedResource(level,name)
+    for _,prefix in ipairs(resourcePrefixes[level] or {}) do
+        if name:sub(1,#prefix)==prefix then return true end
+    end
+    return false
+end
+local function releaseCache(level)
+    local entry=cached[level]
+    if not entry then return end
+    if level==36 and TH38 and not (M.background and M.background.level==36) then TH38.background.releaseMeshes() end
+    for kind=9,1,-1 do for name in pairs(entry.resources[kind] or {}) do
         lstg.RemoveResource('stage',kind,name)
     end end
+    cached[level]=nil
 end
-local function discardCache()
-    if not cached then return end
-    if cached.level==36 and TH38 and not (M.background and M.background.level==36) then TH38.background.releaseMeshes() end
-    release(cached.resources);cached=nil
+local function trimCache(level,current)
+    cacheClock=cacheClock+1
+    local entry=cached[level] or {resources={}}
+    entry.used=cacheClock;cached[level]=entry
+    -- 只接管本作前缀内的资源；宿主、旧作ANM及其他作品的跨卡特效不归当前卡所有。
+    for kind=1,9 do
+        entry.resources[kind]={}
+        for name in pairs(current[kind]) do
+            if ownedResource(level,name) then entry.resources[kind][name]=true end
+        end
+    end
+    local total=0
+    for _,item in pairs(cached) do
+        item.bytes=0
+        for kind=1,9 do for name in pairs(item.resources[kind] or {}) do
+            if not current[kind][name] then item.resources[kind][name]=nil
+            elseif kind==1 then local w,h=GetTextureSize(name);item.bytes=item.bytes+w*h*4
+            else item.bytes=item.bytes+1024 end
+        end end
+        total=total+item.bytes
+    end
+    while total>cacheBudget do
+        local oldest
+        for id,item in pairs(cached) do
+            if not oldest or item.used<cached[oldest].used then oldest=id end
+        end
+        if not oldest then break end
+        total=total-cached[oldest].bytes;releaseCache(oldest)
+    end
 end
 local rawNew=New
 local ports=dofile('mod/rogue_ports.lua')
@@ -56,6 +95,7 @@ local function protectBackground(o,scope)
             local previous=M.backgroundActive
             local pool=GetResourceStatus()
             M.backgroundActive=o.rogueBackgroundScope
+            setPool('global') -- 首个背景后续创建的素材也归背景驻留池。
             if tick and o.rogueBackgroundTick then o.rogueBackgroundTick(o) end
             if fn then fn(o) end
             M.backgroundActive=previous
@@ -239,26 +279,8 @@ function M.stop(scene)
     if scene.sequence_music then StopMusic(scene.sequence_music);scene.sequence_music=nil end
     if scene.now_music then StopMusic(scene.now_music);scene.now_music=nil end
     M.stopping=nil
-    -- 必须先释放对象，再卸载其纹理；全局缓存仍由各作品按 CheckRes 复用。
-    local current=stageResources()
-    local owned=cached and cached.level==level and cached.resources or {}
-    local bytes=0
-    for kind=1,9 do
-        owned[kind]=owned[kind] or {}
-        for name in pairs(current[kind]) do
-            if not scope.resources[kind][name] then owned[kind][name]=true end
-        end
-        for name in pairs(owned[kind]) do
-            if not current[kind][name] then owned[kind][name]=nil
-            elseif kind==1 then local w,h=GetTextureSize(name);bytes=bytes+w*h*4
-            else bytes=bytes+1024 end
-        end
-    end
-    if bytes<=cacheBudget then cached={level=level,resources=owned,bytes=bytes}
-    else
-        if level==36 and TH38 and not (M.background and M.background.level==36) then TH38.background.releaseMeshes() end
-        release(owned);cached=nil
-    end
+    -- 全部攻击对象已经结束；换作不卸载，只有缓存总量超预算才回收闲置资源。
+    trimCache(level,stageResources())
     if IsValid(player) then player.dialog=false;player.lock=false;player.ldX,player.ldY=nil,nil end
     restoreBackground()
     lstg.tmpvar.boss=nil;_boss=nil
@@ -266,7 +288,6 @@ function M.stop(scene)
 end
 function M.begin(scene,entry)
     M.stop(scene)
-    if cached and cached.level~=entry.level then discardCache() end
     restoreBackground()
     local run=lstg.var.rogue_run
     local enabled=entry.level>=35 and entry.level<=41
@@ -274,7 +295,7 @@ function M.begin(scene,entry)
     run.source_damage=enabled and assert(ports.damageUnits[entry.level]) or nil
     run.source_boss_damage=enabled and ports.bossDamageUnits[entry.level] or nil
     if not enabled then return false end
-    M.scope={entry=entry,run=run,objects={},resources=stageResources()}
+    M.scope={entry=entry,run=run,objects={}}
     return true
 end
 function M.prepare(scene,entry,unit)
@@ -299,7 +320,7 @@ function M.prepare(scene,entry,unit)
 end
 function M.release()
     preload.clear()
-    discardCache()
+    cached={} -- 真正离开战斗时由框架统一释放stage池。
     if M.background then
         for o in pairs(M.background.objects) do
             if IsValid(o) then o.rogueBackgroundScope=nil;o.class=object;object.RawDel(o) end

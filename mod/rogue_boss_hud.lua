@@ -6,7 +6,7 @@ function H.enabled()
     local run=lstg.var.rogue_run
     return scene and (scene.stage_name=='RogueTen@RogueTen' or scene.stage_name=='RogueTwo@RogueTwo') and run and not run.finished
 end
-function H.reset() H.pointers,H.current={},{} end
+function H.reset() H.pointers,H.current,H.entry={},{},nil end
 local function collect()
     local run=lstg.var.rogue_run
     local entry=run.encounter
@@ -44,7 +44,7 @@ local function collect()
     end
     return rows
 end
-function H.frame()
+local function synchronize(advance)
     if not H.enabled() then
         if next(H.pointers) or #H.current>0 then H.reset() end
         return
@@ -60,11 +60,18 @@ function H.frame()
         end
         pointer.ui.pointer_x=min(w.r-24,max(w.l+24,row.x))
         pointer.y=w.b
-        pointer:frame()
+        if advance then pointer:frame() end
         seen[b]=true
     end
     for b in pairs(H.pointers) do if not seen[b] then H.pointers[b]=nil end end
-    H.current=rows
+    H.current,H.entry=rows,lstg.var.rogue_run.encounter
+end
+function H.frame() synchronize(true) end
+function H.prepareRender()
+    if H.enabled() and (#H.current==0 or H.entry~=lstg.var.rogue_run.encounter) then
+        -- 首卡/异步入场可先有Boss再有HUD逻辑帧；绘制前补齐数据，不推进闪烁动画。
+        synchronize(false)
+    end
 end
 function H.renderPointers()
     for _,row in ipairs(H.current) do

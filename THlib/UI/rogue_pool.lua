@@ -17,9 +17,8 @@ for _,work in ipairs(works) do
     end
 end
 for _,entry in ipairs({
-    {group='difficulties',key='lunatic',text='Lunatic / NM',x=505,y=234,width=133},
-    {group='difficulties',key='extra',text='Extra/Phantasm',x=646,y=234,width=133},
-    {group='difficulties',key='lastword',text='Last Word',x=787,y=234,width=133},
+    {group='difficulties',key='lunatic',text='Lunatic / NM',x=505,y=234},
+    {group='difficulties',key='extra',text='Extra/Phantasm',x=720,y=234},
     {group='encounters',key='boss',text='Boss',x=505,y=182},
     {group='encounters',key='road',text='道中',x=720,y=182},
     {group='cards',key='survival',text='时符（耐久卡）',x=505,y=98},

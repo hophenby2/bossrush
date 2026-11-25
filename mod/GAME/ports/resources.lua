@@ -3,7 +3,7 @@ return function(assetRoot,prefix)
     local sets = {}
     local rawCheckRes = lstg.CheckRes
     local function id(kind,name)
-        return prefix and kind>=1 and kind<=3 and prefix..name or name
+        return prefix and kind>=1 and kind<=3 and name:sub(1,#prefix)~=prefix and prefix..name or name
     end
     local function CheckRes(kind,name) return rawCheckRes(kind,id(kind,name)) end
     local function resolve(kind,name)
@@ -26,10 +26,7 @@ return function(assetRoot,prefix)
         local args = {...}
         self.entries[#self.entries+1] = {kind, name, function()
             load(id(kind,name), unpack(args))
-            -- 对象的 img 赋值仍需有效资源；只给尚不存在的名字建别名，绝不覆盖宿主弹型。
-            if prefix and (kind==2 or kind==3) and not rawCheckRes(2,name) and not rawCheckRes(3,name) then
-                load(name,unpack(args))
-            end
+
         end}
     end
     function Set:AddTexture(name, path, mipmap)
@@ -140,6 +137,7 @@ return function(assetRoot,prefix)
 
     return {
         Resolve=resolve,
+        Name=id,
         kinds=kinds,
         Create=function(name)
             local set = setmetatable({entries={},options={}},Set)

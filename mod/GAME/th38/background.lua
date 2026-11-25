@@ -730,7 +730,7 @@ local Scene=Class(background,{
         end
     end,
     del=function(o)
-        if RogueEncounter and RogueEncounter.stopping then return end
+        if RogueEncounter and (RogueEncounter.stopping or RogueEncounter.enabled(36)) then return end
         for _,mesh in pairs(meshes or {}) do mesh.native=nil end
         o.gpuMeshes,o.quadMeshes,o.meshBatch=nil,nil,nil
         for key,pool in pairs(o.resources) do lstg.RemoveResource(pool,1,key) end

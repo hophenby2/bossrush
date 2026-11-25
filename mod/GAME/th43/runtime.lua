@@ -83,9 +83,15 @@ local translated=run('names.lua')
 E.i18n={get=function(key) return translated[key] or key end}
 R.translate=E.i18n.get
 
+local objectResources=dofile('mod/GAME/ports/object_resources.lua')
+local resolveObjectImage
+local prepareObject
+E.Class,prepareObject=objectResources.factory(function(name)return resolveObjectImage(name)end)
+stg.Class=E.Class
 local callbacks={'init','del','frame','render','colli','kill'}
 local function compile(class)
     assert(class,'栖霞园对象类为空')
+    prepareObject(class)
     if class._th43_compiled then return end
     if class.init then
         for i,k in ipairs(callbacks) do class[i]=class[k] or noop end
@@ -131,7 +137,7 @@ function R.clear(scope)
         if valid(o) then object.RawDel(o) end
     end
 end
-local function image(name) return 'th43/'..name end
+local function image(name) return name:sub(1,5)=='th43/' and name or 'th43/'..name end
 local function asset(path)
     if path:match('^res/bullet/[^/]+%.png$') then
         local filename=path:match('[^/]+$')
@@ -153,23 +159,35 @@ end
 local function loadImage(name,texture,...)
     local key=image(name)
     if not has('img',key) then LoadImage(key,image(texture),...) end
-    if not has('img',name) and not has('ani',name) then LoadImage(name,image(texture),...) end
 end
 local function loadAnimation(name,texture,...)
     local key=image(name)
     if not has('ani',key) then LoadAnimation(key,image(texture),...) end
-    if not has('ani',name) and not has('img',name) then LoadAnimation(name,image(texture),...) end
 end
 local function resolve(kind,name)
     if name and has(kind,image(name)) then return image(name) end
     return name
 end
+resolveObjectImage=function(name)
+    if not name then return name end
+    local key=resolve('img',name)
+    if key==name then key=resolve('ani',name) end
+    return key
+end
+E.GetTextureSize=function(name)return GetTextureSize(resolve('tex',name))end
+stg.GetTextureSize=E.GetTextureSize
 -- 原作混用字符串类型和数字类型；Sub 的底层接口只接受数字，字符串查询还需对应资源前缀。
 function stg.CheckRes(kind,name)
     if type(kind)=='string' then
         return CheckRes(kind,resolve(kind,name))
     end
-    return lstg.CheckRes(kind,name)
+    local key=(kind>=1 and kind<=3) and image(name) or name
+    return lstg.CheckRes(kind,key)
+end
+function stg.RemoveResource(pool,kind,name)
+    if RogueEncounter and RogueEncounter.retainResources() then return end
+    if name and kind>=1 and kind<=3 then name=image(name) end
+    return lstg.RemoveResource(pool,kind,name)
 end
 E.LoadTexture,E.LoadImage,E.LoadAnimation=loadTexture,loadImage,loadAnimation
 stg.LoadTexture,stg.LoadImage=loadTexture,loadImage

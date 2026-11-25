@@ -11,11 +11,11 @@ local calibration=dofile('mod/rogue_ttk_hp.lua')
 M.damageUnits,M.bossDamageUnits=calibration.damageUnits,calibration.bossDamageUnits
 function M.tags()
     local out={}
-    local function add(code,id,difficulty,role,survival,chapter)
+    local function add(code,id,difficulty,role,survival,chapter,lastword)
         if not difficulty then return end
         out[code]=out[code] or {}
         assert(not out[code][id],'新作随机卡池来源重复：'..code..':'..id)
-        out[code][id]={difficulty=difficulty,kind=role=='road' and 'road' or 'boss',survival=survival,stage=tonumber(chapter)}
+        out[code][id]={difficulty=difficulty,kind=role=='road' and 'road' or 'boss',survival=survival,stage=tonumber(chapter),lastword=lastword==true}
     end
     for _,pair in ipairs({{'TH37',TH37},{'TH39',TH39}}) do
         local code,work=unpack(pair)
@@ -23,7 +23,7 @@ function M.tags()
             local diff=difficulties[chapter.difficulty]
             for _,road in ipairs(chapter.roads) do add(code,road.id,diff,'road',false,chapter.stage) end
             for _,group in ipairs(chapter.bosses) do for _,meta in ipairs(group.cards) do
-                add(code,meta.id,diff,group.role,nil,chapter.stage)
+                add(code,meta.id,diff,group.role,nil,chapter.stage,code=='TH39' and meta.kind==2)
             end end
         end end
     end

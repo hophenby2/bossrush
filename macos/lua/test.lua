@@ -2,6 +2,7 @@
 local T={}
 function T.install()
     local mode=os.getenv('BOSSRUSH_MAC_TEST')
+    if mode=='rogue-hud-resources' then return dofile('macos/rogue_hud_resources_test.lua').install() end
     if mode=='portrait-layout' then return dofile('macos/portrait_layout_test.lua').install() end
     if mode=='rogue-display' then return dofile('macos/rogue_display_test.lua').install() end
     if mode=='theis-bamboo' then return dofile('macos/theis_bamboo_test.lua').install() end

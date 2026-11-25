@@ -192,7 +192,7 @@ local Scene=Class(background,{
     end,
     del=function(o)
         if spellScene==o then spellScene=nil end
-        if RogueEncounter and RogueEncounter.stopping then return end
+        if RogueEncounter and (RogueEncounter.stopping or RogueEncounter.enabled(37)) then return end
         o=o.state
         if not o then return end
         for name,pool in pairs(o.resources.img) do lstg.RemoveResource(pool,2,name) end

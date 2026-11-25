@@ -16,13 +16,24 @@ end
 local env,load,assets=dofile('mod/GAME/ports/environment.lua')('theis')
 local api=env.lstg
 local resolve=api.ResourceSet.Resolve
+local resourceName=api.ResourceSet.Name
+local objectResources=dofile('mod/GAME/ports/object_resources.lua')
+local prepareObject
+local function objectImage(name)
+    local key=resolve(2,name)
+    if key==name then key=resolve(3,name) end
+    return key
+end
+env.Class,prepareObject=objectResources.factory(objectImage)
+api.Class=env.Class
 local objects
 local empty=function() end
 local function new(class,...)
     if resources() and class and class.theis_pickup then
         local x,y=...;return P.pickup(x,y,class.theis_pickup,1)
     end
-    local o=New(assert(class,'祈华梦对象类缺失'),...)
+    assert(class,'祈华梦对象类缺失');prepareObject(class)
+    local o=New(class,...)
     -- Sub 的 false 是椭圆；x 的 false 是只取 a 的圆。竹干/竹节会继续修改 a、b，
     -- 即使出生时两轴相等也必须保留椭圆类型，否则生长后会出现大块圆形判定。
     if AndroidPlatform and o.rect==false then o.rect='ellipse' end
@@ -153,11 +164,12 @@ api.globalimagescale=.5
 api.SetImageScale=function(scale) api.globalimagescale=scale end
 api.wis={}
 api.RegisterClass=function(class)
+    prepareObject(class)
     for i,k in ipairs({'init','del','frame','render','colli','kill'}) do class[i]=class[k] or class[i] or empty end
     if AndroidRegisterClass then AndroidRegisterClass(class) end
 end
-env.RenderClass=Class
-api.RenderClass=Class
+env.RenderClass=env.Class
+api.RenderClass=env.Class
 api.RawDel,api.RawKill,api.PreserveObject=object.RawDel,object.RawKill,object.Preserve
 env.PreserveObject=object.Preserve
 api.Log=function(_,message) if lstg.SystemLog then lstg.SystemLog(message) end end
@@ -173,10 +185,17 @@ for _,spec in ipairs({{'SetImageState',2},{'SetImageCenter',2},{'SetAnimationSta
     env[name]=function(key,...) return _G[name](resolve(kind,key),...) end
     api[name]=env[name]
 end
-env.LoadTexture=function(name,path,...) return LoadTexture(name,assets..path,...) end
-env.LoadImageFromFile=function(name,path,...) return LoadImageFromFile(name,assets..path,...) end
-env.LoadImageGroupFromFile=function(name,path,...) return LoadImageGroupFromFile(name,assets..path,...) end
-env.LoadAniFromFile=function(name,path,...) return LoadAniFromFile(name,assets..path,...) end
+env.LoadTexture=function(name,path,...) return LoadTexture(resourceName(1,name),assets..path,...) end
+env.LoadImageFromFile=function(name,path,...) return LoadImageFromFile(resourceName(2,name),assets..path,...) end
+env.LoadImageGroupFromFile=function(name,path,...) return LoadImageGroupFromFile(resourceName(2,name),assets..path,...) end
+env.LoadAniFromFile=function(name,path,...) return LoadAniFromFile(resourceName(3,name),assets..path,...) end
+env.LoadImage=function(name,tex,...)return LoadImage(resourceName(2,name),resourceName(1,tex),...)end
+env.LoadAnimation=function(name,tex,...)return LoadAnimation(resourceName(3,name),resourceName(1,tex),...)end
+api.LoadTexture,api.LoadImage,api.LoadAnimation=env.LoadTexture,env.LoadImage,env.LoadAnimation
+env.LoadImageGroup=function(name,tex,...)return LoadImageGroup(resourceName(2,name),resourceName(1,tex),...)end
+env.CopyImage=function(name,img)return CopyImage(resourceName(2,name),resolve(2,img))end
+env.GetImageSize=function(name)return GetImageSize(resolve(2,name))end
+api.LoadImageGroup,api.CopyImage,api.GetImageSize=env.LoadImageGroup,env.CopyImage,env.GetImageSize
 env.LoadPS=function(name,path,...) return LoadPS(name,assets..path,...) end
 env.LoadFX=function(name,path) return LoadFX(name,assets..path) end
 env.SetA=SetA

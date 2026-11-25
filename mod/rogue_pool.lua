@@ -29,14 +29,14 @@ for code,source in pairs(catalog) do
         end
     end
 end
-local fields={stages={'TH31','TH32','TH34','TH35','TH37','TH38','TH39','TH40','TH41','TH42','TH43'},difficulties={'lunatic','extra','lastword'},encounters={'boss','road'},cards={'nonspell','spell','survival'},rules={'enhanced'}}
+local fields={stages={'TH31','TH32','TH34','TH35','TH37','TH38','TH39','TH40','TH41','TH42','TH43'},difficulties={'lunatic','extra'},encounters={'boss','road'},cards={'nonspell','spell','survival'},rules={'enhanced'}}
 function P.defaults(variant)
     local single=not variant or variant=='single' or variant=='staged'
     local stages={TH31=true,TH32=single,TH34=true,TH35=true}
     for _,source in ipairs(ports.sources) do stages[source.code]=single end
     if variant=='staged' then stages.TH42=false end
     return {stages=stages,
-        difficulties={lunatic=true,extra=false,lastword=false},encounters={boss=true,road=false},
+        difficulties={lunatic=true,extra=false},encounters={boss=true,road=false},
         cards={nonspell=true,spell=true,survival=variant=='staged'},rules={enhanced=true}}
 end
 function P.copy(filters,variant)
@@ -54,7 +54,7 @@ function P.copy(filters,variant)
     end
     if variant=='staged' then
         out.stages.TH42=false
-        out.difficulties={lunatic=true,extra=false,lastword=false}
+        out.difficulties={lunatic=true,extra=false}
         out.encounters={boss=true,road=false}
         out.cards={nonspell=true,spell=true,survival=true}
     end
@@ -91,7 +91,8 @@ function P.build(filters)
                 if tag and survival==nil then survival=P.isSurvival(unit,tag.kind) end
                 local selected=tag and (tag.kind=='road' or (survival and filters.cards.survival)
                     or (not survival and (first.card.is_sc and filters.cards.spell or not first.card.is_sc and filters.cards.nonspell)))
-                if tag and filters.difficulties[difficulty] and filters.encounters[tag.kind]
+                if tag and not tag.lastword and difficulty~='lastword'
+                    and filters.difficulties[difficulty] and filters.encounters[tag.kind]
                     and not first.card.practice_hidden and not first.card.random_empty
                     and selected
                     and first.card.is_combat~=false and not seen[id] then

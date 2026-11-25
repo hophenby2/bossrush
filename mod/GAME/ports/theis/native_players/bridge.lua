@@ -23,7 +23,7 @@ function B.load(name)
     end,frame=function() end,render=function() end}
     local classes={}
     env.Class=function(base,define)
-        local c=Class(base,define);classes[#classes+1]=c;return c
+        local c=source.Class(base,define);classes[#classes+1]=c;return c
     end
     local function new(class,...)
         local o=source.New(class,...)
