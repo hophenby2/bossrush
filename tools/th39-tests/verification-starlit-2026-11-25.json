@@ -1,0 +1,212 @@
+{
+  "card": 39008,
+  "title": "光巢「星降之里」",
+  "pattern": "146",
+  "emitters": 112,
+  "platform": "macOS / Apple M4 Max / Metal / LuaJIT",
+  "diagnostic_seed": 739,
+  "rogue_seed": 58279,
+  "frames": 2700,
+  "before_commit": "6e9a3e1c3992b8959fbf78e4501bcbc9ee10cb9d",
+  "before": {
+    "state_sha256": "e1f125aadfa7a31f15083a31489d233fda00037fba559637db76caca2c6f6ba0",
+    "peak_objects": 1410,
+    "active_windows": [
+      {
+        "update_ms": 7.889,
+        "update_p99_ms": 11.149,
+        "render_ms": 5.604,
+        "render_p99_ms": 7.717,
+        "cpu_ms": 14.789,
+        "cpu_p99_ms": 21.663,
+        "fps": 59.7
+      },
+      {
+        "update_ms": 7.591,
+        "update_p99_ms": 13.758,
+        "render_ms": 4.966,
+        "render_p99_ms": 8.381,
+        "cpu_ms": 14.394,
+        "cpu_p99_ms": 39.321,
+        "fps": 59.4
+      },
+      {
+        "update_ms": 6.327,
+        "update_p99_ms": 10.272,
+        "render_ms": 5.075,
+        "render_p99_ms": 7.624,
+        "cpu_ms": 12.993,
+        "cpu_p99_ms": 27.212,
+        "fps": 60.4
+      },
+      {
+        "update_ms": 11.715,
+        "update_p99_ms": 14.796,
+        "render_ms": 7.488,
+        "render_p99_ms": 14.508,
+        "cpu_ms": 20.874,
+        "cpu_p99_ms": 32.126,
+        "fps": 47.2
+      },
+      {
+        "update_ms": 8.662,
+        "update_p99_ms": 17.336,
+        "render_ms": 5.804,
+        "render_p99_ms": 8.945,
+        "cpu_ms": 16.418,
+        "cpu_p99_ms": 50.449,
+        "fps": 54.9
+      },
+      {
+        "update_ms": 6.943,
+        "update_p99_ms": 15.405,
+        "render_ms": 5.547,
+        "render_p99_ms": 11.888,
+        "cpu_ms": 14.32,
+        "cpu_p99_ms": 33.891,
+        "fps": 59.1
+      },
+      {
+        "update_ms": 12.128,
+        "update_p99_ms": 22.228,
+        "render_ms": 7.848,
+        "render_p99_ms": 13.036,
+        "cpu_ms": 22.575,
+        "cpu_p99_ms": 55.163,
+        "fps": 42.5
+      },
+      {
+        "update_ms": 8.469,
+        "update_p99_ms": 16.566,
+        "render_ms": 5.967,
+        "render_p99_ms": 10.507,
+        "cpu_ms": 16.121,
+        "cpu_p99_ms": 37.655,
+        "fps": 57.8
+      }
+    ],
+    "average_cpu_ms": 16.5605,
+    "minimum_window_fps": 42.5
+  },
+  "after": {
+    "state_sha256": "e1f125aadfa7a31f15083a31489d233fda00037fba559637db76caca2c6f6ba0",
+    "peak_objects": 1410,
+    "active_windows": [
+      {
+        "update_ms": 7.089,
+        "update_p99_ms": 10.059,
+        "render_ms": 4.454,
+        "render_p99_ms": 5.859,
+        "cpu_ms": 12.644,
+        "cpu_p99_ms": 16.0,
+        "fps": 61.0
+      },
+      {
+        "update_ms": 6.715,
+        "update_p99_ms": 10.084,
+        "render_ms": 4.183,
+        "render_p99_ms": 7.032,
+        "cpu_ms": 12.294,
+        "cpu_p99_ms": 24.16,
+        "fps": 59.8
+      },
+      {
+        "update_ms": 5.992,
+        "update_p99_ms": 10.058,
+        "render_ms": 4.42,
+        "render_p99_ms": 9.073,
+        "cpu_ms": 11.59,
+        "cpu_p99_ms": 20.759,
+        "fps": 59.8
+      },
+      {
+        "update_ms": 10.084,
+        "update_p99_ms": 13.081,
+        "render_ms": 6.118,
+        "render_p99_ms": 9.562,
+        "cpu_ms": 17.666,
+        "cpu_p99_ms": 34.022,
+        "fps": 55.5
+      },
+      {
+        "update_ms": 6.277,
+        "update_p99_ms": 9.392,
+        "render_ms": 4.228,
+        "render_p99_ms": 6.535,
+        "cpu_ms": 11.776,
+        "cpu_p99_ms": 18.524,
+        "fps": 60.1
+      },
+      {
+        "update_ms": 7.118,
+        "update_p99_ms": 12.114,
+        "render_ms": 4.878,
+        "render_p99_ms": 7.638,
+        "cpu_ms": 13.281,
+        "cpu_p99_ms": 23.609,
+        "fps": 59.5
+      },
+      {
+        "update_ms": 9.324,
+        "update_p99_ms": 12.446,
+        "render_ms": 5.497,
+        "render_p99_ms": 7.431,
+        "cpu_ms": 16.334,
+        "cpu_p99_ms": 27.195,
+        "fps": 56.9
+      },
+      {
+        "update_ms": 5.463,
+        "update_p99_ms": 7.973,
+        "render_ms": 3.889,
+        "render_p99_ms": 5.629,
+        "cpu_ms": 10.582,
+        "cpu_p99_ms": 18.113,
+        "fps": 59.3
+      }
+    ],
+    "average_cpu_ms": 13.270875,
+    "minimum_window_fps": 55.5
+  },
+  "practice_before_after": [
+    {
+      "checkpoint": "14bb45868d9565b4d8aa7a0024d7cb712a75a365a6285c063612e13d05fb50ab",
+      "peak": 1295,
+      "logic_frames": 2700,
+      "elapsed": 46.840408625081,
+      "mhj_samples": 506565,
+      "mhj_moves": 498532
+    },
+    {
+      "checkpoint": "14bb45868d9565b4d8aa7a0024d7cb712a75a365a6285c063612e13d05fb50ab",
+      "peak": 1295,
+      "logic_frames": 2700,
+      "elapsed": 49.311714457814,
+      "mhj_samples": 506565,
+      "mhj_moves": 498532
+    }
+  ],
+  "battle_rgb_identical": true,
+  "screenshot_crop_excluding_hud": [
+    413,
+    100,
+    1571,
+    1395
+  ],
+  "checks": [
+    "批量属性与原路径的80帧参数/判定对照",
+    "普通弹、出生雾和背景顶点色参数对照",
+    "图像句柄复用与同名资源重建",
+    "流星花火四轮回归",
+    "b1420出生雾和首帧位移"
+  ],
+  "source_sha256": {
+    "mod/GAME/th39/runtime.lua": "cd57ab8ef303ed02d1cfc612db7d2191e4dd8816ac7fd218a9e08559865785c1",
+    "tools/th39-tests/check_native_fastpath.lua": "7a58db025fb7a8f34d1f48e19d9ac0d168aeb8514492e4135640356f06637a9a"
+  },
+  "limits": [
+    "未连接安卓设备；Mac未复现30FPS，随机模式原始最差完整采样窗口为42.5FPS",
+    "性能为含私有采样器的每5秒窗口，不代表所有设备固定帧率",
+    "练习运行用于轨迹与画面对照；其墙钟时间未改善，修改前后分别为46.84和49.31秒"
+  ]
+}

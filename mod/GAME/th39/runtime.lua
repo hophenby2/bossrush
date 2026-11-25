@@ -342,11 +342,28 @@ local function texture(s)
         if not CheckRes('img',name) then
             LoadImage(name,tex,x,y,p[3],p[4])
             SetImageCenter(name,p[5],p[6])
-            if store then store.img[name]=GetResourceStatus() end
+            if store then
+                store.img[name]=GetResourceStatus()
+                if store.drawSprites then store.drawSprites[name]=nil end
+            end
         end
         return name,tex,x,y,p
     end
     return R.sprite(name,key,x,y,p[3],p[4],p[5],p[6]),tex,x,y,p
+end
+local function drawSprite(s,img,x,y,rot,hs,vs,blend,a,r,g,b)
+    if lstg.AndroidRenderSprite and FindResSprite then
+        -- 直接提交本次顶点色，沿用引擎有序批处理，不创建 Color 或改写共享图像状态。
+        local owner=s.controller.resources or s.controller
+        local sprites=owner.drawSprites
+        if not sprites then sprites={};owner.drawSprites=sprites end
+        local resource=sprites[img]
+        if not resource then resource=assert(FindResSprite(img));sprites[img]=resource end
+        lstg.AndroidRenderSprite(resource,blend,x,y,rot,hs,vs,a,r,g,b)
+    else
+        SetImageState(img,blend,a,r,g,b)
+        Render(img,x,y,rot,hs,vs)
+    end
 end
 local mistProfiles={}
 local function birthTexture(s)
@@ -385,20 +402,25 @@ local function projected(b)
     local a,bb=r*abs(s.wscale)*SCALE,r*abs(s.hscale)*SCALE
     local rot=-((s.Withspeedd and math.deg(math.atan2(s.my or 0,s.mx or 0)) or s.head or 0)+90)
     local hscale,vscale=s.wscale*SCALE,s.hscale*SCALE
-    if nativeGeometry then nativeGeometry(b,x,y,a,bb,rot,hscale,vscale)
-    else
-        b.x,b.y=x,y;b.vx,b.vy=0,0;b.a,b.b=a,bb
-        b.rect,b.rot=false,rot;b.hscale,b.vscale=hscale,vscale
-    end
     local born=s.Mist and min(1,s.age/15) or 1
     b._a=max(0,min(255,(s.alpha or 100)*2.55*born*(s.controller.friendlyAlpha or 1)));b._r,b._g,b._b=s.colorR or 255,s.colorG or 255,s.colorB or 255
     b._blend=s.Blend and 'mul+add' or ''
     local layer=(s.controller.effectLayer or s.controller.drawLayer or LAYER.ENEMY_BULLET)+(s.controller.pattern.order==1 and .1 or 0)
     local group=s.controller.effectLayer and GROUP.GHOST or (s.Invincible or p and p.invincible) and GROUP.INDES or GROUP.ENEMY_BULLET
-    -- 按实际引擎属性确认层与分组，仅在变化时同步。
-    if b.layer~=layer then b.layer=layer end
-    if b.group~=group then b.group=group end
-    b.colli=not s.controller.effectLayer and s.age>(s.Mist and 15 or 0) and s.type>1 and r>0 and (s.alpha or 100)>99 and s.wscale~=0 and s.hscale~=0
+    local collidable=not s.controller.effectLayer and s.age>(s.Mist and 15 or 0) and s.type>1 and r>0 and (s.alpha or 100)>99 and s.wscale~=0 and s.hscale~=0
+    if lstg.AndroidProjectBullet then
+        -- Mac/Android 共用现有原生接口，一次更新几何、判定、分组和层次。
+        lstg.AndroidProjectBullet(b,nil,x,y,rot,hscale,vscale,a,bb,layer,group,collidable)
+    else
+        if nativeGeometry then nativeGeometry(b,x,y,a,bb,rot,hscale,vscale)
+        else
+            b.x,b.y=x,y;b.vx,b.vy=0,0;b.a,b.b=a,bb
+            b.rect,b.rot=false,rot;b.hscale,b.vscale=hscale,vscale
+        end
+        if b.layer~=layer then b.layer=layer end
+        if b.group~=group then b.group=group end
+        b.colli=collidable
+    end
 end
 local function clean(b)
     local s=b.mhj
@@ -483,16 +505,14 @@ R.classes.projectile=Class(bullet,{
         local s=b.mhj
         if s.Mist and s.age<=15 then
             local img,_,_,_,_,hs,vs=birthTexture(s)
-            SetImageState(img,b._blend,b._a,b._r,b._g,b._b)
-            Render(img,b.x,b.y,b.rot,hs,vs)
+            drawSprite(s,img,b.x,b.y,b.rot,hs,vs,b._blend,b._a,b._r,b._g,b._b)
             return
         end
         local img=texture(s)
         if s.renderImage~=img then b.img=img;s.renderImage=img end
         if RenderSourceObjectImage then RenderSourceObjectImage(img,b,b._blend,b._a,b._r,b._g,b._b)
         else
-            SetImageState(img,b._blend,b._a,b._r,b._g,b._b)
-            Render(img,b.x,b.y,b.rot,b.hscale,b.vscale)
+            drawSprite(s,img,b.x,b.y,b.rot,b.hscale,b.vscale,b._blend,b._a,b._r,b._g,b._b)
         end
     end,
     del=function(b)
@@ -1132,8 +1152,7 @@ function R.drawBackground(c,opacity,dx,dy)
                     end
                     Mask.draw(layerMasks,tex,blend,{vertex(0,0),vertex(w,0),vertex(w,h),vertex(0,h)})
                 else
-                    SetImageState(img,blend,a,r,g,b)
-                    Render(img,x,y,rot,hs,vs)
+                    drawSprite(s,img,x,y,rot,hs,vs,blend,a,r,g,b)
                 end
             end
         end

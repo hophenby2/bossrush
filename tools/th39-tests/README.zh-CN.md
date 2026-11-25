@@ -30,6 +30,8 @@ python3 tools/th39-tests/export.py \
 
 专项回归：`luajit tools/th39-tests/check_fireworks.lua` 覆盖流星花火四轮、父子链、三帧 37/31/25 发、跨循环 8 帧间隔、普通弹/特效出生雾、大图翻转、消失尾段和消弹后绑定；`luajit tools/th37-tests/check_binding_loop.lua` 检查春雪跨三轮循环的深绑定事件状态。
 
+星降之里等密集弹幕在 Mac/Android 使用现有 `AndroidProjectBullet` 一次提交最终几何与判定，普通弹、出生雾及无遮罩背景粒子使用 `AndroidRenderSprite` 提交本次顶点色，减少逐属性 setter 和临时颜色对象；有遮罩的绘制继续沿用原裁切路径。图像句柄按控制器/场景资源作用域缓存，同名场景图重建时使缓存失效。`luajit tools/th39-tests/check_native_fastpath.lua` 对照原路径检查参数、负缩放、判定、颜色和资源重建；原生同种子练习与随机模式的终点状态保持一致，记录见 `verification-starlit-2026-11-25.json`。
+
 ```sh
 luajit tools/check_sequence_mode.lua
 luajit tools/check_slim.lua
