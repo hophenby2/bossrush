@@ -79,6 +79,8 @@
 
 在仓库根目录执行。显示版本来自 `THlib/UI/UI.lua` 的 `ui.version`，构建工具通过 `tools/release_version.py` 读取；Android 的安装升级序号另由清单 `versionCode` 管理。
 
+用户可见版本统一为 `YYYY.MM.DD.N`，例如 `2026.11.25.1`；`N` 是当天发布序号，从 1 开始，同日新版本递增，重建同一版本沿用原号。游戏内显示、Android `versionName` 与交付包名必须一致，新版本同时递增 `versionCode`。安卓包名使用 `BossRushHD-Android-<版本>-500MB.apk`（其他容量档同理）；修复代号、提交号和处理器架构只写入构建记录，不加入用户可见版本或交付文件名。
+
 ### macOS
 
 ```sh

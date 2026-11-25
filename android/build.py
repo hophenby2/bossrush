@@ -354,7 +354,8 @@ def prepare_assets():
     if COMPRESSION_PROFILE:
         commit=subprocess.check_output(['git','-C',str(GAME),'rev-parse','HEAD'],text=True).strip()
         write_utf8(destination/'android/build-profile.json',json.dumps(
-            {'profile':COMPRESSION_PROFILE,'source_commit':commit,**PROFILES[COMPRESSION_PROFILE]},
+            {'version':game_version(GAME),'profile':COMPRESSION_PROFILE,'source_commit':commit,
+             'architecture':'arm64-v8a',**PROFILES[COMPRESSION_PROFILE]},
             ensure_ascii=False,indent=2)+'\n')
     for script in (destination / 'android').glob('*.lua'):
         write_utf8(script, script.read_text(encoding='utf-8-sig'))
@@ -515,8 +516,9 @@ def sign_apk(tools, keytool, unsigned):
     print(f'APK：{output}\nSHA-256：{digest}', flush=True)
     if COMPRESSION_PROFILE and output.stat().st_size>=PROFILES[COMPRESSION_PROFILE]['max_bytes']:
         raise RuntimeError(f'{COMPRESSION_PROFILE} APK超过预算：{output.stat().st_size}字节')
-    suffix='-'+COMPRESSION_PROFILE if COMPRESSION_PROFILE else ''
-    release = dist / f'BossRushHD-android-arm64-{game_version(GAME)}{suffix}.apk'
+    # 用户包名只保留平台、正式版本和容量档位；架构与源码提交放构建记录。
+    suffix='-'+COMPRESSION_PROFILE.upper() if COMPRESSION_PROFILE else ''
+    release = dist / f'BossRushHD-Android-{game_version(GAME)}{suffix}.apk'
     shutil.copy2(output, release)
     write_utf8(dist / (release.name + '.sha256'), digest + '  ' + release.name + '\n')
     write_utf8(BUILD / 'packaged-manifest.sha256',
