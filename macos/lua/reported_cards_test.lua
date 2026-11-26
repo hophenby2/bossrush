@@ -26,7 +26,7 @@ function T.install()
     end
     jit.off(sample,true)
     local function checkpoint()
-        local rows={};local total,curves,segments=0,0,0
+        local rows,motion={},{};local total,curves,segments,invisible,outside=0,0,0,0,0
         for group=0,15 do for _,o in ObjList(group)do
             total=total+1
             local s=o.asl or o.mhj
@@ -34,10 +34,22 @@ function T.install()
             if s and (s.kind=='bullet' or s.is_projectile)then
                 rows[#rows+1]=table.concat({s.serial or 0,s.age or 0,s.x or s.fx or 0,s.y or s.fy or 0,
                     s.speed or 0,s.direction or s.head or 0,s.alpha or 0,tostring(s.dis)},',')
+                motion[#motion+1]=table.concat({s.serial or 0,s.age or 0,s.type or s.shape or 0,
+                    s.fx or s.x or 0,s.fy or s.y or 0,s.mx or 0,s.my or 0,s.ax or 0,s.ay or 0,
+                    s.head or s.rotation or 0,s.alpha or 0,s.wscale or s.scaleX or 0,s.hscale or s.scaleY or 0,tostring(s.dis)},',')
+                if (s.alpha or 100)<=0 then invisible=invisible+1 end
+                if o.x<lstg.world.l or o.x>lstg.world.r or o.y<lstg.world.b or o.y>lstg.world.t then outside=outside+1 end
             end
         end end
         table.sort(rows)
-        local row={age=age,objects=total,projectiles=#rows,curves=curves,segments=segments,state=SaveCodec.sha256(table.concat(rows,'\n'))}
+        table.sort(motion)
+        local row={age=age,objects=total,projectiles=#rows,curves=curves,segments=segments,state=SaveCodec.sha256(table.concat(rows,'\n')),
+            motion_state=SaveCodec.sha256(table.concat(motion,'\n')),invisible=invisible,outside=outside,lua_kb=collectgarbage('count')}
+        local emitters,children=0,0
+        for c in pairs(TH39.runtime.controllers)do if not c.closed then
+            for _,e in ipairs(c.emitters)do emitters=emitters+1;for _ in pairs(e.children or {})do children=children+1 end end
+        end end
+        row.emitters,row.children=emitters,children
         if lstg.AndroidDrawCounts then row.draws,row.vertices=lstg.AndroidDrawCounts()end
         report.checkpoints[#report.checkpoints+1]=row
     end

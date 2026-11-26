@@ -424,7 +424,6 @@ local function spawn(e,x,y,direction,speed)
     local b=New(cls,s);c.entities[#c.entities+1]=s
     if e.a9_1==1 and e.emitHost then
         s.parent=e.emitHost;s.lastParentX,s.lastParentY,s.parentRotation=e.emitHost.x,e.emitHost.y,e.emitHost.rotation
-        if s.beamMode==1 then s.lineParentRotation=e.emitHost.rotation end
     end
     attach(e,s)
     return b
@@ -562,7 +561,10 @@ local function move(s,deferBulletProjection)
     else
         if s.accel~=0 then local d=aim(s,s.accelDirection);s.djX=s.djX+s.accel*.01*cos(d);s.djY=s.djY+s.accel*.01*sin(d) end
         dx,dy=s.speed*.01*cos(s.direction)+s.djX,s.speed*.01*sin(s.direction)+s.djY
-        if s.followSpeed then s.rotation=math.deg(math.atan2(dy,dx)) end
+        if s.followSpeed then
+            -- Bulletmove：没有加速度分量时直接用速度方向，速度为0也保留自机狙朝向。
+            s.rotation=s.djX==0 and s.djY==0 and s.direction or math.deg(math.atan2(dy,dx))
+        end
     end
     s.x,s.y=s.x+dx,s.y+dy
     if s.kind=='curve' and s.path then

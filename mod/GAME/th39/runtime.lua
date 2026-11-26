@@ -41,6 +41,36 @@ local function live(c,b)
     return valid(b)
 end
 local copySizes=setmetatable({},{__mode='k'})
+local copyPlans=setmetatable({},{__mode='k'})
+local copyShapes={}
+local emitterCopyMode={__newindex=function(o,key,value)
+    -- 发射器事件可以增加字段；新增字段后重建复制计划，不能漏掉后续事件的状态。
+    if value~=nil then copyPlans[o]=nil end
+    rawset(o,key,value)
+end}
+local function copyPlan(s)
+    local plan=copyPlans[s]
+    if plan then return plan end
+    local keys={}
+    for key in pairs(s) do
+        if type(key)~='string' then return end
+        keys[#keys+1]=string.format('%q',key)
+    end
+    table.sort(keys)
+    local shape=table.concat(keys,',')
+    plan=copyShapes[shape]
+    if not plan then
+        -- 固定字段赋值能被LuaJIT整体编译，避免每一发子弹重新解释pairs循环。
+        -- 仍逐字段浅拷贝当前值，不共享可变弹体状态，也不复用尚有绑定引用的旧弹体。
+        local code={'return function(s,o)'}
+        for _,key in ipairs(keys) do code[#code+1]='o['..key..']=s['..key..']' end
+        code[#code+1]='return o end'
+        plan={run=assert(loadstring(table.concat(code,'\n'),'th39-emitter-copy'))(),count=#keys}
+        copyShapes[shape]=plan
+    end
+    copyPlans[s]=plan
+    return plan
+end
 local nativeCopy=lstg.CopySourceTable
 local nativeGeometry=lstg.SyncSourceBulletGeometry
 local stateReserve={}
@@ -66,7 +96,9 @@ local function copy(s,projectile)
         if storage then changes,limits=storage.changes,storage.limits end
     end
     local o,count
-    if nativeCopy then o,count=nativeCopy(s,copySizes[s] or 128,storage)
+    local plan=not nativeCopy and getmetatable(s)==emitterCopyMode and copyPlan(s)
+    if plan then o,count=plan.run(s,storage or allocateTable(0,plan.count+8)),plan.count
+    elseif nativeCopy then o,count=nativeCopy(s,copySizes[s] or 128,storage)
     else
         o,count=storage or allocateTable(0,copySizes[s] or 128),0
         for k,v in pairs(s) do o[k]=v;count=count+1 end
@@ -851,7 +883,7 @@ local function emitter(spec,c,boundChild)
     if o.fy==-99998 then o.fy=o.y elseif o.fy==-99999 then local _,y=R.player(c.visual and o or nil);o.fy=y end
     o.speedd=direction(o.speedd,o,o.fx or o.x,o.fy or o.y,o.speedds)
     o.aspeedd=direction(o.aspeedd,o,o.fx or o.x,o.fy or o.y,o.aspeedds)
-    return o
+    return setmetatable(o,emitterCopyMode)
 end
 local function area(o,s,c,center)
     if s.layerid~=o.parentid then return false end

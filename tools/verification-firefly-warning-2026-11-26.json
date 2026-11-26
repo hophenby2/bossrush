@@ -1,0 +1,1236 @@
+{
+  "version": "2026.11.26.7",
+  "platform": "macOS arm64 Metal，非Android真机帧率",
+  "entry": "正式挑战模式 RogueTwo@RogueTwo",
+  "card": 39006,
+  "name": "虫符「光虫游弋」",
+  "seed_input": 739,
+  "run_seed": 58279,
+  "frames": 2400,
+  "checkpoint_every": 120,
+  "cause": [
+    "挑战模式归属表强引用短命弹userdata至120帧清理，连带保留深绑定发射器状态，导致额外内存与GC压力",
+    "大量一帧弹每次重复通用pairs浅拷贝；固定字段复制计划保留原值与独立状态，新增字段时失效重建"
+  ],
+  "fidelity": {
+    "equal_checkpoint_fields": [
+      "age",
+      "objects",
+      "projectiles",
+      "state",
+      "motion_state",
+      "vertices",
+      "invisible",
+      "outside"
+    ],
+    "checkpoints": 20,
+    "attack_timing_density_or_lifetime_changed": false
+  },
+  "runs": {
+    "before": {
+      "timing": {
+        "logic_ms": {
+          "mean": 9.892640201250774,
+          "p95": 13.965458841994,
+          "max": 108.24700002559,
+          "samples": 2281
+        },
+        "render_ms": {
+          "mean": 1.6997490572465368,
+          "p95": 2.2454168647528,
+          "max": 13.824833091348,
+          "samples": 2280
+        },
+        "peak_lua_mib": 1922.4076890945312
+      },
+      "checkpoints": [
+        {
+          "state": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "objects": 40,
+          "projectiles": 0,
+          "motion_state": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "lua_kb": 191092.96972656,
+          "age": 120,
+          "vertices": 6762,
+          "draws": 141,
+          "emitters": 0,
+          "children": 0,
+          "outside": 0,
+          "curves": 0,
+          "segments": 0,
+          "invisible": 0
+        },
+        {
+          "state": "4164e05c617f45a28b45b3c64dba208956e480120d2c1e4b08fce19d1996171c",
+          "objects": 116,
+          "projectiles": 77,
+          "motion_state": "408ac585e4692a079d2b9ed5a33f9780911d2e84245f93f849becb20c4e050f6",
+          "lua_kb": 203299.89941406,
+          "age": 240,
+          "vertices": 6720,
+          "draws": 154,
+          "emitters": 17,
+          "children": 11,
+          "outside": 0,
+          "curves": 0,
+          "segments": 0,
+          "invisible": 2
+        },
+        {
+          "state": "472862e209afac1a9b5b730b6bd0621dd3dd2c8b7818d23f60a9a688368a0d7c",
+          "objects": 556,
+          "projectiles": 517,
+          "motion_state": "67180510a2d55831e6a9078b5018029f1666ee2d9cfd2304c14ef112edce1a07",
+          "lua_kb": 289798.92285156,
+          "age": 360,
+          "vertices": 9132,
+          "draws": 133,
+          "emitters": 17,
+          "children": 1254,
+          "outside": 42,
+          "curves": 0,
+          "segments": 0,
+          "invisible": 19
+        },
+        {
+          "state": "cce9ed2b112fc36213e052781b0bddc45e6cdc311135ca0178278d819fbc818f",
+          "objects": 810,
+          "projectiles": 771,
+          "motion_state": "348e98ec247915ee5bbee0e7cddf1d712ad2ca8b3bfb0f734e4d3859a00f7a71",
+          "lua_kb": 423585.95703125,
+          "age": 480,
+          "vertices": 11736,
+          "draws": 136,
+          "emitters": 17,
+          "children": 3886,
+          "outside": 186,
+          "curves": 0,
+          "segments": 0,
+          "invisible": 29
+        },
+        {
+          "state": "49dd7ab90a04df35b09b4ed2be8af96aef92c80ced181fc45b48ad930c487aec",
+          "objects": 823,
+          "projectiles": 784,
+          "motion_state": "6f629e517534d765db8b7b991e3c733f465535e9a5552dcd15f6fd5ed9d76183",
+          "lua_kb": 547341.4140625,
+          "age": 600,
+          "vertices": 12168,
+          "draws": 148,
+          "emitters": 17,
+          "children": 4212,
+          "outside": 208,
+          "curves": 0,
+          "segments": 0,
+          "invisible": 29
+        },
+        {
+          "state": "72a3d5a3f181ecbead7a5cd1013c2eb72a86fe8f9a5de022771c7cabb941da04",
+          "objects": 855,
+          "projectiles": 792,
+          "motion_state": "33427dec60980c697170abec431a55b6084a529db7c682b0c0b6554ac6995963",
+          "lua_kb": 779843.375,
+          "age": 720,
+          "vertices": 12078,
+          "draws": 167,
+          "emitters": 17,
+          "children": 4901,
+          "outside": 218,
+          "curves": 0,
+          "segments": 0,
+          "invisible": 28
+        },
+        {
+          "state": "404f81199f25041349761793d93520862793366727a3cb3cad3eac848da32ca5",
+          "objects": 846,
+          "projectiles": 807,
+          "motion_state": "c7ba44425697b47750fd6acb9ad111f67461ead211eee9cc205b6fc211eb7cb1",
+          "lua_kb": 494327.80859375,
+          "age": 840,
+          "vertices": 12120,
+          "draws": 182,
+          "emitters": 17,
+          "children": 1811,
+          "outside": 228,
+          "curves": 0,
+          "segments": 0,
+          "invisible": 29
+        },
+        {
+          "state": "c92d189ec4ecf58fd9035f2f3f499c0554aae88f352f6107cc990357ae4807c6",
+          "objects": 855,
+          "projectiles": 810,
+          "motion_state": "d06209172ff655407bcbe01b2f759513fd62abf5e62701807fe25b99813f8a36",
+          "lua_kb": 544069.68457031,
+          "age": 960,
+          "vertices": 13494,
+          "draws": 199,
+          "emitters": 17,
+          "children": 1805,
+          "outside": 241,
+          "curves": 0,
+          "segments": 0,
+          "invisible": 30
+        },
+        {
+          "state": "a4cbeba233bc6b2be46bb067d6042e7cdae47b576a6c5f2053161c653f7f7501",
+          "objects": 880,
+          "projectiles": 824,
+          "motion_state": "865ccf023f2c581978a7780a51ce142aa193fa27cf9bb1ff2a09de4cf5a11a05",
+          "lua_kb": 1295116.8017578,
+          "age": 1080,
+          "vertices": 13716,
+          "draws": 213,
+          "emitters": 17,
+          "children": 5201,
+          "outside": 243,
+          "curves": 0,
+          "segments": 0,
+          "invisible": 29
+        },
+        {
+          "state": "f699cb90a4b6b3b69c2405f51c6523196874535b53141a6cd8e7c244aec3224f",
+          "objects": 873,
+          "projectiles": 817,
+          "motion_state": "5fa300afaff8b70a15c6854e52847b4eb6104b8deb01c05be5771024c67bb7ad",
+          "lua_kb": 770325.98535156,
+          "age": 1200,
+          "vertices": 13926,
+          "draws": 207,
+          "emitters": 17,
+          "children": 1825,
+          "outside": 235,
+          "curves": 0,
+          "segments": 0,
+          "invisible": 30
+        },
+        {
+          "state": "27860c7f47199b1abacfd2871fff99979029489f3c6aa5e88dddefc56d10ce9d",
+          "objects": 875,
+          "projectiles": 819,
+          "motion_state": "a5a18a588079acfaddd514657a449991cf1253dee5a0397fb393ddf262a42699",
+          "lua_kb": 548209.24316406,
+          "age": 1320,
+          "vertices": 13590,
+          "draws": 203,
+          "emitters": 17,
+          "children": 1857,
+          "outside": 241,
+          "curves": 0,
+          "segments": 0,
+          "invisible": 29
+        },
+        {
+          "state": "8c465f51e923cedf5b91cdde0801d449c45aa1b5bb3343ae36c760109a25086a",
+          "objects": 885,
+          "projectiles": 828,
+          "motion_state": "b3f8cf7bb72db3f4cbc126d548f42db545f440a0973df190245b6199ba204852",
+          "lua_kb": 1201953.6064453,
+          "age": 1440,
+          "vertices": 12984,
+          "draws": 206,
+          "emitters": 17,
+          "children": 4920,
+          "outside": 252,
+          "curves": 0,
+          "segments": 0,
+          "invisible": 30
+        },
+        {
+          "state": "c22a0f764633f1dee6de9e60090525e2c6086f04d787bd591ee1cbf43660e131",
+          "objects": 872,
+          "projectiles": 816,
+          "motion_state": "cef15920b408f7fa628c407669c3040a33ddfce9e6611db562c14fba838f091b",
+          "lua_kb": 1968545.4736328,
+          "age": 1560,
+          "vertices": 13476,
+          "draws": 212,
+          "emitters": 17,
+          "children": 8334,
+          "outside": 241,
+          "curves": 0,
+          "segments": 0,
+          "invisible": 29
+        },
+        {
+          "state": "c548b4ad069e05cb09af4a4ed86bc3417d04bd58cf3451ffe971d40866df5521",
+          "objects": 865,
+          "projectiles": 809,
+          "motion_state": "49d28b0a36f943ec68ebc49d6ab7623cb53241fee00938493a6e09054ba6bf3c",
+          "lua_kb": 1319569.6337891,
+          "age": 1680,
+          "vertices": 13842,
+          "draws": 214,
+          "emitters": 17,
+          "children": 5209,
+          "outside": 241,
+          "curves": 0,
+          "segments": 0,
+          "invisible": 29
+        },
+        {
+          "state": "538b8924efc1abb732ec1597894c84e201c695a2bfde80a0271d9bb045aa407c",
+          "objects": 865,
+          "projectiles": 809,
+          "motion_state": "75044f2c8d6376ed66c8fb9c35c28f3667d661c8e7cd9fb7b089f204c605ed5f",
+          "lua_kb": 1309154.5595703,
+          "age": 1800,
+          "vertices": 13956,
+          "draws": 211,
+          "emitters": 17,
+          "children": 5198,
+          "outside": 233,
+          "curves": 0,
+          "segments": 0,
+          "invisible": 29
+        },
+        {
+          "state": "54a925b06d5d1a906db8e878aacc7798eb86d8b8f1062d0ab72c765cc331af0f",
+          "objects": 881,
+          "projectiles": 825,
+          "motion_state": "a415a94ebd1acd3e9b7ec15294bfd11371a0b9615300158533eb5bdfbeeb2ab7",
+          "lua_kb": 1309091.3486328,
+          "age": 1920,
+          "vertices": 13506,
+          "draws": 218,
+          "emitters": 17,
+          "children": 5230,
+          "outside": 241,
+          "curves": 0,
+          "segments": 0,
+          "invisible": 29
+        },
+        {
+          "state": "b9d709f67474075f045e65e714485a6cb62effa9162e8f035d43c185597e0b2c",
+          "objects": 881,
+          "projectiles": 825,
+          "motion_state": "37f83c6da9f095e3d67a2258494fd7ffbf19050ef14cd01c8bb21bf0548f7512",
+          "lua_kb": 1308651.3759766,
+          "age": 2040,
+          "vertices": 13164,
+          "draws": 228,
+          "emitters": 17,
+          "children": 5298,
+          "outside": 245,
+          "curves": 0,
+          "segments": 0,
+          "invisible": 31
+        },
+        {
+          "state": "6c122a9168f03e0d36eb82e9f9858834b55668a73762bbca56e5c2279d721ae7",
+          "objects": 882,
+          "projectiles": 826,
+          "motion_state": "8c0ea517b17157ee626901a81f936e431592b269d406495f7b6d1cc9fa87577a",
+          "lua_kb": 1308153.1806641,
+          "age": 2160,
+          "vertices": 13386,
+          "draws": 224,
+          "emitters": 17,
+          "children": 5276,
+          "outside": 241,
+          "curves": 0,
+          "segments": 0,
+          "invisible": 30
+        },
+        {
+          "state": "2aa4d14f9efe268d6f11b476a0d300d13f7a879841b63bfebe8b4aba287d5ec0",
+          "objects": 874,
+          "projectiles": 817,
+          "motion_state": "4d4173f2630ce0e21fe46f4c08dc74d9917ce83581b82ba54b0708d93b150ac4",
+          "lua_kb": 1304782.1611328,
+          "age": 2280,
+          "vertices": 13746,
+          "draws": 221,
+          "emitters": 17,
+          "children": 5222,
+          "outside": 236,
+          "curves": 0,
+          "segments": 0,
+          "invisible": 30
+        },
+        {
+          "state": "1cda3581216cbe080fbcab1eb96af45d276fbdca27ec42da224b4812de6b9a92",
+          "objects": 873,
+          "projectiles": 817,
+          "motion_state": "32a4255a81482d1bf80b6cafe03bf25f220afe3f925e0f1986dbee8e450c444a",
+          "lua_kb": 562948.94238281,
+          "age": 2400,
+          "vertices": 14094,
+          "draws": 240,
+          "emitters": 17,
+          "children": 1819,
+          "outside": 245,
+          "curves": 0,
+          "segments": 0,
+          "invisible": 29
+        }
+      ],
+      "top_stacks": [
+        [
+          "C mod/GAME/th39/runtime.lua:71;mod/GAME/th39/runtime.lua:781;mod/GAME/th39/runtime.lua:992;mod/GAME/th39/runtime.lua:1039;mod/GAME/th39.lua:283;",
+          282
+        ],
+        [
+          "C game/android/main.lua:227;",
+          165
+        ],
+        [
+          "G mod/GAME/th39/runtime.lua:74;mod/GAME/th39/runtime.lua:781;mod/GAME/th39/runtime.lua:992;mod/GAME/th39/runtime.lua:1039;mod/GAME/th39.lua:283;",
+          141
+        ],
+        [
+          "N mod/GAME/th39/runtime.lua:72;mod/GAME/th39/runtime.lua:781;mod/GAME/th39/runtime.lua:992;mod/GAME/th39/runtime.lua:1039;mod/GAME/th39.lua:283;",
+          125
+        ],
+        [
+          "C THlib/ext/ext.lua:280;THlib/ext/ext.lua:318;THlib/ext/ext.lua:390;macos/reported_cards_test.lua:79;game/android/main.lua:240;",
+          78
+        ],
+        [
+          "C mod/GAME/th39/runtime.lua:509;@0x010246b92c;THlib/rogue_hp.lua:157;THlib/item/item.lua:397;mod/rogue_encounter.lua:369;",
+          76
+        ],
+        [
+          "G mod/GAME/th39/runtime.lua:509;@0x010246b92c;THlib/rogue_hp.lua:157;THlib/item/item.lua:397;mod/rogue_encounter.lua:369;",
+          71
+        ],
+        [
+          "G mod/GAME/th39/runtime.lua:71;mod/GAME/th39/runtime.lua:781;mod/GAME/th39/runtime.lua:992;mod/GAME/th39/runtime.lua:1039;mod/GAME/th39.lua:283;",
+          45
+        ],
+        [
+          "C mod/rogue_encounter.lua:360;mod/roguelike.lua:345;THlib/ext/ext.lua:227;THlib/ext/ext.lua:318;THlib/ext/ext.lua:390;",
+          39
+        ],
+        [
+          "C mod/GAME/th39/runtime.lua:385;mod/GAME/th39/runtime.lua:1217;mod/GAME/th39/background.lua:109;mod/GAME/th39/background.lua:183;mod/rogue_encounter.lua:100;",
+          35
+        ],
+        [
+          "I mod/rogue_encounter.lua:375;mod/GAME/th39/runtime.lua:811;mod/GAME/th39/runtime.lua:992;mod/GAME/th39/runtime.lua:1039;mod/GAME/th39.lua:283;",
+          33
+        ],
+        [
+          "C THlib/bullet/original_collision.lua:85;THlib/ext/ext.lua:245;THlib/ext/ext.lua:318;THlib/ext/ext.lua:390;macos/reported_cards_test.lua:79;",
+          31
+        ]
+      ]
+    },
+    "weak_scope": {
+      "timing": {
+        "logic_ms": {
+          "mean": 9.932371154970562,
+          "p95": 16.690750140697,
+          "max": 66.576791927218,
+          "samples": 2281
+        },
+        "render_ms": {
+          "mean": 1.638097491262383,
+          "p95": 2.164667006582,
+          "max": 6.4862919971347,
+          "samples": 2280
+        },
+        "peak_lua_mib": 360.1093215942383
+      },
+      "checkpoints": [
+        {
+          "projectiles": 0,
+          "motion_state": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "age": 120,
+          "emitters": 0,
+          "state": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "vertices": 6762,
+          "draws": 141,
+          "children": 0,
+          "curves": 0,
+          "segments": 0,
+          "invisible": 0,
+          "outside": 0,
+          "lua_kb": 180643.21582031,
+          "objects": 40
+        },
+        {
+          "projectiles": 77,
+          "motion_state": "408ac585e4692a079d2b9ed5a33f9780911d2e84245f93f849becb20c4e050f6",
+          "age": 240,
+          "emitters": 17,
+          "state": "4164e05c617f45a28b45b3c64dba208956e480120d2c1e4b08fce19d1996171c",
+          "vertices": 6720,
+          "draws": 154,
+          "children": 11,
+          "curves": 0,
+          "segments": 0,
+          "invisible": 2,
+          "outside": 0,
+          "lua_kb": 193291.35644531,
+          "objects": 116
+        },
+        {
+          "projectiles": 517,
+          "motion_state": "67180510a2d55831e6a9078b5018029f1666ee2d9cfd2304c14ef112edce1a07",
+          "age": 360,
+          "emitters": 17,
+          "state": "472862e209afac1a9b5b730b6bd0621dd3dd2c8b7818d23f60a9a688368a0d7c",
+          "vertices": 9132,
+          "draws": 133,
+          "children": 1254,
+          "curves": 0,
+          "segments": 0,
+          "invisible": 19,
+          "outside": 42,
+          "lua_kb": 283902.95800781,
+          "objects": 556
+        },
+        {
+          "projectiles": 771,
+          "motion_state": "348e98ec247915ee5bbee0e7cddf1d712ad2ca8b3bfb0f734e4d3859a00f7a71",
+          "age": 480,
+          "emitters": 17,
+          "state": "cce9ed2b112fc36213e052781b0bddc45e6cdc311135ca0178278d819fbc818f",
+          "vertices": 11736,
+          "draws": 136,
+          "children": 2488,
+          "curves": 0,
+          "segments": 0,
+          "invisible": 29,
+          "outside": 186,
+          "lua_kb": 346543.49902344,
+          "objects": 810
+        },
+        {
+          "projectiles": 784,
+          "motion_state": "6f629e517534d765db8b7b991e3c733f465535e9a5552dcd15f6fd5ed9d76183",
+          "age": 600,
+          "emitters": 17,
+          "state": "49dd7ab90a04df35b09b4ed2be8af96aef92c80ced181fc45b48ad930c487aec",
+          "vertices": 12168,
+          "draws": 148,
+          "children": 1487,
+          "curves": 0,
+          "segments": 0,
+          "invisible": 29,
+          "outside": 208,
+          "lua_kb": 319789.64746094,
+          "objects": 823
+        },
+        {
+          "projectiles": 792,
+          "motion_state": "33427dec60980c697170abec431a55b6084a529db7c682b0c0b6554ac6995963",
+          "age": 720,
+          "emitters": 17,
+          "state": "72a3d5a3f181ecbead7a5cd1013c2eb72a86fe8f9a5de022771c7cabb941da04",
+          "vertices": 12078,
+          "draws": 167,
+          "children": 501,
+          "curves": 0,
+          "segments": 0,
+          "invisible": 28,
+          "outside": 218,
+          "lua_kb": 211959.06542969,
+          "objects": 855
+        },
+        {
+          "projectiles": 807,
+          "motion_state": "c7ba44425697b47750fd6acb9ad111f67461ead211eee9cc205b6fc211eb7cb1",
+          "age": 840,
+          "emitters": 17,
+          "state": "404f81199f25041349761793d93520862793366727a3cb3cad3eac848da32ca5",
+          "vertices": 12120,
+          "draws": 182,
+          "children": 534,
+          "curves": 0,
+          "segments": 0,
+          "invisible": 29,
+          "outside": 228,
+          "lua_kb": 231974.41308594,
+          "objects": 846
+        },
+        {
+          "projectiles": 810,
+          "motion_state": "d06209172ff655407bcbe01b2f759513fd62abf5e62701807fe25b99813f8a36",
+          "age": 960,
+          "emitters": 17,
+          "state": "c92d189ec4ecf58fd9035f2f3f499c0554aae88f352f6107cc990357ae4807c6",
+          "vertices": 13494,
+          "draws": 199,
+          "children": 1076,
+          "curves": 0,
+          "segments": 0,
+          "invisible": 30,
+          "outside": 241,
+          "lua_kb": 368751.9453125,
+          "objects": 855
+        },
+        {
+          "projectiles": 824,
+          "motion_state": "865ccf023f2c581978a7780a51ce142aa193fa27cf9bb1ff2a09de4cf5a11a05",
+          "age": 1080,
+          "emitters": 17,
+          "state": "a4cbeba233bc6b2be46bb067d6042e7cdae47b576a6c5f2053161c653f7f7501",
+          "vertices": 13716,
+          "draws": 213,
+          "children": 844,
+          "curves": 0,
+          "segments": 0,
+          "invisible": 29,
+          "outside": 243,
+          "lua_kb": 316068.0390625,
+          "objects": 880
+        },
+        {
+          "projectiles": 817,
+          "motion_state": "5fa300afaff8b70a15c6854e52847b4eb6104b8deb01c05be5771024c67bb7ad",
+          "age": 1200,
+          "emitters": 17,
+          "state": "f699cb90a4b6b3b69c2405f51c6523196874535b53141a6cd8e7c244aec3224f",
+          "vertices": 13926,
+          "draws": 207,
+          "children": 564,
+          "curves": 0,
+          "segments": 0,
+          "invisible": 30,
+          "outside": 235,
+          "lua_kb": 257977.515625,
+          "objects": 873
+        },
+        {
+          "projectiles": 819,
+          "motion_state": "a5a18a588079acfaddd514657a449991cf1253dee5a0397fb393ddf262a42699",
+          "age": 1320,
+          "emitters": 17,
+          "state": "27860c7f47199b1abacfd2871fff99979029489f3c6aa5e88dddefc56d10ce9d",
+          "vertices": 13590,
+          "draws": 203,
+          "children": 327,
+          "curves": 0,
+          "segments": 0,
+          "invisible": 29,
+          "outside": 241,
+          "lua_kb": 190883.3671875,
+          "objects": 875
+        },
+        {
+          "projectiles": 828,
+          "motion_state": "b3f8cf7bb72db3f4cbc126d548f42db545f440a0973df190245b6199ba204852",
+          "age": 1440,
+          "emitters": 17,
+          "state": "8c465f51e923cedf5b91cdde0801d449c45aa1b5bb3343ae36c760109a25086a",
+          "vertices": 12984,
+          "draws": 206,
+          "children": 1020,
+          "curves": 0,
+          "segments": 0,
+          "invisible": 30,
+          "outside": 252,
+          "lua_kb": 350492.49609375,
+          "objects": 885
+        },
+        {
+          "projectiles": 816,
+          "motion_state": "cef15920b408f7fa628c407669c3040a33ddfce9e6611db562c14fba838f091b",
+          "age": 1560,
+          "emitters": 17,
+          "state": "c22a0f764633f1dee6de9e60090525e2c6086f04d787bd591ee1cbf43660e131",
+          "vertices": 13476,
+          "draws": 212,
+          "children": 773,
+          "curves": 0,
+          "segments": 0,
+          "invisible": 29,
+          "outside": 241,
+          "lua_kb": 302190.796875,
+          "objects": 872
+        },
+        {
+          "projectiles": 809,
+          "motion_state": "49d28b0a36f943ec68ebc49d6ab7623cb53241fee00938493a6e09054ba6bf3c",
+          "age": 1680,
+          "emitters": 17,
+          "state": "c548b4ad069e05cb09af4a4ed86bc3417d04bd58cf3451ffe971d40866df5521",
+          "vertices": 13842,
+          "draws": 214,
+          "children": 532,
+          "curves": 0,
+          "segments": 0,
+          "invisible": 29,
+          "outside": 241,
+          "lua_kb": 237085.46484375,
+          "objects": 865
+        },
+        {
+          "projectiles": 809,
+          "motion_state": "75044f2c8d6376ed66c8fb9c35c28f3667d661c8e7cd9fb7b089f204c605ed5f",
+          "age": 1800,
+          "emitters": 17,
+          "state": "538b8924efc1abb732ec1597894c84e201c695a2bfde80a0271d9bb045aa407c",
+          "vertices": 13956,
+          "draws": 211,
+          "children": 304,
+          "curves": 0,
+          "segments": 0,
+          "invisible": 29,
+          "outside": 233,
+          "lua_kb": 189588.8671875,
+          "objects": 865
+        },
+        {
+          "projectiles": 825,
+          "motion_state": "a415a94ebd1acd3e9b7ec15294bfd11371a0b9615300158533eb5bdfbeeb2ab7",
+          "age": 1920,
+          "emitters": 17,
+          "state": "54a925b06d5d1a906db8e878aacc7798eb86d8b8f1062d0ab72c765cc331af0f",
+          "vertices": 13506,
+          "draws": 218,
+          "children": 986,
+          "curves": 0,
+          "segments": 0,
+          "invisible": 29,
+          "outside": 241,
+          "lua_kb": 351436.625,
+          "objects": 881
+        },
+        {
+          "projectiles": 825,
+          "motion_state": "37f83c6da9f095e3d67a2258494fd7ffbf19050ef14cd01c8bb21bf0548f7512",
+          "age": 2040,
+          "emitters": 17,
+          "state": "b9d709f67474075f045e65e714485a6cb62effa9162e8f035d43c185597e0b2c",
+          "vertices": 13164,
+          "draws": 228,
+          "children": 760,
+          "curves": 0,
+          "segments": 0,
+          "invisible": 31,
+          "outside": 245,
+          "lua_kb": 286887.05859375,
+          "objects": 881
+        },
+        {
+          "projectiles": 826,
+          "motion_state": "8c0ea517b17157ee626901a81f936e431592b269d406495f7b6d1cc9fa87577a",
+          "age": 2160,
+          "emitters": 17,
+          "state": "6c122a9168f03e0d36eb82e9f9858834b55668a73762bbca56e5c2279d721ae7",
+          "vertices": 13386,
+          "draws": 224,
+          "children": 545,
+          "curves": 0,
+          "segments": 0,
+          "invisible": 30,
+          "outside": 241,
+          "lua_kb": 243230.76953125,
+          "objects": 882
+        },
+        {
+          "projectiles": 817,
+          "motion_state": "4d4173f2630ce0e21fe46f4c08dc74d9917ce83581b82ba54b0708d93b150ac4",
+          "age": 2280,
+          "emitters": 17,
+          "state": "2aa4d14f9efe268d6f11b476a0d300d13f7a879841b63bfebe8b4aba287d5ec0",
+          "vertices": 13746,
+          "draws": 221,
+          "children": 336,
+          "curves": 0,
+          "segments": 0,
+          "invisible": 30,
+          "outside": 236,
+          "lua_kb": 197511.59765625,
+          "objects": 874
+        },
+        {
+          "projectiles": 817,
+          "motion_state": "32a4255a81482d1bf80b6cafe03bf25f220afe3f925e0f1986dbee8e450c444a",
+          "age": 2400,
+          "emitters": 17,
+          "state": "1cda3581216cbe080fbcab1eb96af45d276fbdca27ec42da224b4812de6b9a92",
+          "vertices": 14094,
+          "draws": 240,
+          "children": 1043,
+          "curves": 0,
+          "segments": 0,
+          "invisible": 29,
+          "outside": 245,
+          "lua_kb": 365635.3046875,
+          "objects": 873
+        }
+      ],
+      "top_stacks": [
+        [
+          "C game/android/main.lua:227;",
+          239
+        ],
+        [
+          "G mod/GAME/th39/runtime.lua:74;mod/GAME/th39/runtime.lua:781;mod/GAME/th39/runtime.lua:992;mod/GAME/th39/runtime.lua:1039;mod/GAME/th39.lua:283;",
+          188
+        ],
+        [
+          "G mod/GAME/th39/runtime.lua:75;mod/GAME/th39/runtime.lua:781;mod/GAME/th39/runtime.lua:992;mod/GAME/th39/runtime.lua:1039;mod/GAME/th39.lua:283;",
+          181
+        ],
+        [
+          "N mod/GAME/th39/runtime.lua:72;mod/GAME/th39/runtime.lua:781;mod/GAME/th39/runtime.lua:992;mod/GAME/th39/runtime.lua:1039;mod/GAME/th39.lua:283;",
+          87
+        ],
+        [
+          "C mod/GAME/th39/runtime.lua:509;@0x01042f792c;THlib/rogue_hp.lua:157;THlib/item/item.lua:397;mod/rogue_encounter.lua:372;",
+          67
+        ],
+        [
+          "C mod/GAME/th39/runtime.lua:71;mod/GAME/th39/runtime.lua:781;mod/GAME/th39/runtime.lua:992;mod/GAME/th39/runtime.lua:1039;mod/GAME/th39.lua:283;",
+          61
+        ],
+        [
+          "C THlib/ext/ext.lua:280;THlib/ext/ext.lua:318;THlib/ext/ext.lua:390;macos/reported_cards_test.lua:79;game/android/main.lua:240;",
+          42
+        ],
+        [
+          "N mod/GAME/th39/runtime.lua:992;mod/GAME/th39/runtime.lua:1042;mod/GAME/th39.lua:283;THlib/enemy/boss_system.lua:139;THlib/enemy/boss.lua:46;",
+          38
+        ],
+        [
+          "C mod/GAME/th39/runtime.lua:429;mod/GAME/th39/runtime.lua:511;@0x01042f792c;THlib/rogue_hp.lua:157;THlib/item/item.lua:397;",
+          28
+        ],
+        [
+          "C mod/GAME/th39/runtime.lua:437;mod/GAME/th39/runtime.lua:511;@0x01042f792c;THlib/rogue_hp.lua:157;THlib/item/item.lua:397;",
+          23
+        ],
+        [
+          "I mod/GAME/th39/runtime.lua:337;mod/GAME/th39/runtime.lua:535;@0x01042f73a8;THlib/ext/ext.lua:465;macos/reported_cards_test.lua:106;",
+          22
+        ],
+        [
+          "C mod/GAME/th39/runtime.lua:385;mod/GAME/th39/runtime.lua:539;@0x01042f73a8;THlib/ext/ext.lua:465;macos/reported_cards_test.lua:106;",
+          22
+        ]
+      ]
+    },
+    "fixed": {
+      "timing": {
+        "logic_ms": {
+          "mean": 9.545211161187527,
+          "p95": 15.245957998559,
+          "max": 63.253375003114,
+          "samples": 2281
+        },
+        "render_ms": {
+          "mean": 1.5233278279642066,
+          "p95": 1.9080420024693,
+          "max": 8.4542080294341,
+          "samples": 2280
+        },
+        "peak_lua_mib": 344.3459644317578
+      },
+      "checkpoints": [
+        {
+          "lua_kb": 189598.42382812,
+          "emitters": 0,
+          "draws": 141,
+          "vertices": 6762,
+          "children": 0,
+          "state": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "objects": 40,
+          "invisible": 0,
+          "outside": 0,
+          "curves": 0,
+          "projectiles": 0,
+          "segments": 0,
+          "age": 120,
+          "motion_state": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "lua_kb": 205603.25976562,
+          "emitters": 17,
+          "draws": 154,
+          "vertices": 6720,
+          "children": 11,
+          "state": "4164e05c617f45a28b45b3c64dba208956e480120d2c1e4b08fce19d1996171c",
+          "objects": 116,
+          "invisible": 2,
+          "outside": 0,
+          "curves": 0,
+          "projectiles": 77,
+          "segments": 0,
+          "age": 240,
+          "motion_state": "408ac585e4692a079d2b9ed5a33f9780911d2e84245f93f849becb20c4e050f6"
+        },
+        {
+          "lua_kb": 292998.63867188,
+          "emitters": 17,
+          "draws": 133,
+          "vertices": 9132,
+          "children": 1254,
+          "state": "472862e209afac1a9b5b730b6bd0621dd3dd2c8b7818d23f60a9a688368a0d7c",
+          "objects": 556,
+          "invisible": 19,
+          "outside": 42,
+          "curves": 0,
+          "projectiles": 517,
+          "segments": 0,
+          "age": 360,
+          "motion_state": "67180510a2d55831e6a9078b5018029f1666ee2d9cfd2304c14ef112edce1a07"
+        },
+        {
+          "lua_kb": 344235.38476562,
+          "emitters": 17,
+          "draws": 136,
+          "vertices": 11736,
+          "children": 2552,
+          "state": "cce9ed2b112fc36213e052781b0bddc45e6cdc311135ca0178278d819fbc818f",
+          "objects": 810,
+          "invisible": 29,
+          "outside": 186,
+          "curves": 0,
+          "projectiles": 771,
+          "segments": 0,
+          "age": 480,
+          "motion_state": "348e98ec247915ee5bbee0e7cddf1d712ad2ca8b3bfb0f734e4d3859a00f7a71"
+        },
+        {
+          "lua_kb": 286474.41210938,
+          "emitters": 17,
+          "draws": 148,
+          "vertices": 12168,
+          "children": 1181,
+          "state": "49dd7ab90a04df35b09b4ed2be8af96aef92c80ced181fc45b48ad930c487aec",
+          "objects": 823,
+          "invisible": 29,
+          "outside": 208,
+          "curves": 0,
+          "projectiles": 784,
+          "segments": 0,
+          "age": 600,
+          "motion_state": "6f629e517534d765db8b7b991e3c733f465535e9a5552dcd15f6fd5ed9d76183"
+        },
+        {
+          "lua_kb": 352610.26757812,
+          "emitters": 17,
+          "draws": 167,
+          "vertices": 12078,
+          "children": 1437,
+          "state": "72a3d5a3f181ecbead7a5cd1013c2eb72a86fe8f9a5de022771c7cabb941da04",
+          "objects": 855,
+          "invisible": 28,
+          "outside": 218,
+          "curves": 0,
+          "projectiles": 792,
+          "segments": 0,
+          "age": 720,
+          "motion_state": "33427dec60980c697170abec431a55b6084a529db7c682b0c0b6554ac6995963"
+        },
+        {
+          "lua_kb": 340490.26757812,
+          "emitters": 17,
+          "draws": 182,
+          "vertices": 12120,
+          "children": 1107,
+          "state": "404f81199f25041349761793d93520862793366727a3cb3cad3eac848da32ca5",
+          "objects": 846,
+          "invisible": 29,
+          "outside": 228,
+          "curves": 0,
+          "projectiles": 807,
+          "segments": 0,
+          "age": 840,
+          "motion_state": "c7ba44425697b47750fd6acb9ad111f67461ead211eee9cc205b6fc211eb7cb1"
+        },
+        {
+          "lua_kb": 226132.74121094,
+          "emitters": 17,
+          "draws": 199,
+          "vertices": 13494,
+          "children": 424,
+          "state": "c92d189ec4ecf58fd9035f2f3f499c0554aae88f352f6107cc990357ae4807c6",
+          "objects": 855,
+          "invisible": 30,
+          "outside": 241,
+          "curves": 0,
+          "projectiles": 810,
+          "segments": 0,
+          "age": 960,
+          "motion_state": "d06209172ff655407bcbe01b2f759513fd62abf5e62701807fe25b99813f8a36"
+        },
+        {
+          "lua_kb": 326519.87011719,
+          "emitters": 17,
+          "draws": 213,
+          "vertices": 13716,
+          "children": 900,
+          "state": "a4cbeba233bc6b2be46bb067d6042e7cdae47b576a6c5f2053161c653f7f7501",
+          "objects": 880,
+          "invisible": 29,
+          "outside": 243,
+          "curves": 0,
+          "projectiles": 824,
+          "segments": 0,
+          "age": 1080,
+          "motion_state": "865ccf023f2c581978a7780a51ce142aa193fa27cf9bb1ff2a09de4cf5a11a05"
+        },
+        {
+          "lua_kb": 221219.96386719,
+          "emitters": 17,
+          "draws": 207,
+          "vertices": 13926,
+          "children": 419,
+          "state": "f699cb90a4b6b3b69c2405f51c6523196874535b53141a6cd8e7c244aec3224f",
+          "objects": 873,
+          "invisible": 30,
+          "outside": 235,
+          "curves": 0,
+          "projectiles": 817,
+          "segments": 0,
+          "age": 1200,
+          "motion_state": "5fa300afaff8b70a15c6854e52847b4eb6104b8deb01c05be5771024c67bb7ad"
+        },
+        {
+          "lua_kb": 317757.15136719,
+          "emitters": 17,
+          "draws": 203,
+          "vertices": 13590,
+          "children": 818,
+          "state": "27860c7f47199b1abacfd2871fff99979029489f3c6aa5e88dddefc56d10ce9d",
+          "objects": 875,
+          "invisible": 29,
+          "outside": 241,
+          "curves": 0,
+          "projectiles": 819,
+          "segments": 0,
+          "age": 1320,
+          "motion_state": "a5a18a588079acfaddd514657a449991cf1253dee5a0397fb393ddf262a42699"
+        },
+        {
+          "lua_kb": 192710.12402344,
+          "emitters": 17,
+          "draws": 206,
+          "vertices": 12984,
+          "children": 278,
+          "state": "8c465f51e923cedf5b91cdde0801d449c45aa1b5bb3343ae36c760109a25086a",
+          "objects": 885,
+          "invisible": 30,
+          "outside": 252,
+          "curves": 0,
+          "projectiles": 828,
+          "segments": 0,
+          "age": 1440,
+          "motion_state": "b3f8cf7bb72db3f4cbc126d548f42db545f440a0973df190245b6199ba204852"
+        },
+        {
+          "lua_kb": 291900.37792969,
+          "emitters": 17,
+          "draws": 212,
+          "vertices": 13476,
+          "children": 744,
+          "state": "c22a0f764633f1dee6de9e60090525e2c6086f04d787bd591ee1cbf43660e131",
+          "objects": 872,
+          "invisible": 29,
+          "outside": 241,
+          "curves": 0,
+          "projectiles": 816,
+          "segments": 0,
+          "age": 1560,
+          "motion_state": "cef15920b408f7fa628c407669c3040a33ddfce9e6611db562c14fba838f091b"
+        },
+        {
+          "lua_kb": 189688.97167969,
+          "emitters": 17,
+          "draws": 214,
+          "vertices": 13842,
+          "children": 273,
+          "state": "c548b4ad069e05cb09af4a4ed86bc3417d04bd58cf3451ffe971d40866df5521",
+          "objects": 865,
+          "invisible": 29,
+          "outside": 241,
+          "curves": 0,
+          "projectiles": 809,
+          "segments": 0,
+          "age": 1680,
+          "motion_state": "49d28b0a36f943ec68ebc49d6ab7623cb53241fee00938493a6e09054ba6bf3c"
+        },
+        {
+          "lua_kb": 304228.83496094,
+          "emitters": 17,
+          "draws": 211,
+          "vertices": 13956,
+          "children": 787,
+          "state": "538b8924efc1abb732ec1597894c84e201c695a2bfde80a0271d9bb045aa407c",
+          "objects": 865,
+          "invisible": 29,
+          "outside": 233,
+          "curves": 0,
+          "projectiles": 809,
+          "segments": 0,
+          "age": 1800,
+          "motion_state": "75044f2c8d6376ed66c8fb9c35c28f3667d661c8e7cd9fb7b089f204c605ed5f"
+        },
+        {
+          "lua_kb": 190273.19042969,
+          "emitters": 17,
+          "draws": 218,
+          "vertices": 13506,
+          "children": 272,
+          "state": "54a925b06d5d1a906db8e878aacc7798eb86d8b8f1062d0ab72c765cc331af0f",
+          "objects": 881,
+          "invisible": 29,
+          "outside": 241,
+          "curves": 0,
+          "projectiles": 825,
+          "segments": 0,
+          "age": 1920,
+          "motion_state": "a415a94ebd1acd3e9b7ec15294bfd11371a0b9615300158533eb5bdfbeeb2ab7"
+        },
+        {
+          "lua_kb": 292011.67871094,
+          "emitters": 17,
+          "draws": 228,
+          "vertices": 13164,
+          "children": 760,
+          "state": "b9d709f67474075f045e65e714485a6cb62effa9162e8f035d43c185597e0b2c",
+          "objects": 881,
+          "invisible": 31,
+          "outside": 245,
+          "curves": 0,
+          "projectiles": 825,
+          "segments": 0,
+          "age": 2040,
+          "motion_state": "37f83c6da9f095e3d67a2258494fd7ffbf19050ef14cd01c8bb21bf0548f7512"
+        },
+        {
+          "lua_kb": 181452.01464844,
+          "emitters": 17,
+          "draws": 224,
+          "vertices": 13386,
+          "children": 247,
+          "state": "6c122a9168f03e0d36eb82e9f9858834b55668a73762bbca56e5c2279d721ae7",
+          "objects": 882,
+          "invisible": 30,
+          "outside": 241,
+          "curves": 0,
+          "projectiles": 826,
+          "segments": 0,
+          "age": 2160,
+          "motion_state": "8c0ea517b17157ee626901a81f936e431592b269d406495f7b6d1cc9fa87577a"
+        },
+        {
+          "lua_kb": 284347.08105469,
+          "emitters": 17,
+          "draws": 221,
+          "vertices": 13746,
+          "children": 710,
+          "state": "2aa4d14f9efe268d6f11b476a0d300d13f7a879841b63bfebe8b4aba287d5ec0",
+          "objects": 874,
+          "invisible": 30,
+          "outside": 236,
+          "curves": 0,
+          "projectiles": 817,
+          "segments": 0,
+          "age": 2280,
+          "motion_state": "4d4173f2630ce0e21fe46f4c08dc74d9917ce83581b82ba54b0708d93b150ac4"
+        },
+        {
+          "lua_kb": 184261.61621094,
+          "emitters": 17,
+          "draws": 240,
+          "vertices": 14094,
+          "children": 274,
+          "state": "1cda3581216cbe080fbcab1eb96af45d276fbdca27ec42da224b4812de6b9a92",
+          "objects": 873,
+          "invisible": 29,
+          "outside": 245,
+          "curves": 0,
+          "projectiles": 817,
+          "segments": 0,
+          "age": 2400,
+          "motion_state": "32a4255a81482d1bf80b6cafe03bf25f220afe3f925e0f1986dbee8e450c444a"
+        }
+      ],
+      "top_stacks": [
+        [
+          "C game/android/main.lua:227;",
+          281
+        ],
+        [
+          "G mod/GAME/th39/runtime.lua:95;mod/GAME/th39/runtime.lua:813;mod/GAME/th39/runtime.lua:1024;mod/GAME/th39/runtime.lua:1071;mod/GAME/th39.lua:283;",
+          193
+        ],
+        [
+          "G mod/GAME/th39/runtime.lua:541;@0x010470b92c;THlib/rogue_hp.lua:157;THlib/item/item.lua:397;mod/rogue_encounter.lua:372;",
+          74
+        ],
+        [
+          "C mod/GAME/th39/runtime.lua:541;@0x010470b92c;THlib/rogue_hp.lua:157;THlib/item/item.lua:397;mod/rogue_encounter.lua:372;",
+          56
+        ],
+        [
+          "N mod/GAME/th39/runtime.lua:100;mod/GAME/th39/runtime.lua:813;mod/GAME/th39/runtime.lua:1024;mod/GAME/th39/runtime.lua:1071;mod/GAME/th39.lua:283;",
+          49
+        ],
+        [
+          "C mod/GAME/th39/runtime.lua:571;@0x010470b3a8;THlib/ext/ext.lua:465;macos/reported_cards_test.lua:106;game/android/pause_cache.lua:28;",
+          44
+        ],
+        [
+          "N mod/GAME/th39/runtime.lua:147;mod/GAME/th39/runtime.lua:296;mod/GAME/th39/runtime.lua:1021;mod/GAME/th39/runtime.lua:1071;mod/GAME/th39.lua:283;",
+          40
+        ],
+        [
+          "N mod/GAME/th39/runtime.lua:821;mod/GAME/th39/runtime.lua:1029;mod/GAME/th39/runtime.lua:1074;mod/GAME/th39.lua:283;THlib/enemy/boss_system.lua:139;",
+          36
+        ],
+        [
+          "C THlib/ext/ext.lua:280;THlib/ext/ext.lua:318;THlib/ext/ext.lua:390;macos/reported_cards_test.lua:79;game/android/main.lua:240;",
+          36
+        ],
+        [
+          "C mod/GAME/th39/runtime.lua:417;mod/GAME/th39/runtime.lua:571;@0x010470b3a8;THlib/ext/ext.lua:465;macos/reported_cards_test.lua:106;",
+          25
+        ],
+        [
+          "I mod/rogue_encounter.lua:378;mod/GAME/th39/runtime.lua:843;mod/GAME/th39/runtime.lua:1024;mod/GAME/th39/runtime.lua:1071;mod/GAME/th39.lua:283;",
+          24
+        ],
+        [
+          "N mod/GAME/th39/runtime.lua:321;mod/GAME/th39/runtime.lua:512;mod/GAME/th39/runtime.lua:554;@0x010470b388;THlib/ext/ext.lua:231;",
+          23
+        ]
+      ]
+    }
+  },
+  "snow_warning": {
+    "card": 38011,
+    "pattern": "L/stage2/boss2/1",
+    "cause": [
+      "静止且无加速度的跟随速度父弹错误地使用atan2(0,0)，把自机狙朝向归零",
+      "固定激光的运动绑定错误地减去父物体出生朝向，原作使用完整世界旋转"
+    ],
+    "original_sources": [
+      "Assets/Scripts/Bulletmove.cs:1235-1248",
+      "Assets/Scripts/Laser_move_line.cs:800-810",
+      "Assets/Scripts/Basic_zi.cs"
+    ],
+    "checks": [
+      "实际卡片四站位：-70.753/-109.247/-90.000/-63.949度，伸展/绘制/判定一致",
+      "实际单卡完整时限1890帧，对象峰值1177，清场0"
+    ],
+    "native_run": {
+      "frames": 1800,
+      "checkpoints": 15,
+      "entry": "正式挑战模式",
+      "platform": "macOS Metal",
+      "render_errors": 0
+    }
+  },
+  "checks": [
+    "luajit tools/th38-tests/check_warning_angle.lua",
+    "luajit tools/th38-tests/check_motion.lua",
+    "luajit tools/th38-tests/check_full.lua /tmp/th38-warning-full.json 38011",
+    "luajit tools/th39-tests/check_fireworks.lua",
+    "luajit tools/th39-tests/check_native_fastpath.lua",
+    "luajit tools/th39-tests/check_emission_copy.lua",
+    "luajit tools/check_rogue_resource_cache.lua"
+  ],
+  "limits": [
+    "Android当前无可用设备；不将Mac帧率外推为Android效果",
+    "跨进程耗时受负载影响，CPU数字仅作诊断参考",
+    "采样哈希覆盖普通弹的部分运动与显示字段，不代替原作全字段逐tick对照"
+  ]
+}

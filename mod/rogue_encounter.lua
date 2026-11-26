@@ -1,5 +1,8 @@
 -- 新作每场回收攻击对象；资源预加载复用，首个关卡背景、宿主自机与强化整局保留。
 local M={}
+-- 存活对象由引擎持有；归属表不能继续强持有已删除的短命弹及其绑定状态。
+local objectKeys={__mode='k'}
+local function objectSet() return setmetatable({},objectKeys) end
 local preload=dofile('mod/rogue_preload.lua')
 function M.checkpoint() if not M.constructingBackground then preload.checkpoint() end end
 M.copyPrepared=preload.copy
@@ -190,7 +193,7 @@ local function createBackground(entry,unit)
     local part=unit.sc_group[1]
     local work=GameContent.ports[entry.level] or _editor_class[entry.source]
     local create=part.card.createRogueBackground or part.boss.createRogueBackground or work and work.createRogueBackground
-    local scope={objects={},level=entry.level}
+    local scope={objects=objectSet(),level=entry.level}
     scope.anchor=rawNew(object)
     scope.anchor.group,scope.anchor.bound,scope.anchor.colli,scope.anchor.hide=GROUP.GHOST,false,false,true
     scope.objects[scope.anchor]=true
@@ -299,7 +302,7 @@ function M.begin(scene,entry)
     run.source_damage=enabled and assert(ports.damageUnits[entry.level]) or nil
     run.source_boss_damage=enabled and ports.bossDamageUnits[entry.level] or nil
     if not enabled then return false end
-    M.scope={entry=entry,run=run,objects={}}
+    M.scope={entry=entry,run=run,objects=objectSet()}
     return true
 end
 function M.prepare(scene,entry,unit)

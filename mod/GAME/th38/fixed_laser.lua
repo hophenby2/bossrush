@@ -2,7 +2,10 @@
 local F={}
 local function direction(s)
     local parent=s.parent
-    return s.direction+(parent and parent.rotation-s.lineParentRotation or 0)
+    -- Laser_move_line 的运动绑定每tick读取父物体的世界旋转，而非相对出生时的增量。
+    -- 普通弹rotation是Unity旋转+90；固定激光自身rotation直接保存Unity旋转。
+    local parentAngle=parent and (parent.rotation+(parent.kind=='beam' and parent.beamMode==1 and 90 or 0)) or 0
+    return s.direction+parentAngle
 end
 F.direction=direction
 
