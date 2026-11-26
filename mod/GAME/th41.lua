@@ -17,6 +17,10 @@ local env,load,assets=dofile('mod/GAME/ports/environment.lua')('theis')
 local api=env.lstg
 local resolve=api.ResourceSet.Resolve
 local resourceName=api.ResourceSet.Name
+-- 原移动任务依赖曲线工厂；在作品环境补齐缺失接口，保留宿主已有的实现。
+if env.math.bezier_curve==nil then
+    env.math.bezier_curve=dofile('mod/GAME/ports/bezier_curve.lua')
+end
 local objectResources=dofile('mod/GAME/ports/object_resources.lua')
 local prepareObject
 local function objectImage(name)
