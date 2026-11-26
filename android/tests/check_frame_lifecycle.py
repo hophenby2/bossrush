@@ -8,7 +8,9 @@ ROOT=Path(__file__).resolve().parents[1]
 BUILD=ROOT/'build/frame-lifecycle-check'
 BUILD.mkdir(parents=True,exist_ok=True)
 activity=(ROOT/'java/org/bossrush/hd/BossRushActivity.java').read_text(encoding='utf-8')
-resume=activity.split('@Override protected void onResume() {',1)[1].split('        if (audioManager != null)',1)[0]
+resume=activity.split('@Override protected void onResume() {',1)[1].split('    @Override protected void onPause()',1)[0].rsplit('}',1)[0]
+pause=activity.split('@Override protected void onPause() {',1)[1].split('    @Override public void onBackPressed()',1)[0].rsplit('}',1)[0]
+assert 'requestAudioFocus' not in activity and 'AudioFocusRequest' not in activity, '游戏不能抢占外部播放器的音频焦点'
 base=(ROOT/'.cache/LuaSTG-x/frameworks/cocos2d-x/cocos/platform/android/java/src/org/cocos/lib/CocosActivity.java').read_text()
 assert 'mGLSurfaceView.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);' in base
 sources={
@@ -49,19 +51,27 @@ class BaseActivity {
  final CocosGLSurfaceView view=new CocosGLSurfaceView();
  CocosGLSurfaceView getGLSurfaceView(){return view;}
  protected void onResume(){view.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);}
+ protected void onPause(){}
 }
 public class FramePacerCheck extends BaseActivity {
- boolean resumed;final FramePacer framePacer=new FramePacer(view);
+ final FramePacer framePacer=new FramePacer(view);
+ static final java.util.ArrayList<Boolean> focusEvents=new java.util.ArrayList<>();
+ void runOnGLThread(Runnable r){Handler.posted.add(r);}
+ static void nativeFocus(boolean active){focusEvents.add(active);}
  @Override protected void onResume(){'''+resume+'''}
+ @Override protected void onPause(){'''+pause+'''}
  public static void main(String[] args) {
   var activity=new FramePacerCheck();var pacer=activity.framePacer;var view=activity.view;
   pacer.configure(true);activity.onResume();Handler.drain();
+  if(!focusEvents.equals(java.util.List.of(true)))throw new AssertionError("启动必须独立于外部音频恢复游戏焦点");
   if(view.mode!=GLSurfaceView.RENDERMODE_WHEN_DIRTY)throw new AssertionError("基类恢复覆盖按需模式");
   for(int i=0;i<120;i++)Choreographer.fire(i*1_000_000_000L/120);
   if(view.requests!=60)throw new AssertionError("高刷新率多绘制: "+view.requests);
-  pacer.stop();Handler.drain();int stopped=view.requests;Choreographer.fire(2_000_000_000L);
+  activity.onPause();Handler.drain();int stopped=view.requests;Choreographer.fire(2_000_000_000L);
+  if(!focusEvents.equals(java.util.List.of(true,false)))throw new AssertionError("切后台必须通知失焦");
   if(view.requests!=stopped)throw new AssertionError("暂停后继续请求");
   activity.onResume();Handler.drain();
+  if(!focusEvents.equals(java.util.List.of(true,false,true)))throw new AssertionError("返回前台不能等待音频焦点授予");
   if(view.mode!=0 || Choreographer.getInstance().callbacks.size()!=1)throw new AssertionError("恢复未重新调度");
   pacer.configure(false);Handler.drain();
   if(!Choreographer.getInstance().callbacks.isEmpty() || Handler.delayed.size()!=1)throw new AssertionError("关闭同步未切到独立时钟");
@@ -71,7 +81,7 @@ public class FramePacerCheck extends BaseActivity {
   if(!Choreographer.getInstance().callbacks.isEmpty() || Handler.delayed.size()!=1)throw new AssertionError("重复切换产生多条调度链");
   pacer.close();Handler.drain();
   if(!Choreographer.getInstance().callbacks.isEmpty() || !Handler.delayed.isEmpty())throw new AssertionError("退出遗留回调");
-  System.out.println("实际Activity恢复按需绘制、同步/独立时钟切换、旧回调失效和退出清理检查通过");
+  System.out.println("实际Activity前后台焦点通知、不抢占外部音频、按需绘制恢复、时钟切换和退出清理检查通过");
  }
 }
 '''

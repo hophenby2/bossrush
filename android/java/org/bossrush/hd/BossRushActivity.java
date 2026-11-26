@@ -1,13 +1,9 @@
 package org.bossrush.hd;
 
-import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Matrix;
-import android.media.AudioAttributes;
-import android.media.AudioFocusRequest;
-import android.media.AudioManager;
 import android.opengl.GLSurfaceView;
 import android.os.Build;
 import android.os.Bundle;
@@ -29,14 +25,11 @@ import org.cocos.lib.CocosActivity;
 import org.cocos.lib.CocosGLSurfaceView;
 import org.cocos.lib.CocosRenderer;
 
-/** 游戏数据仅使用应用私有目录，切后台和失去音频焦点时暂停。 */
+/** 游戏数据仅使用应用私有目录，切后台时暂停，允许与外部音频同时播放。 */
 public final class BossRushActivity extends CocosActivity {
     private static BossRushActivity instance;
     private static volatile boolean requestedVsync;
     private SaveManagerDialog saveManager;
-    private AudioManager audioManager;
-    private AudioFocusRequest focusRequest;
-    private boolean resumed;
     private ImageView startupView;
     private long startupStarted;
     private boolean nativeResolution;
@@ -186,15 +179,6 @@ public final class BossRushActivity extends CocosActivity {
         showStartup();
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         immersive();
-        audioManager = (AudioManager) getSystemService(Activity.AUDIO_SERVICE);
-        focusRequest = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
-            .setAudioAttributes(new AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_GAME)
-                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build())
-            .setOnAudioFocusChangeListener(change -> {
-                final boolean active = resumed && change == AudioManager.AUDIOFOCUS_GAIN;
-                runOnGLThread(() -> nativeFocus(active));
-            }).build();
     }
 
     private void immersive() {
@@ -213,19 +197,14 @@ public final class BossRushActivity extends CocosActivity {
         super.onResume();
         // 基类onResume会强制切回连续绘制，必须在它之后恢复按需模式。
         getGLSurfaceView().setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
-        resumed = true;
         if (framePacer != null) framePacer.start();
-        if (audioManager != null) {
-            final boolean active = audioManager.requestAudioFocus(focusRequest) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED;
-            runOnGLThread(() -> nativeFocus(active));
-        }
+        // 不申请音频焦点，启动/返回游戏不打断外部播放器；生命周期独立通知Lua。
+        runOnGLThread(() -> nativeFocus(true));
     }
 
     @Override protected void onPause() {
-        resumed = false;
         if (framePacer != null) framePacer.stop();
         runOnGLThread(() -> nativeFocus(false));
-        if (audioManager != null) audioManager.abandonAudioFocusRequest(focusRequest);
         super.onPause();
     }
 
