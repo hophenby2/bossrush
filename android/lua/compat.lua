@@ -180,7 +180,7 @@ expose('SetBGMSpeed', function(name, speed) assert(FindResMusic(name), name):get
 expose('GetBGMSpeed', function(name) return assert(FindResMusic(name), name):getSource():getPitch() end)
 expose('GetBGMVolume', function(name) return assert(FindResMusic(name), name):getSource():getVolume() end)
 expose('SetSESpeed', function(name, speed) assert(FindResSound(name), name):getSource():setPitch(speed) end)
-expose('SetSourceSoundVolume', function(name, volume) assert(FindResSound(name), name):getSource():setVolume(volume) end)
+dofile('android/audio_volume.lua')(native,expose)
 expose('GetSESpeed', function(name) return assert(FindResSound(name), name):getSource():getPitch() end)
 expose('GetSEVolume', function(name) return assert(FindResSound(name), name):getSource():getVolume() end)
 expose('SetBGMLoop', function(name, ending, duration)
@@ -207,11 +207,15 @@ expose('EnumResolutions', function() return { { 960, 540 } } end)
 expose('EnumGPUs', function() return { 'Android OpenGL ES' } end)
 expose('GetVersionName', function() return 'Boss Rush HD Android / LuaSTG-x 20260913' end)
 expose('GetVersionNumber', function() return 0x1000 end)
+-- Unity Soft Additive / Sub 的 screen：先预乘 alpha，再使用 ONE、ONE_MINUS_SRC_COLOR。
+local screenProgram=assert(CreateShaderProgramFromPath('shader/Fog_Liner.vert','shader/ColorMulti_Screen.frag'))
+local screenMode=assert(lstg.RenderMode:create('mul+screen',ccb.BlendOperation.ADD,
+    ccb.BlendFactor.ONE,ccb.BlendFactor.ONE_MINUS_SRC_COLOR,screenProgram))
 local fogCamera={x=0,y=0,z=0,w=0}
 local fogMode,fogNear,fogFar,fogColor=0,0,0,Color(0xFF000000)
-local fogBlends={'','add+add','add+alpha','add+sub','add+rev','mul+add','mul+alpha','mul+sub','mul+rev'}
+local fogBlends={'','add+add','add+alpha','add+sub','add+rev','mul+add','mul+alpha','mul+sub','mul+rev','mul+screen'}
 local function syncFogCamera()
-    if fogMode==0 then return end
+    if fogMode==0 then screenMode:setFloat('u_fogMode',0);return end
     local function sync(mode)
         mode:setVec4('u_fogCamera',fogCamera)
         mode:setColor('u_fogColor',fogColor)

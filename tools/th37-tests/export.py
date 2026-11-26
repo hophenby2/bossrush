@@ -28,6 +28,12 @@ def atom(s):
  try:return float(s) if any(c in s for c in '.eE') else int(s)
  except ValueError:return s
 
+def bullet_type(line):
+ values=[atom(v) for v in line.split('_')[1:]]
+ # CSManager/CrazyStorm 将空颜色解析为 -1，表示直接绘制弹图，不使用雾化色片。
+ if values[7]=='':values[7]=-1
+ return values
+
 def main():
  ap=argparse.ArgumentParser(description=__doc__);ap.add_argument('--source',type=Path,required=True);ap.add_argument('--player-only',action='store_true');ap.add_argument('--effects-only',action='store_true');args=ap.parse_args()
  source=args.source.resolve();content=source/'src/THMHJ/bin/x86/Debug/net461/Content';data=content/'Data';dst=ROOT/'mod/GAME/th37';art=ROOT/'Resources/th37';art.mkdir(exist_ok=True)
@@ -104,7 +110,7 @@ def main():
   while not lines[i].startswith('Center:'):
    count=int(lines[i].split()[0]);kind=lines[i];i+=1
    block=lines[i:i+count];i+=count
-   if 'Types' in kind:custom=[[atom(v) for v in x.split('_')[1:]] for x in block]
+   if 'Types' in kind:custom=[bullet_type(x) for x in block]
    elif 'GlobalEvents' in kind:global_events=block
   center=lines[i][7:].split(',');available=len(center)>=2
   if not available:center=['315','240','0','0','0','0','']
@@ -203,7 +209,7 @@ def main():
    if (data/(effect+'.xna')).exists():pattern(effect,effect)
  pattern('e14','e14')
  for n in range(7,13):pattern('e'+str(n),'e'+str(n))
- common=[[atom(v) for v in x.split('_')[1:]] for x in text('3').splitlines() if x]
+ common=[bullet_type(x) for x in text('3').splitlines() if x]
  out={'chapters':chapters,'cards':allcards,'bulletTypes':common,'enemyTypes':[[atom(v) for v in x.split(',')] for x in text('0').splitlines() if x],'bossTypes':[[atom(v) for v in x.split(',')] for x in text('1').splitlines() if x]}
  (dst/'catalogue.lua').write_text('-- 原始阶段元数据；历史槽位固定在37000段。\nreturn '+lua(out)+'\n')
  for name,path in [('barrages','Pattern/barrages'),('enemys','List/enemys'),('mist','Pattern/mist'),('dis','Pattern/dis')]:

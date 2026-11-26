@@ -63,14 +63,15 @@ local function color(c,t,r)
     return out
 end
 local function rotate(x,y,a) return x*cos(a)-y*sin(a),x*sin(a)+y*cos(a) end
-local function image(key)
-    if images[key] then return images[key] end
-    local d=D.textures[key];local id='asl_particle_'..key
+local function image(key,textures)
+    local d=(textures or D.textures)[key]
+    if images[d.file] then return images[d.file] end
+    local id=(textures and 'asl_effect_particle_' or 'asl_particle_')..key
     local previous=GetResourceStatus();SetResourceStatus('global')
     LoadTexture(id,d.file);LoadImage(id,id,0,0,unpack(d.size));SetResourceStatus(previous)
-    images[key]=id;return id
+    images[d.file]=id;return id
 end
-function M.new(cfg,transform)
+function M.new(cfg,transform,textures)
     serial=serial+1
     local initial,shape,emission=cfg.InitialModule,cfg.ShapeModule,cfg.EmissionModule
     local ps={isPlaying=false,time=0,particles={},shape={radius=shape.radius.value},material={},
@@ -117,7 +118,13 @@ function M.new(cfg,transform)
             else
                 p.x,p.y=p.x+p.vx*dt,p.y+p.vy*dt;p.vy=p.vy+p.gravity*dt
                 local t=p.age/p.life
-                if cfg.RotationModule then p.rotation=p.rotation+value(cfg.RotationModule.curve,t,p.r)*dt end
+                if cfg.RotationModule then
+                    local m=cfg.RotationModule
+                    p.rotation=p.rotation+value(m.curve,t,p.r)*dt
+                    if m.separateAxes then
+                        p.rx=p.rx+value(m.x,t,p.r)*dt;p.ry=p.ry+value(m.y,t,p.r)*dt
+                    end
+                end
                 if cfg.RotationBySpeedModule then
                     local m=cfg.RotationBySpeedModule;local speed=math.sqrt(p.vx^2+p.vy^2)
                     local k=math.max(0,math.min(1,(speed-m.range.x)/(m.range.y-m.range.x)))
@@ -138,7 +145,7 @@ function M.new(cfg,transform)
         end
     end
     function ps:Render()
-        local r=cfg.renderer;local id=image(r.texture)
+        local r=cfg.renderer;local id=image(r.texture,textures)
         local q,s=transform.position,transform.lossyScale;local a=transform.eulerAngles.z*pi/180
         local soft=r.shader=='Legacy Shaders/Particles/Additive (Soft)'
         -- Soft Additive 着色器没有 Tint 属性，使用 One / OneMinusSrcColor 混合。

@@ -205,6 +205,7 @@ def prepare_sprite_shaders(target):
         write_utf8(target / filename, vertex)
     write_utf8(target / 'ColorMulti_Fog.frag', fragment)
     write_utf8(target / 'ColorAdd_Fog.frag', fragment.replace('#define SUB_COLOR_ADD 0', '#define SUB_COLOR_ADD 1'))
+    write_utf8(target / 'ColorMulti_Screen.frag', fragment.replace('#define SUB_SCREEN 0', '#define SUB_SCREEN 1'))
 
 
 def prepare_assets():

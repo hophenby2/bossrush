@@ -1,7 +1,7 @@
 -- 梦华祭二的原生对象后端。脚本在构建时展开；这里仅处理对象运动、插值与生命周期。
 -- 坐标严格1:1：原场地(32..416,16..463)→(-192..192,-224..224)。
 -- CrazyStorm内部比敌机多(+93,-13)，故弹坐标换算为(x-317,227-y)。
-local R={patterns={},classes={},assets={},objects=setmetatable({},{__mode='k'})}
+local R={patterns={},classes={},assets={},objects=setmetatable({},{__mode='k'}),controllers=setmetatable({},{__mode='k'})}
 local D=dofile('mod/GAME/th37/catalogue.lua')
 local Bindings=dofile('mod/GAME/ports/binding_index.lua')
 local floor,abs,min,max=math.floor,math.abs,math.min,math.max
@@ -16,15 +16,27 @@ end
 local function trunc(x) return x<0 and math.ceil(x) or floor(x) end
 local function valid(o) return o and IsValid(o) end
 local function rnd(a) return a~=0 and ran:Float(-a,a) or 0 end
-local nativeCopy=lstg.CopySourceTable
 local nativeGeometry=lstg.SyncSourceBulletGeometry
-local copySizes=setmetatable({},{__mode='k'})
+local Pool=dofile('mod/GAME/ports/object_pool.lua')
+local bulletPool=Pool.new(6000,256)
+local takeChange,returnChange=Pool.records(60000)
+local deepMaps=setmetatable({},{__mode='k'})
+R.statePoolStats=bulletPool.stats
 local audio=dofile('mod/GAME/ports/mhj/source_audio.lua').new(37)
-local function copy(s)
-    local o,count
-    if nativeCopy then o,count=nativeCopy(s,copySizes[s] or 128);copySizes[s]=count+8
-    else o={};for k,v in pairs(s) do o[k]=type(v)=='number' and f32(v) or v end end
-    o.changes={};o.limits={};return o
+local function copy(s,projectile)
+    local o,scratch
+    if projectile and R.useStatePool~=false then o,scratch=bulletPool.take() else o={} end
+    -- 载入与属性赋值已经完成 float 舍入，复制同一数值不再逐字段调用 C 接口。
+    for k,v in pairs(s) do o[k]=v end
+    o.changes=scratch and scratch.changes or {};o.limits=scratch and scratch.limits or {}
+    if scratch then o.shadows=scratch.shadows end
+    return o
+end
+local burstMode={__index=function(s,key) return s._sourceDefaults[key] end}
+local function burstState(defaults)
+    local s,scratch=bulletPool.take()
+    s._sourceDefaults=defaults;s.changes,s.limits,s.shadows=scratch.changes,scratch.limits,scratch.shadows
+    return setmetatable(s,burstMode)
 end
 function R.player(context)
     local c=context and (context.controller or context);local t=c and c.weaponTarget
@@ -90,7 +102,10 @@ function R.change(o,key,value,random,op,mode,duration)
         else value=initial end
     end
     value=f32(value+rnd(random))
-    o.changes[#o.changes+1]={key=key,value=value,initial=initial,op=op,mode=mode,duration=max(1,duration),left=max(1,duration)}
+    local change=takeChange()
+    change.key,change.value,change.initial,change.op,change.mode=key,value,initial,op,mode
+    change.duration,change.left=max(1,duration),max(1,duration)
+    o.changes[#o.changes+1]=change
 end
 function R.move(o,x1,x2,y1,y2)
     o.changes[#o.changes+1]={mode='move',x=ran:Float(x1,x2),y=ran:Float(y1,y2),left=60}
@@ -140,7 +155,7 @@ local function interpolate(o)
             set(o,c.key,v)
         end
         c.left=c.left-1
-        if c.left<=(c.mode=='正弦' and -1 or 0) then table.remove(o.changes,i) else i=i+1 end
+        if c.left<=(c.mode=='正弦' and -1 or 0) then table.remove(o.changes,i);returnChange(c) else i=i+1 end
     end
 end
 local function motion(o,son,scale)
@@ -244,14 +259,37 @@ local function projected(b)
     b._blend=s.Blend and 'mul+add' or ''
 end
 local function clean(b)
+    local live=valid(b)
     local s=b.mhj
+    if not s then
+        if b.effect then R.clear(b.effect) end
+        R.objects[b]=nil;if live then object.RawDel(b) end;return
+    end
     if s and s.controller and s.controller.bullets then s.controller.bullets[b]=nil end
     if s then Bindings.remove(s.bindingBucket,b) end
     if s then
         Bindings.remove(s.coverBucket,b);Bindings.remove(s.reboundBucket,b);Bindings.remove(s.forceBucket,b)
     end
-    if s then s.object=nil end
-    R.objects[b]=nil;object.RawDel(b)
+    local maps=deepMaps[s]
+    if maps then
+        for _,children in ipairs(maps) do
+            local child=children[b]
+            if child then children[b]=nil;child.bound_source=nil end
+        end
+        deepMaps[s]=nil
+    end
+    s.object=nil
+    R.objects[b]=nil
+    if bulletPool.owns(s) then
+        b.mhj=nil
+        if live then b.hide,b.colli,b.class=true,false,object;bulletPool.retireObject(b)
+        else b._sourcePoolOwner=nil end
+        bulletPool.retire(s)
+    end
+    if live then object.RawDel(b) end
+end
+bulletPool.onRecycle=function(s)
+    for i=#s.changes,1,-1 do returnChange(s.changes[i]);s.changes[i]=nil end
 end
 local function effectAssets()
     if R.assets.effects then return end
@@ -344,8 +382,8 @@ R.classes.projectile=Class(bullet,{
         effectAssets()
         s.is_projectile=true;s.kind='projectile';b.mhj=s;b.bound=false;b.group=GROUP.ENEMY_BULLET;b.layer=LAYER.ENEMY_BULLET;b.vx,b.vy=0,0
         s.fx,s.fy=f32(s.fx),f32(s.fy)
-        b._a,b._r,b._g,b._b=255,255,255,255;b._blend='';s.age=0;s.changes={};s.limits=s.limits or {};s.object=nil
-        s.shadows={};s.previousX,s.previousY=s.fx,s.fy
+        b._a,b._r,b._g,b._b=255,255,255,255;b._blend='';s.age=0;s.changes=s.changes or {};s.limits=s.limits or {};s.object=nil
+        s.shadows=s.shadows or {};s.previousX,s.previousY=s.fx,s.fy
         s.sourceSpeedd=0
         if s.Withspeedd then s.head=s.sonspeedd end
         R.objects[b]=true;s.controller.bullets[b]=s
@@ -529,7 +567,7 @@ local function grazeBeam(b,s)
 end
 R.classes.beam=Class(object,{
     init=function(b,s)
-        s.is_projectile=true;s.kind='laser';b.mhj=s;b.bound=false;b.vx,b.vy=0,0;s.age=0;s.rlongs=0;s.rwscale=s.wscale;s.changes={};s.limits=s.limits or {};s.object=nil;R.objects[b]=true;s.controller.bullets[b]=s
+        s.is_projectile=true;s.kind='laser';b.mhj=s;b.bound=false;b.vx,b.vy=0,0;s.age=0;s.rlongs=0;s.rwscale=s.wscale;s.changes=s.changes or {};s.limits=s.limits or {};s.object=nil;R.objects[b]=true;s.controller.bullets[b]=s
         b.group,b.layer,b.colli=GROUP.LASER,s.controller.effectLayer or LAYER.ENEMY_BULLET,false
         b.IsLaser,b._inf_graze=true,true
         s.laserGraze={count=0,grazed={}}
@@ -592,9 +630,20 @@ local function emit(o,bound)
     local speed=(o.sonspeed or 0)+rnd(rr.sonspeed or 0);local accel=(o.sonaspeed or 0)+rnd(rr.sonaspeed or 0)
     local accelRandom=rnd(rr.sonaspeedd or 0)
     local jx,jy=trunc(rnd(rr.fx or 0)),trunc(rnd(rr.fy or 0))
+    local defaults
+    if R.useStatePool~=false and n>=4 then
+        -- 一轮发射的只读快照，与可继续变化的发射器分离；每颗弹仍有独立事件和运动状态。
+        defaults=copy(o)
+        defaults.mx,defaults.my,defaults.ax,defaults.ay=nil,nil,nil,nil
+        defaults.changes,defaults.limits,defaults.shadows=nil,nil,nil
+        defaults.children,defaults.bound_source,defaults.emitter,defaults.object=nil,nil,nil,nil
+    end
     for i=0,n-1 do
         local fan=f32(f32(f32(i-f32((n-1)/2))*spread)/n)
-        local s=copy(o);s.limits=o.limits;s.controller=c;s.pattern=p;s.emitter=o;s.parentid=o.id;s.layerid=o.parentid
+        local s=defaults and burstState(defaults) or copy(o,true)
+        s.limits=o.limits;s.controller=c;s.pattern=p;s.parentid=o.id;s.layerid=o.parentid
+        -- 弹体不运行发射器的深绑定逻辑，不能保留已退役父状态或可变子发射器表。
+        s.bound_source,s.children,s.emitter=nil,nil,nil
         s.type=trunc(o.type)
         local radialAngle=f32(radial+fan)
         if bound then
@@ -615,7 +664,8 @@ local function emit(o,bound)
         s.sonspeedd=direction(fd,origin,s.fx,s.fy,o.fdirections)+baseRandom+fan+(o.Bindwithspeedd and bound and (bound.sourceSpeedd or bound.sonspeedd) or 0)
         s.life=o.sonlife;s.age=0;s.head=(o.head or 0)+trunc(rnd(rr.head or 0))
         s.banSound=c.banSound or o.life<20 and o.shot
-        New(o.kind=='laser' and R.classes.beam or R.classes.projectile,s)
+        local cls=o.kind=='laser' and R.classes.beam or R.classes.projectile
+        if bulletPool.owns(s) then bulletPool.newObject(cls,s) else New(cls,s) end
         o.shot=true
     end
 end
@@ -765,7 +815,7 @@ end
 function R.controller(host,id,road)
     local p=R.loadPattern(id)
     local c={host=host,pattern=p,road=road,time=0,offsetx=0,offsety=0,bullets=setmetatable({},{__mode='k'}),jumps={},eventLimits={}}
-    reset(c);return c
+    reset(c);R.controllers[c]=true;return c
 end
 function R.setEffectOffset(c,x,y)
     c.positionx,c.positiony=x,y
@@ -792,6 +842,7 @@ local function stepEmitter(c,o,ot,bound)
 end
 function R.tick(c)
     if c.closed then return end
+    bulletPool.advance()
     c.time=c.time+1
     if c.time>c.pattern.total then c.time=1;reset(c) end
     local t=c.time;local center=c.center
@@ -806,7 +857,12 @@ function R.tick(c)
             for _,child in pairs(o.children) do child.active=false end
             for _,pair in ipairs(bindingTargets(o)) do if targetable(pair,15) then
                 local child=o.children[pair[1]]
-                if not child then child=emitter(o,c);child.bindid=-1;child.Deepbind=false;child.limits={};o.children[pair[1]]=child end
+                if not child then
+                    child=emitter(o,c);child.bindid=-1;child.Deepbind=false;child.limits={};o.children[pair[1]]=child
+                    local maps=deepMaps[pair[2]]
+                    if not maps then maps={};deepMaps[pair[2]]=maps end
+                    maps[#maps+1]=o.children
+                end
                 stepEmitter(c,child,pair[2].age-(child.begin or 1)+2,pair[2])
             end end
         else stepEmitter(c,o,t-(o.begin or 1)+1) end
@@ -835,10 +891,12 @@ function R.clear(c)
     if not c then return end
     c.closed=true
     for b in pairs(c.bullets) do
-        if valid(b) then clean(b)
-        else R.objects[b]=nil;c.bullets[b]=nil end
+        clean(b)
     end
     c.parents={}
+    R.controllers[c]=nil
+    bulletPool.advance()
+    if not c.effectLayer and not c.friendly then bulletPool.clearBodies() end
 end
 function R.breakPattern(c,items)
     if not c then return end
@@ -865,12 +923,14 @@ function R.bossEntrance(b,t)
 end
 function R.clearAll()
     audio.clear()
+    for c in pairs(R.controllers) do R.clear(c) end
     for b in pairs(R.objects) do
-        if valid(b) then clean(b) else R.objects[b]=nil end
+        clean(b)
     end
     -- 切关后碰撞恢复阶段不能再持有上一局的对象。
     for i=#collisionObjects,1,-1 do collisionObjects[i]=nil end
     R.collisionCount=0
+    bulletPool.advance();bulletPool.clearBodies()
 end
 function R.stopEmitter(c)
     if c then c.closed=true;c.emitters={} end

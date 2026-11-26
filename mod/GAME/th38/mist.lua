@@ -51,7 +51,7 @@ function M.spawn(e,x,y)
     p.x,p.y=(x-4.5)*48,(y+4.8)*48
     p.color=math.floor(e.a6_5/2)+1
     p.size=f32(f32(base*profile.initial)*sx);p.delta=f32(base*profile.shrink)
-    p.left=p.life;p.blend=e.a9_4==1 and 'mul+add' or ''
+    p.left=p.life;p.blend=e.a9_4==1 and 'mul+screen' or ''
     c.birth_mists=c.birth_mists or {};c.birth_mists[#c.birth_mists+1]=p
     if not c.mist_renderer or not IsValid(c.mist_renderer) then c.mist_renderer=New(Renderer,c) end
 end

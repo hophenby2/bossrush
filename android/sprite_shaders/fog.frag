@@ -1,5 +1,6 @@
 // 0为顶点乘色，打包ColorAdd_Fog.frag时改为1。
 #define SUB_COLOR_ADD 0
+#define SUB_SCREEN 0
 precision highp float;
 precision highp sampler2D;
 #if __VERSION__ >= 300
@@ -41,10 +42,14 @@ void main() {
 #endif
     float d = distance(u_fogCamera.xyz, v_worldPosition);
     float k;
-    if (u_fogMode < 1.5) k = (d-u_fogStart)/(u_fogEnd-u_fogStart);
+    if (u_fogMode < 0.5) k = 0.0;
+    else if (u_fogMode < 1.5) k = (d-u_fogStart)/(u_fogEnd-u_fogStart);
     else if (u_fogMode < 2.5) k = 1.0-exp(-(d*u_fogDensity));
     else k = 1.0-exp(-pow(d*u_fogDensity, 2.0));
     c = mix(c, vec4(u_fogColor.rgb, u_fogColor.a*c.a), clamp(k, 0.0, 1.0));
+#if SUB_SCREEN
+    c.rgb *= c.a;
+#endif
     // 移植层使用SRC_ALPHA混合；Sub输出预乘色配ONE混合，这里保持直通色避免重复乘alpha。
 #if __VERSION__ >= 300
     cc_FragColor = c;

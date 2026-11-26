@@ -1,5 +1,6 @@
 -- 永夜篇的原生对象。逻辑使用原坐标，渲染和碰撞按 2/3 投影到项目场地。
 local SOURCE_BULLET_CAP=10000
+local SourcePool=dofile('mod/GAME/ports/object_pool.lua')
 local allocateTable
 do
     local available,factory=pcall(require,'table.new')
@@ -585,7 +586,7 @@ local function clean(b)
     if pooledBody and #nativeTables<RESERVE_LIMIT then
         local index=#nativeTables+1
         nativeTables[index]=b
-        nativeRetiredAt[index]=stage and stage.current_stage and stage.current_stage.timer or false
+        nativeRetiredAt[index]=SourcePool.epoch()
     end
 end
 local function fadeScale(value,delta)
@@ -906,7 +907,7 @@ local function emit(o,bound)
     -- 原作自机系统持有自己的弹体视图；本池只接管敌方战斗弹。
     local pooled=R.useStatePool~=false and not c.visual and not c.friendly
     local defaults=n>=4 and pooled and burstDefaults(o)
-    local epoch=stage and stage.current_stage and stage.current_stage.timer
+    local epoch=SourcePool.epoch()
     for i=0,n-1 do
         local fan=(i-(n-1)/2)*spread/n
         if not c.visual and R.bulletCount>=SOURCE_BULLET_CAP then R.overflow=R.overflow+1;return end

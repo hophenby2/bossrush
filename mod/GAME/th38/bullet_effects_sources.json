@@ -1,0 +1,262 @@
+{
+  "source_sha256": {
+    "globalgamemanagers": "8e64279df1ed55ab702aedabf40fc04c8eb5e0a40bd0751055f924570f18c4ee",
+    "resources.assets": "99df11eb0b282fefe4f9dc877e9d57ee5f6e4df4a75c0b412166dbe3b4b5f46c",
+    "resources.assets.resS": "f6dee62b054a6ff035e50ab63e9dc3fc4b39eeeda315125e2af15da1742291d6",
+    "Managed/Assembly-CSharp.dll": "93a96cffffb0edebec41d248c680666221dfd34f70499d9cfe6ea3931ab2d699"
+  },
+  "resources": [
+    "xuelianhua/prefab/enemy/xuli_texiao/baozha_0",
+    "xuelianhua/prefab/enemy/xuli_texiao/baozha_1",
+    "xuelianhua/prefab/enemy/xuli_texiao/baozha_2",
+    "xuelianhua/prefab/enemy/xuli_texiao/baozha_3",
+    "xuelianhua/prefab/enemy/xuli_texiao/baozha_4",
+    "xuelianhua/prefab/enemy/xuli_texiao/baozha_5",
+    "xuelianhua/prefab/enemy/xuli_texiao/baozha_6",
+    "xuelianhua/prefab/enemy/xuli_texiao/baozha_7",
+    "xuelianhua/prefab/enemy/xuli_texiao/xuli_0",
+    "xuelianhua/prefab/enemy/xuli_texiao/xuli_1",
+    "xuelianhua/prefab/enemy/xuli_texiao/xuli_2",
+    "xuelianhua/prefab/enemy/xuli_texiao/xuli_3",
+    "xuelianhua/prefab/enemy/xuli_texiao/xuli_4",
+    "xuelianhua/prefab/enemy/xuli_texiao/xuli_5",
+    "xuelianhua/prefab/enemy/xuli_texiao/xuli_6",
+    "xuelianhua/prefab/enemy/xuli_texiao/xuli_7",
+    "xuelianhua/prefab/xiaodantexiao"
+  ],
+  "sprites": {
+    "3294": {
+      "name": "baopo0",
+      "texture": 1018,
+      "rect": {
+        "x": 0.0,
+        "y": 0.0,
+        "width": 128.0,
+        "height": 128.0
+      },
+      "sha256": "dab782a5ec0d2fcdc15d6d75bf10e8c6f9d8a3876b28922f5809985739f7f891"
+    },
+    "3845": {
+      "name": "baopo1",
+      "texture": 1577,
+      "rect": {
+        "x": 0.0,
+        "y": 0.0,
+        "width": 128.0,
+        "height": 128.0
+      },
+      "sha256": "3815c48173fa250385dee2257d693f7029ad6810d9cdf0f4dafc0004c9cc2f90"
+    },
+    "2637": {
+      "name": "baopo2",
+      "texture": 347,
+      "rect": {
+        "x": 0.0,
+        "y": 0.0,
+        "width": 128.0,
+        "height": 128.0
+      },
+      "sha256": "58457f741621478c6384c70c0e916587760eb28cb1e83d503f52eb9e47fc9eba"
+    },
+    "3760": {
+      "name": "baopo3",
+      "texture": 1490,
+      "rect": {
+        "x": 0.0,
+        "y": 0.0,
+        "width": 128.0,
+        "height": 128.0
+      },
+      "sha256": "a06d72800e4b39ad19702ed5dfb532d3fe2fd20d11be7cc493af81606599f074"
+    },
+    "2990": {
+      "name": "baopo4",
+      "texture": 708,
+      "rect": {
+        "x": 0.0,
+        "y": 0.0,
+        "width": 128.0,
+        "height": 128.0
+      },
+      "sha256": "0021110587cfaeab0080f6d7e91108510313f1b9b7d3beef2e939171e30a1be0"
+    },
+    "2817": {
+      "name": "baopo5",
+      "texture": 530,
+      "rect": {
+        "x": 0.0,
+        "y": 0.0,
+        "width": 128.0,
+        "height": 128.0
+      },
+      "sha256": "c206cc85f4c4787b2c44334972e0994f025e756df22446435e0c97cd128700a4"
+    },
+    "3689": {
+      "name": "baopo6",
+      "texture": 1419,
+      "rect": {
+        "x": 0.0,
+        "y": 0.0,
+        "width": 128.0,
+        "height": 128.0
+      },
+      "sha256": "250f21eaba47e1eaac06f612f46c6a38205b65290dbbfeefdc6d6f6c63a17c72"
+    },
+    "3655": {
+      "name": "baopo7",
+      "texture": 1384,
+      "rect": {
+        "x": 0.0,
+        "y": 0.0,
+        "width": 128.0,
+        "height": 128.0
+      },
+      "sha256": "e4549e88698c3718e109db9ec0be47655bd9ff3dd717cfb916a60339a77a6790"
+    },
+    "3579": {
+      "name": "EndBullet_0",
+      "texture": 1308,
+      "rect": {
+        "x": 0.0,
+        "y": 0.0,
+        "width": 64.0,
+        "height": 64.0
+      },
+      "sha256": "fa612533e31697b1f731da724d35012588659230acfe6cc29f6d67323ccd99bb"
+    },
+    "2510": {
+      "name": "endbullet3_0",
+      "texture": 219,
+      "rect": {
+        "x": 0.0,
+        "y": 128.0,
+        "width": 128.0,
+        "height": 128.0
+      },
+      "sha256": "44465140cd69dfafe674ca8b2161d6e24cd8364ce4699b0f841cadac58e5195c"
+    },
+    "3892": {
+      "name": "endbullet3_1",
+      "texture": 219,
+      "rect": {
+        "x": 128.0,
+        "y": 128.0,
+        "width": 128.0,
+        "height": 128.0
+      },
+      "sha256": "3cf5494d68a6a6454a85dbb74aa5f889ea5be26e84ddfe08c65099095adec7d6"
+    },
+    "4036": {
+      "name": "endbullet3_2",
+      "texture": 219,
+      "rect": {
+        "x": 256.0,
+        "y": 128.0,
+        "width": 128.0,
+        "height": 128.0
+      },
+      "sha256": "28ecaddf151c0a4906e90074fdd2914ba8270e98a77991ce1dfdcd5c8345e52c"
+    },
+    "4180": {
+      "name": "endbullet3_3",
+      "texture": 219,
+      "rect": {
+        "x": 384.0,
+        "y": 128.0,
+        "width": 128.0,
+        "height": 128.0
+      },
+      "sha256": "cd01c0f483a3d1056d21bb989af8969ac5f72863bad7a986e675dbbc5ee9d32b"
+    },
+    "4321": {
+      "name": "endbullet3_4",
+      "texture": 219,
+      "rect": {
+        "x": 512.0,
+        "y": 128.0,
+        "width": 128.0,
+        "height": 128.0
+      },
+      "sha256": "ddc19366f3003acfddd7f21c1162c4542e387d75b547e8bc18e354c99f7e9368"
+    },
+    "4448": {
+      "name": "endbullet3_5",
+      "texture": 219,
+      "rect": {
+        "x": 640.0,
+        "y": 128.0,
+        "width": 128.0,
+        "height": 128.0
+      },
+      "sha256": "ca0b1432e71c5cf9631d956b1eb3a521024ff4498d3eb8d72fc45912a570252c"
+    },
+    "4565": {
+      "name": "endbullet3_6",
+      "texture": 219,
+      "rect": {
+        "x": 0.0,
+        "y": 0.0,
+        "width": 128.0,
+        "height": 128.0
+      },
+      "sha256": "dfe65266516b27c4bec3834f55ed43ff0df0bd2dbc1fa2554172ec5f11c32a79"
+    },
+    "4673": {
+      "name": "endbullet3_7",
+      "texture": 219,
+      "rect": {
+        "x": 128.0,
+        "y": 0.0,
+        "width": 128.0,
+        "height": 128.0
+      },
+      "sha256": "8263f2841645e1508ba55248b98388aa219ce5195b3f5137e5acf149036485b2"
+    },
+    "4779": {
+      "name": "endbullet3_8",
+      "texture": 219,
+      "rect": {
+        "x": 256.0,
+        "y": 0.0,
+        "width": 128.0,
+        "height": 128.0
+      },
+      "sha256": "fb02a0c0a60b46c7094bcfb52f5a3958523948d1cc284a1568fbab8011bd5f21"
+    },
+    "4846": {
+      "name": "endbullet3_9",
+      "texture": 219,
+      "rect": {
+        "x": 384.0,
+        "y": 0.0,
+        "width": 128.0,
+        "height": 128.0
+      },
+      "sha256": "d1e4a484c46d117e4204c29b82e3e0b040bc1c2d52b4c056c45b2559df2c6d09"
+    },
+    "4910": {
+      "name": "endbullet3_10",
+      "texture": 219,
+      "rect": {
+        "x": 512.0,
+        "y": 0.0,
+        "width": 128.0,
+        "height": 128.0
+      },
+      "sha256": "0c48966b65112ecea90f71b769fe3e02c077886e29c85f0778b9364964af3e6f"
+    },
+    "4971": {
+      "name": "endbullet3_11",
+      "texture": 219,
+      "rect": {
+        "x": 640.0,
+        "y": 0.0,
+        "width": 128.0,
+        "height": 128.0
+      },
+      "sha256": "c9e913a301671fddb76200765088897cd892ea44520f0abc57995b6969ba6965"
+    }
+  },
+  "end_life": 56,
+  "end_limit": 1500
+}

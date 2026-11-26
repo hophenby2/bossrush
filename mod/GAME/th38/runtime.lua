@@ -6,6 +6,13 @@ local Time=NativeTime or dofile('THlib/native_time.lua')
 local FixedLaser=dofile('mod/GAME/th38/fixed_laser.lua')
 local Presentation=dofile('mod/GAME/th38/presentation.lua')
 local Mist=dofile('mod/GAME/th38/mist.lua')
+local Pool=dofile('mod/GAME/ports/object_pool.lua')
+local bulletPool=Pool.new(1500,256)
+local Effects=dofile('mod/GAME/th38/bullet_effects.lua')
+Effects.bindPool(bulletPool)
+R.effects=Effects
+local hostBindings=setmetatable({},{__mode='k'})
+R.statePoolStats=bulletPool.stats
 R.presentation=Presentation
 -- 共用单精度暂存格；逐弹、逐tick舍入不再反复创建标量cdata。
 local floatBox=require('ffi').new('float[1]')
@@ -36,6 +43,7 @@ function R.loadAssets()
     if assets then return end
     Presentation.prepare()
     Mist.prepare()
+    Effects.prepare()
     globalResource(function()
         LoadTexture('asl_bullet','Resources/th38/bullet.png')
         if RogueEncounter then RogueEncounter.checkpoint() end
@@ -78,12 +86,22 @@ local function release(s)
     if s.pooled then R.bulletCount=R.bulletCount-1;s.pooled=false end
 end
 local function clean(b)
+    local live=valid(b)
     local s=b.asl;if s then
         release(s)
         s.alive=false;s.native=nil
+        local bindings=hostBindings[s]
+        if bindings then for _,hosts in ipairs(bindings) do hosts[s]=nil end;hostBindings[s]=nil end
+        if bulletPool.owns(s) then
+            b.asl=nil
+            if live then b.hide,b.colli,b.class=true,false,object;bulletPool.retireObject(b)
+            else b._sourcePoolOwner=nil end
+            bulletPool.retire(s)
+        else bulletPool.unpin(s.parent);s.parent=nil end
     end
-    R.objects[b]=nil;object.RawDel(b)
+    R.objects[b]=nil;if live then object.RawDel(b) end
 end
+bulletPool.onRecycle=function(s) bulletPool.unpin(s.parent) end
 local enemyDeath
 function R.enemyDeathEffect(b)
     enemyDeath=enemyDeath or dofile('mod/GAME/th38/enemy_death.lua')
@@ -93,7 +111,7 @@ local function sync(b,s)
     if lstg.AndroidProjectBullet and s.kind=='bullet' then
         local x,y=project(s.x,s.y)
         local r=s.customOn==1 and s.customRadius*.01 or (radius[s.shape+1] or .05)
-        local collidable=s.collision and r>0 and s.scaleX~=0 and s.scaleY~=0
+        local collidable=s.collision and s.alpha>75 and r>0 and s.scaleX~=0 and s.scaleY~=0
         lstg.AndroidProjectBullet(b,image(s),x,y,s.rotation-90,s.scaleX*.48,s.scaleY*.48,
             max(0,r*48*abs(s.scaleX)),max(0,r*48*abs(s.scaleY)),b.layer,
             s.invincible==1 and GROUP.INDES or GROUP.ENEMY_BULLET,collidable)
@@ -127,7 +145,7 @@ local function sync(b,s)
     local r=s.customOn==1 and s.customRadius*.01 or (radius[s.shape+1] or .05)
     b.a,b.b=max(0,r*48*abs(s.scaleX)),max(0,r*48*abs(s.scaleY));b.rect=false
     b.group=s.invincible==1 and GROUP.INDES or GROUP.ENEMY_BULLET
-    b.colli=s.collision and r>0 and s.scaleX~=0 and s.scaleY~=0
+    b.colli=s.collision and s.alpha>75 and r>0 and s.scaleX~=0 and s.scaleY~=0
 end
 R.classes.projectile=Class(bullet,{
     init=function(b,s)
@@ -137,10 +155,11 @@ R.classes.projectile=Class(bullet,{
     frame=function(b) if not b.asl.alive or b.asl.c.closed then clean(b) end end,
     render=function(b)
         local s=b.asl
-        drawSprite(s.c,b.img,s.blend==1 and 'mul+add' or '',b.x,b.y,b.rot,b.hscale,b.vscale,
+        drawSprite(s.c,b.img,s.blend==1 and 'mul+screen' or '',b.x,b.y,b.rot,b.hscale,b.vscale,
             max(0,min(255,s.alpha*2.55)),s.red*2.55,s.green*2.55,s.blue*2.55)
     end,
-    del=function(b) clean(b) end,kill=function(b) clean(b) end,
+    del=function(b) if b.asl then Effects.endBullet(b.asl) end;clean(b) end,
+    kill=function(b) if b.asl then Effects.endBullet(b.asl) end;clean(b) end,
 })
 R.classes.fairy=Class(enemy,{
     init=function(b,s)
@@ -208,7 +227,7 @@ R.classes.curve=Class(object,{
             local resource=textures[tex]
             if not resource then resource=assert(FindResTexture(tex));textures[tex]=resource end
             local w=lstg.world
-            lstg.AndroidRenderSourceCurve(resource,s.blend==1 and 'mul+add' or '',s.path,half,s.tailTicks,size[1],y,row,color,
+            lstg.AndroidRenderSourceCurve(resource,s.blend==1 and 'mul+screen' or '',s.path,half,s.tailTicks,size[1],y,row,color,
                 w and w.l,w and w.r,w and w.b,w and w.t)
             return
         end
@@ -232,7 +251,7 @@ R.classes.curve=Class(object,{
                             if j==1 or j==4 then v[4]=u1 else v[4]=u2 end
                             v[5]=j<=2 and y or y+row
                         end
-                        RenderTexture(tex,s.blend==1 and 'mul+add' or '',q[1],q[2],q[3],q[4])
+                        RenderTexture(tex,s.blend==1 and 'mul+screen' or '',q[1],q[2],q[3],q[4])
                     end
                 end
             end
@@ -275,7 +294,7 @@ R.classes.beam=Class(laser,{
         -- and 表达式只保留第一个返回值；必须直接接收原图及其缩放。
         if keys then img,scale=v.sprite(keys[s.color+1]) end
         if img then
-            SetImageState(img,s.blend==1 and 'mul+add' or '',s.alpha*2.55,s.red*2.55,s.green*2.55,s.blue*2.55)
+            SetImageState(img,s.blend==1 and 'mul+screen' or '',s.alpha*2.55,s.red*2.55,s.green*2.55,s.blue*2.55)
             if s.beamMode==1 then
                 Render(img,b.x,b.y,FixedLaser.direction(s)-90,max(0,s.lineWidth)*scale,s.lineLength*scale)
             else Render(img,b.x,b.y,s.direction-90,s.width*scale,math.min(s.length,s.age*abs(s.speed)*.0025)*scale) end
@@ -307,6 +326,7 @@ local function assign(s,key,value)
     if s.beamMode==1 and key=='life' then value=max(0,value) end
     if key=='a4_3' or key=='a4_12' then value=max(1,value) end
     if key=='shape' then value=max(0,min(25,value)) end
+    if key=='shape' and s.kind=='bullet' then s.dispelSize=Effects.baseSize(value) end
     if key=='color' then value=max(0,min(15,value)) end
     s[key]=value
 end
@@ -401,17 +421,28 @@ local function spawn(e,x,y,direction,speed)
     local c=e.c
     -- Loading0/Sincos原作普通弹对象池固定1500；耗尽时Ins_danmaku直接丢弃该发。
     if e.a47==0 and R.bulletCount>=R.bulletLimit then c.dropped=(c.dropped or 0)+1;return end
-    local shape=e.a6_4;local sx=e.a6_9==1 and e.a6_8 or e.a6_7
-    local s={c=c,birth=c.time+1,age=0,alive=true,x=x,y=y,speed=speed,direction=direction,rotation=direction+e.a8_7,
-        accel=e.a8_3+rnd(e.a8_4),accelDirection=e.a8_5+rnd(e.a8_6),djX=0,djY=0,
-        life=e.a6_6,shape=shape,color=e.a6_5,scaleX=sx,scaleY=e.a6_8,customOn=e.a6_1,custom=e.custom,customRadius=e.a6_3,
-        red=e.a7_1+rnd(e.a7_2),green=e.a7_3+rnd(e.a7_4),blue=e.a7_5+rnd(e.a7_6),alpha=e.a7_7+rnd(e.a7_8),
-        exit=e.a6_10,delayExit=e.a6_14,outTime=0,mist=e.a6_11,invincible=e.a6_12,dispel=e.a6_13,blend=e.a9_4,
-        -- Sincos.Zidan_fuzhi 在出生时复制全局变量，子弹事件之后读取自己的快照。
-        collision=e.a5_2==0,events=e.sonEvents,limits={},changes={},vars={c.vars[1],c.vars[2],c.vars[3],c.vars[4]},kind=e.a47==1 and 'enemy' or e.a47==3 and (e.a54_1>=2 and 'curve' or 'beam') or 'bullet',
-        enemyType=e.a48_1,enemyStyle=1+(e.a48_1*2+e.a48_2)%9,laserStyle=e.a54_4 or 0,beamMode=e.a47==3 and e.a54_1 or nil,
-        tailTicks=max(5,floor((e.a54_2 or 5)/5)*5),contact=e.a48_4*.01,hit=e.a48_5*.01,immune=e.a48_6,followSpeed=e.a8_9==1,length=e.a54_2 and e.a54_2*.01 or 1,width=e.a54_3 or 1}
-    if e.a47==4 then return end -- Unity蓄力/爆炸/震屏只演出，不制造有判定的替代弹。
+    if e.a47==4 then return end -- 特效由 fan 的专用路径创建，不占判定弹对象池。
+    local s,scratch
+    if e.a47==0 and R.useStatePool~=false then s,scratch=bulletPool.take() else s={} end
+    s.c,s.birth,s.age,s.alive=c,c.time+1,0,true
+    s.x,s.y,s.speed,s.direction,s.rotation=x,y,speed,direction,direction+e.a8_7
+    s.accel,s.accelDirection,s.djX,s.djY=e.a8_3+rnd(e.a8_4),e.a8_5+rnd(e.a8_6),0,0
+    s.life,s.shape,s.color=e.a6_6,e.a6_4,e.a6_5
+    s.scaleX,s.scaleY=e.a6_9==1 and e.a6_8 or e.a6_7,e.a6_8
+    s.customOn,s.custom,s.customRadius=e.a6_1,e.custom,e.a6_3
+    s.red,s.green,s.blue,s.alpha=e.a7_1+rnd(e.a7_2),e.a7_3+rnd(e.a7_4),e.a7_5+rnd(e.a7_6),e.a7_7+rnd(e.a7_8)
+    s.exit,s.delayExit,s.outTime,s.mist=e.a6_10,e.a6_14,0,e.a6_11
+    s.invincible,s.dispel,s.blend=e.a6_12,e.a6_13,e.a9_4
+    s.dispelSize=Effects.baseSize(s.shape,e.sourceZi)
+    s.collision,s.events=e.a5_2==0,e.sonEvents
+    s.limits,s.changes=scratch and scratch.limits or {},scratch and scratch.changes or {}
+    -- Sincos.Zidan_fuzhi 在出生时复制全局变量，子弹事件之后读取自己的快照。
+    s.vars=scratch and scratch.vars or {};for i=1,4 do s.vars[i]=c.vars[i] end
+    s.kind=e.a47==1 and 'enemy' or e.a47==3 and (e.a54_1>=2 and 'curve' or 'beam') or 'bullet'
+    s.enemyType,s.enemyStyle=e.a48_1,1+(e.a48_1*2+e.a48_2)%9
+    s.laserStyle,s.beamMode=e.a54_4 or 0,e.a47==3 and e.a54_1 or nil
+    s.tailTicks,s.contact,s.hit=max(5,floor((e.a54_2 or 5)/5)*5),e.a48_4*.01,e.a48_5*.01
+    s.immune,s.followSpeed,s.length,s.width=e.a48_6,e.a8_9==1,e.a54_2 and e.a54_2*.01 or 1,e.a54_3 or 1
     if s.beamMode==1 then FixedLaser.init(s,e) end
     if s.kind=='enemy' and s.enemyType==21 then
         -- Enemy_chuliluo 的 life 是持续tick、pdbj是时间倍率；没有敌机贴图和碰撞。
@@ -421,9 +452,10 @@ local function spawn(e,x,y,direction,speed)
     local cls=s.kind=='enemy' and R.classes.fairy or s.kind=='curve' and R.classes.curve or s.kind=='beam' and R.classes.beam or R.classes.projectile
     if s.kind=='enemy' then s.vars=c.vars end
     if s.kind=='bullet' then s.pooled=true;R.bulletCount=R.bulletCount+1 end
-    local b=New(cls,s);c.entities[#c.entities+1]=s
+    local b=bulletPool.owns(s) and bulletPool.newObject(cls,s) or New(cls,s);c.entities[#c.entities+1]=s
     if e.a9_1==1 and e.emitHost then
         s.parent=e.emitHost;s.lastParentX,s.lastParentY,s.parentRotation=e.emitHost.x,e.emitHost.y,e.emitHost.rotation
+        bulletPool.pin(s.parent)
     end
     attach(e,s)
     return b
@@ -432,15 +464,25 @@ attach=function(e,p)
     for _,link in ipairs(e.links or {}) do
         local target=e.c.byName[link.name]
         if target then
-            if link.kind==1 or link.kind==4 then target.boundHosts[p]=link.kind
+            if link.kind==1 or link.kind==4 then
+                target.boundHosts[p]=link.kind
+                local bindings=hostBindings[p]
+                if not bindings then bindings={};hostBindings[p]=bindings end
+                bindings[#bindings+1]=target.boundHosts
             elseif link.kind==2 or link.kind==5 then
                 local child=template(target,e.c);child.host=p;child.relative=link.kind==5;child.birth=e.c.time+1;child.sourceZi=true
+                bulletPool.pin(p)
                 child.skip=false;child.deep=false;child.bound=false;e.c.emitters[#e.c.emitters+1]=child
             end
         end
     end
 end
 local function fan(e,x,y,host,relative)
+    if e.a47==4 then
+        -- Basic/Basic_zi 的特效分支只读条数，在宿主中心播放；不套普通弹扇形和半径。
+        for _=1,max(0,trunc(e.a4_3)) do Effects.emission(e,x,y,host) end
+        return
+    end
     if e.a5_3==1 then local px,py=R.player();if (x-px)^2+(y-py)^2<1.44 then return end end
     local count=max(1,trunc(e.a4_3));local spread=(e.a4_7+rnd(e.a4_8))/count
     local radiusNow=(e.a4_1+rnd(e.a4_2))*.01
@@ -466,11 +508,12 @@ local function fan(e,x,y,host,relative)
         end
     end
     if radiusNow==0 then Mist.spawn(e,x,y) end
+    e.emitHost=nil
 end
 emit=function(e)
     local c=e.c;local t=c.time-e.birth-e.a2_7
-    if e.host and not e.host.alive then e.alive=false;return end
-    if t>=e.a2_8 then if e.host then e.alive=false end;return end
+    if e.host and not e.host.alive then bulletPool.unpin(e.host);e.host=nil;e.alive=false;return end
+    if t>=e.a2_8 then if e.host then bulletPool.unpin(e.host);e.host=nil;e.alive=false end;return end
     if t<0 then return end
     if e.host then e.x,e.y=e.host.x,e.host.y
     else
@@ -519,7 +562,7 @@ end
 local function move(s,deferBulletProjection)
     local c=s.c;s.age=c.time-s.birth
     if s.age<0 then return end
-    if s.native and not valid(s.native) then release(s);s.alive=false;return end
+    if s.native and not valid(s.native) then clean(s.native);return end
     if s.kind=='enemy' and s.native then s.life=s.native.hp end
     if s.kind=='boss' and s.main and valid(c.host) then s.life=c.host.hp end
     if s.kind=='boss' then bossMotion(s) end
@@ -530,6 +573,7 @@ local function move(s,deferBulletProjection)
         -- 解除运动绑定后加上父对象的速度方向，继续自身寿命和事件；不是一并删弹。
         followParent(s,parent)
         s.direction=s.direction+parent.direction
+        bulletPool.unpin(parent)
         s.parent=nil;parent=nil
     end
     local boundBullet=parent and s.kind=='bullet'
@@ -582,7 +626,9 @@ local function move(s,deferBulletProjection)
         if s.kind~='enemy' then s.life=s.life-1 end
         local out=s.x<0 or s.x>9.2 or s.y< -10 or s.y>.5
         s.outTime=out and s.outTime+1 or 0
-        if s.life<0 or s.age>0 and (s.exit==1 and out and (s.kind~='curve' or s.outTime>s.tailTicks) or s.delayExit==1 and s.outTime>50) then s.alive=false end
+        local exited=s.age>0 and (s.exit==1 and out and (s.kind~='curve' or s.outTime>s.tailTicks) or s.delayExit==1 and s.outTime>50)
+        if exited then s.alive=false
+        elseif s.life<0 then Effects.endBullet(s);s.alive=false end
         if valid(s.native) then
             if not s.alive then clean(s.native)
             elseif not deferBulletProjection or s.kind~='bullet' then sync(s.native,s) end
@@ -629,6 +675,7 @@ function R.step(c,deferBulletProjection)
     if not c or c.closed then return end
     do
         Mist.tick(c)
+        Effects.tick(c)
         -- 新对象下一tick开始积分；所有对象仍是引擎内的子弹/敌机/激光实体。
         local n=#c.entities
         for i=1,n do local s=c.entities[i];if s.alive then move(s,deferBulletProjection) end end
@@ -640,6 +687,7 @@ function R.step(c,deferBulletProjection)
         j=1
         for i=1,#c.emitters do local e=c.emitters[i];if e.alive then c.emitters[j]=e;j=j+1 end end
         for i=#c.emitters,j,-1 do c.emitters[i]=nil end
+        bulletPool.advance()
         c.time=c.time+1
     end
 end
@@ -655,9 +703,11 @@ function R.transition(c,key,reset,clear)
     local positions={}
     for _,s in ipairs(c.entities) do if s.kind=='boss' then positions[#positions+1]={s.x,s.y} end end
     local old=c.entities;local keep={}
+    for _,e in ipairs(c.emitters) do if e.host then bulletPool.unpin(e.host);e.host=nil end end
     for _,s in ipairs(old) do
         if clear or s.kind=='boss' then
-            if valid(s.native) then clean(s.native) end;s.alive=false
+            if s.native then clean(s.native) else release(s);bulletPool.retire(s) end
+            s.alive=false
         elseif s.alive then keep[#keep+1]=s end
     end
     local nextState=R.controller(c.host,key,reset and 0 or c.time)
@@ -679,9 +729,17 @@ function R.clear(c)
     if not c then return end
     Time.reset(c)
     Mist.clear(c)
+    Effects.clear(c)
     c.closed=true
-    for _,s in ipairs(c.entities) do if valid(s.native) then clean(s.native) else release(s) end;s.alive=false end
+    for _,s in ipairs(c.entities) do
+        if s.native then clean(s.native) else release(s);bulletPool.retire(s) end
+        s.alive=false
+    end
+    for _,e in ipairs(c.emitters) do if e.host then bulletPool.unpin(e.host);e.host=nil end end
     c.emitters,c.entities,c.byName={},{},{};R.controllers[c]=nil
+    local pending
+    repeat pending=bulletPool.stats().pending;bulletPool.advance() until bulletPool.stats().pending==pending
+    bulletPool.clearBodies()
 end
 function R.clearAll() for c in pairs(R.controllers) do R.clear(c) end;R.bulletCount=0;Mist.reset() end
 function R.deathClear(x,y,r,outside,dropKind)
