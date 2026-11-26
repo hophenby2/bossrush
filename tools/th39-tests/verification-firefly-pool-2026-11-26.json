@@ -1,0 +1,1429 @@
+{
+  "version": "2026.11.26.9",
+  "platform": "macOS arm64 Metal，Android原生库编译通过，无安卓真机FPS数据",
+  "scenario": "正式挑战模式39006虫符「光虫游弋」，宿主灵梦低速持续射击，不使用Bomb，自机受保护，固定种子输入739（关内58279），Boss血量保持以覆盖密集阶段",
+  "cause": "稳态仅约900个弹体，但40秒内发生260万至320万次出生，Lua状态表和引擎实例表反复分配、回收；原作Barrage使用10000格池",
+  "changes": [
+    "敌方弹体状态回收复用，保留被子弹和绑定发射器引用的退役父状态，引用归零才入池",
+    "同一批弹共享只读参数快照，运动/事件容器独立",
+    "复用退役的引擎Lua实例表，原生实体仍按New分配新UID并重置组件，保留出生顺序",
+    "RawDel延后至帧末：退役时先隐藏、关闭碰撞并改为空类，实例表隔一帧才允许借出",
+    "原作自机的弹体视图不纳入本池；跨卡清空实例表身份，资源缓存策略不变"
+  ],
+  "original_evidence": [
+    "THMHJ/Barrage.cs:InitPool/Get/Return（10000格池）",
+    "THMHJ/Batch.cs:Shoot使用Barrage.Get",
+    "THlib/lib/LObjectEvents.lua:RawDel仅标记del，由帧末处理"
+  ],
+  "fidelity": {
+    "shooting_control": "同一套立即停用旧对象规则下开/关对象池对照，6117次命中、62次击破及逐次击破帧一致；20个轨迹/特效/对象数/提交量采样一致",
+    "idle": "与修复前20个轨迹/对象数/提交量采样一致",
+    "screenshot": {
+      "size": [
+        2560,
+        1440
+      ],
+      "roi": [
+        768,
+        144,
+        1792,
+        1324
+      ],
+      "difference_bbox": null
+    },
+    "after_clear_pending": 0,
+    "after_clear_body_tables": 0
+  },
+  "runs": {
+    "shoot_pool_off": {
+      "timing_ms": {
+        "logic_ms": {
+          "mean": 8.499641416260397,
+          "p95": 12.429291149601,
+          "max": 56.200291961432
+        },
+        "render_ms": {
+          "mean": 1.7885637245949757,
+          "p95": 2.3580419365317,
+          "max": 13.884375104681
+        }
+      },
+      "frames": 2400,
+      "familiar_hits": 6117,
+      "familiar_kills": 62,
+      "pool": {
+        "pending": 0,
+        "available": 1024,
+        "bodyAvailable": 0,
+        "reused": 0,
+        "returned": 0,
+        "peakPending": 0,
+        "bodyCreated": 2643721,
+        "bodyReused": 0,
+        "created": 1024
+      },
+      "samples": [
+        {
+          "age": 120,
+          "objects": 102,
+          "projectiles": 0,
+          "motion_state": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "effect_state": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "spawned": 0,
+          "state_pool": {
+            "pending": 0,
+            "available": 1024,
+            "bodyAvailable": 0,
+            "reused": 0,
+            "returned": 0,
+            "peakPending": 0,
+            "bodyCreated": 0,
+            "bodyReused": 0,
+            "created": 1024
+          }
+        },
+        {
+          "age": 240,
+          "objects": 177,
+          "projectiles": 77,
+          "motion_state": "408ac585e4692a079d2b9ed5a33f9780911d2e84245f93f849becb20c4e050f6",
+          "effect_state": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "spawned": 205,
+          "state_pool": {
+            "pending": 0,
+            "available": 1024,
+            "bodyAvailable": 0,
+            "reused": 0,
+            "returned": 0,
+            "peakPending": 0,
+            "bodyCreated": 179,
+            "bodyReused": 0,
+            "created": 1024
+          }
+        },
+        {
+          "age": 360,
+          "objects": 702,
+          "projectiles": 605,
+          "motion_state": "72225f73600ca57f7c865678cae02c6e063c7644e1e7724caf7ecf11ad4cc411",
+          "effect_state": "59d26c1a1c99dcc8b55439cd772568e11c0de91646ae5ec8d3586d969e15802e",
+          "spawned": 20435,
+          "state_pool": {
+            "pending": 0,
+            "available": 1024,
+            "bodyAvailable": 0,
+            "reused": 0,
+            "returned": 0,
+            "peakPending": 0,
+            "bodyCreated": 20392,
+            "bodyReused": 0,
+            "created": 1024
+          }
+        },
+        {
+          "age": 480,
+          "objects": 996,
+          "projectiles": 895,
+          "motion_state": "7e78c0f17073d3ad5018fbe4300158d481ff7cfb6139951e8f1fa6efce9936bd",
+          "effect_state": "f1510843ef9846be115bee2e3b3b6bb65c0f2cb07fe5d9117333f590b33d48db",
+          "spawned": 70785,
+          "state_pool": {
+            "pending": 0,
+            "available": 1024,
+            "bodyAvailable": 0,
+            "reused": 0,
+            "returned": 0,
+            "peakPending": 0,
+            "bodyCreated": 70725,
+            "bodyReused": 0,
+            "created": 1024
+          }
+        },
+        {
+          "age": 600,
+          "objects": 926,
+          "projectiles": 825,
+          "motion_state": "36bec7859957ca2c724c6d0158da86f092942555ac73c2ab85572cf72d4f0756",
+          "effect_state": "c5bf62478d7dd5baba374fdc10cbaf97f4f825248493fc7bc6ee064ad203103c",
+          "spawned": 150163,
+          "state_pool": {
+            "pending": 0,
+            "available": 1024,
+            "bodyAvailable": 0,
+            "reused": 0,
+            "returned": 0,
+            "peakPending": 0,
+            "bodyCreated": 150086,
+            "bodyReused": 0,
+            "created": 1024
+          }
+        },
+        {
+          "age": 720,
+          "objects": 1004,
+          "projectiles": 884,
+          "motion_state": "7d4a4335455053090f8f1c41db724594de014aab36b810437a0ede1064dc5bad",
+          "effect_state": "166ba8b37cdd0f27f4cb6344737c5b984618443b0118f8409159bf0a38def1e3",
+          "spawned": 258851,
+          "state_pool": {
+            "pending": 0,
+            "available": 1024,
+            "bodyAvailable": 0,
+            "reused": 0,
+            "returned": 0,
+            "peakPending": 0,
+            "bodyCreated": 258757,
+            "bodyReused": 0,
+            "created": 1024
+          }
+        },
+        {
+          "age": 840,
+          "objects": 936,
+          "projectiles": 842,
+          "motion_state": "1a4af56b45aaebeecb1db2e30241d75c36baa7dd579677dcb76519a7011c8608",
+          "effect_state": "35f22ac0eb5a14ab18e2dac0fecb63f436742fdd00eb3cb9c1b6072de79988b1",
+          "spawned": 396327,
+          "state_pool": {
+            "pending": 0,
+            "available": 1024,
+            "bodyAvailable": 0,
+            "reused": 0,
+            "returned": 0,
+            "peakPending": 0,
+            "bodyCreated": 396216,
+            "bodyReused": 0,
+            "created": 1024
+          }
+        },
+        {
+          "age": 960,
+          "objects": 966,
+          "projectiles": 863,
+          "motion_state": "da0493425cebb207b3f491fd491b180949edafd2254af6c858d623f4565a8ae6",
+          "effect_state": "1aa2eb84681a815300e1ae43668b10cf48a259f3a2402e9a20f37c2ae6445df7",
+          "spawned": 561406,
+          "state_pool": {
+            "pending": 0,
+            "available": 1024,
+            "bodyAvailable": 0,
+            "reused": 0,
+            "returned": 0,
+            "peakPending": 0,
+            "bodyCreated": 561277,
+            "bodyReused": 0,
+            "created": 1024
+          }
+        },
+        {
+          "age": 1080,
+          "objects": 1009,
+          "projectiles": 896,
+          "motion_state": "7b5a91a03a60f259d54b89484ad1ebe60c746a91a6b04d0bb85fd068713fcacf",
+          "effect_state": "9aea3a115c2b538a1d37787f15c2c0be90f5325f346ce4e873f51fd3e7eb16e7",
+          "spawned": 732967,
+          "state_pool": {
+            "pending": 0,
+            "available": 1024,
+            "bodyAvailable": 0,
+            "reused": 0,
+            "returned": 0,
+            "peakPending": 0,
+            "bodyCreated": 732821,
+            "bodyReused": 0,
+            "created": 1024
+          }
+        },
+        {
+          "age": 1200,
+          "objects": 999,
+          "projectiles": 885,
+          "motion_state": "819f54dcba46cd2ca8717d6672bc4bdbfa246dca509ca21faea0415e1bf39b7d",
+          "effect_state": "1a7ca3f317589d2762e01bf51d3e9e1a4a00b598bcdedbcd64635a688260cff9",
+          "spawned": 906335,
+          "state_pool": {
+            "pending": 0,
+            "available": 1024,
+            "bodyAvailable": 0,
+            "reused": 0,
+            "returned": 0,
+            "peakPending": 0,
+            "bodyCreated": 906172,
+            "bodyReused": 0,
+            "created": 1024
+          }
+        },
+        {
+          "age": 1320,
+          "objects": 1009,
+          "projectiles": 900,
+          "motion_state": "bab4b737545e8b2296486fd5f0fd4f015c0edd8e8abf36308ebf6bdcc76aed34",
+          "effect_state": "6bb86d5b2dd5ba65d2b725f6b2a121f69613e352ea16b6e6e7e87c2d6f4686e8",
+          "spawned": 1080429,
+          "state_pool": {
+            "pending": 0,
+            "available": 1024,
+            "bodyAvailable": 0,
+            "reused": 0,
+            "returned": 0,
+            "peakPending": 0,
+            "bodyCreated": 1080249,
+            "bodyReused": 0,
+            "created": 1024
+          }
+        },
+        {
+          "age": 1440,
+          "objects": 1016,
+          "projectiles": 905,
+          "motion_state": "02976b2c3b132d8b3655016fa8d33a2548b185383e843f365ec709eb0ab3c43a",
+          "effect_state": "5de84e30ef48bafebefcfa8e9e4c4e94cfb392a5f44dad62b787fd185c2dd85e",
+          "spawned": 1254127,
+          "state_pool": {
+            "pending": 0,
+            "available": 1024,
+            "bodyAvailable": 0,
+            "reused": 0,
+            "returned": 0,
+            "peakPending": 0,
+            "bodyCreated": 1253930,
+            "bodyReused": 0,
+            "created": 1024
+          }
+        },
+        {
+          "age": 1560,
+          "objects": 1003,
+          "projectiles": 892,
+          "motion_state": "312d3357e1b647bc8b2ed165fe2511e7254336275ea9baccb527465e47d54d5f",
+          "effect_state": "f2f35ca875b137a91f7f94be112de47225b09c13ca06d9296d29783e631643b4",
+          "spawned": 1427591,
+          "state_pool": {
+            "pending": 0,
+            "available": 1024,
+            "bodyAvailable": 0,
+            "reused": 0,
+            "returned": 0,
+            "peakPending": 0,
+            "bodyCreated": 1427377,
+            "bodyReused": 0,
+            "created": 1024
+          }
+        },
+        {
+          "age": 1680,
+          "objects": 994,
+          "projectiles": 882,
+          "motion_state": "a6df26f326c9149967c82f98a767c0a22db8a351be21328ef4d399f2ef039dfb",
+          "effect_state": "4bc1e0508ce617b68c3cd8f5b0a92ec444312d9b50859d1c39796bb42232398e",
+          "spawned": 1601451,
+          "state_pool": {
+            "pending": 0,
+            "available": 1024,
+            "bodyAvailable": 0,
+            "reused": 0,
+            "returned": 0,
+            "peakPending": 0,
+            "bodyCreated": 1601220,
+            "bodyReused": 0,
+            "created": 1024
+          }
+        },
+        {
+          "age": 1800,
+          "objects": 996,
+          "projectiles": 880,
+          "motion_state": "c65497c27f49b8fef473e5bfcb3b6fef8955abd778e0fd0abb63ceb0ac4ce0bc",
+          "effect_state": "6575f1970614363ef57aa47d19a3b4718ca88ffc0836168f02a184c379223e93",
+          "spawned": 1775775,
+          "state_pool": {
+            "pending": 0,
+            "available": 1024,
+            "bodyAvailable": 0,
+            "reused": 0,
+            "returned": 0,
+            "peakPending": 0,
+            "bodyCreated": 1775526,
+            "bodyReused": 0,
+            "created": 1024
+          }
+        },
+        {
+          "age": 1920,
+          "objects": 973,
+          "projectiles": 864,
+          "motion_state": "6507826b4aeb914794838b2d01cf2f2036c398a273d78a3beb03bf498c30f479",
+          "effect_state": "a18d2d72c0a72541a3ef98e8bfa11d84ae017af35b280e9d54f8332f89443776",
+          "spawned": 1949941,
+          "state_pool": {
+            "pending": 0,
+            "available": 1024,
+            "bodyAvailable": 0,
+            "reused": 0,
+            "returned": 0,
+            "peakPending": 0,
+            "bodyCreated": 1949675,
+            "bodyReused": 0,
+            "created": 1024
+          }
+        },
+        {
+          "age": 2040,
+          "objects": 972,
+          "projectiles": 863,
+          "motion_state": "be5414cd38d49edf608336ae0be7fc825469c25a3567434be509ea2293f811a7",
+          "effect_state": "66f4baed10ba9fcccfe6f58a1b9162455dccccf59c2b485b501969db1a0103d0",
+          "spawned": 2123639,
+          "state_pool": {
+            "pending": 0,
+            "available": 1024,
+            "bodyAvailable": 0,
+            "reused": 0,
+            "returned": 0,
+            "peakPending": 0,
+            "bodyCreated": 2123356,
+            "bodyReused": 0,
+            "created": 1024
+          }
+        },
+        {
+          "age": 2160,
+          "objects": 963,
+          "projectiles": 854,
+          "motion_state": "f48aa687017ea8ca3b92f874f50b79ae97dfcf9220ac33ad6d0dc599c40912bf",
+          "effect_state": "bfac6f7f028485200b4401310b4ac503e2ed1e25af6b2a1886ce9b255b9cdef7",
+          "spawned": 2297157,
+          "state_pool": {
+            "pending": 0,
+            "available": 1024,
+            "bodyAvailable": 0,
+            "reused": 0,
+            "returned": 0,
+            "peakPending": 0,
+            "bodyCreated": 2296857,
+            "bodyReused": 0,
+            "created": 1024
+          }
+        },
+        {
+          "age": 2280,
+          "objects": 1002,
+          "projectiles": 890,
+          "motion_state": "ec31b6a8f65b3b35ecee3302a384a130aa79f91b4733a3f98531e52f7e24ce0b",
+          "effect_state": "ad43997910180596530f14319e83204c0e376ac80fd0bf70365abee8466c0fc0",
+          "spawned": 2470999,
+          "state_pool": {
+            "pending": 0,
+            "available": 1024,
+            "bodyAvailable": 0,
+            "reused": 0,
+            "returned": 0,
+            "peakPending": 0,
+            "bodyCreated": 2470682,
+            "bodyReused": 0,
+            "created": 1024
+          }
+        },
+        {
+          "age": 2400,
+          "objects": 1045,
+          "projectiles": 929,
+          "motion_state": "2e2da4ad9b50ddc6c5833ed0c7cea33346745fb35565e2cf88db0fe5c9700c01",
+          "effect_state": "69e0bedad8b25408a052b377968cd45e20ec55f49f4adf2008830ebf8867c9f3",
+          "spawned": 2644055,
+          "state_pool": {
+            "pending": 0,
+            "available": 1024,
+            "bodyAvailable": 0,
+            "reused": 0,
+            "returned": 0,
+            "peakPending": 0,
+            "bodyCreated": 2643721,
+            "bodyReused": 0,
+            "created": 1024
+          }
+        }
+      ]
+    },
+    "shoot_pool_on": {
+      "timing_ms": {
+        "logic_ms": {
+          "mean": 5.9945113152177365,
+          "p95": 7.4530828278512,
+          "max": 16.079208115116
+        },
+        "render_ms": {
+          "mean": 1.5666535734852545,
+          "p95": 1.8361250404269,
+          "max": 19.690457964316
+        }
+      },
+      "frames": 2400,
+      "familiar_hits": 6117,
+      "familiar_kills": 62,
+      "pool": {
+        "created": 2415,
+        "bodyAvailable": 0,
+        "reused": 2641640,
+        "returned": 2644055,
+        "peakPending": 66,
+        "bodyCreated": 2313,
+        "bodyReused": 2641408,
+        "available": 2415,
+        "pending": 0
+      },
+      "samples": [
+        {
+          "age": 120,
+          "objects": 102,
+          "projectiles": 0,
+          "motion_state": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "effect_state": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "spawned": 0,
+          "state_pool": {
+            "created": 1024,
+            "bodyAvailable": 0,
+            "reused": 0,
+            "returned": 0,
+            "peakPending": 0,
+            "bodyCreated": 0,
+            "bodyReused": 0,
+            "available": 1024,
+            "pending": 0
+          }
+        },
+        {
+          "age": 240,
+          "objects": 177,
+          "projectiles": 77,
+          "motion_state": "408ac585e4692a079d2b9ed5a33f9780911d2e84245f93f849becb20c4e050f6",
+          "effect_state": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "spawned": 205,
+          "state_pool": {
+            "created": 1101,
+            "bodyAvailable": 19,
+            "reused": 109,
+            "returned": 128,
+            "peakPending": 1,
+            "bodyCreated": 70,
+            "bodyReused": 109,
+            "available": 1024,
+            "pending": 0
+          }
+        },
+        {
+          "age": 360,
+          "objects": 702,
+          "projectiles": 605,
+          "motion_state": "72225f73600ca57f7c865678cae02c6e063c7644e1e7724caf7ecf11ad4cc411",
+          "effect_state": "59d26c1a1c99dcc8b55439cd772568e11c0de91646ae5ec8d3586d969e15802e",
+          "spawned": 20435,
+          "state_pool": {
+            "created": 1101,
+            "bodyAvailable": 306,
+            "reused": 19518,
+            "returned": 19824,
+            "peakPending": 7,
+            "bodyCreated": 870,
+            "bodyReused": 19522,
+            "available": 490,
+            "pending": 6
+          }
+        },
+        {
+          "age": 480,
+          "objects": 996,
+          "projectiles": 895,
+          "motion_state": "7e78c0f17073d3ad5018fbe4300158d481ff7cfb6139951e8f1fa6efce9936bd",
+          "effect_state": "f1510843ef9846be115bee2e3b3b6bb65c0f2cb07fe5d9117333f590b33d48db",
+          "spawned": 70785,
+          "state_pool": {
+            "created": 1454,
+            "bodyAvailable": 541,
+            "reused": 69331,
+            "returned": 69872,
+            "peakPending": 19,
+            "bodyCreated": 1382,
+            "bodyReused": 69343,
+            "available": 541,
+            "pending": 18
+          }
+        },
+        {
+          "age": 600,
+          "objects": 926,
+          "projectiles": 825,
+          "motion_state": "36bec7859957ca2c724c6d0158da86f092942555ac73c2ab85572cf72d4f0756",
+          "effect_state": "c5bf62478d7dd5baba374fdc10cbaf97f4f825248493fc7bc6ee064ad203103c",
+          "spawned": 150163,
+          "state_pool": {
+            "created": 1666,
+            "bodyAvailable": 821,
+            "reused": 148497,
+            "returned": 149318,
+            "peakPending": 24,
+            "bodyCreated": 1579,
+            "bodyReused": 148507,
+            "available": 821,
+            "pending": 20
+          }
+        },
+        {
+          "age": 720,
+          "objects": 1004,
+          "projectiles": 884,
+          "motion_state": "7d4a4335455053090f8f1c41db724594de014aab36b810437a0ede1064dc5bad",
+          "effect_state": "166ba8b37cdd0f27f4cb6344737c5b984618443b0118f8409159bf0a38def1e3",
+          "spawned": 258851,
+          "state_pool": {
+            "created": 1919,
+            "bodyAvailable": 1014,
+            "reused": 256932,
+            "returned": 257946,
+            "peakPending": 27,
+            "bodyCreated": 1842,
+            "bodyReused": 256915,
+            "available": 1014,
+            "pending": 21
+          }
+        },
+        {
+          "age": 840,
+          "objects": 936,
+          "projectiles": 842,
+          "motion_state": "1a4af56b45aaebeecb1db2e30241d75c36baa7dd579677dcb76519a7011c8608",
+          "effect_state": "35f22ac0eb5a14ab18e2dac0fecb63f436742fdd00eb3cb9c1b6072de79988b1",
+          "spawned": 396327,
+          "state_pool": {
+            "created": 2157,
+            "bodyAvailable": 1295,
+            "reused": 394170,
+            "returned": 395465,
+            "peakPending": 28,
+            "bodyCreated": 2067,
+            "bodyReused": 394149,
+            "available": 1295,
+            "pending": 20
+          }
+        },
+        {
+          "age": 960,
+          "objects": 966,
+          "projectiles": 863,
+          "motion_state": "da0493425cebb207b3f491fd491b180949edafd2254af6c858d623f4565a8ae6",
+          "effect_state": "1aa2eb84681a815300e1ae43668b10cf48a259f3a2402e9a20f37c2ae6445df7",
+          "spawned": 561406,
+          "state_pool": {
+            "created": 2380,
+            "bodyAvailable": 1495,
+            "reused": 559026,
+            "returned": 560525,
+            "peakPending": 29,
+            "bodyCreated": 2278,
+            "bodyReused": 558999,
+            "available": 1499,
+            "pending": 18
+          }
+        },
+        {
+          "age": 1080,
+          "objects": 1009,
+          "projectiles": 896,
+          "motion_state": "7b5a91a03a60f259d54b89484ad1ebe60c746a91a6b04d0bb85fd068713fcacf",
+          "effect_state": "9aea3a115c2b538a1d37787f15c2c0be90f5325f346ce4e873f51fd3e7eb16e7",
+          "spawned": 732967,
+          "state_pool": {
+            "created": 2380,
+            "bodyAvailable": 1462,
+            "reused": 730587,
+            "returned": 732050,
+            "peakPending": 29,
+            "bodyCreated": 2278,
+            "bodyReused": 730543,
+            "available": 1463,
+            "pending": 21
+          }
+        },
+        {
+          "age": 1200,
+          "objects": 999,
+          "projectiles": 885,
+          "motion_state": "819f54dcba46cd2ca8717d6672bc4bdbfa246dca509ca21faea0415e1bf39b7d",
+          "effect_state": "1a7ca3f317589d2762e01bf51d3e9e1a4a00b598bcdedbcd64635a688260cff9",
+          "spawned": 906335,
+          "state_pool": {
+            "created": 2380,
+            "bodyAvailable": 1473,
+            "reused": 903955,
+            "returned": 905432,
+            "peakPending": 29,
+            "bodyCreated": 2278,
+            "bodyReused": 903894,
+            "available": 1477,
+            "pending": 18
+          }
+        },
+        {
+          "age": 1320,
+          "objects": 1009,
+          "projectiles": 900,
+          "motion_state": "bab4b737545e8b2296486fd5f0fd4f015c0edd8e8abf36308ebf6bdcc76aed34",
+          "effect_state": "6bb86d5b2dd5ba65d2b725f6b2a121f69613e352ea16b6e6e7e87c2d6f4686e8",
+          "spawned": 1080429,
+          "state_pool": {
+            "created": 2393,
+            "bodyAvailable": 1476,
+            "reused": 1078036,
+            "returned": 1079509,
+            "peakPending": 29,
+            "bodyCreated": 2296,
+            "bodyReused": 1077953,
+            "available": 1473,
+            "pending": 20
+          }
+        },
+        {
+          "age": 1440,
+          "objects": 1016,
+          "projectiles": 905,
+          "motion_state": "02976b2c3b132d8b3655016fa8d33a2548b185383e843f365ec709eb0ab3c43a",
+          "effect_state": "5de84e30ef48bafebefcfa8e9e4c4e94cfb392a5f44dad62b787fd185c2dd85e",
+          "spawned": 1254127,
+          "state_pool": {
+            "created": 2403,
+            "bodyAvailable": 1475,
+            "reused": 1251724,
+            "returned": 1253202,
+            "peakPending": 29,
+            "bodyCreated": 2300,
+            "bodyReused": 1251630,
+            "available": 1478,
+            "pending": 20
+          }
+        },
+        {
+          "age": 1560,
+          "objects": 1003,
+          "projectiles": 892,
+          "motion_state": "312d3357e1b647bc8b2ed165fe2511e7254336275ea9baccb527465e47d54d5f",
+          "effect_state": "f2f35ca875b137a91f7f94be112de47225b09c13ca06d9296d29783e631643b4",
+          "spawned": 1427591,
+          "state_pool": {
+            "created": 2403,
+            "bodyAvailable": 1488,
+            "reused": 1425188,
+            "returned": 1426680,
+            "peakPending": 29,
+            "bodyCreated": 2300,
+            "bodyReused": 1425077,
+            "available": 1492,
+            "pending": 19
+          }
+        },
+        {
+          "age": 1680,
+          "objects": 994,
+          "projectiles": 882,
+          "motion_state": "a6df26f326c9149967c82f98a767c0a22db8a351be21328ef4d399f2ef039dfb",
+          "effect_state": "4bc1e0508ce617b68c3cd8f5b0a92ec444312d9b50859d1c39796bb42232398e",
+          "spawned": 1601451,
+          "state_pool": {
+            "created": 2415,
+            "bodyAvailable": 1512,
+            "reused": 1599036,
+            "returned": 1600548,
+            "peakPending": 29,
+            "bodyCreated": 2313,
+            "bodyReused": 1598907,
+            "available": 1512,
+            "pending": 21
+          }
+        },
+        {
+          "age": 1800,
+          "objects": 996,
+          "projectiles": 880,
+          "motion_state": "c65497c27f49b8fef473e5bfcb3b6fef8955abd778e0fd0abb63ceb0ac4ce0bc",
+          "effect_state": "6575f1970614363ef57aa47d19a3b4718ca88ffc0836168f02a184c379223e93",
+          "spawned": 1775775,
+          "state_pool": {
+            "created": 2415,
+            "bodyAvailable": 1513,
+            "reused": 1773360,
+            "returned": 1774877,
+            "peakPending": 29,
+            "bodyCreated": 2313,
+            "bodyReused": 1773213,
+            "available": 1517,
+            "pending": 18
+          }
+        },
+        {
+          "age": 1920,
+          "objects": 973,
+          "projectiles": 864,
+          "motion_state": "6507826b4aeb914794838b2d01cf2f2036c398a273d78a3beb03bf498c30f479",
+          "effect_state": "a18d2d72c0a72541a3ef98e8bfa11d84ae017af35b280e9d54f8332f89443776",
+          "spawned": 1949941,
+          "state_pool": {
+            "created": 2415,
+            "bodyAvailable": 1529,
+            "reused": 1947526,
+            "returned": 1949057,
+            "peakPending": 29,
+            "bodyCreated": 2313,
+            "bodyReused": 1947362,
+            "available": 1531,
+            "pending": 20
+          }
+        },
+        {
+          "age": 2040,
+          "objects": 972,
+          "projectiles": 863,
+          "motion_state": "be5414cd38d49edf608336ae0be7fc825469c25a3567434be509ea2293f811a7",
+          "effect_state": "66f4baed10ba9fcccfe6f58a1b9162455dccccf59c2b485b501969db1a0103d0",
+          "spawned": 2123639,
+          "state_pool": {
+            "created": 2415,
+            "bodyAvailable": 1531,
+            "reused": 2121224,
+            "returned": 2122755,
+            "peakPending": 29,
+            "bodyCreated": 2313,
+            "bodyReused": 2121043,
+            "available": 1531,
+            "pending": 21
+          }
+        },
+        {
+          "age": 2160,
+          "objects": 963,
+          "projectiles": 854,
+          "motion_state": "f48aa687017ea8ca3b92f874f50b79ae97dfcf9220ac33ad6d0dc599c40912bf",
+          "effect_state": "bfac6f7f028485200b4401310b4ac503e2ed1e25af6b2a1886ce9b255b9cdef7",
+          "spawned": 2297157,
+          "state_pool": {
+            "created": 2415,
+            "bodyAvailable": 1540,
+            "reused": 2294742,
+            "returned": 2296283,
+            "peakPending": 29,
+            "bodyCreated": 2313,
+            "bodyReused": 2294544,
+            "available": 1541,
+            "pending": 20
+          }
+        },
+        {
+          "age": 2280,
+          "objects": 1002,
+          "projectiles": 890,
+          "motion_state": "ec31b6a8f65b3b35ecee3302a384a130aa79f91b4733a3f98531e52f7e24ce0b",
+          "effect_state": "ad43997910180596530f14319e83204c0e376ac80fd0bf70365abee8466c0fc0",
+          "spawned": 2470999,
+          "state_pool": {
+            "created": 2415,
+            "bodyAvailable": 1504,
+            "reused": 2468584,
+            "returned": 2470088,
+            "peakPending": 29,
+            "bodyCreated": 2313,
+            "bodyReused": 2468369,
+            "available": 1504,
+            "pending": 21
+          }
+        },
+        {
+          "age": 2400,
+          "objects": 1045,
+          "projectiles": 929,
+          "motion_state": "2e2da4ad9b50ddc6c5833ed0c7cea33346745fb35565e2cf88db0fe5c9700c01",
+          "effect_state": "69e0bedad8b25408a052b377968cd45e20ec55f49f4adf2008830ebf8867c9f3",
+          "spawned": 2644055,
+          "state_pool": {
+            "created": 2415,
+            "bodyAvailable": 1463,
+            "reused": 2641640,
+            "returned": 2643105,
+            "peakPending": 29,
+            "bodyCreated": 2313,
+            "bodyReused": 2641408,
+            "available": 1465,
+            "pending": 21
+          }
+        }
+      ]
+    },
+    "idle_before": {
+      "timing_ms": {
+        "logic_ms": {
+          "mean": 9.545211161187527,
+          "p95": 15.245957998559,
+          "max": 63.253375003114
+        },
+        "render_ms": {
+          "mean": 1.5233278279642066,
+          "p95": 1.9080420024693,
+          "max": 8.4542080294341
+        }
+      },
+      "frames": 2400,
+      "familiar_hits": 0,
+      "familiar_kills": 0,
+      "pool": null,
+      "samples": [
+        {
+          "age": 120,
+          "objects": 40,
+          "projectiles": 0,
+          "motion_state": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "age": 240,
+          "objects": 116,
+          "projectiles": 77,
+          "motion_state": "408ac585e4692a079d2b9ed5a33f9780911d2e84245f93f849becb20c4e050f6"
+        },
+        {
+          "age": 360,
+          "objects": 556,
+          "projectiles": 517,
+          "motion_state": "67180510a2d55831e6a9078b5018029f1666ee2d9cfd2304c14ef112edce1a07"
+        },
+        {
+          "age": 480,
+          "objects": 810,
+          "projectiles": 771,
+          "motion_state": "348e98ec247915ee5bbee0e7cddf1d712ad2ca8b3bfb0f734e4d3859a00f7a71"
+        },
+        {
+          "age": 600,
+          "objects": 823,
+          "projectiles": 784,
+          "motion_state": "6f629e517534d765db8b7b991e3c733f465535e9a5552dcd15f6fd5ed9d76183"
+        },
+        {
+          "age": 720,
+          "objects": 855,
+          "projectiles": 792,
+          "motion_state": "33427dec60980c697170abec431a55b6084a529db7c682b0c0b6554ac6995963"
+        },
+        {
+          "age": 840,
+          "objects": 846,
+          "projectiles": 807,
+          "motion_state": "c7ba44425697b47750fd6acb9ad111f67461ead211eee9cc205b6fc211eb7cb1"
+        },
+        {
+          "age": 960,
+          "objects": 855,
+          "projectiles": 810,
+          "motion_state": "d06209172ff655407bcbe01b2f759513fd62abf5e62701807fe25b99813f8a36"
+        },
+        {
+          "age": 1080,
+          "objects": 880,
+          "projectiles": 824,
+          "motion_state": "865ccf023f2c581978a7780a51ce142aa193fa27cf9bb1ff2a09de4cf5a11a05"
+        },
+        {
+          "age": 1200,
+          "objects": 873,
+          "projectiles": 817,
+          "motion_state": "5fa300afaff8b70a15c6854e52847b4eb6104b8deb01c05be5771024c67bb7ad"
+        },
+        {
+          "age": 1320,
+          "objects": 875,
+          "projectiles": 819,
+          "motion_state": "a5a18a588079acfaddd514657a449991cf1253dee5a0397fb393ddf262a42699"
+        },
+        {
+          "age": 1440,
+          "objects": 885,
+          "projectiles": 828,
+          "motion_state": "b3f8cf7bb72db3f4cbc126d548f42db545f440a0973df190245b6199ba204852"
+        },
+        {
+          "age": 1560,
+          "objects": 872,
+          "projectiles": 816,
+          "motion_state": "cef15920b408f7fa628c407669c3040a33ddfce9e6611db562c14fba838f091b"
+        },
+        {
+          "age": 1680,
+          "objects": 865,
+          "projectiles": 809,
+          "motion_state": "49d28b0a36f943ec68ebc49d6ab7623cb53241fee00938493a6e09054ba6bf3c"
+        },
+        {
+          "age": 1800,
+          "objects": 865,
+          "projectiles": 809,
+          "motion_state": "75044f2c8d6376ed66c8fb9c35c28f3667d661c8e7cd9fb7b089f204c605ed5f"
+        },
+        {
+          "age": 1920,
+          "objects": 881,
+          "projectiles": 825,
+          "motion_state": "a415a94ebd1acd3e9b7ec15294bfd11371a0b9615300158533eb5bdfbeeb2ab7"
+        },
+        {
+          "age": 2040,
+          "objects": 881,
+          "projectiles": 825,
+          "motion_state": "37f83c6da9f095e3d67a2258494fd7ffbf19050ef14cd01c8bb21bf0548f7512"
+        },
+        {
+          "age": 2160,
+          "objects": 882,
+          "projectiles": 826,
+          "motion_state": "8c0ea517b17157ee626901a81f936e431592b269d406495f7b6d1cc9fa87577a"
+        },
+        {
+          "age": 2280,
+          "objects": 874,
+          "projectiles": 817,
+          "motion_state": "4d4173f2630ce0e21fe46f4c08dc74d9917ce83581b82ba54b0708d93b150ac4"
+        },
+        {
+          "age": 2400,
+          "objects": 873,
+          "projectiles": 817,
+          "motion_state": "32a4255a81482d1bf80b6cafe03bf25f220afe3f925e0f1986dbee8e450c444a"
+        }
+      ]
+    },
+    "idle_pool_on": {
+      "timing_ms": {
+        "logic_ms": {
+          "mean": 6.932767561188966,
+          "p95": 9.4746670220047,
+          "max": 19.785125041381
+        },
+        "render_ms": {
+          "mean": 1.630648779948324,
+          "p95": 2.1166671067476,
+          "max": 8.7760831229389
+        }
+      },
+      "frames": 2400,
+      "familiar_hits": 0,
+      "familiar_kills": 0,
+      "pool": {
+        "pending": 0,
+        "created": 2618,
+        "bodyAvailable": 0,
+        "reused": 3240939,
+        "returned": 3243557,
+        "peakPending": 28,
+        "bodyCreated": 2519,
+        "bodyReused": 3240704,
+        "available": 2618
+      },
+      "samples": [
+        {
+          "age": 120,
+          "objects": 40,
+          "projectiles": 0,
+          "motion_state": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "effect_state": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "spawned": 0,
+          "state_pool": {
+            "pending": 0,
+            "created": 1024,
+            "bodyAvailable": 0,
+            "reused": 0,
+            "returned": 0,
+            "peakPending": 0,
+            "bodyCreated": 0,
+            "bodyReused": 0,
+            "available": 1024
+          }
+        },
+        {
+          "age": 240,
+          "objects": 116,
+          "projectiles": 77,
+          "motion_state": "408ac585e4692a079d2b9ed5a33f9780911d2e84245f93f849becb20c4e050f6",
+          "effect_state": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "spawned": 205,
+          "state_pool": {
+            "pending": 0,
+            "created": 1101,
+            "bodyAvailable": 19,
+            "reused": 109,
+            "returned": 128,
+            "peakPending": 1,
+            "bodyCreated": 70,
+            "bodyReused": 109,
+            "available": 1024
+          }
+        },
+        {
+          "age": 360,
+          "objects": 556,
+          "projectiles": 517,
+          "motion_state": "67180510a2d55831e6a9078b5018029f1666ee2d9cfd2304c14ef112edce1a07",
+          "effect_state": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "spawned": 22427,
+          "state_pool": {
+            "pending": 0,
+            "created": 1101,
+            "bodyAvailable": 342,
+            "reused": 21568,
+            "returned": 21910,
+            "peakPending": 1,
+            "bodyCreated": 816,
+            "bodyReused": 21568,
+            "available": 584
+          }
+        },
+        {
+          "age": 480,
+          "objects": 810,
+          "projectiles": 771,
+          "motion_state": "348e98ec247915ee5bbee0e7cddf1d712ad2ca8b3bfb0f734e4d3859a00f7a71",
+          "effect_state": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "spawned": 81675,
+          "state_pool": {
+            "pending": 0,
+            "created": 1419,
+            "bodyAvailable": 648,
+            "reused": 80256,
+            "returned": 80904,
+            "peakPending": 1,
+            "bodyCreated": 1359,
+            "bodyReused": 80256,
+            "available": 648
+          }
+        },
+        {
+          "age": 600,
+          "objects": 823,
+          "projectiles": 784,
+          "motion_state": "6f629e517534d765db8b7b991e3c733f465535e9a5552dcd15f6fd5ed9d76183",
+          "effect_state": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "spawned": 177949,
+          "state_pool": {
+            "pending": 0,
+            "created": 1750,
+            "bodyAvailable": 966,
+            "reused": 176199,
+            "returned": 177165,
+            "peakPending": 1,
+            "bodyCreated": 1673,
+            "bodyReused": 176199,
+            "available": 966
+          }
+        },
+        {
+          "age": 720,
+          "objects": 855,
+          "projectiles": 792,
+          "motion_state": "33427dec60980c697170abec431a55b6084a529db7c682b0c0b6554ac6995963",
+          "effect_state": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "spawned": 311249,
+          "state_pool": {
+            "pending": 0,
+            "created": 2063,
+            "bodyAvailable": 1271,
+            "reused": 309186,
+            "returned": 310457,
+            "peakPending": 1,
+            "bodyCreated": 1993,
+            "bodyReused": 309162,
+            "available": 1271
+          }
+        },
+        {
+          "age": 840,
+          "objects": 846,
+          "projectiles": 807,
+          "motion_state": "c7ba44425697b47750fd6acb9ad111f67461ead211eee9cc205b6fc211eb7cb1",
+          "effect_state": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "spawned": 481575,
+          "state_pool": {
+            "pending": 0,
+            "created": 2382,
+            "bodyAvailable": 1575,
+            "reused": 479193,
+            "returned": 480768,
+            "peakPending": 1,
+            "bodyCreated": 2295,
+            "bodyReused": 479169,
+            "available": 1575
+          }
+        },
+        {
+          "age": 960,
+          "objects": 855,
+          "projectiles": 810,
+          "motion_state": "d06209172ff655407bcbe01b2f759513fd62abf5e62701807fe25b99813f8a36",
+          "effect_state": "f75d031092e907f4ee51cc27f9733c396913850389a4e68e2b8533946d3293e2",
+          "spawned": 686715,
+          "state_pool": {
+            "pending": 0,
+            "created": 2610,
+            "bodyAvailable": 1800,
+            "reused": 684105,
+            "returned": 685905,
+            "peakPending": 2,
+            "bodyCreated": 2511,
+            "bodyReused": 684075,
+            "available": 1800
+          }
+        },
+        {
+          "age": 1080,
+          "objects": 880,
+          "projectiles": 824,
+          "motion_state": "865ccf023f2c581978a7780a51ce142aa193fa27cf9bb1ff2a09de4cf5a11a05",
+          "effect_state": "861a32d33ca161968e4c7c1ef84b3e1e12381710747ceafbae9b5103e00a5baa",
+          "spawned": 899791,
+          "state_pool": {
+            "pending": 0,
+            "created": 2610,
+            "bodyAvailable": 1786,
+            "reused": 897181,
+            "returned": 898967,
+            "peakPending": 2,
+            "bodyCreated": 2511,
+            "bodyReused": 897134,
+            "available": 1786
+          }
+        },
+        {
+          "age": 1200,
+          "objects": 873,
+          "projectiles": 817,
+          "motion_state": "5fa300afaff8b70a15c6854e52847b4eb6104b8deb01c05be5771024c67bb7ad",
+          "effect_state": "3f4c89ad1452e9e83ee76692417e40eec1bde7d4b009bd4ff79d5898cecebcd4",
+          "spawned": 1112867,
+          "state_pool": {
+            "pending": 0,
+            "created": 2610,
+            "bodyAvailable": 1793,
+            "reused": 1110257,
+            "returned": 1112050,
+            "peakPending": 2,
+            "bodyCreated": 2511,
+            "bodyReused": 1110193,
+            "available": 1793
+          }
+        },
+        {
+          "age": 1320,
+          "objects": 875,
+          "projectiles": 819,
+          "motion_state": "a5a18a588079acfaddd514657a449991cf1253dee5a0397fb393ddf262a42699",
+          "effect_state": "039ce8c8c0d6b9e5b1577ca1ceb77baecf169e5f4fe3e7a959e4826ad31ac2f1",
+          "spawned": 1325943,
+          "state_pool": {
+            "pending": 0,
+            "created": 2615,
+            "bodyAvailable": 1796,
+            "reused": 1323328,
+            "returned": 1325124,
+            "peakPending": 2,
+            "bodyCreated": 2516,
+            "bodyReused": 1323247,
+            "available": 1796
+          }
+        },
+        {
+          "age": 1440,
+          "objects": 885,
+          "projectiles": 828,
+          "motion_state": "b3f8cf7bb72db3f4cbc126d548f42db545f440a0973df190245b6199ba204852",
+          "effect_state": "ac5a47b9751371e04db6d2437b155e4b956ec4271b02dc5f000bfb7c244c8438",
+          "spawned": 1539019,
+          "state_pool": {
+            "pending": 0,
+            "created": 2618,
+            "bodyAvailable": 1789,
+            "reused": 1536401,
+            "returned": 1538191,
+            "peakPending": 2,
+            "bodyCreated": 2519,
+            "bodyReused": 1536303,
+            "available": 1790
+          }
+        },
+        {
+          "age": 1560,
+          "objects": 872,
+          "projectiles": 816,
+          "motion_state": "cef15920b408f7fa628c407669c3040a33ddfce9e6611db562c14fba838f091b",
+          "effect_state": "3c0eac8a9f3f57819de5e9feacaeb07cae0024eabe32de891743c2cb63ffa9cf",
+          "spawned": 1752077,
+          "state_pool": {
+            "pending": 0,
+            "created": 2618,
+            "bodyAvailable": 1801,
+            "reused": 1749459,
+            "returned": 1751261,
+            "peakPending": 2,
+            "bodyCreated": 2519,
+            "bodyReused": 1749344,
+            "available": 1802
+          }
+        },
+        {
+          "age": 1680,
+          "objects": 865,
+          "projectiles": 809,
+          "motion_state": "49d28b0a36f943ec68ebc49d6ab7623cb53241fee00938493a6e09054ba6bf3c",
+          "effect_state": "b4d3b2e0eabd6d2de3c79726f174c6f03821f1d3d1de1a7093f586fa0814eb1f",
+          "spawned": 1965135,
+          "state_pool": {
+            "pending": 0,
+            "created": 2618,
+            "bodyAvailable": 1808,
+            "reused": 1962517,
+            "returned": 1964326,
+            "peakPending": 2,
+            "bodyCreated": 2519,
+            "bodyReused": 1962385,
+            "available": 1809
+          }
+        },
+        {
+          "age": 1800,
+          "objects": 865,
+          "projectiles": 809,
+          "motion_state": "75044f2c8d6376ed66c8fb9c35c28f3667d661c8e7cd9fb7b089f204c605ed5f",
+          "effect_state": "62d7342b0ff00445b1abd2be31239158d277bf088853e1d7907eb9622a58cfed",
+          "spawned": 2178195,
+          "state_pool": {
+            "pending": 0,
+            "created": 2618,
+            "bodyAvailable": 1809,
+            "reused": 2175577,
+            "returned": 2177386,
+            "peakPending": 2,
+            "bodyCreated": 2519,
+            "bodyReused": 2175427,
+            "available": 1809
+          }
+        },
+        {
+          "age": 1920,
+          "objects": 881,
+          "projectiles": 825,
+          "motion_state": "a415a94ebd1acd3e9b7ec15294bfd11371a0b9615300158533eb5bdfbeeb2ab7",
+          "effect_state": "889992a7454dfdbf049cf20cd0e632365626317be3845e8fa2b3196d9cd99d0b",
+          "spawned": 2391271,
+          "state_pool": {
+            "pending": 0,
+            "created": 2618,
+            "bodyAvailable": 1793,
+            "reused": 2388653,
+            "returned": 2390446,
+            "peakPending": 2,
+            "bodyCreated": 2519,
+            "bodyReused": 2388486,
+            "available": 1793
+          }
+        },
+        {
+          "age": 2040,
+          "objects": 881,
+          "projectiles": 825,
+          "motion_state": "37f83c6da9f095e3d67a2258494fd7ffbf19050ef14cd01c8bb21bf0548f7512",
+          "effect_state": "d125712455bca78351ffc25ce5457024190842c0681ae1d532c0c1ed594431e5",
+          "spawned": 2604347,
+          "state_pool": {
+            "pending": 0,
+            "created": 2618,
+            "bodyAvailable": 1793,
+            "reused": 2601729,
+            "returned": 2603522,
+            "peakPending": 2,
+            "bodyCreated": 2519,
+            "bodyReused": 2601545,
+            "available": 1793
+          }
+        },
+        {
+          "age": 2160,
+          "objects": 882,
+          "projectiles": 826,
+          "motion_state": "8c0ea517b17157ee626901a81f936e431592b269d406495f7b6d1cc9fa87577a",
+          "effect_state": "28dc0f627703e996f5efb9314cb59e3f480dbf127a2fc4fab7d8dea8918c8b8a",
+          "spawned": 2817423,
+          "state_pool": {
+            "pending": 0,
+            "created": 2618,
+            "bodyAvailable": 1792,
+            "reused": 2814805,
+            "returned": 2816597,
+            "peakPending": 2,
+            "bodyCreated": 2519,
+            "bodyReused": 2814604,
+            "available": 1792
+          }
+        },
+        {
+          "age": 2280,
+          "objects": 874,
+          "projectiles": 817,
+          "motion_state": "4d4173f2630ce0e21fe46f4c08dc74d9917ce83581b82ba54b0708d93b150ac4",
+          "effect_state": "99752805baf4b129c95ed0f5d597513848d379f0a255776ab6f2c825d529dfce",
+          "spawned": 3030499,
+          "state_pool": {
+            "pending": 0,
+            "created": 2618,
+            "bodyAvailable": 1800,
+            "reused": 3027881,
+            "returned": 3029682,
+            "peakPending": 2,
+            "bodyCreated": 2519,
+            "bodyReused": 3027663,
+            "available": 1801
+          }
+        },
+        {
+          "age": 2400,
+          "objects": 873,
+          "projectiles": 817,
+          "motion_state": "32a4255a81482d1bf80b6cafe03bf25f220afe3f925e0f1986dbee8e450c444a",
+          "effect_state": "d4902fe7e23c3a514b7ceb50287106ddec1dce9fb495efc89ca8f6ace5ea2fb9",
+          "spawned": 3243557,
+          "state_pool": {
+            "pending": 0,
+            "created": 2618,
+            "bodyAvailable": 1800,
+            "reused": 3240939,
+            "returned": 3242740,
+            "peakPending": 2,
+            "bodyCreated": 2519,
+            "bodyReused": 3240704,
+            "available": 1801
+          }
+        }
+      ]
+    }
+  },
+  "source_sha256": {
+    "mod/GAME/th39/runtime.lua": "f45477474585789d54af8bb2525b777d9436893f03d7f31613374e592acb0cc5",
+    "mod/rogue_encounter.lua": "44fa421f5ff1e3cc38bce984a31f54562eb05c7852f3c8bf28be359aea39b86f",
+    "android/patch_engine.py": "0b4e19278dac8482702dedcb208c24e9ee715ca351b07b55d1d9bed11c6d58b8",
+    "android/native/compat.cpp": "74fe5326f41823e8ffcfb25021d95a18ddbe56b58d77b50f2e51b19fef8adb30",
+    "macos/lua/reported_cards_test.lua": "342a212f7f3bc93c9db64ab90e38929ac2c7e41d4d49b126cb64c7a2bb3f39de"
+  },
+  "checks": [
+    "流星花火4轮父子链与发弹时序，含池复用及清场引用归零",
+    "永夜发弹当前值快照、17发独立事件、动态字段和回退路径",
+    "永夜普通弹/弹雾/自然淡出及资源重建参数",
+    "挑战资源驻留及预算淘汰",
+    "Android arm64原生库完整编译",
+    "Mac原生射击/不射击各2400帧及池关闭对照2400帧，正常退出且无BOSSRUSH_ERROR"
+  ],
+  "limits": [
+    "CPU跨进程测量存在负载漂移",
+    "未连接安卓真机，不将Mac数据外推为安卓FPS",
+    "池化对照包含立即停用退役对象的共同修复；旧版退役使魔会在帧末前继续吞掉部分自机弹，因此不以旧版射击击破帧作为池化控制组"
+  ]
+}

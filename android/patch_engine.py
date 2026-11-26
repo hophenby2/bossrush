@@ -25,6 +25,7 @@ def replace(path, before, after):
 
 
 
+
 # 升级旧构建缓存中的文字快路径，保持后续 replace 校验可重复执行。
 _renderer = engine / 'frameworks/LSTG/Renderer.cpp'
 _renderer_text = _renderer.read_text(encoding='utf-8-sig')
@@ -480,6 +481,23 @@ for relative in ['frameworks/LSTG/Object/GameObjectManager.cpp', 'frameworks/LST
     updated = re.sub(r'\bnoexcept\b', '', source)
     if updated != source:
         target.write_text(updated)
+# 复用退役的Lua实例表；原生对象仍走allocateObject，保留新UID、出生顺序和完整组件重置。
+# 不把存活对象留在旧更新位置，否则由Boss帧创建的弹体可能晚一帧更新。
+replace('frameworks/LSTG/Object/GameObjectManager.h',
+        'int New(lua_State* L) ;', 'int New(lua_State* L) ;\n\t\tint NewFromTable(lua_State* L);')
+_manager=engine/'frameworks/LSTG/Object/GameObjectManager.cpp'
+_manager_source=_manager.read_text(encoding='utf-8-sig')
+if 'int GameObjectManager::NewFromTable(' not in _manager_source:
+    _start=_manager_source.index('int GameObjectManager::New(lua_State* L)')
+    _end=_manager_source.index('//TODO:',_start)
+    _new=_manager_source[_start:_end]
+    _reused=_new.replace('GameObjectManager::New(', 'GameObjectManager::NewFromTable(',1)
+    _reused=_reused.replace('{\n','{\n\tluaL_checktype(L, 2, LUA_TTABLE);\n',1)
+    _allocation='lua_createtable(L, 2, 0);'
+    if _reused.count(_allocation)!=1:raise RuntimeError('实例表复用补丁的New上下文不匹配')
+    _reused=_reused.replace(_allocation,'lua_pushvalue(L, 2); lua_remove(L, 2);',1)
+    _manager.write_text(_manager_source[:_end]+_reused+_manager_source[_end:],encoding='utf-8')
+
 replace(manager, '#include "GameObjectManager.h"', '#include "GameObjectManager.h"\n#include "compat.h"')
 replace(manager, 'if (!p1->colli || !p2->colli)',
         'if (!(p1->androidWorld & p2->androidWorld) || !p1->colli || !p2->colli)')

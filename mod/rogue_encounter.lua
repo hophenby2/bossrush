@@ -363,6 +363,11 @@ function M.frame(timer)
         for o in pairs(M.scope.objects) do if not IsValid(o) then M.scope.objects[o]=nil end end
     end
 end
+function M.track(o)
+    if M.backgroundActive then protectBackground(o,M.backgroundActive)
+    elseif M.scope and not o._drop_owner and not o._rogue_host_overlay then M.scope.objects[o]=true end
+    return o
+end
 local function new(class,...)
     -- 原作道中入口也可能直接创建背景；跳过其构造器，保留可安全回收的空对象。
     local skip=class and class.rogue_stage_background and M.spellOnly(class.rogue_stage_background)
@@ -373,9 +378,7 @@ local function new(class,...)
     M.constructingBackground=constructing
     if skip then o.group,o.bound,o.colli,o.hide=GROUP.GHOST,false,false,true end
     -- 宿主自机弹、Bomb与手动控制的选项文字/遮罩使用宿主资源，跨卡保留各自寿命。
-    if M.backgroundActive then protectBackground(o,M.backgroundActive)
-    elseif M.scope and not o._drop_owner and not o._rogue_host_overlay then M.scope.objects[o]=true end
-    return o
+    return M.track(o)
 end
 New,lstg.New=new,new
 RogueEncounter=M

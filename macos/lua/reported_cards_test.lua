@@ -2,14 +2,44 @@
 local T={}
 function T.install()
     ext.Debugging=function()end
-    GetInput=function()LoadSaveInputState({})end
+    local shooting=os.getenv('BOSSRUSH_REPORTED_SHOOT')=='1'
+    GetInput=function()
+        local current=stage.current_stage
+        LoadSaveInputState(shooting and current and current.stage_name=='RogueTwo@RogueTwo' and {shoot=true,slow=true} or {})
+    end
     local clock=lstg.AndroidClock
     local id=tonumber(os.getenv('BOSSRUSH_REPORTED_CARD') or '38040')
     local limit=tonumber(os.getenv('BOSSRUSH_REPORTED_FRAMES') or '1800')
     if os.getenv('BOSSRUSH_REPORTED_RING_FALLBACK')=='1' then lstg.AndroidUpdateQuadBatch=nil end
     if os.getenv('BOSSRUSH_REPORTED_CURVE_FALLBACK')=='1' then lstg.AndroidRenderSourceCurve=nil end
     local report={platform='macOS Metal，共用移动端逻辑，非安卓设备FPS',card=id,seed=739,
-        label=os.getenv('BOSSRUSH_REPORTED_LABEL') or 'current',frames={},checkpoints={},stacks={}}
+        label=os.getenv('BOSSRUSH_REPORTED_LABEL') or 'current',shooting=shooting,
+        frames={},checkpoints={},stacks={},familiar_hits=0,familiar_damage=0,familiar_kills=0,deaths={}}
+    local instrumented=false
+    local function instrument()
+        if instrumented then return end
+        instrumented=true
+        if os.getenv('BOSSRUSH_REPORTED_POOL_OFF')=='1' then TH39.runtime.useStatePool=false end
+        report.pooling=TH39.runtime.useStatePool~=false
+        local deathEffect=TH39.runtime.enemyDeathEffect
+        TH39.runtime.enemyDeathEffect=function(b,...)
+            if b.mhj and b.mhj.familiarConfig and b.hp<=0 then
+                report.familiar_kills=report.familiar_kills+1
+                report.deaths[#report.deaths+1]={frame=#report.frames+1,slot=b.mhj.familiar,hp=b.hp}
+            end
+            return deathEffect(b,...)
+        end
+        local damage=Damage
+        Damage=function(b,...)
+            local before=b.hp
+            local result=damage(b,...)
+            if b.mhj and b.mhj.familiarConfig and b.hp<before then
+                report.familiar_hits=report.familiar_hits+1
+                report.familiar_damage=report.familiar_damage+before-b.hp
+            end
+            return result
+        end
+    end
     report.curve_api=type(lstg.AndroidRenderSourceCurve);report.curve_calls=0
     if lstg.AndroidRenderSourceCurve then
         local curve=lstg.AndroidRenderSourceCurve
@@ -26,10 +56,18 @@ function T.install()
     end
     jit.off(sample,true)
     local function checkpoint()
-        local rows,motion={},{};local total,curves,segments,invisible,outside=0,0,0,0,0
+        local rows,motion,effectRows={},{},{};local total,curves,segments,invisible,outside=0,0,0,0,0
+        local deathEffects,deathParticles,familiars=0,0,0
         for group=0,15 do for _,o in ObjList(group)do
             total=total+1
             local s=o.asl or o.mhj
+            if s and s.familiarConfig then familiars=familiars+1 end
+            if o.source_enemy_death then
+                deathEffects=deathEffects+1;deathParticles=deathParticles+#o.effect.particles
+                for _,p in ipairs(o.effect.particles)do
+                    effectRows[#effectRows+1]=table.concat({p.age,p.type,p.fx,p.fy,p.head,p.alpha,p.wscale,p.hscale},',')
+                end
+            end
             if o.asl and s.kind=='curve' then curves=curves+1;segments=segments+math.max(0,#s.path-1)end
             if s and (s.kind=='bullet' or s.is_projectile)then
                 rows[#rows+1]=table.concat({s.serial or 0,s.age or 0,s.x or s.fx or 0,s.y or s.fy or 0,
@@ -43,13 +81,18 @@ function T.install()
         end end
         table.sort(rows)
         table.sort(motion)
+        table.sort(effectRows)
         local row={age=age,objects=total,projectiles=#rows,curves=curves,segments=segments,state=SaveCodec.sha256(table.concat(rows,'\n')),
-            motion_state=SaveCodec.sha256(table.concat(motion,'\n')),invisible=invisible,outside=outside,lua_kb=collectgarbage('count')}
-        local emitters,children=0,0
+            motion_state=SaveCodec.sha256(table.concat(motion,'\n')),invisible=invisible,outside=outside,lua_kb=collectgarbage('count'),
+            familiars=familiars,familiar_hits=report.familiar_hits,familiar_kills=report.familiar_kills,
+            death_effects=deathEffects,death_particles=deathParticles,effect_state=SaveCodec.sha256(table.concat(effectRows,'\n'))}
+        local emitters,children,spawned=0,0,0
         for c in pairs(TH39.runtime.controllers)do if not c.closed then
+            spawned=spawned+c.serial
             for _,e in ipairs(c.emitters)do emitters=emitters+1;for _ in pairs(e.children or {})do children=children+1 end end
         end end
-        row.emitters,row.children=emitters,children
+        row.emitters,row.children,row.spawned=emitters,children,spawned
+        if TH39.runtime.statePoolStats then row.state_pool=TH39.runtime.statePoolStats() end
         if lstg.AndroidDrawCounts then row.draws,row.vertices=lstg.AndroidDrawCounts()end
         report.checkpoints[#report.checkpoints+1]=row
     end
@@ -60,6 +103,7 @@ function T.install()
         local run=lstg.var.rogue_run
         local active=run and run.encounter and not run.preparing and stage.current_stage.stage_name=='RogueTwo@RogueTwo'
         if active then
+            instrument()
             age=age+1
             for _,b in ipairs(boss_group)do if IsValid(b)then b.hp=b.maxhp end end
             if age==500 and id==38040 then
@@ -82,6 +126,12 @@ function T.install()
             if age%120==0 then checkpoint()end
             if age>=limit then
                 if sampling then profile.stop()end
+                if shooting then assert(report.familiar_hits>0 and report.familiar_kills>0,'未覆盖真实自机弹命中及击破使魔')end
+                if TH39.runtime.statePoolStats then
+                    TH39.runtime.clearAll()
+                    report.after_clear=TH39.runtime.statePoolStats()
+                    assert(report.after_clear.pending==0,'清场后仍有弹体等待引用释放')
+                end
                 local f=assert(io.open('User/reported-card-'..id..'.json','wb'));f:write(Serialize(report));f:close()
                 lstg.SystemLog('REPORTED_CARD_PASS: '..id);return true
             end

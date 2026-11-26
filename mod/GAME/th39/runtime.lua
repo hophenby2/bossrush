@@ -73,28 +73,93 @@ local function copyPlan(s)
 end
 local nativeCopy=lstg.CopySourceTable
 local nativeGeometry=lstg.SyncSourceBulletGeometry
+local nativeTableNew=lstg.AndroidNewSourceObjectFromTable
+local nativeTables,nativeRetiredAt={},{}
 local stateReserve={}
 local reserveReady=false
-local RESERVE_LIMIT,RESERVE_REFILL=1024,16
+local RESERVE_LIMIT,RESERVE_TARGET,RESERVE_REFILL=SOURCE_BULLET_CAP,1024,16
+local poolRefs=setmetatable({},{__mode='k'})
+local poolBindings=setmetatable({},{__mode='k'})
+local retiredStates={}
+local poolStats={created=0,reused=0,returned=0,pending=0,peakPending=0,bodyCreated=0,bodyReused=0}
+local clearTable
+do
+    local ok,fn=pcall(require,'table.clear')
+    clearTable=ok and fn or function(t) for key in pairs(t) do t[key]=nil end end
+end
+local function newState(size)
+    poolStats.created=poolStats.created+1
+    local state=allocateTable(0,size)
+    state.changes,state.limits={},{}
+    return state
+end
 local function refillStates(limit)
-    for _=1,min(limit,RESERVE_LIMIT-#stateReserve) do
-        local state=allocateTable(0,128)
-        state.changes,state.limits={},{}
-        stateReserve[#stateReserve+1]=state
+    for _=1,min(limit,RESERVE_TARGET-#stateReserve) do
+        stateReserve[#stateReserve+1]=newState(128)
     end
 end
 local function prepareStates()
-    if not reserveReady then refillStates(RESERVE_LIMIT);reserveReady=true end
+    if not reserveReady then refillStates(RESERVE_TARGET);reserveReady=true end
+end
+local function takeState(size)
+    local count=#stateReserve
+    local state=stateReserve[count];stateReserve[count]=nil
+    if not state then state=newState(size)
+    elseif poolRefs[state]~=nil then poolStats.reused=poolStats.reused+1 end
+    poolRefs[state]=0
+    return state,state.changes,state.limits
+end
+local unpinState
+local function pinState(s)
+    local refs=s and poolRefs[s]
+    if refs~=nil then poolRefs[s]=refs+1 end
+end
+local function recycleState(s)
+    local source=s.bound_source
+    local changes,limits=s.changes,s.limits
+    clearTable(limits)
+    setmetatable(s,nil);clearTable(s)
+    s.changes,s.limits=changes,limits
+    retiredStates[s]=nil;poolStats.pending=poolStats.pending-1
+    poolStats.returned=poolStats.returned+1
+    if #stateReserve<RESERVE_LIMIT then stateReserve[#stateReserve+1]=s
+    else poolRefs[s],poolBindings[s]=nil,nil end
+    unpinState(source)
+end
+unpinState=function(s)
+    local refs=s and poolRefs[s]
+    if refs==nil then return end
+    assert(refs>0,'永夜弹体引用计数不匹配')
+    poolRefs[s]=refs-1
+    if refs==1 and retiredStates[s] then recycleState(s) end
+end
+local function retireState(s,b)
+    if poolRefs[s]==nil then return end
+    -- 父对象退役即拆下深绑定节点；子弹仍持有父状态时，保留其最后位置及整条祖先链。
+    local roots=poolBindings[s]
+    if roots then
+        for i=#roots,1,-1 do
+            local root=roots[i];local child=root.children[b]
+            if child then
+                root.children[b]=nil
+                unpinState(child.bound_source);child.bound_source=nil
+            end
+            roots[i]=nil
+        end
+    end
+    retiredStates[s]=true;poolStats.pending=poolStats.pending+1
+    poolStats.peakPending=max(poolStats.peakPending,poolStats.pending)
+    if poolRefs[s]==0 then recycleState(s) end
+end
+function R.statePoolStats()
+    return {created=poolStats.created,reused=poolStats.reused,returned=poolStats.returned,
+        pending=poolStats.pending,peakPending=poolStats.peakPending,available=#stateReserve,
+        bodyCreated=poolStats.bodyCreated,bodyReused=poolStats.bodyReused,bodyAvailable=#nativeTables}
 end
 local function copy(s,projectile)
-    -- 原作 Barrage.Get 复用容器。Lua 状态仍可能被绑定快照引用，不能直接回池复用；
-    -- 按源表的实际字段数预分配哈希区，保持浅拷贝语义并避免同一帧大量重复扩容。
+    -- 对应原作Barrage.Get；所有绑定引用释放后才回池，不能复用仍被子弹读取的父状态。
     local storage,changes,limits
-    if projectile then
-        local count=#stateReserve
-        storage=stateReserve[count];stateReserve[count]=nil
-        if storage then changes,limits=storage.changes,storage.limits end
-    end
+    if projectile then storage,changes,limits=takeState(copySizes[s] or 128) end
     local o,count
     local plan=not nativeCopy and getmetatable(s)==emitterCopyMode and copyPlan(s)
     if plan then o,count=plan.run(s,storage or allocateTable(0,plan.count+8)),plan.count
@@ -105,6 +170,22 @@ local function copy(s,projectile)
     end
     copySizes[s]=count+8
     o.changes=changes or {};o.limits=limits or {};return o
+end
+-- 同一批弹共享本次发射的只读参数快照；坐标、运动、事件和判定仍由每颗弹独立保存。
+-- 快照不指向可变发射器，下一帧变速/变色不会回写已经出生的弹体。
+local burstStateMode={__index=function(s,key) return s._sourceDefaults[key] end}
+local function burstDefaults(o)
+    local defaults=copy(o)
+    -- 这些运行缓存会被清为nil，不能从快照重新继承；可变事件容器也不能共享。
+    defaults.mx,defaults.my,defaults.ax,defaults.ay=nil,nil,nil,nil
+    defaults.changes,defaults.limits,defaults.object,defaults.shot=nil,nil,nil,nil
+    defaults.renderImage,defaults.renderFrame,defaults.renderType,defaults.renderProfile=nil,nil,nil,nil
+    return defaults
+end
+local function burstState(defaults)
+    local s=takeState(64)
+    s._sourceDefaults=defaults
+    return setmetatable(s,burstStateMode)
 end
 local changePool={}
 local function takeChange()
@@ -491,7 +572,21 @@ local function clean(b)
         if s.controller.familiars[s.familiar]==b then s.controller.familiars[s.familiar]=nil end
         if s.killed then s.controller.deadFamiliars[s.familiar]=(s.controller.deadFamiliars[s.familiar] or 0)+1 end
     end
-    R.objects[b]=nil;object.RawDel(b)
+    local pooled=s and poolRefs[s]~=nil
+    local pooledBody=b._sourcePoolBody
+    R.objects[b]=nil
+    if s and s.is_projectile and not s.controller.visual and not s.controller.friendly then
+        -- RawDel在帧末才真正释放；退役对象在此之前不能继续绘制、碰撞或执行旧类回调。
+        b.hide,b.colli,b.class=true,false,object
+    end
+    if pooled then b.mhj=nil end
+    object.RawDel(b)
+    if pooled then retireState(s,b) end
+    if pooledBody and #nativeTables<RESERVE_LIMIT then
+        local index=#nativeTables+1
+        nativeTables[index]=b
+        nativeRetiredAt[index]=stage and stage.current_stage and stage.current_stage.timer or false
+    end
 end
 local function fadeScale(value,delta)
     if delta>0 then return value>0 and value+delta or value-delta end
@@ -539,6 +634,7 @@ R.classes.projectile=Class(bullet,{
         -- 不经过通用雾化类；CrazyStorm自己有15帧出生与事件时钟。
         -- projected 会一次写入完整位置、分组、层次和颜色，避免出生时先写默认值再重复改写。
         s.is_projectile=true;b.mhj=s;b.bound=false
+        b._sourcePoolBody=nativeTableNew and R.useStatePool~=false and not s.controller.friendly or false
         s.age=0;clearChanges(s);s.limits=s.limits or {};s.object=nil;s.renderImage=nil;s.renderFrame,s.renderType,s.renderProfile=nil,nil,nil
         R.objects[b]=true;s.controller.bullets[b]=s;projected(b)
     end,
@@ -807,10 +903,15 @@ local function emit(o,bound)
     local config=c.configs[slot]
     local bucket=o.bucket
     local origin={x=o.x+ox,y=o.y+oy,previewPlayer=c.visual and c.previewPlayer or nil}
+    -- 原作自机系统持有自己的弹体视图；本池只接管敌方战斗弹。
+    local pooled=R.useStatePool~=false and not c.visual and not c.friendly
+    local defaults=n>=4 and pooled and burstDefaults(o)
+    local epoch=stage and stage.current_stage and stage.current_stage.timer
     for i=0,n-1 do
         local fan=(i-(n-1)/2)*spread/n
         if not c.visual and R.bulletCount>=SOURCE_BULLET_CAP then R.overflow=R.overflow+1;return end
-        local s=copy(o,not c.visual)
+        local s=defaults and burstState(defaults) or copy(o,pooled)
+        if defaults then s.shot=o.shot end
         s.type=shotType
         s.controller,s.pattern,s.bucket=c,p,bucket
         s.parentid,s.layerid=o.id,o.parentid
@@ -840,7 +941,19 @@ local function emit(o,bound)
             c.drawDirty=true
         elseif o.kind=='laser' then b=New(s.Ray=='Curve' and R.classes.curve or R.classes.beam,s)
         elseif config then b=New(config.teammate and R.classes.teammate or R.classes.familiar,s,slot,config)
-        else b=New(R.classes.projectile,s) end
+        elseif nativeTableNew and R.useStatePool~=false and not c.friendly and #nativeTables>0
+            and (epoch~=nil and nativeRetiredAt[#nativeTables]~=epoch
+                or epoch==nil and not valid(nativeTables[#nativeTables])) then
+            local index=#nativeTables;b=nativeTables[index];nativeTables[index],nativeRetiredAt[index]=nil,nil
+            clearTable(b)
+            b=nativeTableNew(R.classes.projectile,b,s)
+            if RogueEncounter then RogueEncounter.track(b) end
+            poolStats.bodyReused=poolStats.bodyReused+1
+        else
+            b=New(R.classes.projectile,s)
+            poolStats.bodyCreated=poolStats.bodyCreated+1
+        end
+        if not c.visual then pinState(s.bound_source) end
         if bucket then Bindings.add(bucket,b,s) end
         o.shot=true
     end
@@ -1016,7 +1129,9 @@ local function stepEmitter(c,o,ot,bound)
     o.status,o.statusFrame=c.status,c.statusFrame
     local mx,my=motion(o,false);o.x,o.y=o.x+mx,o.y+my
     if o.fx then o.fx=o.fx+mx end;if o.fy then o.fy=o.fy+my end
-    o.bound_source=bound
+    if o.bound_source~=bound then
+        pinState(bound);unpinState(o.bound_source);o.bound_source=bound
+    end
     if o.kind~='rebound' and o.Parentevents then o.Parentevents(o,ot,R) end
     interpolate(o)
     if o.kind=='batch' or o.kind=='laser' then
@@ -1064,6 +1179,11 @@ function R.tick(c)
                 if not child then
                     child=emitter(o,c,true);child.bindid=-1;child.Deepbind=false;child.limits={};child.localTime=0
                     o.children[pair[1]]=child
+                    if poolRefs[pair[2]]~=nil then
+                        local roots=poolBindings[pair[2]]
+                        if not roots then roots={};poolBindings[pair[2]]=roots end
+                        roots[#roots+1]=o
+                    end
                 else
                     child.localTime=child.localTime+1
                     child.x,child.y=pair[2].fx-c.offsetx,pair[2].fy-c.offsety
@@ -1073,8 +1193,7 @@ function R.tick(c)
             end end
         else stepEmitter(c,o,t-(o.begin or 1)+1) end
     end
-    -- 原作预置 BarragePool。这里分帧补充尚未使用的新状态，绝不复用仍可能被绑定引用的旧弹体。
-    -- 集中生成帧只消耗储备，不在同帧补分配；储备不足仍按原规则完整发弹。
+    -- 低负载时补足初始储备；高密度窗口优先复用已安全退役的状态，不逐帧重新分配。
     if not c.visual and reserved-#stateReserve<RESERVE_REFILL*2 then refillStates(RESERVE_REFILL) end
 end
 function R.tickBackground(c)
@@ -1278,6 +1397,7 @@ function R.clear(c)
         if valid(b) then clean(b) end
     end
     c.closed=true;c.emitters={};c.parents={}
+    nativeTables,nativeRetiredAt={},{} -- 不跨卡保留旧的Lua对象身份及归属记录。
 end
 function R.replace(c,host,id,road,configs)
     -- 同一符卡内的时间/血量/使魔阈值只替换弹幕，不解除自机控制或石化。

@@ -14,21 +14,27 @@ New=function(class,...)
     local o=rawNew(class,...);objects[#objects+1]=o
     local s=o.mhj
     if s then
-        born[s]=clock
+        born[s.serial]=clock
         if s.type==52 then
-            example=example or s
+            if not example then
+                -- 对象池允许退役表再次借出；绘制夹具在弹体存活时保存值，不持有退役实例。
+                example={}
+                for key,value in pairs(s._sourceDefaults or {})do example[key]=value end
+                for key,value in pairs(s)do example[key]=value end
+                example._sourceDefaults,example.bound_source,example.counted=nil,nil,false
+            end
             shots[clock]=(shots[clock] or 0)+1
             peakBurst=math.max(peakBurst,shots[clock])
             local root=s.bound_source
             while root and root.type~=151 do root=root.bound_source end
             assert(root,'散弹失去原父对象')
-            local elapsed=clock-born[root]
+            local elapsed=clock-born[root.serial]
             assert(elapsed>=304 and elapsed<=306,'父对象重复生成分支或计时重启：'..elapsed)
         elseif s.type==148 then
             local root=s.bound_source
             while root and root.type~=151 do root=root.bound_source end
-            parents[root]=(parents[root] or 0)+1
-            assert(parents[root]==1,'同一父对象重复创建爆炸触发器')
+            parents[root.serial]=(parents[root.serial] or 0)+1
+            assert(parents[root.serial]==1,'同一父对象重复创建爆炸触发器')
         end
     end
     return o
@@ -50,6 +56,7 @@ assert(peakBurst==37,'首帧散弹数量与原事件不符：'..peakBurst)
 assert(shots[372]==37 and shots[373]==31 and shots[374]==25,'首次分裂应为连续三帧 37/31/25 发')
 assert(shots[848]==37 and shots[856]==37,'跨 840 帧循环后未延续原有的 8 帧间隔')
 R.clear(c)
+assert(R.statePoolStats().pending==0,'清场后仍有父状态等待引用释放')
 print(('PASS 流星花火 4 轮：单帧散弹峰值 %d，对象峰值 %d，无重复父子链'):format(peakBurst,peakObjects))
 
 -- 真正调用正式绘制路径，检查雾图、缩放、透明度与第 16 帧的弹图切换。

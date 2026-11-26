@@ -33,6 +33,19 @@ assert(fourth.eventMarker==940 and fourth.sharedSpec==emitter.sharedSpec,'字段
 emitter[1]='numeric'
 local fifth=shot()
 assert(fifth[1]=='numeric','非字符串字段回退复制遗漏')
+-- 覆盖光虫游弋每个父对象一拍17发的路径，后续发射及单弹事件不能改写其他弹。
+emitter.tiao,emitter.alpha,emitter.eventMarker=17,100,145
+local start=#objects
+shot()
+assert(#objects-start==17,'批量发弹丢弹')
+local a,b=objects[start+1].mhj,objects[start+2].mhj
+emitter.alpha,emitter.eventMarker=30,68
+shot()
+assert(a.alpha==100 and a.eventMarker==145 and b.alpha==100,'后续发射改写已出生的批量弹')
+R.change(a,'alpha',12,0,0,'正比',1)
+objects[start+1].class.frame(objects[start+1])
+assert(a.alpha==12 and b.alpha==100,'同批弹共享可变事件状态')
+assert(a.changes~=b.changes and a.limits~=b.limits,'同批弹共享事件容器')
 New=original
 R.clear(c)
 print('PASS 永夜正式发弹：当前值快照、动态增删/重新加入字段、独立插值/限制表、浅拷贝与通用回退')

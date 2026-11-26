@@ -173,6 +173,8 @@ using namespace lstg;
 #include "quad_batch.inc"
 #include "model_mesh.inc"
 #include "source_curve.inc"
+// 只复用已退役的Lua表，原生对象仍按New的顺序和默认值重新借出。
+LUA_REGISTER_FUNC_DEF(lstg, AndroidNewSourceObjectFromTable) { return LPOOL.NewFromTable(L); }
 #include "fog_state.inc"
 
 LUA_REGISTER_FUNC_DEF(lstg, AndroidRendererInfo) {
