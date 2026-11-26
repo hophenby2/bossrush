@@ -25,6 +25,43 @@ for id=0,31 do
         '红魔乡SoundIdx映射、原音量或声像错误：'..id)
 end
 assert(#calls==38,'红魔乡32种SoundIdx未全部发出')
+for _,game in ipairs({7,8}) do
+    local sounds=dofile('mod/GAME/original/sounds.lua')[game]
+    for id,entry in pairs(sounds) do
+        stage.current_stage.timer=stage.current_stage.timer+1
+        S.play(game,id,-96)
+        local call=calls[#calls]
+        assert(call[1]=='th3x.original.'..game..'.'..id and call[2]==10^(entry[2]/2000) and call[3]==-.5,
+            '妖/永的SoundIdx、原音量或声像错误：'..game..':'..id)
+    end
+end
+local first=#calls
+stage.current_stage.timer=stage.current_stage.timer+1
+S.play(7,7,0);S.play(7,25,0);S.play(7,7,0)
+assert(#calls==first+2,'同帧不同编号被合并，或同编号没有去重')
+-- 使用正式演出调度和原始导出常量；只隔离视觉副作用，不运行发弹和运动。
+local env=setmetatable({object={},GROUP={GHOST=0},LAYER={ENEMY=0},player={x=0,y=-180}}, {__index=_G})
+env.Class=function(base,methods)return methods end
+env.dofile=function(path)
+    if path=='THlib/anm/original_effects.lua' then return {} end
+    if path=='THlib/anm/original_sounds.lua' then return S end
+    return setfenv(assert(loadfile(path)),env)()
+end
+local presentation=env.dofile('THlib/anm/presentation.lua')
+for _,sub in ipairs({34,39}) do
+    local o={x=-96,y=100};presentation.bind(o,8,'ecldata2:'..sub)
+    assert(o._original_presentation,'仅包含音效的子程序未激活：'..sub)
+    local first=#calls
+    for tick=0,29 do
+        stage.current_stage.timer=stage.current_stage.timer+1
+        presentation.advance(o,tick)
+    end
+    assert(#calls==first,'原作15次两帧循环完成前提前播提示音')
+    stage.current_stage.timer=stage.current_stage.timer+1;presentation.advance(o,30)
+    assert(#calls==first+1 and calls[#calls][1]=='th3x.original.8.15','非粒子子程序的playSound被过滤')
+    presentation.advance(o,30)
+    assert(#calls==first+1,'重复绘制/推进同一时刻重播音效')
+end
 local T=dofile('THlib/anm/th10_sounds.lua')
 player={x=0,y=-180}
 local function owner()return {x=0,y=100,ecs={off={x=0,y=124},base={x=0,y=0}}}end
@@ -43,4 +80,4 @@ for index=1,7 do
         programs=programs+1
     end
 end
-print('PASS 五作210个SoundIdx预载/去重/声像；风神录137个入口6000帧、独立标量和等待循环',programs,total)
+print('PASS 五作210个SoundIdx预载；妖/永全编号、同帧异音、永夜抄30帧提示；风神录137入口6000帧',programs,total)

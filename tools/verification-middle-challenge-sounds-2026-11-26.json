@@ -1,0 +1,495 @@
+{
+  "日期": "2026-11-26",
+  "版本": "2026.11.26.14",
+  "性能调查": {
+    "平台": "Windows LuaSTG Sub，960×720，关闭垂直同步，600 FPS上限，每绘制帧一个逻辑步。",
+    "路线": "挑战模式固定种子2026112630，38张卡，每张900逻辑帧窗口；37次接触强化选项均为中间的第2项。",
+    "范围": "保护自机，样本期间维持敌机HP后定时结卡；不是自然走位通关，未测Android真机FPS。",
+    "对照": "相同种子与强化路径顺序运行正常绘制、仅在绘制阶段使用原始尺寸、跳过自机弹绘制；不改伤害、发弹与回收规则。",
+    "结论": "此Windows样本未复现明显后程掉帧；未见对象随关数持续堆积。放大绘制增加部分卡的GPU耗时，但Windows数据不能确定Android后程掉帧根因。",
+    "视觉强化": "37次中间强化后火力及现有弹图倍率176.1338。保留原规则；没有在未确认偏好时限制视觉尺寸。",
+    "正常修复后": {
+      "完成": true,
+      "错误": [],
+      "绘制样本": 36581,
+      "统计": {
+        "前8卡": {
+          "样本帧": 7750,
+          "中位数": {
+            "objects": 351.0,
+            "fps": 406.2504,
+            "power": 1.5209,
+            "logic_ms": 1.0746,
+            "render_ms": 0.873,
+            "gpu_ms": 0.4311,
+            "total_ms": 2.2974
+          },
+          "对象最少": 5,
+          "对象最多": 924
+        },
+        "后8卡": {
+          "样本帧": 7688,
+          "中位数": {
+            "objects": 391.0,
+            "fps": 395.6595,
+            "power": 100.705,
+            "logic_ms": 1.0621,
+            "render_ms": 0.9067,
+            "gpu_ms": 0.4977,
+            "total_ms": 2.3358
+          },
+          "对象最少": 32,
+          "对象最多": 1534
+        }
+      },
+      "来源指纹": {
+        "files": 3272,
+        "sha256": "71ce9c5a1f2f3ef8be2e98f673ad75dae776727368b8b015f9e03368751a6574"
+      },
+      "记录SHA256": "5b8c62383adcc98283db818909f06eaf80dbc3a8dacf0284bc92d1b397c8c51c"
+    },
+    "先前夹具边界": "第一组带血圈保护的正常绘制路线完成38卡后，夹具在退标题时读取已销毁自机报错；该组只使用退标题前36581个绘制帧，不标为整轮通过。夹具修正后最新正常路线与另两组消融路线完整通过。",
+    "消融汇总": {
+      "normal": {
+        "samples": 36581,
+        "groups": [
+          {
+            "completed": [
+              0,
+              7
+            ],
+            "median": {
+              "power": 1.5209,
+              "objects": 351.0,
+              "lua_kb": 222628.915,
+              "logic_ms": 1.1045,
+              "render_ms": 0.8983,
+              "gpu_ms": 0.448,
+              "total_ms": 2.3495,
+              "player_draws": 55.0
+            },
+            "objects_min": 5,
+            "objects_max": 924
+          },
+          {
+            "completed": [
+              8,
+              15
+            ],
+            "median": {
+              "power": 4.6526,
+              "objects": 400.0,
+              "lua_kb": 282174.6592,
+              "logic_ms": 1.1597,
+              "render_ms": 0.9556,
+              "gpu_ms": 0.5048,
+              "total_ms": 2.513,
+              "player_draws": 49.0
+            },
+            "objects_min": 69,
+            "objects_max": 1829
+          },
+          {
+            "completed": [
+              16,
+              23
+            ],
+            "median": {
+              "power": 14.2325,
+              "objects": 492.5,
+              "lua_kb": 255990.4414,
+              "logic_ms": 1.3083,
+              "render_ms": 1.3381,
+              "gpu_ms": 0.6277,
+              "total_ms": 3.0859,
+              "player_draws": 52.0
+            },
+            "objects_min": 44,
+            "objects_max": 1670
+          },
+          {
+            "completed": [
+              24,
+              31
+            ],
+            "median": {
+              "power": 43.5376,
+              "objects": 416.0,
+              "lua_kb": 266624.7456,
+              "logic_ms": 1.0291,
+              "render_ms": 0.9666,
+              "gpu_ms": 0.6318,
+              "total_ms": 2.3586,
+              "player_draws": 54.0
+            },
+            "objects_min": 28,
+            "objects_max": 1737
+          },
+          {
+            "completed": [
+              32,
+              37
+            ],
+            "median": {
+              "power": 115.8108,
+              "objects": 400.0,
+              "lua_kb": 322085.0068,
+              "logic_ms": 1.2099,
+              "render_ms": 0.9153,
+              "gpu_ms": 0.4951,
+              "total_ms": 2.3906,
+              "player_draws": 52.0
+            },
+            "objects_min": 32,
+            "objects_max": 1536
+          }
+        ],
+        "frames_sha256": "918e64572ba8709e904c68516f830f8bbcdaf128c5faa612dc7abc54602504a3"
+      },
+      "scale1": {
+        "samples": 36581,
+        "groups": [
+          {
+            "completed": [
+              0,
+              7
+            ],
+            "median": {
+              "power": 1.5209,
+              "objects": 351.0,
+              "lua_kb": 221325.6606,
+              "logic_ms": 1.1444,
+              "render_ms": 0.9238,
+              "gpu_ms": 0.4178,
+              "total_ms": 2.4167,
+              "player_draws": 55.0
+            },
+            "objects_min": 5,
+            "objects_max": 924
+          },
+          {
+            "completed": [
+              8,
+              15
+            ],
+            "median": {
+              "power": 4.6526,
+              "objects": 400.0,
+              "lua_kb": 279332.7725,
+              "logic_ms": 1.1281,
+              "render_ms": 0.9319,
+              "gpu_ms": 0.4884,
+              "total_ms": 2.4741,
+              "player_draws": 49.0
+            },
+            "objects_min": 69,
+            "objects_max": 1829
+          },
+          {
+            "completed": [
+              16,
+              23
+            ],
+            "median": {
+              "power": 14.2325,
+              "objects": 492.5,
+              "lua_kb": 269950.5854,
+              "logic_ms": 0.9537,
+              "render_ms": 1.1084,
+              "gpu_ms": 0.4823,
+              "total_ms": 2.4428,
+              "player_draws": 52.0
+            },
+            "objects_min": 44,
+            "objects_max": 1670
+          },
+          {
+            "completed": [
+              24,
+              31
+            ],
+            "median": {
+              "power": 43.5376,
+              "objects": 415.0,
+              "lua_kb": 301234.9639,
+              "logic_ms": 1.0776,
+              "render_ms": 1.0041,
+              "gpu_ms": 0.5816,
+              "total_ms": 2.4504,
+              "player_draws": 54.0
+            },
+            "objects_min": 28,
+            "objects_max": 1737
+          },
+          {
+            "completed": [
+              32,
+              37
+            ],
+            "median": {
+              "power": 115.8108,
+              "objects": 401.0,
+              "lua_kb": 301670.6162,
+              "logic_ms": 1.1465,
+              "render_ms": 0.8613,
+              "gpu_ms": 0.427,
+              "total_ms": 2.3382,
+              "player_draws": 53.0
+            },
+            "objects_min": 32,
+            "objects_max": 1525
+          }
+        ],
+        "frames_sha256": "d3ff2e15894ed4d30d1934c12824825efe561b44468120bc6417289ccb30b029"
+      },
+      "no-player": {
+        "samples": 36581,
+        "groups": [
+          {
+            "completed": [
+              0,
+              7
+            ],
+            "median": {
+              "power": 1.5209,
+              "objects": 351.0,
+              "lua_kb": 221577.4971,
+              "logic_ms": 1.1362,
+              "render_ms": 0.8965,
+              "gpu_ms": 0.4168,
+              "total_ms": 2.3808,
+              "player_draws": 55.0
+            },
+            "objects_min": 5,
+            "objects_max": 924
+          },
+          {
+            "completed": [
+              8,
+              15
+            ],
+            "median": {
+              "power": 4.6526,
+              "objects": 400.0,
+              "lua_kb": 280505.0732,
+              "logic_ms": 1.1773,
+              "render_ms": 0.9221,
+              "gpu_ms": 0.4813,
+              "total_ms": 2.5175,
+              "player_draws": 49.0
+            },
+            "objects_min": 69,
+            "objects_max": 1829
+          },
+          {
+            "completed": [
+              16,
+              23
+            ],
+            "median": {
+              "power": 14.2325,
+              "objects": 492.5,
+              "lua_kb": 271462.54,
+              "logic_ms": 1.0194,
+              "render_ms": 1.1158,
+              "gpu_ms": 0.4844,
+              "total_ms": 2.4878,
+              "player_draws": 52.0
+            },
+            "objects_min": 44,
+            "objects_max": 1670
+          },
+          {
+            "completed": [
+              24,
+              31
+            ],
+            "median": {
+              "power": 43.5376,
+              "objects": 416.5,
+              "lua_kb": 299029.5137,
+              "logic_ms": 1.083,
+              "render_ms": 0.9988,
+              "gpu_ms": 0.5786,
+              "total_ms": 2.4519,
+              "player_draws": 54.0
+            },
+            "objects_min": 28,
+            "objects_max": 1737
+          },
+          {
+            "completed": [
+              32,
+              37
+            ],
+            "median": {
+              "power": 115.8108,
+              "objects": 400.0,
+              "lua_kb": 303832.4312,
+              "logic_ms": 1.2164,
+              "render_ms": 0.8942,
+              "gpu_ms": 0.4342,
+              "total_ms": 2.439,
+              "player_draws": 53.0
+            },
+            "objects_min": 32,
+            "objects_max": 1537
+          }
+        ],
+        "frames_sha256": "64e19bf5c10579969378d97fac0d52b51761b91237aec8f09c9807a16647b3cf"
+      }
+    }
+  },
+  "崩溃修复": {
+    "问题": "红魔乡控制器建立后、actors列表建立前绘制多Boss血圈，ipairs(nil)；38卡回归的第33卡3808首次检出。",
+    "处理": "仅在actors已建立时枚举分身，入场阶段仍绘制本体；专项用例与最新38卡路线通过。"
+  },
+  "音效修复": {
+    "妖妖梦": "删去不区分SoundIdx的二次全局门控，统一由共用队列按逻辑帧和编号去重；ecldata1 Sub49/53/56蓄力后的发射音改回原始16号。",
+    "永夜抄": "playSound不再要求当前子程序同时属于纯粒子脚本；导出器把只有音效或调用音效子程序的入口纳入激活传播，定向更新既有分块的active标记。保留所有原脚本操作数、动画、运动、pure_actor和原始SHA。",
+    "源点": [
+      {
+        "game": 7,
+        "file": "ecldata1.ecl",
+        "sha256": "c443e28b86cb20eeb7613d786c7ff667c2bd39726bf7ffbb38a3c0e354db1b40",
+        "sub": 49,
+        "time": 0,
+        "address": "0x71bc",
+        "id": 5
+      },
+      {
+        "game": 7,
+        "file": "ecldata1.ecl",
+        "sha256": "c443e28b86cb20eeb7613d786c7ff667c2bd39726bf7ffbb38a3c0e354db1b40",
+        "sub": 49,
+        "time": 4,
+        "address": "0x7210",
+        "id": 16
+      },
+      {
+        "game": 7,
+        "file": "ecldata1.ecl",
+        "sha256": "c443e28b86cb20eeb7613d786c7ff667c2bd39726bf7ffbb38a3c0e354db1b40",
+        "sub": 53,
+        "time": 0,
+        "address": "0x7f9c",
+        "id": 5
+      },
+      {
+        "game": 7,
+        "file": "ecldata1.ecl",
+        "sha256": "c443e28b86cb20eeb7613d786c7ff667c2bd39726bf7ffbb38a3c0e354db1b40",
+        "sub": 53,
+        "time": 4,
+        "address": "0x7ff0",
+        "id": 16
+      },
+      {
+        "game": 7,
+        "file": "ecldata1.ecl",
+        "sha256": "c443e28b86cb20eeb7613d786c7ff667c2bd39726bf7ffbb38a3c0e354db1b40",
+        "sub": 56,
+        "time": 0,
+        "address": "0x86d0",
+        "id": 5
+      },
+      {
+        "game": 7,
+        "file": "ecldata1.ecl",
+        "sha256": "c443e28b86cb20eeb7613d786c7ff667c2bd39726bf7ffbb38a3c0e354db1b40",
+        "sub": 56,
+        "time": 4,
+        "address": "0x8724",
+        "id": 16
+      }
+    ],
+    "原始WAV核对": {
+      "妖妖梦SoundIdx": 38,
+      "永夜抄SoundIdx": 46,
+      "方法": "当前全部84个SoundIdx的素材SHA-256逐一匹配各自原始dat中解出的WAV；原作目录只读，提取到独立检查目录。"
+    },
+    "Windows原生对照": {
+      "before": {
+        "完成": true,
+        "错误": {},
+        "卡片": [
+          462,
+          464,
+          466,
+          468,
+          469,
+          4455
+        ],
+        "每卡采样逻辑帧": 1800,
+        "触发计数": {
+          "4455:th3x.original.7.13": 12,
+          "4455:th3x.original.7.18": 2,
+          "4455:th3x.original.7.5": 13,
+          "462:th3x.original.8.18": 2,
+          "462:th3x.original.8.25": 960,
+          "462:th3x.original.8.7": 636,
+          "464:th3x.original.8.18": 2,
+          "464:th3x.original.8.25": 584,
+          "464:th3x.original.8.7": 697,
+          "466:th3x.original.8.18": 2,
+          "466:th3x.original.8.25": 118,
+          "466:th3x.original.8.7": 127,
+          "468:th3x.original.8.18": 2,
+          "468:th3x.original.8.25": 156,
+          "468:th3x.original.8.7": 169,
+          "469:th3x.original.8.18": 2,
+          "469:th3x.original.8.25": 874,
+          "469:th3x.original.8.7": 1115
+        },
+        "输出SHA256": "8f91f6066474d68d2ba816fc5c18a06a2a63bddf6365cfd5950c44c5dae912a1"
+      },
+      "after": {
+        "完成": true,
+        "错误": {},
+        "卡片": [
+          462,
+          464,
+          466,
+          468,
+          469,
+          4455
+        ],
+        "每卡采样逻辑帧": 1800,
+        "触发计数": {
+          "4455:th3x.original.7.16": 12,
+          "4455:th3x.original.7.18": 2,
+          "4455:th3x.original.7.5": 13,
+          "462:th3x.original.8.18": 2,
+          "462:th3x.original.8.25": 960,
+          "462:th3x.original.8.7": 636,
+          "464:th3x.original.8.15": 6,
+          "464:th3x.original.8.18": 2,
+          "464:th3x.original.8.25": 584,
+          "464:th3x.original.8.7": 697,
+          "466:th3x.original.8.15": 1,
+          "466:th3x.original.8.18": 2,
+          "466:th3x.original.8.25": 118,
+          "466:th3x.original.8.5": 1,
+          "466:th3x.original.8.7": 127,
+          "468:th3x.original.8.15": 1,
+          "468:th3x.original.8.18": 2,
+          "468:th3x.original.8.25": 156,
+          "468:th3x.original.8.5": 1,
+          "468:th3x.original.8.7": 169,
+          "469:th3x.original.8.15": 1,
+          "469:th3x.original.8.18": 2,
+          "469:th3x.original.8.25": 874,
+          "469:th3x.original.8.7": 1115
+        },
+        "输出SHA256": "af46f47cdaaa8c7d30a7275a4924ee308f24b4e10fefce2604287a38985d760c"
+      }
+    },
+    "仅触发验证": "原生记录的是lstg.PlaySound调用；检查关闭系统音量，未把调用记录声称为主观听音验收。"
+  },
+  "专项检查": [
+    "check_multi_boss_rings：入场空actors及独立/共享身体血圈通过。",
+    "check_original_sounds：五作210项预载、妖/永完整编号与声像、同帧异音共存、永夜抄Sub34/39第30帧提示通过；TH10既有137入口6000帧通过。",
+    "check_original_anm：551项动画/资源检查通过，音效在该夹具中隔离。"
+  ],
+  "保留": "迎春之舞HP、减伤、攻击参数和玩家存档未修改。"
+}

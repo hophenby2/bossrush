@@ -104,7 +104,8 @@ local function effect(s,c,op,a)
     local o=s.owner
     if s.game==8 then
         if op==139 or op==140 then F.spawn8({x=s.x,y=s.y},s.phase,a[1],a[2],a[3],a[4]) end
-        if op==124 and a[1] and s.bank.sound_scripts[c.sub] then T.sound.play(8,a[1],s.x) end
+        -- playSound是独立指令，发弹/运动子程序里的提示音同样要执行。
+        if op==124 and a[1] then T.sound.play(8,a[1],s.x) end
         if op==136 and a[1]==1 then New(F.screen_pulse,s.phase) end
         if op==136 and a[1]==10 then
             New(F.screen_pulse,s.phase,30,5,64)

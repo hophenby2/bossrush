@@ -639,9 +639,8 @@ local function smear_add(self, alpha)
 end
 
 ---同一帧里同一种音效只响一声：原作 `SoundPlayer.cpp:589-612` 的队列**按 idx 去重**
----（8 只幽灵在同一帧各出一轮，真机只会响一次）。tick 由卡的 frame 每帧推一格，
----这样不管协程谁先醒，同一帧里的第二只幽灵就响了。
-local sound_tick, sound_stamp = 0, -1
+---（8只幽灵在同一帧各出一轮，真机只会响一次）。交给共用队列处理，
+---不同SoundIdx可以在同一帧发声，不能用全局单一标记压掉另一种音效。
 
 ---原作 itemdrop：0 = ITEM_POWER_SMALL、1 = ITEM_POINT、2 = ITEM_POWER_BIG
 ---（ItemManager.hpp:9-11）。本仓库没有「能量」类道具（item.obj 只有 faith / point /
@@ -680,10 +679,7 @@ local function volley(self)
     ---整波没生出来也照响。soundIdx 是敌人出厂时的默认值 7（`EnemyManager.hpp:346`
     ---`SOUND_BOMB_MARISA_A_FOCUS`，每题都是这个默认）⇒ `SOUND_BUFFER_IDX_VOL[7]`
     ---= buffer 5 = `se_tan00.wav`、音量 −15 dB（`SoundPlayer.cpp:11-15`）。
-    if sound_stamp ~= sound_tick then
-        sound_stamp = sound_tick
-        OriginalStageVisual.presentation.sound.play(7,self.th07_shoot_sound or 7,self.x)
-    end
+    OriginalStageVisual.presentation.sound.play(7,self.th07_shoot_sound or 7,self.x)
 end
 
 ---──────────────────── 小怪：烟尘 80 帧 → 幽灵 140 帧 ────────────────────
@@ -906,7 +902,6 @@ do
         pool = {}
         class.th07_spell_active,class.th07_command_sound=false,-1
         self.th07_shoot_sound=7
-        sound_tick, sound_stamp = 0, -1
         ---WAVE 的 dt 是**相对上一只**的帧间隔，所以用一条协程顺着等下去；
         ---时间轴从卡开始算（原作的 t=720 映射成 0）。
         task.New(self, function()
@@ -915,10 +910,7 @@ do
             end)
         end)
     end
-    ---音效去重的时钟：一帧推一格（幽灵那边拿它跟自己记住的帧号比）。
-    function card:frame()
-        sound_tick = sound_tick + 1
-    end
+    function card:frame() end
     function card:render() end
     -- 原作交接时刻结束此独立道中；road_card统一回收仍在场的道中敌机。
     function card:del() end
@@ -947,7 +939,6 @@ local RAD2DEG = 180 / PI
 ---丢弹规则与上一张卡一致：池满 ⇒ 整波不生；生到一半见底 ⇒ 丢剩下的；两条路径都响音效。
 local POOL4_SIZE = 1024
 local pool4 = {}
-local sound_tick4, sound_stamp4 = 0, -1
 
 local function pool4_used()
     for i = #pool4, 1, -1 do
@@ -964,10 +955,7 @@ end
 
 ---同一帧里同一种音效只响一声（原作 SoundPlayer 的队列按 idx 去重）。
 local function sound4(self)
-    if sound_stamp4 ~= sound_tick4 then
-        sound_stamp4 = sound_tick4
-        OriginalStageVisual.presentation.sound.play(7,self.th07_shoot_sound or 7,self.x)
-    end
+    OriginalStageVisual.presentation.sound.play(7,self.th07_shoot_sound or 7,self.x)
 end
 
 ---一次「波」：gen(i) 依次给出发射参数。
@@ -1901,7 +1889,6 @@ do
         pool4 = {}
         class.th07_spell_active,class.th07_command_sound=false,-1
         self.th07_shoot_sound=7
-        sound_tick4, sound_stamp4 = 0, -1
         ---WAVE4 的 dt 是**相对上一只**的帧间隔，所以用一条协程顺着等下去；
         ---spawn 当帧就把子程序跑到第一条 time>0 的指令（原作同样如此，见文件头）。
         task.New(self, function()
@@ -1920,10 +1907,7 @@ do
             end)
         end)
     end
-    ---音效去重的时钟：一帧推一格（各小怪拿它跟自己记住的帧号比）。
-    function card:frame()
-        sound_tick4 = sound_tick4 + 1
-    end
+    function card:frame() end
     function card:render() end
     -- 原作交接时刻结束此独立道中；road_card统一回收仍在场的道中敌机。
     function card:del() end
@@ -2538,7 +2522,6 @@ do
         pool4 = {}
         class.th07_spell_active,class.th07_command_sound=false,-1
         self.th07_shoot_sound=7
-        sound_tick4, sound_stamp4 = 0, -1
         task.New(self, function()
             flow.roadEach(self,WAVE3,function(w)
                 local sub = w[2]
@@ -2550,9 +2533,7 @@ do
             end)
         end)
     end
-    function card:frame()
-        sound_tick4 = sound_tick4 + 1
-    end
+    function card:frame() end
     function card:render() end
     -- 原作交接时刻结束此独立道中；road_card统一回收仍在场的道中敌机。
     function card:del() end
@@ -3073,16 +3054,13 @@ do
         pool4 = {}
         class.th07_spell_active,class.th07_command_sound=false,-1
         self.th07_shoot_sound=7
-        sound_tick4, sound_stamp4 = 0, -1
         task.New(self, function()
             flow.roadEach(self,WAVE5,function(w)
                 New(class["TH34_mid5"], w[3], w[4], w[6], w[2], w[7], w[5])
             end)
         end)
     end
-    function card:frame()
-        sound_tick4 = sound_tick4 + 1
-    end
+    function card:frame() end
     function card:render() end
     -- 原作交接时刻结束此独立道中；road_card统一回收仍在场的道中敌机。
     function card:del() end
@@ -3702,16 +3680,13 @@ do
         pool4 = {}
         class.th07_spell_active,class.th07_command_sound=false,-1
         self.th07_shoot_sound=7
-        sound_tick4, sound_stamp4 = 0, -1
         task.New(self, function()
             flow.roadEach(self,WAVE1,function(w)
                 New(class[W1_CLASS[w[2]]], w[3], w[4], w[6], w[2], w[7], w[5])
             end)
         end)
     end
-    function card:frame()
-        sound_tick4 = sound_tick4 + 1
-    end
+    function card:frame() end
     function card:render() end
     -- 原作交接时刻结束此独立道中；road_card统一回收仍在场的道中敌机。
     function card:del() end
@@ -4383,16 +4358,13 @@ do
         pool4 = {}
         class.th07_spell_active,class.th07_command_sound=false,-1
         self.th07_shoot_sound=7
-        sound_tick4, sound_stamp4 = 0, -1
         task.New(self, function()
             flow.roadEach(self,WAVE2,function(w)
                 New(class[W2_CLASS[w[2]]], w[3], w[4], w[6], w[2], w[7], w[5])
             end)
         end)
     end
-    function card:frame()
-        sound_tick4 = sound_tick4 + 1
-    end
+    function card:frame() end
     function card:render() end
     -- 原作交接时刻结束此独立道中；road_card统一回收仍在场的道中敌机。
     function card:del() end
@@ -5673,16 +5645,13 @@ do
         pool4 = {}
         class.th07_spell_active,class.th07_command_sound=false,-1
         self.th07_shoot_sound=7
-        sound_tick4, sound_stamp4 = 0, -1
         task.New(self, function()
             flow.roadEach(self,W7,function(w)
                 spawn78(W78EX, w)
             end)
         end)
     end
-    function card:frame()
-        sound_tick4 = sound_tick4 + 1
-    end
+    function card:frame() end
     function card:render() end
     -- 原作交接时刻结束此独立道中；road_card统一回收仍在场的道中敌机。
     function card:del() end
@@ -5710,16 +5679,13 @@ do
         pool4 = {}
         class.th07_spell_active,class.th07_command_sound=false,-1
         self.th07_shoot_sound=7
-        sound_tick4, sound_stamp4 = 0, -1
         task.New(self, function()
             flow.roadEach(self,W8,function(w)
                 spawn78(W78PH, w)
             end)
         end)
     end
-    function card:frame()
-        sound_tick4 = sound_tick4 + 1
-    end
+    function card:frame() end
     function card:render() end
     function card:del() end
 
@@ -6228,11 +6194,8 @@ local function TH34_add_stage78_boss()
     end
 
     ---每帧运动 + 位置夹框（原作 SET_MOVEMENT_BOUNDS + EnemyManagerUpdate 的 ClampPosition）。
-    ---同时推进 sound_tick4：sound4 用它做「同帧同音效只响一声」的去重（原作
-    ---SoundPlayer 的队列按 idx 去重）。boss 卡的 frame 只有这一个入口，不推的话
-    ---整张卡只会响一声。
+    -- 音效由共用SoundIdx队列按逻辑帧、编号去重，不依赖此运动回调的局部计数。
     local function bframe(self)
-        sound_tick4 = sound_tick4 + 1
         class.th07_laser_interact(self)
         class.th07_oni_interact(self)
         local _fx, _fy = self.x, self.y
@@ -6331,7 +6294,6 @@ local function TH34_add_stage78_boss()
         card.before = current_skin
         card.init = function(self)
             pool4 = {}
-            sound_tick4, sound_stamp4 = 0, -1
             class.th07_motion_begin(self, id, bmove)
             local t0 = opt.t0 or 60
             local ease = opt.ease or 4
@@ -6407,7 +6369,6 @@ local function TH34_add_stage78_boss()
         card.before = skin_ran
         card.init = function(self)
             pool4 = {}
-            sound_tick4, sound_stamp4 = 0, -1
             class.th07_motion_begin(self, 3408, bmove)
             self._box = { -160, 160, 96, 176 }
             ---原作 sub58：18 组 7 发×2 层瞄准扇，每 2 帧一组（共 36 帧）。
@@ -6719,7 +6680,6 @@ local function TH34_add_stage78_boss()
         card.before = wall and current_skin_wall or current_skin
         card.init = function(self)
             pool4 = {}
-            sound_tick4, sound_stamp4 = 0, -1
             live = {}
             spell_live = live
             class.th07_motion_begin(self, id, bmove)
@@ -9129,7 +9089,6 @@ local function TH34_add_stage78_boss()
         card.before = skin_chen
         card.init = function(self)
             pool4 = {}
-            sound_tick4, sound_stamp4 = 0, -1
             class.th07_motion_begin(self, 3488, bmove)
             self._box = { -160, 160, 96, 176 }
             ---原作 sub56：18 组 7 发×2 层瞄准扇，每 2 帧一组（共 36 帧）——SUB_CALL 同步，
@@ -9247,7 +9206,6 @@ local function TH34_add_stage56_boss()
     end
     local function bframe(self)
         NativeVisual.capture_exit_box(self)
-        sound_tick4 = sound_tick4 + 1
         class.th07_laser_interact(self)
         if self.th07_orbit_step then
             local x,y=self.th07_orbit_step(self)
@@ -9487,7 +9445,6 @@ local function TH34_add_stage56_boss()
         card.before = opt.skin or skin6
         card.init = function(self)
             pool4 = {}
-            sound_tick4, sound_stamp4 = 0, -1
             ---非符也会用 `pspawn` 放子机（stage1/2 的「冰桌」「凤凰火」等）：
             ---和符卡一样登记，卡片结束时统一清场，否则子机协程会活过卡尾继续发弹。
             live = {}
@@ -9519,7 +9476,6 @@ local function TH34_add_stage56_boss()
         card.before = wall and (opt.wallskin or skin6_wall) or (opt.skin or skin6)
         card.init = function(self)
             pool4 = {}
-            sound_tick4, sound_stamp4 = 0, -1
             live = {}
             spell_live = live
             class.th07_motion_begin(self, id, bmove)
@@ -14690,7 +14646,7 @@ local function TH34_add_stage56_boss()
                     OriginalStageVisual.presentation.sound.play(7,5,self.x)
                     task.Wait(48)
                 end
-                OriginalStageVisual.presentation.sound.play(7,13,self.x)
+                OriginalStageVisual.presentation.sound.play(7,16,self.x)
                 local ww = w
                 for _ = 1, n do
                     ripple(self.x, self.y, PI / 2, ww, 0.8)
@@ -14794,7 +14750,7 @@ local function TH34_add_stage56_boss()
                     OriginalStageVisual.presentation.sound.play(7,5,self.x)
                     task.Wait(48)
                 end
-                OriginalStageVisual.presentation.sound.play(7,13,self.x)
+                OriginalStageVisual.presentation.sound.play(7,16,self.x)
                 local ww = w
                 for _ = 1, n do
                     gear(self.x, self.y, -PI / 2, ww, 0.5)
@@ -15994,7 +15950,7 @@ local function TH34_add_stage56_boss()
             local function wave(th0, av, v, n)
                 OriginalStageVisual.presentation.sound.play(7,5,self.x)
                 task.Wait(120)
-                OriginalStageVisual.presentation.sound.play(7,13,self.x)
+                OriginalStageVisual.presentation.sound.play(7,16,self.x)
                 local d = 2 * PI / n
                 for k = 0, n - 1 do
                     flower(self.x, self.y, th0 + k * d, av, v)

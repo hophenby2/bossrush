@@ -3,7 +3,7 @@
 运动、发弹、生命及判定仍由关卡实现执行。保留地址对应的占位项，避免删除非演出指令后破坏跳转。
 """
 from pathlib import Path
-import argparse,importlib.util,json
+import argparse,importlib.util,json,re
 from ecl_source import Source,Variable
 ROOT=Path(__file__).resolve().parents[2]
 spec=importlib.util.spec_from_file_location('anm_serializer',Path(__file__).with_name('export_original_anm.py'))
@@ -12,13 +12,15 @@ CONTROL=set(range(54))
 EXTRA={8:{63,90,91,92,93,94,110,124,135,136,137,139,140},95:set(range(54,66))|{70,71,77,79,80,81,83,84,100,106,108,109,112,115,116,117,118,119,124,143,144,150,151,152}}
 FX={8:{136,137,139,140},95:set(range(54,63))|{77,79,80,81,118,119,124,143,144,150,151,152}}
 def has_effect(game, instruction):
+ if game==8 and instruction.op==124:
+  return True
  if game==8 and instruction.op in (136,137):
   # 结界的开始/停止也是真正的演出入口；漏标会使整个Sub28/Sub46被运行时跳过。
   return instruction.args and instruction.args[0] in ((1,3,5,6,10,15,17,20) if instruction.op==136 else (13,))
  return instruction.op in FX[game]
-def export(workspace):
+def export(workspace,games=(8,95),split=False):
  output={};evidence=[]
- for game in (8,95):
+ for game in games:
   bank={}
   for path in sorted((workspace/'original/ECL'/('th095' if game==95 else 'th08')).glob('*.ecl')):
    src=Source(workspace/'decompiled/ecl'/str(game)/(path.stem+'.decl'),path,game)
@@ -79,11 +81,28 @@ def export(workspace):
     all(i.op<63 or i.op in (79,80,81,106,124,139,140,143,144,150,151,152) for i in body)}
    bank[path.stem]={'scripts':subs,'active':active,'motion':motion,'pure_actor':pure_actor,'sound_scripts':sound_scripts,'sha256':src.sha256}
   output[game]=bank
- target=ROOT/'mod/GAME/original/presentation_programs.lua'
- target.write_text('-- 原始二进制校验后导出的演出调度常量；不包含ECL原文件。\nreturn '+serializer.lua(output)+'\n')
+ if split:
+  # 定向补齐音效入口，保留已经逐卡校正的动画、运动与纯演出对象登记。
+  index=(ROOT/'mod/GAME/original/presentation_programs_index.lua').read_text(encoding='utf-8')
+  for game,bank in output.items():
+   assert bank,('未读取到原始ECL',game)
+   for name,data in bank.items():
+    target=ROOT/f'mod/GAME/original/presentation_programs.d/{game}_{name}.lua'
+    assert target.is_file() and f'["{name}"]=true' in index,('新文件须同步更新索引',game,name)
+    original=target.read_bytes().decode('utf-8')
+    assert f'["sha256"]="{data["sha256"]}"' in original,('原始ECL版本不同，不能局部更新',game,name)
+    field=re.search(r'\["active"\]=\{(.*?)\}(?=,\["motion"\]=)',original)
+    assert field,('缺少激活标记',game,name)
+    updated=re.sub(r'\["(Sub\d+)"\]=false',
+      lambda m:f'["{m[1]}"]=true' if data['active'][m[1]] else m[0],field[1])
+    target.write_bytes((original[:field.start(1)]+updated+original[field.end(1):]).replace('\r\n','\n').encode('utf-8'))
+ else:
+  target=ROOT/'mod/GAME/original/presentation_programs.lua'
+  target.write_text('-- 原始二进制校验后导出的演出调度常量；不包含ECL原文件。\nreturn '+serializer.lua(output)+'\n',encoding='utf-8')
  return evidence
 if __name__=='__main__':
  p=argparse.ArgumentParser(description=__doc__);p.add_argument('workspace',type=Path);p.add_argument('--evidence',type=Path)
- a=p.parse_args();e=export(a.workspace)
+ p.add_argument('--game',type=int,choices=(8,95),help='只补齐指定作品已登记分块的音效激活标记')
+ a=p.parse_args();e=export(a.workspace,(a.game,) if a.game else (8,95),bool(a.game))
  if a.evidence:a.evidence.write_text(json.dumps(e,ensure_ascii=False,indent=2)+'\n')
  print('导出演出源点',len(e))

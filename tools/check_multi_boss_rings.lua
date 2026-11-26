@@ -30,6 +30,8 @@ b.th06={actors={{object=b,main=true},{object=right,clone=true},{object=left}}}
 right.hp,right.maxhp=50,200
 draw();assert(#fills==270,'红魔乡分身未读取各自HP，或把普通敌机画成Boss')
 b.hp=100;draw();assert(#fills==450,'独立分身血槽随本体错误变化')
+b.th06={};draw();assert(#fills==360,'红魔乡入场控制器尚未建立actors时血圈报错')
+b.th06={actors={{object=b,main=true},{object=right,clone=true},{object=left}}}
 local f=assert(io.open('THlib/enemy/boss_ui.lua','rb'));local source=f:read('*a');f:close()
 local first=assert(source:find('function boss.ui.renderHPRing',1,true))
 local last=assert(source:find('function boss.ui:init',first,true))

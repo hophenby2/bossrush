@@ -2,6 +2,8 @@
 arg={'original-anm'}
 local f=assert(io.open('tools/check_stage.lua','rb'));local setup=f:read('*a');f:close()
 assert(loadstring(setup:sub(1,assert(setup:find('if path == "--all" then',1,true))-1)))()
+-- 本检查只验动画；音效资源和播放参数由check_original_sounds覆盖。
+lstg.PlaySound=function() end
 -- 使魔的道中归属查询使用协程栈；静态检查未运行任何任务时也应提供空栈。
 task.stack=task.stack or {}
 local textures,images,draws={},{},{}

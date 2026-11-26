@@ -74,7 +74,8 @@ local function actors(b)
         if s.kind=='boss' and not s.main and s.alive then add(s.native) end
     end end
     if b.th07_instruments then for _,o in pairs(b.th07_instruments.roles or {}) do add(o) end end
-    if b.th06 then for _,a in ipairs(b.th06.actors) do
+    -- 红魔乡入场时先建立控制状态，ECL执行器随后才建立actors。
+    if b.th06 and b.th06.actors then for _,a in ipairs(b.th06.actors) do
         if a.clone and not a.dead then add(a.object,true) end
     end end
     return result,ownHealth
