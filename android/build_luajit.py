@@ -77,6 +77,20 @@ void bossrush_luajit_mcode_stats(uint64_t *out)
         if path.read_text(encoding='utf-8') != content:
             path.write_text(content, encoding='utf-8', newline='\n')
 
+    # 安卓ARM64远地址使用完整64位常量；保留近地址的ADR/ADRP优化。
+    with tarfile.open(archive) as package:
+        emitter = package.extractfile(source.name + '/src/lj_emit_arm64.h').read().decode()
+    anchor = '    if (!A64F_S_OK(ofs, 21))\n      return 0;  /* Failed. */'
+    assert emitter.count(anchor) == 1, 'LuaJIT ARM64页相对常量入口上下文变化'
+    emitter = emitter.replace(anchor, '''#if defined(__ANDROID__)
+    if (ofs < -0x80000 || ofs > 0x7ffff)
+      return 0;
+#endif
+''' + anchor)
+    target = source / 'src/lj_emit_arm64.h'
+    if target.read_text(encoding='utf-8') != emitter:
+        target.write_text(emitter, encoding='utf-8', newline='\n')
+
     toolchain = next(p for p in (ndk / 'toolchains/llvm/prebuilt').iterdir() if p.is_dir()) / 'bin'
     # Windows 的 MSYS make 会再次拆解 Python 传入的引号和含空格变量；优先使用原生 Make。
     make = (shutil.which('mingw32-make') or shutil.which('make')) if os.name == 'nt' else shutil.which('make')

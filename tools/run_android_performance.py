@@ -33,6 +33,8 @@ mode=args.mode+' '+token
 log=''
 try:
     adb('shell','am','force-stop',package)
+    # 雷电异步移除旧任务，立即启动会让新进程一并被取消。
+    time.sleep(1)
     if args.mode.startswith('graphics'):
         adb('shell','run-as',package,'rm','-f','files/bossrush/snapshot/android-graphics.png',check=False)
     write_mode(mode.encode())

@@ -1,3 +1,11 @@
+2026.11.27.1 安卓ARM64 JIT兼容修复（2026-11-27）
+雷电9.1.39的Houdini 9.0.7a转译下，旧库在加载界面和独立string.len返回检查中均可触发SIGSEGV；错误字节码地址比正确值少4GiB。
+修复ARM64 JIT远地址装载：超过正负2GiB的页相对常量改用完整64位立即数，保留JIT及近地址优化。独立ADRP指令检查未复现错误，故不将其归结为通用ARM64指令实现缺陷。
+安卓机器码单块由16MiB改为64KiB，总缓存仍为16MiB，连续64MiB虚拟区域与W^X规则保留；Mac仍使用原有大块MAP_JIT配置。
+同一模拟器、同卡720逻辑帧的正常速度采样中，单块缩小前后平均帧间隔约31.7/17.7ms；这是模拟器转译结果，不能作为ARM64手机性能结论。
+私有回归：python tools/run_android_performance.py --adb <adb路径> --serial <设备序号> --mode "benchmark jit-constants=1" --output <隔离报告目录>
+回归验证JIT保持开启、标准库独立trace返回1024次、64位指针往返1536次；记录在应用隔离目录User/android-jit-constants.json。正常游玩不执行此检查。
+
 模拟器原生架构对照（2026-11-27）
 默认仍构建ARM64正式包；在x86_64安卓模拟器中排查ARM转译崩溃时，可完整构建原生x86_64诊断包：
 python3 android/build.py --abi x86_64 --compression-profile 500mb

@@ -9,10 +9,10 @@ __G__TRACKBACK__ = function(message)
 end
 local bootError = __G__TRACKBACK__
 local function bootstrap()
--- Apple Silicon 的 MAP_JIT 不能依赖不断申请小块机器码页；Android 也使用同一有界缓存。
--- 在启动脚本产生热 trace 前确定区域大小，避免满一小块就编译失败、全量 flush、再编译。
+-- 两端都保留16MiB总缓存；Apple Silicon使用大块MAP_JIT，安卓连续区域按64KiB分块。
+-- 安卓缩小单次W^X切换范围，避免编译新trace时让转译器反复丢弃整块16MiB的热代码。
 if jit and jit.status() then
-    require('jit.opt').start('sizemcode=16384','maxmcode=16384','maxtrace=8000')
+    require('jit.opt').start(desktop and 'sizemcode=16384' or 'sizemcode=64','maxmcode=16384','maxtrace=8000')
 end
 local bootClock = lstg.AndroidClock or os.clock
 local bootStart = bootClock()

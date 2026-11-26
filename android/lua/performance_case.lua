@@ -1,6 +1,14 @@
 -- 仅私有 profile/benchmark case=N 诊断使用，正常游玩不安装。
 local T={}
 function T.install(mode)
+    if mode:match('jit%-constants=1') then
+        lstg.SystemLog('BOSSRUSH_CASE_BEGIN: '..mode)
+        local result=dofile('android/jit_constants_check.lua').run()
+        local file=assert(io.open('User/android-case-state.txt','wb'))
+        file:write(Serialize(result));file:close()
+        lstg.SystemLog('BOSSRUSH_CASE_ACTIONS: jit_constants=passed')
+        return
+    end
     if mode:match("backgrounds=1") then dofile("android/background_probe.lua").install(mode);return end
     local card=tonumber(mode:match('case=(%d+)'));if not card then return end
     local target=tonumber(mode:match('frames=(%d+)')) or 900
