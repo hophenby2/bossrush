@@ -26,6 +26,6 @@ GameContent.ports[39]={source={boss={GetBossTable=function()return {b}end}}}
 b.ui.countdown=26.49;H.prepareRender();H.renderCountdown()
 assert(countdown==26.49,'祈华梦没有使用原卡倒计时')
 lstg.var.rogue_run.encounter={level=40,kind='boss'}
-GameContent.ports[40]={source={runtime={},BossHud={snapshot=function()return {boss=b,hp=100,maxHp=200,phaseMode=5,countdown=3180}end}}}
+GameContent.ports[40]={source={runtime={},BossHud={snapshots=function()return {{boss=b,hp=100,maxHp=200,phaseMode=5,countdown=3180}}end}}}
 H.prepareRender();H.renderCountdown();assert(countdown==53,'Like Dreamer帧数未换算为秒或耐久符无倒计时')
 print('宿主、祈华梦和Like Dreamer耐久符倒计时来源通过')

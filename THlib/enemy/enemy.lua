@@ -189,12 +189,15 @@ function enemybase:del()
     object.DelServants(self)
 end
 
+-- 换成object的退役对象没有base；栖霞园数组类则显式提供伤害入口。
+function GetDamageHandler(obj, secondary)
+    local base=obj.class.base
+    if secondary and base then return base.take_damage2 or base.take_damage end
+    return obj._th43_take_damage or base and base.take_damage
+end
 function Damage(obj, dmg)
-    if obj._th43_take_damage then
-        obj._th43_take_damage(obj, dmg)
-    elseif obj.class.base.take_damage then
-        obj.class.base.take_damage(obj, dmg)
-    end
+    local handler=GetDamageHandler(obj)
+    if handler then handler(obj,dmg) end
 end
 
 enemy = Class(enemybase)

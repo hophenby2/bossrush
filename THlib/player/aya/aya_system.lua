@@ -265,7 +265,7 @@ function TenguCamera:GetPhoto()
                         o:onPhotoFunc()
                     end
                     if not OriginalBulletVisual.is_cancelling(o) and o.colli and Math.PointInRectangle(Math.NewPoint(o), rect) then
-                        local take_dmgFunc = o.class.base.take_damage2 or o.class.base.take_damage
+                        local take_dmgFunc = GetDamageHandler(o,true)
                         if take_dmgFunc then
                             take_dmgFunc(o, (400 - Dist(self.centerx, self.centery, o.x, o.y)) * (GameDrops and GameDrops.power(self.player) or 1))
                             if o.IsBoss and (o.hp > 0) and (o.hp < 10) then

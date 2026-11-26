@@ -78,7 +78,7 @@ function marisa_player:shoot()
                 --人界时激光穿透
                 target = {}
                 object.EnemyNontjtDo(function(o)
-                    if o.colli and marisa_player.IsInLaser(x, y, angle, o, 16) then
+                    if player_lib.CanTarget(o) and marisa_player.IsInLaser(x, y, angle, o, 16) then
                         d = max(0, abs(y - o.y) - sin(acos(abs(x - o.x) / o.a)) * o.a)
                         if d < self.offset[i] then
                             table.insert(target, { o, d })
@@ -87,11 +87,11 @@ function marisa_player:shoot()
                 end)
                 self.hitting[i] = false
                 for _, t in ipairs(target) do
-                    if t[1] and t[1].class.base.take_damage then
+                    if player_lib.CanTarget(t[1]) then
                         --self.offset[i] = max(0, self.offset[i] - t.b)
                         self.hitting[i] = true
                         table.insert(self.bright, { x = x, y = y + t[2], alpha = 150, a = math.random() * 360, v = math.random() * 2 + 3 })
-                        t[1].class.base.take_damage(t[1], GameDrops and GameDrops.damage(0.42,self) or 0.42)
+                        Damage(t[1], GameDrops and GameDrops.damage(0.42,self) or 0.42)
                         if t[1].maxhp then
                             if t[1].hp > t[1].maxhp * 0.1 then
                                 PlaySound('damage00', 0.3, t[1].x / 1024)
@@ -105,7 +105,7 @@ function marisa_player:shoot()
                 end
             else
                 object.EnemyNontjtDo(function(o)
-                    if o.colli and marisa_player.IsInLaser(x, y, angle, o, 16) then
+                    if player_lib.CanTarget(o) and marisa_player.IsInLaser(x, y, angle, o, 16) then
                         d = max(0, abs(y - o.y) - sin(acos(abs(x - o.x) / o.a)) * o.a)
                         if d < self.offset[i] then
                             target = o
@@ -113,11 +113,11 @@ function marisa_player:shoot()
                         end
                     end
                 end)
-                if target and target.class.base.take_damage then
+                if player_lib.CanTarget(target) then
                     --self.offset[i] = max(0, self.offset[i] - target.b)
                     self.hitting[i] = true
                     table.insert(self.bright, { x = x, y = y + self.offset[i], alpha = 150, a = math.random() * 360, v = math.random() * 2 + 3 })
-                    target.class.base.take_damage(target, GameDrops and GameDrops.damage(0.34,self) or 0.34)
+                    Damage(target, GameDrops and GameDrops.damage(0.34,self) or 0.34)
                     if target.maxhp then
                         if target.hp > target.maxhp * 0.1 then
                             PlaySound('damage00', 0.3, target.x / 1024)

@@ -20,7 +20,7 @@ boss.ui = Class(object)
 function boss.ui.renderHPRing(self)
     -- 随机模式由共用HUD统一绘制，避免宿主Boss出现两层血圈。
     if RogueBossHUD and RogueBossHUD.enabled() then return end
-    hpRing.draw(self)
+    hpRing.drawActors(self)
 end
 function boss.ui:init(system, b)
     self.layer = LAYER.TOP + 2
@@ -40,7 +40,7 @@ function boss.ui:init(system, b)
 end
 function boss.ui:frame()
     if IsValid(self.boss) then
-        hpRing.frame(self)
+        hpRing.frameActors(self)
         if self.infobar then
             self.infobar:frame()
         end

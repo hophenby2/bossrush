@@ -259,9 +259,9 @@ local function lateSnapshot(boss, rt)
 		max(0, boss.countdown or 0), breaks, lateName(boss, rt)
 end
 
-function SnapshotBuilder:snapshot(rt)
+function SnapshotBuilder:snapshot(rt,candidate)
 	rt = rt or LikeDreamer.runtime
-	local boss = findBoss(rt)
+	local boss = candidate or findBoss(rt)
 	if not boss then return nil end
 	local typeId = boss.spawnType
 	local mode, maxHp, countdown, breaks, nameIndex
@@ -291,6 +291,27 @@ local renderer = BossHudRenderer.new(snapshotBuilder)
 
 function M.snapshot(rt)
 	return snapshotBuilder:snapshot(rt)
+end
+
+-- 原作顶栏只选择一个代表；共用HUD需要同时取得所有独立Boss的真实阶段血槽。
+function M.snapshots(rt)
+	rt=rt or LikeDreamer.runtime
+	local result,seen={},{}
+	local primary=findBoss(rt)
+	local function add(b)
+		if not isActiveBoss(b) or seen[b] then return end
+		seen[b]=true
+		local info=snapshotBuilder:snapshot(rt,b)
+		if info then result[#result+1]=info end
+	end
+	add(primary)
+	local others={}
+	for _,b in pairs(rt and rt.enemiesById or {}) do
+		if isActiveBoss(b) and b~=primary then others[#others+1]=b end
+	end
+	table.sort(others,function(a,b)return a.entityId<b.entityId end)
+	for _,b in ipairs(others) do add(b) end
+	return result
 end
 
 local function viewport()

@@ -93,12 +93,15 @@ function player_class:colli(other)
     return p
 end
 
+function player_lib.CanTarget(o)
+    return IsValid(o) and o.status~='del' and o.status~='kill' and o.colli and GetDamageHandler(o)~=nil
+end
 function player_class:findtarget()
     self.target = nil
     local maxpri = -1
     local dx, dy, pri
     object.EnemyNontjtDo(function(o)
-        if o.colli and o.class.base.take_damage then
+        if player_lib.CanTarget(o) then
             dx = self.x - o.x
             dy = self.y - o.y
             pri = abs(dy) / (abs(dx) + 0.01)
@@ -314,7 +317,7 @@ function player_bullet_trail:init(img, x, y, v, angle, target, trail, dmg)
 end
 
 function player_bullet_trail:frame()
-    if IsValid(self.target) and self.target.colli and self.target.class.base.take_damage then
+    if player_lib.CanTarget(self.target) then
         local a = (Angle(self, self.target) - self.rot) % 360
         if a > 180 then
             a = a - 360

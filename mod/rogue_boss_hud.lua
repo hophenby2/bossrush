@@ -44,8 +44,7 @@ local function collect()
         local source=work and work.source
         local rt=source and source.runtime
         if rt then
-            local info=source.BossHud.snapshot(rt)
-            if info then add(info.boss,info) end
+            for _,info in ipairs(source.BossHud.snapshots(rt)) do add(info.boss,info) end
         end
     else
         for _,b in ipairs(boss_group) do add(b) end
@@ -73,6 +72,7 @@ local function synchronize(advance)
         -- 只用于让位原作专用HUD，不能连同随机模式血圈一起关闭。
         local ring=H.rings[b]
         if not ring then ring={boss={},drawhp=true};H.rings[b]=ring end
+        ring.actorBoss=b
         local state,info=ring.boss,row.info
         state.x,state.y,state.hp,state.maxhp=row.x,row.y,row.hp,row.maxhp
         state.is_combat=info and info.phaseMode==1 or not info and row.is_combat
@@ -80,7 +80,7 @@ local function synchronize(advance)
         state.time_sc=b.time_sc or info and info.phaseMode==5
         state.__hpbar_timer=b.__hpbar_timer or info and info.timer or b.timer or 0
         state.sp_point,state._sp_point_auto=b.sp_point,b._sp_point_auto
-        if advance then hpRing.frame(ring) end
+        if advance then hpRing.frameActors(ring) end
         seen[b]=true
     end
     for b in pairs(H.pointers) do if not seen[b] then H.pointers[b]=nil end end
@@ -99,7 +99,7 @@ function H.renderRings()
     SetViewMode('world')
     for _,row in ipairs(H.current) do
         local ring=H.rings[row.boss]
-        if ring then hpRing.draw(ring) end
+        if ring then hpRing.drawActors(ring) end
     end
     if previous then SetViewMode(previous) end
 end

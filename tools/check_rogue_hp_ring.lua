@@ -48,8 +48,8 @@ sourceBoss.invalid=nil
 -- 首次绘制可能发生在HUD逻辑帧前；模式1同样补齐，不推进靠近动画。
 stage.current_stage.stage_name='RogueTen@RogueTen';H.reset();draw()
 assert(#draws==90 and H.rings[sourceBoss].portrait_hp_fade==nil,'首次渲染补齐失败或推进了动画')
-local info={boss=sourceBoss,hp=75,maxHp=100,phaseMode=1,timer=120}
-GameContent.ports[40]={source={runtime={},BossHud={snapshot=function()return info end}}}
+local info={boss=sourceBoss,hp=75,maxHp=100,phaseMode=1,timer=120,countdown=600}
+GameContent.ports[40]={source={runtime={},BossHud={snapshots=function()return {info} end}}}
 lstg.var.rogue_run.encounter={level=40};H.frame();draw();assert(#draws==270,'快照后端血量未正确接入')
 info.phaseMode=0;H.frame();draw();assert(#draws==0,'快照后端入场仍绘制血圈')
 stage.current_stage.stage_name='Spell Practice@Spell Practice';H.frame();draw()

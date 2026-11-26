@@ -578,7 +578,9 @@ local function clean(b)
     R.objects[b]=nil
     if s and s.is_projectile and not s.controller.visual and not s.controller.friendly then
         -- RawDel在帧末才真正释放；退役对象在此之前不能继续绘制、碰撞或执行旧类回调。
-        b.hide,b.colli,b.class=true,false,object
+        b.hide,b.colli=true,false
+        SetAttr(b,'colli',false) -- 使魔继承enemybase，_colli写入不能代替立即关闭引擎碰撞。
+        b.class=object
     end
     if pooled then b.mhj=nil end
     object.RawDel(b)

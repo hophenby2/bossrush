@@ -1,0 +1,357 @@
+{
+  "日期": "2026-11-26",
+  "版本": "2026.11.26.12",
+  "修复": [
+    {
+      "问题": "子弹风暴眼扔雷后追踪弹访问无base目标",
+      "入口": "THlib/player/player.lua；THlib/enemy/enemy.lua；mod/GAME/th39/runtime.lua",
+      "处理": "退役/待删除目标不再索敌；通过明确的宿主或数组类伤害入口识别可受伤目标，激光和拍照也使用同一解析；使魔退役先立即关闭引擎colli，再换object。"
+    },
+    {
+      "问题": "多Boss只显示本体血圈",
+      "入口": "THlib/enemy/portrait_hp.lua；mod/rogue_boss_hud.lua；LikeDreamer/boss_hud.lua",
+      "处理": "三姐妹/雪莲华/永夜共享身体按各自坐标读共同血槽；四重存在分身读取独立HP；每个身体单独淡化、隐藏、回收，宿主练习/顺序UI复用同一路径；Like Dreamer收集所有独立根Boss快照，普通敌机不纳入。"
+    }
+  ],
+  "迎春之舞": {
+    "用户决定": "用户回复“那就先不改了”；未调整HP、原作减伤或模式内倍率。",
+    "来源": "mod/GAME/ports/theis/EISlib/stage/stage5/Lily_boss.lua，stage5mid_boss:Lunatic及Scpr的迎春之舞。",
+    "原始HP": 1500,
+    "原始时间秒": [
+      2,
+      12,
+      25
+    ],
+    "换算单位": 1.2121212121212122,
+    "Windows射击检查": {
+      "基础火力击破原卡帧": 1201,
+      "四倍火力击破原卡帧": 603,
+      "方式": "保护自机，持续低速射击并对齐Boss横坐标、位于Boss下方100；不恢复敌机HP，未调用伪造命中，不是自然走位通关。",
+      "记录": "feedback-20261126-before-win/User/stress-progress.jsonl",
+      "记录SHA256": "f294c0b7c551389c84b3b8c0f1eea74b6928d638442654a49438486908f5d06e"
+    },
+    "Android抽查": "未修改原卡HP；10倍火力、阶段倍率1.01时，显式10伤害的有效值随原作dmg_factor变化，与1.2121212121212122×10×10÷1.01一致，sc_pro为0；不将此检查当作移动Boss的完整实战TTK。"
+  },
+  "Windows原生": {
+    "文件": "feedback-20261126-rings-win",
+    "结果SHA256": "47c083ef2a4d81fa9759318f9f59c2688840865c83ca75269ad0908d969c0f38",
+    "配置": {
+      "platform": "Windows Sub",
+      "runs": [
+        {
+          "cards": [
+            4441,
+            39049
+          ],
+          "seed": 2026112626,
+          "mode": "single",
+          "capture_at": 660,
+          "frames": 900,
+          "speed": 2,
+          "limit": 2
+        },
+        {
+          "cards": [
+            3972
+          ],
+          "seed": 2026112627,
+          "mode": "single",
+          "extra": true,
+          "capture_at": 660,
+          "frames": 900,
+          "speed": 2,
+          "limit": 1
+        },
+        {
+          "cards": [
+            39042
+          ],
+          "seed": 2026112628,
+          "mode": "single",
+          "speed": 4,
+          "frames": 1800,
+          "bombs": [
+            240,
+            600,
+            1000
+          ],
+          "limit": 1
+        }
+      ]
+    },
+    "完成": true,
+    "轮次": [
+      {
+        "完成张数": 2,
+        "卡号": [
+          4441,
+          39049
+        ],
+        "扔雷": []
+      },
+      {
+        "完成张数": 1,
+        "卡号": [
+          3972
+        ],
+        "扔雷": []
+      },
+      {
+        "完成张数": 1,
+        "卡号": [
+          39042
+        ],
+        "扔雷": [
+          {
+            "after": 2,
+            "fired": true,
+            "age": 240,
+            "card": 39042,
+            "before": 3
+          },
+          {
+            "after": 1,
+            "fired": true,
+            "age": 600,
+            "card": 39042,
+            "before": 2
+          },
+          {
+            "after": 0,
+            "fired": true,
+            "age": 1000,
+            "card": 39042,
+            "before": 1
+          }
+        ]
+      }
+    ],
+    "错误": []
+  },
+  "Android修复前": {
+    "文件": "feedback-20261126-before",
+    "结果SHA256": "d32f1b519b5e6abe4161619e53ca6fc368facea04cabfb66cb66583ac869c867",
+    "配置": {
+      "platform": "Android LDPlayer arm64 translation",
+      "runs": [
+        {
+          "cards": [
+            70511
+          ],
+          "speed": 4,
+          "limit": 1,
+          "seed": 2026112622,
+          "mode": "single",
+          "frames": 1200
+        },
+        {
+          "cards": [
+            39042
+          ],
+          "bombs": [
+            240,
+            600,
+            1000
+          ],
+          "speed": 4,
+          "limit": 1,
+          "seed": 2026112623,
+          "mode": "single",
+          "frames": 1800
+        }
+      ]
+    },
+    "完成": false,
+    "轮次": [
+      {
+        "完成张数": 1,
+        "卡号": [
+          70511
+        ],
+        "扔雷": []
+      },
+      {
+        "完成张数": 0,
+        "卡号": [
+          39042
+        ],
+        "扔雷": [
+          {
+            "before": 3,
+            "card": 39042,
+            "fired": true,
+            "after": 2,
+            "age": 240
+          },
+          {
+            "before": 2,
+            "card": 39042,
+            "fired": true,
+            "after": 1,
+            "age": 600
+          }
+        ]
+      }
+    ],
+    "错误": [
+      {
+        "卡号": 39042,
+        "样本帧": 645,
+        "首行": "THlib/player/player.lua:317: attempt to index field 'base' (a nil value)"
+      }
+    ]
+  },
+  "Android修复后": {
+    "文件": "feedback-20261126-after",
+    "结果SHA256": "40df2c57fbd5b2b421c273dd759fb9c1deb51e9d5c70b18f113f10378c9f4228",
+    "配置": {
+      "runs": [
+        {
+          "speed": 4,
+          "mode": "single",
+          "frames": 1800,
+          "limit": 1,
+          "seed": 2026112623,
+          "bombs": [
+            240,
+            600,
+            1000
+          ],
+          "cards": [
+            39042
+          ]
+        },
+        {
+          "speed": 4,
+          "mode": "single",
+          "capture_at": 660,
+          "limit": 2,
+          "seed": 2026112626,
+          "frames": 900,
+          "cards": [
+            39049,
+            4441
+          ]
+        }
+      ],
+      "platform": "Android LDPlayer arm64 translation"
+    },
+    "完成": true,
+    "轮次": [
+      {
+        "完成张数": 1,
+        "卡号": [
+          39042
+        ],
+        "扔雷": [
+          {
+            "before": 3,
+            "fired": true,
+            "after": 2,
+            "card": 39042,
+            "age": 240
+          },
+          {
+            "before": 2,
+            "fired": true,
+            "after": 1,
+            "card": 39042,
+            "age": 600
+          },
+          {
+            "before": 1,
+            "fired": true,
+            "after": 0,
+            "card": 39042,
+            "age": 1000
+          }
+        ]
+      },
+      {
+        "完成张数": 2,
+        "卡号": [
+          39049,
+          4441
+        ],
+        "扔雷": []
+      }
+    ],
+    "错误": []
+  },
+  "专项检查": [
+    "tools/check_player_target_lifecycle.lua",
+    "tools/check_multi_boss_rings.lua",
+    "tools/check_boss_hp_ui.lua",
+    "tools/check_rogue_boss_hud.lua",
+    "tools/check_mobile_hp_ring.lua",
+    "tools/check_rogue_hp.lua",
+    "tools/native-player-tests/check_likedreamer_visual_proxies.lua"
+  ],
+  "专项结果": "7项均返回0；变更Lua使用LuaJIT 5.1语义编译检查。",
+  "原生画面": [
+    {
+      "记录": "feedback-20261126-rings-win",
+      "文件": "feedback-39049.png",
+      "SHA256": "882410def0b6ddafa63b63d3175cfad3b8850b13982fe3900c97a6b8dfd3c331"
+    },
+    {
+      "记录": "feedback-20261126-rings-win",
+      "文件": "feedback-3972.png",
+      "SHA256": "aa80c83073f3b1a18cba23b65926ab6fd057c871db9fd7b10300c0c91bf6171e"
+    },
+    {
+      "记录": "feedback-20261126-rings-win",
+      "文件": "feedback-4441.png",
+      "SHA256": "5b01cb77a079e1d8c2a5893a445b69dac51de3828c0c00210a650c4f3341da5c"
+    },
+    {
+      "记录": "feedback-20261126-visual",
+      "文件": "feedback-4441.png",
+      "SHA256": "548d3b2e280055fe0e17ff2e8bd1f91e984aa216bf99652714c22e3088af5d3d"
+    }
+  ],
+  "范围": [
+    "原生夹具保护自机并按窗口结束卡片，speed>1时只绘制最后一个逻辑tick；不作为自然游玩通关或性能结论。",
+    "Android使用独立LDPlayer实例，arm64包经x86_64转译；未测安卓真机或Mac。",
+    "旧安卓包在39042的第二次雷后第645样本帧复现与用户截图相同的player.lua:317错误；修复后同种子、10倍火力、240/600/1000帧三次雷均成功，完成1800帧并继续跨作品两张卡。",
+    "诊断包显示.11；最终包显示.12，修复代码和原生库另外进行逐项一致性核对。",
+    "共享身体的宿主练习UI入口通过实际函数绘制专项；没有对完整练习/顺序流程重新跑原生通关。"
+  ],
+  "正式源码LF归一化SHA256": {
+    "THlib/UI/UI.lua": "2c6f5a15e8b3a754adfc8e661465221b276e782e12c9f3d7f0288969b4774d8a",
+    "THlib/enemy/boss_ui.lua": "f103d0c99010f57e157b2a564c89ab8018605dba02d417ad9a3e1908df99be4e",
+    "THlib/enemy/enemy.lua": "5b4ca0135d47701e13ecc96fe1a5a17249d8a3274839410cbb3f1cd25c6a0a48",
+    "THlib/enemy/portrait_hp.lua": "88e060a7909c7765eb12d5a1c0235386b26c229b0d85200317543d6a5789fc72",
+    "THlib/player/aya/aya_system.lua": "899d4068ea9c7de86170583a202363264270d2f4a0b9e33c986df6ad0142e027",
+    "THlib/player/marisa/marisa.lua": "92d0c851d95180924adb94db0aec61dd98a77cafd0ac44b259040585b81b0d81",
+    "THlib/player/player.lua": "2073f7d1089298b24b34c2504e224b619e52af4c1bfc3869284ae07528931e57",
+    "android/AndroidManifest.xml": "d535764a088d09c0992be23acb87b6263f5fb628321a7b6a2c6d3319230f9363",
+    "mod/GAME/ports/dreamer/LikeDreamer/boss_hud.lua": "4f0a9c546682738d8f1e9a708543909516d8c804b0f2da93727c11a813fa16ef",
+    "mod/GAME/th39/runtime.lua": "f61cc4286773163ba2ad3229dfb5aad670d5d18f6eaa885a240f8f7614906fe8",
+    "mod/rogue_boss_hud.lua": "a630faa3f7763206fe40fd62d3c1c14759755991ee1962619f3020709633a571",
+    "tools/check_rogue_boss_hud.lua": "ad0973592fdfa89d28778c1e254c7a4ca6bc4b2eba4c8295e45a5f5e761be3f8",
+    "tools/check_rogue_hp_ring.lua": "00e8920f0e67d4cb1aad6743bc7a4bab2e99a186efad645941275fe24341180d"
+  },
+  "Android血圈画面回归": {
+    "记录": "feedback-20261126-visual",
+    "结果SHA256": "e48c89d16d7f5dffaf91dedddd40bcf12c7edc55858afc98d1c753e903a30a4e",
+    "配置": {
+      "platform": "Android LDPlayer arm64 translation",
+      "runs": [
+        {
+          "seed": 2026112629,
+          "frames": 720,
+          "cards": [
+            4441
+          ],
+          "speed": 8,
+          "mode": "single",
+          "capture_at": 660,
+          "limit": 1
+        }
+      ]
+    },
+    "完成": true,
+    "说明": "目录已创建后重新运行三姐妹合奏，保存原生Snapshot；此前一轮诊断的自定义截图未创建目录，未作为画面证据。"
+  }
+}

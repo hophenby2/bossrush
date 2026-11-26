@@ -58,4 +58,53 @@ function H.draw(self)
     for _,a in ipairs(b.sp_point or {}) do node(a) end
     for _,p in ipairs(b._sp_point_auto or {}) do node(90-p.dmg/b.maxhp*360) end
 end
+-- 多个身体共用血槽时，位置取各身体，HP仍取唯一控制器；不把使魔占位HP画成独立血槽。
+local function visible(b)
+    return IsValid(b) and b.status~='del' and b.status~='kill' and not b.hide and not b.mhj3_hidden
+end
+local function actors(b)
+    local result,seen,ownHealth={},{},{}
+    local function add(o,independent)
+        if o~=b and not seen[o] and visible(o) then
+            seen[o]=true;result[#result+1]=o;ownHealth[o]=independent
+        end
+    end
+    if b.mhj3_card then for _,a in ipairs(b.mhj3_card.actors) do add(a.object) end end
+    if b.asl_controller then for _,s in ipairs(b.asl_controller.entities) do
+        if s.kind=='boss' and not s.main and s.alive then add(s.native) end
+    end end
+    if b.th07_instruments then for _,o in pairs(b.th07_instruments.roles or {}) do add(o) end end
+    if b.th06 then for _,a in ipairs(b.th06.actors) do
+        if a.clone and not a.dead then add(a.object,true) end
+    end end
+    return result,ownHealth
+end
+local sharedFields={'hp','maxhp','is_combat','__is_waiting','time_sc','no_hp_render','__hpbar_timer','sp_point','_sp_point_auto'}
+local function synchronizeActors(self,advance)
+    local owner=self.actorBoss or self.boss
+    local states=self.sharedHPRings or {};self.sharedHPRings=states
+    if not IsValid(owner) then self.sharedHPRings={};return {} end
+    local current,seen={},{}
+    local bodies,ownHealth=actors(owner)
+    for _,body in ipairs(bodies) do
+        local ring=states[body]
+        if not ring then ring={boss={}};states[body]=ring end
+        ring.drawhp=self.drawhp
+        for _,key in ipairs(sharedFields) do ring.boss[key]=self.boss[key] end
+        if ownHealth[body] then ring.boss.hp,ring.boss.maxhp=body.hp,body.maxhp end
+        ring.boss.x,ring.boss.y=body.x,body.y
+        if advance then H.frame(ring) end
+        current[#current+1]=ring;seen[body]=true
+    end
+    for body in pairs(states) do if not seen[body] then states[body]=nil end end
+    return current
+end
+function H.frameActors(self)
+    H.frame(self)
+    synchronizeActors(self,true)
+end
+function H.drawActors(self)
+    if visible(self.actorBoss or self.boss) then H.draw(self) end
+    for _,ring in ipairs(synchronizeActors(self,false)) do H.draw(ring) end
+end
 return H
