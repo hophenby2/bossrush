@@ -46,3 +46,6 @@ LuaSTGSub.exe
 #BadApple/file*
 #Resources/**/*.png
 #THlib/se/*.wav
+
+/android/build-x86_64/
+/android/dist-x86_64/

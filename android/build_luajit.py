@@ -1,4 +1,4 @@
-"""固定上游源码与摘要，构建支持远距离机器码区域的安卓ARM64 LuaJIT。"""
+"""固定上游源码与摘要，按目标ABI隔离构建安卓LuaJIT；保留ARM64机器码区域补丁。"""
 import hashlib
 import json
 import os
@@ -10,7 +10,9 @@ import tarfile
 ROOT = Path(__file__).resolve().parent
 
 
-def build(ndk, jobs):
+def build(ndk, jobs, abi='arm64-v8a'):
+    compiler = {'arm64-v8a':'aarch64-linux-android28-clang',
+                'x86_64':'x86_64-linux-android28-clang'}[abi]
     lock = json.loads((ROOT / 'luajit.lock.json').read_text(encoding='utf-8'))
     cache = ROOT / '.cache'
     cache.mkdir(parents=True,exist_ok=True)
@@ -19,10 +21,12 @@ def build(ndk, jobs):
         subprocess.run(['curl', '-fL', '--retry', '3', '-o', str(archive), lock['url']], check=True)
     if hashlib.sha256(archive.read_bytes()).hexdigest() != lock['sha256']:
         raise RuntimeError('LuaJIT源码压缩包SHA-256不匹配')
-    source = cache / ('LuaJIT-' + lock['commit'])
+    source_cache = cache if abi == 'arm64-v8a' else cache / ('luajit-' + abi)
+    source_cache.mkdir(parents=True,exist_ok=True)
+    source = source_cache / ('LuaJIT-' + lock['commit'])
     if not source.exists():
         with tarfile.open(archive) as package:
-            package.extractall(cache, filter='data')
+            package.extractall(source_cache, filter='data')
     mcode = source / 'src/lj_mcode.c'
     with tarfile.open(archive) as package:
         pristine = package.extractfile(source.name + '/src/lj_mcode.c').read().decode()
@@ -94,7 +98,7 @@ void bossrush_luajit_mcode_stats(uint64_t *out)
         shell_args = ['SHELL=' + Path(shell).as_posix()]
     subprocess.run([make, '-C', str(source / 'src'), '-j', str(jobs), *shell_args,
                     'BUILDMODE=static', 'TARGET_SYS=Linux', 'HOST_CC=' + host_cc,
-                    'CC=' + command('aarch64-linux-android28-clang'),
+                    'CC=' + command(compiler),
                     'TARGET_AR=' + command('llvm-ar') + ' rcus',
                     'TARGET_STRIP=' + command('llvm-strip'),
                     'TARGET_CFLAGS=-fPIC -funwind-tables', 'libluajit.a'], check=True)

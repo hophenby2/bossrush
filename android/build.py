@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""固定引擎版本，交叉编译并生成可侧载的 ARM64 测试 APK。"""
+"""固定引擎版本，交叉编译并生成可侧载的安卓 APK；默认 ARM64，可选 x86_64 诊断。"""
 import argparse
 import hashlib
 import json
@@ -21,6 +21,8 @@ GAME = ROOT.parent
 CACHE = ROOT / '.cache'
 BUILD = ROOT / 'build'
 LOCK = json.loads((ROOT / 'engine.lock.json').read_text(encoding='utf-8'))
+ABI = LOCK['abi']
+DIST = ROOT / 'dist'
 ENGINE = CACHE / 'LuaSTG-x'
 NATIVE = BUILD / 'native-gfx'
 OPTIMIZE_ASSETS = False
@@ -357,7 +359,7 @@ def prepare_assets():
         commit=subprocess.check_output(['git','-C',str(GAME),'rev-parse','HEAD'],text=True).strip()
         write_utf8(destination/'android/build-profile.json',json.dumps(
             {'version':game_version(GAME),'profile':COMPRESSION_PROFILE,'source_commit':commit,
-             'architecture':'arm64-v8a',**PROFILES[COMPRESSION_PROFILE]},
+             'architecture':ABI,**PROFILES[COMPRESSION_PROFILE]},
             ensure_ascii=False,indent=2)+'\n')
     for script in (destination / 'android').glob('*.lua'):
         write_utf8(script, script.read_text(encoding='utf-8-sig'))
@@ -391,7 +393,7 @@ def prepare_assets():
     jit_lock = json.loads((ROOT / 'luajit.lock.json').read_text(encoding='utf-8'))
     shutil.copy2(ROOT / 'LUAJIT_LICENSE.txt', assets / 'licenses/LUAJIT_LICENSE.txt')
     write_utf8(assets / 'licenses/LUAJIT_SOURCE.txt',
-        'Android ARM64 LuaJIT源码：' + jit_lock['url'] + '\nSHA-256: ' + jit_lock['sha256'] +
+        'Android LuaJIT源码：' + jit_lock['url'] + '\nSHA-256: ' + jit_lock['sha256'] +
         '\n本项目补丁：android/build_luajit.py、android/native/luajit_mcode_arena.inc。\n')
     sdk = Path(os.environ.get('ANDROID_HOME', str(Path.home() / 'Library/Android/sdk')))
     ndk = Path(os.environ.get('ANDROID_NDK_HOME', str(sdk / 'ndk' / LOCK['ndk'])))
@@ -406,11 +408,11 @@ def prepare_assets():
 
 def native_build(sdk, ndk, jobs):
     from build_luajit import build as build_luajit
-    luajit = build_luajit(ndk, jobs)
+    luajit = build_luajit(ndk, jobs, ABI)
     native = NATIVE
     run('cmake', '-S', ENGINE, '-B', native, '-G', 'Ninja',
         f'-DCMAKE_TOOLCHAIN_FILE={ndk}/build/cmake/android.toolchain.cmake',
-        '-DANDROID_ABI=arm64-v8a', '-DANDROID_PLATFORM=android-28',
+        f'-DANDROID_ABI={ABI}', '-DANDROID_PLATFORM=android-28',
         '-DANDROID_STL=c++_shared', '-DCMAKE_BUILD_TYPE=Release',
         f'-DBOSSRUSH_LUAJIT_LIBRARY={luajit}',
         '-DCMAKE_POLICY_VERSION_MINIMUM=3.5',
@@ -471,9 +473,8 @@ def package_apk(sdk, ndk, assets):
     libs = sorted(NATIVE.rglob('*.so'))
     if not any(p.name == 'libcocos2dlua.so' for p in libs):
         raise RuntimeError('原生引擎尚未生成 libcocos2dlua.so，不能生成空壳 APK')
-    cpp = ndk / 'toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so'
-    if not cpp.exists():
-        cpp = next(ndk.glob('toolchains/llvm/prebuilt/*/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so'))
+    triplet = {'arm64-v8a':'aarch64-linux-android', 'x86_64':'x86_64-linux-android'}[ABI]
+    cpp = next(ndk.glob(f'toolchains/llvm/prebuilt/*/sysroot/usr/lib/{triplet}/libc++_shared.so'))
     libs.append(cpp)
     strip = next(ndk.glob('toolchains/llvm/prebuilt/*/bin/llvm-strip' + ('.exe' if os.name == 'nt' else '')))
     staging = BUILD / 'stripped-libs'
@@ -484,10 +485,16 @@ def package_apk(sdk, ndk, assets):
         for lib in libs:
             if lib.name not in lib_names:
                 lib_names.add(lib.name)
+                # 防止复用另一架构的库或混入宿主程序；不能只改APK中的目录名。
+                with lib.open('rb') as source:
+                    header = source.read(20)
+                machine = {'arm64-v8a':183, 'x86_64':62}[ABI]
+                if len(header) < 20 or header[:6] != b'\x7fELF\x02\x01' or struct.unpack_from('<H', header, 18)[0] != machine:
+                    raise RuntimeError(f'原生库与目标架构{ABI}不匹配：{lib}')
                 target = staging / lib.name
                 shutil.copy2(lib, target)
                 run(strip, '--strip-unneeded', target)
-                apk.write(target, 'lib/arm64-v8a/' + lib.name)
+                apk.write(target, f'lib/{ABI}/' + lib.name)
         for path in sorted(assets.rglob('*')):
             if path.is_file():
                 apk.write(path, 'assets/' + path.relative_to(assets).as_posix(), compress_type=asset_compression(path))
@@ -498,9 +505,10 @@ def sign_apk(tools, keytool, unsigned):
     identity, keystore, signing_env = load_identity(keytool)
     aligned = BUILD / 'aligned.apk'
     run(executable(tools, 'zipalign'), '-f', '-p', '4', unsigned, aligned)
-    dist = ROOT / 'dist'
+    dist = DIST
     dist.mkdir(exist_ok=True)
-    output = dist / 'BossRushHD-android-arm64-debug.apk'
+    arch_name = 'arm64' if ABI == 'arm64-v8a' else ABI
+    output = dist / f'BossRushHD-android-{arch_name}-debug.apk'
     idsig = Path(str(output) + '.idsig')
     if idsig.exists():
         idsig.unlink()
@@ -531,10 +539,12 @@ def sign_apk(tools, keytool, unsigned):
 
 
 def main():
-    global GAME, OPTIMIZE_ASSETS, COMPRESS_AUDIO, LOSSY_IMAGES, OPTIMIZE_FONTS, TRANSPARENT_WEBP, COMPACT_MUSIC, COMPRESSION_PROFILE
+    global GAME, BUILD, NATIVE, DIST, ABI, OPTIMIZE_ASSETS, COMPRESS_AUDIO, LOSSY_IMAGES, OPTIMIZE_FONTS, TRANSPARENT_WEBP, COMPACT_MUSIC, COMPRESSION_PROFILE
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--game-root', type=Path, help='从指定的游戏源码快照打包，隔离工作区其他未提交改动')
     parser.add_argument('--engine-archive')
+    parser.add_argument('--abi', choices=('arm64-v8a','x86_64'), default=LOCK['abi'],
+                        help='默认ARM64；x86_64使用独立构建/交付目录，仅供模拟器对照')
     parser.add_argument('--assets-only', action='store_true')
     parser.add_argument('--optimize-assets', action='store_true', help='图片无损重压缩和相同文件去重，核心透明图保留PNG')
     parser.add_argument('--lossy-images', action='store_true', help='核心无损；背景WebP要求PSNR至少36dB，透明PNG的RGB误差最多3级；隐含--optimize-assets')
@@ -547,6 +557,11 @@ def main():
     parser.add_argument('--update-assets', '--update-lua', dest='update_assets', action='store_true', help='复用已经生成的原生库，更新 assets 并重新签名')
     parser.add_argument('--jobs', type=int, default=min(os.cpu_count() or 4, 8))
     args = parser.parse_args()
+    ABI = args.abi
+    # 隔离CMake、LuaJIT目标文件、打包中间件和安装包，保留正式ARM64构建。
+    BUILD = ROOT / ('build' if ABI == LOCK['abi'] else f'build-{ABI}')
+    NATIVE = BUILD / 'native-gfx'
+    DIST = ROOT / ('dist' if ABI == LOCK['abi'] else f'dist-{ABI}')
     OPTIMIZE_ASSETS = args.optimize_assets or args.lossy_images or args.transparent_webp
     LOSSY_IMAGES = args.lossy_images
     COMPRESS_AUDIO = args.compress_audio or args.compact_music
