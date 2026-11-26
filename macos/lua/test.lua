@@ -2,6 +2,7 @@
 local T={}
 function T.install()
     local mode=os.getenv('BOSSRUSH_MAC_TEST')
+    if mode=='reported-cards' then return dofile('macos/reported_cards_test.lua').install() end
     if mode=='original-sounds' then return dofile('macos/original_sounds_test.lua').install() end
     if mode=='starlit-perf' then return dofile('macos/starlit_perf.lua').install() end
     if mode=='fireworks-bomb' then return dofile('macos/fireworks_bomb_test.lua').install() end

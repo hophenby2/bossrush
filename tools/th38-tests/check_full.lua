@@ -21,7 +21,7 @@ function H.on_card(_,e)
     end
 end
 function H.frame_limit(_,e) return math.ceil(e.card.t3*60) end
-function H.set_player() player.x,player.y=0,-176;return true end
+function H.set_player() player.x,player.y,player.A,player.B=0,-176,2.5,2.5;return true end
 function H.on_frame(_,frame,_,objects)
     current.frames=frame
     local n,shots=0,0

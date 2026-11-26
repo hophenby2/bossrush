@@ -172,6 +172,7 @@ using namespace lstg;
 #include "bent_laser_envelope.inc"
 #include "quad_batch.inc"
 #include "model_mesh.inc"
+#include "source_curve.inc"
 #include "fog_state.inc"
 
 LUA_REGISTER_FUNC_DEF(lstg, AndroidRendererInfo) {

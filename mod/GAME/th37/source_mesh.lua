@@ -17,6 +17,23 @@ function M.prepare(parts)
     end
     return list
 end
+-- 移动端按原三角形次序分块，只跳过完全在视锥外的块；不删减可见网格。
+function M.prepareMobile(parts)
+    local list={}
+    for _,part in ipairs(parts) do
+        for first=1,#part[3],96*15 do
+            local vertices={}
+            for i=first,math.min(#part[3],first+96*15-1) do vertices[#vertices+1]=part[3][i] end
+            list[#list+1]={mesh=lstg.AndroidCreateModelMesh(FindResTexture(part.texture),vertices),bounds=M.bounds(vertices)}
+        end
+    end
+    return list
+end
+function M.drawMobile(list,t,tint,uv,blend,planes)
+    for _,part in ipairs(list) do
+        if M.visible(part.bounds,t,planes) then lstg.AndroidRenderModelMesh(part.mesh,blend,tint,t,uv) end
+    end
+end
 function M.transform(pos,scale,rotation,t)
     t=t or {}
     local cx,sx=math.cos(rotation[1]),math.sin(rotation[1])

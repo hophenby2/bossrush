@@ -1,4 +1,5 @@
 // 模型数据仅在更新时解析；实例绘制不再读Lua顶点表，也不跨原有透明/深度顺序重排。
+#include "Classes/MemPoolManager.h"
 struct AndroidQuadData {
     cocos2d::RefPtr<cocos2d::Texture2D> texture;
     cocos2d::RefPtr<RenderMode> mode;
@@ -47,6 +48,35 @@ LUA_REGISTER_FUNC_DEF(lstg, AndroidRenderQuadBatch) {
     const bool flip=lua_toboolean(L,8);
     auto* renderer=XRenderer::getInstance();
     auto* deviceRenderer=cocos2d::Director::getInstance()->getRenderer();
+    // 血圈的固定几何只上传一次，逐帧只传段数、位置与整体透明度。
+    // 相同材质按原次序一次提交，避免每个一度小片各建一条渲染命令。
+    if (!lua_isnoneornil(L,9)) {
+        const size_t count=std::min(batch->quads.size(),size_t(std::max(0,luaL_checkint(L,9))));
+        cocos2d::Color4B tint;lua::_luaval_to_color4b(L,10,&tint);
+        deviceRenderer->setDepthTest(false);deviceRenderer->setDepthWrite(false);
+        for (size_t first=0;first<count;) {
+            const auto& material=batch->quads[first];
+            if (!material.visible) {++first;continue;}
+            auto* quads=LMP.getLaserQuads()->data();size_t used=0;
+            while (first<count && used<512) {
+                const auto& source=batch->quads[first];
+                if (!source.visible || source.texture!=material.texture || source.mode!=material.mode) break;
+                auto* vertices=reinterpret_cast<cocos2d::V3F_C4B_T2F*>(&quads[used]);
+                const auto width=source.texture->getPixelsWide(),height=source.texture->getPixelsHigh();
+                for (int j=0;j<4;++j) {
+                    auto& v=vertices[j];v.vertices.set(source.value[10+j*3]+ix-ox,source.value[11+j*3]+iy-oy,source.value[12+j*3]+iz-oz);
+                    v.texCoords.u=source.value[j==0 || j==3 ? 22 : 24]/width;
+                    v.texCoords.v=source.value[j<2 ? 23 : 25]/height;v.colors=tint;
+                }
+                std::swap(vertices[2],vertices[3]);++used;++first;
+            }
+            cocos2d::TrianglesCommand::Triangles triangles;
+            triangles.verts=reinterpret_cast<cocos2d::V3F_C4B_T2F*>(quads);
+            triangles.vertCount=used*4;triangles.indices=XRenderer::quadIndices512;triangles.indexCount=used*6;
+            renderer->updateRenderMode(material.mode);renderer->renderTexture(material.texture,triangles);
+        }
+        return 0;
+    }
     int previousDepth=-1;
     for (const auto& source:batch->quads) {
         if (!source.visible) continue;

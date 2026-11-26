@@ -3,9 +3,27 @@
 local H={}
 local min,max,floor=math.min,math.max,math.floor
 local points={}
+local ringBatch
 for i=0,361 do
     local a=math.rad(90+i)
     points[i]={math.cos(a),math.sin(a)}
+end
+local function nativeRing(x,y,count,color)
+    if not lstg.AndroidUpdateQuadBatch then return false end
+    if not ringBatch then
+        local resource=assert(FindResSprite('portrait_hp_fill'))
+        local _,u,v,w,h=GetImageTextureRegion('portrait_hp_fill')
+        local packets={}
+        for i=1,360 do
+            local p,q=points[i+1],points[i]
+            packets[i]={resource,'',0,color,0,0,0,0,0,0,
+                p[1]*60,p[2]*60,.5,p[1]*64,p[2]*64,.5,
+                q[1]*64,q[2]*64,.5,q[1]*60,q[2]*60,.5,u,v,u+w,v+h}
+        end
+        ringBatch=lstg.AndroidUpdateQuadBatch(nil,packets)
+    end
+    lstg.AndroidRenderQuadBatch(ringBatch,x,y,0,0,0,0,false,count,color)
+    return true
 end
 function H.frame(self)
     local b,p=self.boss,player
@@ -18,13 +36,16 @@ function H.draw(self)
         or not b.maxhp or b.maxhp<=0 then return end
     local alpha=255*(1-(self.portrait_hp_fade or 0)/30)
     local ratio=min(1,max(0,b.hp/b.maxhp))*min(1,max(0,b.__hpbar_timer or 0)/60)
-    SetImageState('portrait_hp_fill','',Color(alpha,255,255,255))
+    local color=Color(alpha,255,255,255)
     -- 与参考库misc.Renderhp相同，从90度逆时针按一度线段绘制。
-    for i=1,floor(360*ratio) do
-        local p,q=points[i+1],points[i]
-        Render4V('portrait_hp_fill',
-            b.x+p[1]*60,b.y+p[2]*60,.5,b.x+p[1]*64,b.y+p[2]*64,.5,
-            b.x+q[1]*64,b.y+q[2]*64,.5,b.x+q[1]*60,b.y+q[2]*60,.5)
+    if not nativeRing(b.x,b.y,floor(360*ratio),color) then
+        SetImageState('portrait_hp_fill','',color)
+        for i=1,floor(360*ratio) do
+            local p,q=points[i+1],points[i]
+            Render4V('portrait_hp_fill',
+                b.x+p[1]*60,b.y+p[2]*60,.5,b.x+p[1]*64,b.y+p[2]*64,.5,
+                b.x+q[1]*64,b.y+q[2]*64,.5,b.x+q[1]*60,b.y+q[2]*60,.5)
+        end
     end
     SetImageState('portrait_hp_base','',Color(alpha,255,0,0))
     Render('portrait_hp_base',b.x,b.y,0,.274,.274)

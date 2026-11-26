@@ -74,6 +74,12 @@ for difficulty in ['L','EXA']:
 # 从场景的Boss_creat、Boss_in和Bossmove逐项取顺序；不能用目录名猜出卡链。
 chapters=[];uid=38000;extras=[]
 def canonical(s):return re.sub('/+','/',s or '').removeprefix('xuelianhua/danmaku/')
+def phase_hp(bosses):
+ # Bossmove.FixedUpdate：普通双Boss副体的89999是承接伤害用的血槽，
+ # 每tick把life_last-life传给主体现有血量；不能再加进阶段总血量。
+ # 5500+5500的Boss4link独立血槽与全89999的耐久阶段保留原统计。
+ real=[b for b in bosses if b['a6_6']!=89999]
+ return sum(max(1,b['a6_6']) for b in (real or bosses))
 def phases(prefab,role):
  global uid
  records=docs(prefab);inside=next((x for x in records if x['_script']=='Boss_in'),None);moving=next((x for x in records if x['_script']=='Bossmove' and x.get('double_boss2')!='1'),None)
@@ -88,7 +94,7 @@ def phases(prefab,role):
   bosses=[b for b in patterns[key]['items'] if b['a47']==2]
   if not bosses:missing.append('Boss参数缺失：'+key);continue
   uid+=1
-  out.append({'id':uid,'key':key,'title':cardnames.get(name,'') if kind else '非符 '+key.rsplit('/',1)[-1], 'spell':kind!=0,'endurance':kind==2,'role':role,'hp':sum(max(1,b['a6_6']) for b in bosses),'ticks':max(b['a2_8'] for b in bosses),'immune':max(b['a51_3'] for b in bosses)})
+  out.append({'id':uid,'key':key,'title':cardnames.get(name,'') if kind else '非符 '+key.rsplit('/',1)[-1], 'spell':kind!=0,'endurance':kind==2,'role':role,'hp':phase_hp(bosses),'ticks':max(b['a2_8'] for b in bosses),'immune':max(b['a51_3'] for b in bosses)})
  for d in records:
   if d['_script']=='Boss_zhuanjieduan':
    index=int(d['number'])-1

@@ -21,6 +21,11 @@ function T.install()
         if name=='portrait_hp_fill' then quads=quads+1 end
         return draw(name,...)
     end
+    local batch=lstg.AndroidRenderQuadBatch
+    lstg.AndroidRenderQuadBatch=function(handle,x,y,z,ox,oy,oz,flip,count,color)
+        if count then quads=quads+count end
+        return batch(handle,x,y,z,ox,oy,oz,flip,count,color)
+    end
     local render=RenderFunc
     RenderFunc=function()
         quads=0;local result=render()

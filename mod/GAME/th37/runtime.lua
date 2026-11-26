@@ -287,6 +287,15 @@ function R.preparePattern(id)
     preparedPatterns[id]=true
 end
 local function drawSprite(b,img,x,y,rot,sx,sy,alpha)
+    if lstg.AndroidRenderSprite and FindResSprite then
+        local c=b.mhj.controller
+        local sprites=c.drawSprites
+        if not sprites then sprites={};c.drawSprites=sprites end
+        local resource=sprites[img]
+        if not resource then resource=assert(FindResSprite(img));sprites[img]=resource end
+        lstg.AndroidRenderSprite(resource,b._blend,x,y,rot,sx,sy,max(0,min(255,alpha)),b._r,b._g,b._b)
+        return
+    end
     SetImageState(img,b._blend,max(0,min(255,alpha)),b._r,b._g,b._b)
     Render(img,x,y,rot,sx,sy)
 end
@@ -764,6 +773,23 @@ function R.setEffectOffset(c,x,y)
         b.x,b.y=s.fx+x-317,227-s.fy-y
     end end
 end
+-- 发射器步进不再为每帧创建闭包，保持原调用次序和单精度舍入。
+local function stepEmitter(c,o,ot,bound)
+    o.active=ot>=1 and ot<=o.life
+    if ot<1 or ot>o.life then return end
+    -- Rebound.time 是允许的反弹次数，不能被发射器时钟覆盖。
+    if o.kind~='rebound' then o.time=ot end
+    local mx,my=motion(o,false);o.x,o.y=f32(o.x+mx),f32(o.y+my)
+    if o.fx then o.fx=f32(o.fx+mx) end;if o.fy then o.fy=f32(o.fy+my) end
+    o.bound_source=bound
+    if o.kind~='rebound' and o.Parentevents then o.Parentevents(o,ot,R) end
+    interpolate(o)
+    if o.kind=='batch' or o.kind=='laser' then
+        if o.t>0 and ot%o.t+trunc(rnd(o.rand.t or 0))==0 then
+            fire(o,bound)
+        end
+    else field(o,c,ot) end
+end
 function R.tick(c)
     if c.closed then return end
     c.time=c.time+1
@@ -775,31 +801,15 @@ function R.tick(c)
     if c.pattern.centerAvailable then
         c.offsetx=center.ox-center.fx;c.offsety=center.oy-center.fy
     else c.offsetx,c.offsety=0,0 end
-    local function step(o,ot,bound)
-        o.active=ot>=1 and ot<=o.life
-        if ot<1 or ot>o.life then return end
-        -- Rebound.time 是允许的反弹次数，不能被发射器时钟覆盖。
-        if o.kind~='rebound' then o.time=ot end
-        local mx,my=motion(o,false);o.x,o.y=f32(o.x+mx),f32(o.y+my)
-        if o.fx then o.fx=f32(o.fx+mx) end;if o.fy then o.fy=f32(o.fy+my) end
-        o.bound_source=bound
-        if o.kind~='rebound' and o.Parentevents then o.Parentevents(o,ot,R) end
-        interpolate(o)
-        if o.kind=='batch' or o.kind=='laser' then
-            if o.t>0 and ot%o.t+trunc(rnd(o.rand.t or 0))==0 then
-                fire(o,bound)
-            end
-        else field(o,c,ot) end
-    end
     for _,o in ipairs(c.emitters) do
         if o.Deepbind and o.bindid and o.bindid>=0 and (o.kind~='batch' or o.bindid~=o.id) then
             for _,child in pairs(o.children) do child.active=false end
             for _,pair in ipairs(bindingTargets(o)) do if targetable(pair,15) then
                 local child=o.children[pair[1]]
                 if not child then child=emitter(o,c);child.bindid=-1;child.Deepbind=false;child.limits={};o.children[pair[1]]=child end
-                step(child,pair[2].age-(child.begin or 1)+2,pair[2])
+                stepEmitter(c,child,pair[2].age-(child.begin or 1)+2,pair[2])
             end end
-        else step(o,t-(o.begin or 1)+1) end
+        else stepEmitter(c,o,t-(o.begin or 1)+1) end
     end
     -- CrazyStorm.Update在各层发射之后推进中心；中心基准x/y始终不变。
     if c.pattern.centerAvailable then

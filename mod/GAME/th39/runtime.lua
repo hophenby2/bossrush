@@ -283,6 +283,22 @@ local function motion(o,son,scale)
     o.mx=o.mx+o.ax*scale;o.my=o.my+o.ay*scale
     return o.mx*scale,o.my*scale
 end
+-- 弹体运动使用固定字段，避免和发射器共用动态键分支导致密集弹幕热循环反复退出JIT。
+local function sonMotion(o,scale)
+    scale=scale or 1
+    if o.sonmotion_dirty or o.mx==nil then
+        o.mx=(o.xscale or 1)*(o.sonspeed or 0)*cos(o.sonspeedd or 0)
+        o.my=(o.yscale or 1)*(o.sonspeed or 0)*sin(o.sonspeedd or 0)
+        o.sonmotion_dirty=false
+    end
+    if o.sonaccel_dirty or o.ax==nil then
+        o.ax=(o.xscale or 1)*(o.sonaspeed or 0)*cos(o.sonaspeedd or 0)
+        o.ay=(o.yscale or 1)*(o.sonaspeed or 0)*sin(o.sonaspeedd or 0)
+        o.sonaccel_dirty=false
+    end
+    o.mx=o.mx+o.ax*scale;o.my=o.my+o.ay*scale
+    return o.mx*scale,o.my*scale
+end
 -- Lua模块缓存跨练习重试保留；动态切出的精灵也必须放全局池，避免关卡池清除后留下假缓存。
 local function globalResource(fn)
     local pool=GetResourceStatus()
@@ -314,6 +330,8 @@ end
 function R.weaponProfile(s) return profile(s.pattern,s.type) end
 local textureFrames=setmetatable({},{__mode='k'})
 local function texture(s)
+    local cached=s.renderFrame
+    if cached and s.renderType==s.type and not s.controller.visual then return cached[1],cached[2],cached[3],cached[4],s.renderProfile end
     local p=profile(s.pattern,s.type)
     if not p or p[3]<=0 or p[4]<=0 or p[16]=='' then return 'img_void' end
     local n=floor(max(0,s.age-(s.typeChanged or 0))/(1+(p[10] or 0)))%max(1,p[9] or 1)
@@ -332,6 +350,11 @@ local function texture(s)
         columnFrames[n]=frame
     end
     local name,tex,x,y=frame[1],frame[2],frame[3],frame[4]
+    -- 普通静态弹图在本弹体存活期间保持同一资源；变弹种自动失效。
+    -- 背景仍逐次核对资源池，动画弹仍按原帧号计算，不能共用此捷径。
+    if not c.visual and (p[9] or 1)<=1 then
+        s.renderFrame,s.renderType,s.renderProfile=frame,s.type,p
+    end
     if c.visual and key:sub(1,6)=='scene/' then
         local store=c.resources
         -- 场景图片仍逐次核对资源池，练习退出后可按原路径重新载入。
@@ -454,7 +477,7 @@ local function updateParticle(s)
             if name and name~='' then R.sound(name,s.fx-145) end
         end
         -- 原Barrage.Update先积分，再更新事件；速度变化从下一运动帧生效。
-        local dx,dy=motion(s,true,s.controller.slow or 1)
+        local dx,dy=sonMotion(s,s.controller.slow or 1)
         s.fx,s.fy=s.fx+dx,s.fy+dy
         if s.Sonevents then s.Sonevents(s,t,R) end
         if s.covers then
@@ -484,7 +507,7 @@ R.classes.projectile=Class(bullet,{
         -- 不经过通用雾化类；CrazyStorm自己有15帧出生与事件时钟。
         -- projected 会一次写入完整位置、分组、层次和颜色，避免出生时先写默认值再重复改写。
         s.is_projectile=true;b.mhj=s;b.bound=false
-        s.age=0;clearChanges(s);s.limits=s.limits or {};s.object=nil;s.renderImage=nil
+        s.age=0;clearChanges(s);s.limits=s.limits or {};s.object=nil;s.renderImage=nil;s.renderFrame,s.renderType,s.renderProfile=nil,nil,nil
         R.objects[b]=true;s.controller.bullets[b]=s;projected(b)
     end,
     frame=function(b)
@@ -574,7 +597,7 @@ local function laserStep(b)
     s.status,s.statusFrame=s.controller.status,s.controller.statusFrame
     if s.Sonevents then s.Sonevents(s,s.age,R) end
     interpolate(s)
-    local dx,dy=motion(s,true,s.controller.slow or 1);s.fx,s.fy=s.fx+dx,s.fy+dy
+    local dx,dy=sonMotion(s,s.controller.slow or 1);s.fx,s.fy=s.fx+dx,s.fy+dy
     b.x,b.y=projectBullet(s.fx,s.fy);b.vx,b.vy=0,0
     b.w=laserWidth(s);b.alpha=max(0,min(1,(s.alpha or 100)/100));b.colli=not s.controller.effectLayer and s.wscale>=.5 and b.alpha>=1
     if s.controller.effectLayer then b.group,b.layer=GROUP.GHOST,s.controller.effectLayer end
@@ -623,7 +646,7 @@ R.classes.beam=Class(laser,{
         end
     end,
     render=function(b)
-        local s=b.mhj;local img,_,_,_,p=texture(s)
+        local s=b.mhj;local img,tex,tx,ty,p=texture(s)
         if not p then return end
         local ray=s.Ray=='Ray' or s.Ray==true
         if ray and s.type==8 then
@@ -651,10 +674,10 @@ R.classes.beam=Class(laser,{
             Render(img,b.x,b.y,90-s.head,s.wscale*SCALE,s.rlongs/9*SCALE)
             return
         end
-        SetImageCenter(img,p[3]/2,p[4])
-        SetImageState(img,s.Blend and 'mul+add' or '',(s.alpha or 100)*2.55,s.colorR or 255,s.colorG or 255,s.colorB or 255)
-        Render(img,b.x,b.y,-90-s.head,s.wscale*SCALE,s.rlongs*SCALE/p[4])
-        SetImageCenter(img,p[5],p[6])
+        -- 激光端点用独立中心的图像，避免每条每帧改写共享弹图中心再恢复。
+        local endImage=R.sprite(img..'_laser_end',p[16] or 'barrages',tx,ty,p[3],p[4],p[3]/2,p[4])
+        drawSprite(s,endImage,b.x,b.y,-90-s.head,s.wscale*SCALE,s.rlongs*SCALE/p[4],
+            s.Blend and 'mul+add' or '',(s.alpha or 100)*2.55,s.colorR or 255,s.colorG or 255,s.colorB or 255)
     end,
     del=function(b) b.mhj.dis=true;b.mhj.age=b.mhj.life+1;object.Preserve(b) end,
     kill=function(b) R.classes.beam.del(b) end,

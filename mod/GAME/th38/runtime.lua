@@ -7,8 +7,9 @@ local FixedLaser=dofile('mod/GAME/th38/fixed_laser.lua')
 local Presentation=dofile('mod/GAME/th38/presentation.lua')
 local Mist=dofile('mod/GAME/th38/mist.lua')
 R.presentation=Presentation
-local float=require('ffi').typeof('float')
-local function f32(x) return tonumber(float(x)) end
+-- 共用单精度暂存格；逐弹、逐tick舍入不再反复创建标量cdata。
+local floatBox=require('ffi').new('float[1]')
+local function f32(x) floatBox[0]=x;return tonumber(floatBox[0]) end
 R.data=dofile('mod/GAME/th38/catalogue.lua')
 local abs,min,max,floor=math.abs,math.min,math.max,math.floor
 local function valid(o) return o and IsValid(o) end
@@ -64,6 +65,14 @@ local function image(s)
     local custom=s.custom and R.data.customs[s.custom]
     if s.customOn==1 and custom then return 'asl_'..custom.file end
     return 'asl_b'..(R.data.sprites[s.shape*16+s.color] and s.shape*16+s.color or 444)
+end
+local function drawSprite(c,img,blend,x,y,rot,sx,sy,a,r,g,b)
+    if lstg.AndroidRenderSprite and FindResSprite then
+        c.drawSprites=c.drawSprites or {}
+        local resource=c.drawSprites[img]
+        if not resource then resource=assert(FindResSprite(img));c.drawSprites[img]=resource end
+        lstg.AndroidRenderSprite(resource,blend,x,y,rot,sx,sy,a,r,g,b)
+    else SetImageState(img,blend,a,r,g,b);Render(img,x,y,rot,sx,sy) end
 end
 local function release(s)
     if s.pooled then R.bulletCount=R.bulletCount-1;s.pooled=false end
@@ -128,8 +137,8 @@ R.classes.projectile=Class(bullet,{
     frame=function(b) if not b.asl.alive or b.asl.c.closed then clean(b) end end,
     render=function(b)
         local s=b.asl
-        SetImageState(b.img,s.blend==1 and 'mul+add' or '',max(0,min(255,s.alpha*2.55)),s.red*2.55,s.green*2.55,s.blue*2.55)
-        Render(b.img,b.x,b.y,b.rot,b.hscale,b.vscale)
+        drawSprite(s.c,b.img,s.blend==1 and 'mul+add' or '',b.x,b.y,b.rot,b.hscale,b.vscale,
+            max(0,min(255,s.alpha*2.55)),s.red*2.55,s.green*2.55,s.blue*2.55)
     end,
     del=function(b) clean(b) end,kill=function(b) clean(b) end,
 })
@@ -193,6 +202,20 @@ R.classes.curve=Class(object,{
         local y=style<4 and s.color*row or 0
         local half=s.width*(style>=4 and .64 or .32)*48/2
         local color=Color(s.alpha*2.55,s.red*2.55,s.green*2.55,s.blue*2.55)
+        if lstg.AndroidRenderSourceCurve then
+            local textures=s.c.curveTextures
+            if not textures then textures={};s.c.curveTextures=textures end
+            local resource=textures[tex]
+            if not resource then resource=assert(FindResTexture(tex));textures[tex]=resource end
+            local w=lstg.world
+            lstg.AndroidRenderSourceCurve(resource,s.blend==1 and 'mul+add' or '',s.path,half,s.tailTicks,size[1],y,row,color,
+                w and w.l,w and w.r,w and w.b,w and w.t)
+            return
+        end
+        -- 绘制调用同步消费顶点表；整条曲线复用四个顶点，不为每段产生四张临时表。
+        local q=b.renderQuad
+        if not q then q={{},{},{},{}};b.renderQuad=q end
+        local w=lstg.world
         for i=1,#s.path-1 do
             local a,c=s.path[i],s.path[i+1]
             if not a.dead and not c.dead then
@@ -200,9 +223,17 @@ R.classes.curve=Class(object,{
                 if length>0 then
                     local nx,ny=-dy/length*half,dx/length*half
                     local u1,u2=(i-1)/s.tailTicks*size[1],i/s.tailTicks*size[1]
-                    RenderTexture(tex,s.blend==1 and 'mul+add' or '',
-                        {a.x+nx,a.y+ny,.5,u1,y,color},{c.x+nx,c.y+ny,.5,u2,y,color},
-                        {c.x-nx,c.y-ny,.5,u2,y+row,color},{a.x-nx,a.y-ny,.5,u1,y+row,color})
+                    if not w or max(a.x,c.x)+abs(nx)>=w.l-1 and min(a.x,c.x)-abs(nx)<=w.r+1
+                            and max(a.y,c.y)+abs(ny)>=w.b-1 and min(a.y,c.y)-abs(ny)<=w.t+1 then
+                        q[1][1],q[1][2],q[2][1],q[2][2]=a.x+nx,a.y+ny,c.x+nx,c.y+ny
+                        q[3][1],q[3][2],q[4][1],q[4][2]=c.x-nx,c.y-ny,a.x-nx,a.y-ny
+                        for j=1,4 do
+                            local v=q[j];v[3],v[6]=.5,color
+                            if j==1 or j==4 then v[4]=u1 else v[4]=u2 end
+                            v[5]=j<=2 and y or y+row
+                        end
+                        RenderTexture(tex,s.blend==1 and 'mul+add' or '',q[1],q[2],q[3],q[4])
+                    end
                 end
             end
         end

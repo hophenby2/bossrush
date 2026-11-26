@@ -1,0 +1,142 @@
+{
+  "platform": "macOS arm64 Metal，共用移动端逻辑；没有安卓设备FPS数据",
+  "version": "2026.11.26.6",
+  "seed_input": 739,
+  "actual_run_seed": 58279,
+  "frames_per_card": 1800,
+  "checkpoints_per_card": 15,
+  "cards": [
+    {
+      "id": 38040,
+      "sampled_state_and_object_counts_unchanged": true,
+      "object_peak_at_checkpoints": 1060,
+      "before": {
+        "logic_ms": {
+          "mean": 1.4959332494375608,
+          "p95": 3.0409169849008
+        },
+        "render_ms": {
+          "mean": 2.1809931085103833,
+          "p95": 3.3844579011202
+        }
+      },
+      "after": {
+        "logic_ms": {
+          "mean": 2.205709047709768,
+          "p95": 4.3024998158216
+        },
+        "render_ms": {
+          "mean": 2.1791945803997024,
+          "p95": 3.6507921759039
+        }
+      },
+      "damage": {
+        "boosted": 102.06091522501,
+        "hp": 9500,
+        "ratio": 1.15,
+        "base": 88.748621934792
+      }
+    },
+    {
+      "id": 37020,
+      "sampled_state_and_object_counts_unchanged": true,
+      "object_peak_at_checkpoints": 1376,
+      "before": {
+        "logic_ms": {
+          "mean": 2.212690682721412,
+          "p95": 3.4307499881834
+        },
+        "render_ms": {
+          "mean": 2.114890318695609,
+          "p95": 2.5867079384625
+        }
+      },
+      "after": {
+        "logic_ms": {
+          "mean": 2.9481459030648685,
+          "p95": 4.2059579864144
+        },
+        "render_ms": {
+          "mean": 1.5754782153208071,
+          "p95": 2.6168751064688
+        }
+      },
+      "background_vertices_last_600_frames": {
+        "before": 398287,
+        "after": 59663
+      }
+    },
+    {
+      "id": 39041,
+      "sampled_state_and_object_counts_unchanged": true,
+      "object_peak_at_checkpoints": 2991,
+      "before": {
+        "logic_ms": {
+          "mean": 2.7903314034033224,
+          "p95": 4.6440828591585
+        },
+        "render_ms": {
+          "mean": 2.027930794871718,
+          "p95": 2.6948750019073
+        }
+      },
+      "after": {
+        "logic_ms": {
+          "mean": 3.015747847079877,
+          "p95": 5.4037088993937
+        },
+        "render_ms": {
+          "mean": 1.9161006055235354,
+          "p95": 2.5494999717921
+        }
+      }
+    }
+  ],
+  "limits": [
+    "状态摘要包括普通弹位置字段、年龄、透明度及所有对象数，不是全部激光路径的逐tick原作对照。",
+    "不同进程的CPU耗时没有显示一致下降，不作为安卓FPS改善证明；裁剪收益按实际提交顶点计。"
+  ],
+  "same_process_copy_benchmark": {
+    "iterations": 10000,
+    "native_ms": 12.948208022863,
+    "lua_ms": 5.8702500537038,
+    "adopted": false,
+    "reason": "实际发射器浅拷贝的LuaJIT循环更快，已撤回原生替换；此数据仅记录排除方向。"
+  },
+  "curve_submission": {
+    "api": "function",
+    "native_calls_over_1441_frames": 9017,
+    "peak_sample_segments": 1594,
+    "peak_sample_curves": 34,
+    "note": "同一条曲线只跨一次Lua/C边界；原引擎已有有序合批，不以GPU批次数宣称同比下降。"
+  },
+  "battle_snapshot": {
+    "card": 38040,
+    "frame": 900,
+    "roi": [
+      0,
+      0,
+      2560,
+      1300
+    ],
+    "pixel_difference": 0,
+    "note": "底部动态FPS区不参与比较"
+  },
+  "full_lifetime_simulation": {
+    "kind": "LuaJIT模拟",
+    "stages": 1,
+    "frames": 2120,
+    "failures": 0,
+    "rows": [
+      {
+        "id": 38040,
+        "frames": 2120,
+        "peak": 1097,
+        "bullets": 1096,
+        "emitters": 601,
+        "transitions": 0,
+        "remaining": 0
+      }
+    ]
+  }
+}

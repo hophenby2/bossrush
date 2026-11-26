@@ -400,7 +400,7 @@ local function register(variant,config)
         local c=Color(255,225,241,250);local run=self.run
         ui:RenderText('title',run.won and '胜利' or '挑战结束',480,420,1.2,c,'centerpoint')
         ui.RunHUD.stage(R.progressLabel(run),480,270,560)
-        for _,b in ipairs({{300,465,'返回标题 ESC'},{495,660,'不保存录像并重新开始 ENTER'}}) do
+        for _,b in ipairs({{300,465,'保存录像 ESC'},{495,660,'不保存录像并重新开始 ENTER'}}) do
             SetImageState('white','',Color(255,29,64,85));RenderRect('white',b[1],b[2],85,125)
             ui:RenderText('title',b[3],(b[1]+b[2])/2,105,0.65,c,'centerpoint')
         end

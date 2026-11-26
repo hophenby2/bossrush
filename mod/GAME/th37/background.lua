@@ -27,10 +27,10 @@ local function prepare(name)
         if not CheckRes('tex',id) then LoadTexture(id,'Resources/th37/scene/'..part[1]..'.png') end
         SetTextureSamplerState(id,'linear+wrap')
         part.texture=id;part.w,part.h=GetTextureSize(id)
-        if not Mesh.available() and lstg.AndroidCreateModelMesh then part.native=lstg.AndroidCreateModelMesh(FindResTexture(id),part[3]) end
         if RogueEncounter then RogueEncounter.checkpoint() end
     end
-    if Mesh.available() then d.sourceMeshes=Mesh.prepare(d) end
+    if Mesh.available() then d.sourceMeshes=Mesh.prepare(d)
+    elseif lstg.AndroidCreateModelMesh then d.mobileMeshes=Mesh.prepareMobile(d) end
     SetResourceStatus(pool)
     return d
 end
@@ -55,6 +55,11 @@ local function draw(m,frame,particle)
     end
     -- Sub 的深度状态要求数字；第二参保留给 LuaSTG-x 的深度写入开关。
     SetZBufferEnable(m.label~="1003" and 1 or 0,not m.depth)
+    if data.mobileMeshes then
+        Mesh.transform(pos,scale,rotation,transform);uvTransform[3],uvTransform[4]=u,v
+        Mesh.drawMobile(data.mobileMeshes,transform,tint,uvTransform,blend,viewPlanes)
+        return
+    end
     local cx,sx,cy,sy,cz,sz=math.cos(rotation[1]),math.sin(rotation[1]),math.cos(rotation[2]),math.sin(rotation[2]),math.cos(rotation[3]),math.sin(rotation[3])
     for _,part in ipairs(data) do
         if part.native then
@@ -122,7 +127,7 @@ local Scene=Class(background,{
         Set3D('at',at[1]+travel[1],at[2]+travel[2],at[3]+travel[3]);Set3D('up',unpack(s.up))
         -- 原作先画640×480，再裁取384×448战斗区；保留240/tan(pi/8)的像素焦距。
         local fov=2*math.atan(math.tan(math.pi/8)*448/480)
-        if Mesh.available() then viewPlanes=Mesh.frustum(eye,at,s.up,travel,fov,-(w.r-w.l)/(w.t-w.b),20,s.far) end
+        if Mesh.available() or lstg.AndroidRenderModelMesh then viewPlanes=Mesh.frustum(eye,at,s.up,travel,fov,-(w.r-w.l)/(w.t-w.b),20,s.far) end
         Set3D('fovy',fov);Set3D('z',20,s.far);Set3D('fog',0,0,white)
         SetViewMode('3d')
         -- LuaSTG为左手坐标；XNA为右手坐标。负横纵比恢复原模型的投影方向。

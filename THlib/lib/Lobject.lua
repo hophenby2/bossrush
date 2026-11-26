@@ -38,8 +38,8 @@ LAYER = {
     BG = -700,
     --- -600
     ENEMY = -600,
-    --- -500
-    PLAYER_BULLET = -500,
+    --- 自机子弹位于背景与敌机之间
+    PLAYER_BULLET = -660,
     --- -400
     PLAYER = -400,
     --- -300

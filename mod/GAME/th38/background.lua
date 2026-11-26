@@ -467,7 +467,8 @@ local function drawParticles(o,cam,n)
             local x,y,z=point(n.m,px,py,pz)
             x,y,z=x+p.dx*age,y+p.dy*age-.5*9.81*ps.gravity*age*age,z+p.dz*age
             if followsCamera then
-                local clock=o.clock-age*120/ps.simulation
+                -- 出生相机时刻由发射序号决定，避免每帧相消的浮点误差使缓存反复失效。
+                local clock=n.start+(i/ps.rate+ps.delay-(ps.prewarm==1 and ps.length or 0))*120/ps.simulation
                 if p.bornClock~=clock then p.bornClock=clock;p.born=cameraPos(o.data,'Camera_3D',clock) end
                 local born=p.born
                 x,y,z=x+born[1]-now[1],y+born[2]-now[2],z+born[3]-now[3]
