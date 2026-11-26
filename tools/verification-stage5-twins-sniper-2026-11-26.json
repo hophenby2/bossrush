@@ -1,0 +1,151 @@
+{
+  "date": "2026-11-26",
+  "base_commit": "cd5e0a8b86c957ffa08d49bf4bdf1c9a91cbf28d",
+  "scope": "春雪五面非符性能、梦想封印 界耐久规则、随机模式竖屏倒计时、雪莲华双Boss显示、月面狙击手枪心判定",
+  "platform": "macOS arm64 Metal；共用移动端Lua。没有安卓设备FPS实测。",
+  "source_sha256": {
+    "THlib/enemy/boss_ui.lua": "19a03fe435524779f386916148c4929a55d443e90db62e9424efbe5965fc92b0",
+    "android/lua/portrait.lua": "6b16e3eed39bf0de3d5adcdf02e2ddb1292df4e59834fcaa1ed61bd0d1108add",
+    "mod/GAME/th37/runtime.lua": "d1f83b20991cc696141168c4eb76d27317b147c8a3ced42f4f3d2453c5adc417",
+    "mod/GAME/th38/actors.lua": "ebba400a59f2a4fe5ed0f927dcb8d6a886f4eb901cd1b91b62845aa299a07831",
+    "mod/GAME/th38/visual_sources.json": "e009067416e340322c313698d291ebe468709eef0c3f4eeab65034792b0a9e5e",
+    "mod/GAME/th39/runtime.lua": "d690650f3f33bff0a29ff931918259876fcfe4e13b8940d15da826f9011c7fa5",
+    "mod/rogue_boss_hud.lua": "686388cce170554e93295bd8012b507e80503b8a323d9a640d55b309d11a80a9",
+    "mod/rogue_titles.lua": "1a3365038c496da86f8329ed6539fd675a914b3b8ce99a8d820f285d90fb5da6",
+    "tools/th38-tests/export_visuals.py": "be4a388d0afc3941ec0fce7059c3cd4994f43e319e08dffeadfcb61496ee6647"
+  },
+  "spring_stage5": {
+    "cards": [
+      37044,
+      37046,
+      37048
+    ],
+    "patterns": [
+      "581",
+      "583",
+      "585"
+    ],
+    "changes": [
+      "按速度和倍率缓存原作单精度逻辑朝向，变化时仍重算",
+      "扫掠椭圆外接范围快速排除",
+      "保存弹体状态索引，仅对可能命中/擦弹的弹体关闭及恢复宿主碰撞；计入全局判定倍率、宿主半径和平移，未知PLAYER对象退回全量处理"
+    ],
+    "trajectory_oracle": {
+      "samples": 232938,
+      "maximum_position_error_px": 8.21e-05,
+      "log": "/tmp/bossrush-spring5-final-oracle.log"
+    },
+    "collision_checks": {
+      "log": "/tmp/bossrush-spring5-culling-check.log",
+      "frames_per_pattern_per_variant": 900,
+      "verified": "三张非符每帧命中/擦弹对象一致，已消弹对象不恢复判定；高速跨越、大判定、平移、全局缩放、未知PLAYER和死亡特效分支通过"
+    },
+    "native_control": {
+      "report": "/tmp/bossrush-spring5-culling-full/bossrush/User/reported-card-37048.json",
+      "frames": 1500,
+      "collision_flags": 988546,
+      "after_clear": {
+        "bodyPending": 0,
+        "created": 1868,
+        "returned": 19257,
+        "pending": 0,
+        "bodyReused": 17389,
+        "bodyCreated": 1868,
+        "reused": 17389,
+        "available": 1868,
+        "bodyAvailable": 0
+      },
+      "logic_ms": {
+        "samples": 1380,
+        "mean": 3.4439543619805906,
+        "p95": 4.875750048086
+      },
+      "render_ms": {
+        "samples": 1379,
+        "mean": 1.5668234626807822,
+        "p95": 2.6958750095218
+      },
+      "peak_projectiles": 1779
+    },
+    "native_culling": {
+      "report": "/tmp/bossrush-spring5-culling-culled/bossrush/User/reported-card-37048.json",
+      "frames": 1500,
+      "collision_flags": 26770,
+      "after_clear": {
+        "returned": 19257,
+        "bodyCreated": 1868,
+        "bodyReused": 17389,
+        "available": 1868,
+        "created": 1868,
+        "pending": 0,
+        "bodyPending": 0,
+        "bodyAvailable": 0,
+        "reused": 17389
+      },
+      "logic_ms": {
+        "samples": 1380,
+        "mean": 2.3022566780285985,
+        "p95": 4.1680410504341
+      },
+      "render_ms": {
+        "samples": 1379,
+        "mean": 1.359110226870891,
+        "p95": 2.4061249569058
+      },
+      "peak_projectiles": 1779
+    },
+    "native_comparison": "相同种子739、自机持续射击、同一二进制与源码，仅切换远弹筛选开关。12个检查点的状态、运动、对象/发射数、绘制批次及顶点数逐项相同。去掉前120帧计算耗时。",
+    "native_logic_mean_reduction": 0.3315077855141527,
+    "discarded_attempt": "逐弹开关改为原生批量开关未测得明显收益，已撤回该API和实现。"
+  },
+  "dream_seal_boundary": {
+    "conclusion": "原作Hard/Lunatic均为53秒耐久，t1=t2=t3=53，原作通用Boss系统将dmg_factor设为0；保留无敌行为。",
+    "original": "/Users/happyelements/crack/THEIS/code/data/EISlib/stage/stage3/bossB/bossB_ls.lua:627",
+    "original_rule": "/Users/happyelements/crack/THEIS/code/data/THlib/enemy/boss_system.lua:210"
+  },
+  "portrait_countdown": {
+    "mode": "挑战/混沌模式",
+    "changes": "卡名保持单行并向左让位，右侧显示两位小数倒计时；低于10秒及5秒改变提示颜色；宿主、祈华梦、Like Dreamer耐久倒计时使用各自单位。",
+    "unit_checks": [
+      "luajit tools/check_rogue_portrait_header.lua",
+      "luajit tools/check_rogue_boss_hud.lua"
+    ],
+    "native_report": "/tmp/bossrush-feedback-portrait-38032/bossrush/User/reported-card-38032.json",
+    "native_frames": 720,
+    "inspected_screenshot": "/tmp/bossrush-feedback-portrait-38032/bossrush/snapshot/reported-card-38032-600.png",
+    "visual_result": "卡名与右侧22.28倒计时无重叠，双Boss显示。Mac虚拟竖屏绘制，非物理安卓屏幕。"
+  },
+  "snow_twins": {
+    "card": 38032,
+    "phases": [
+      "L/stage4/bossA/4",
+      "L/stage4/bossB/4"
+    ],
+    "cause": "副体Boss_in.path是stage2占位数据；导出器未按原场景Boss_creat主副体相邻tick和机体分支关联四面主副体。",
+    "fix": "按原场景引用解析主副体阶段并重生成actors及来源清单。自机弹层-610已经低于敌机层-600。",
+    "export_log": "/tmp/bossrush-snow-twins-export.log",
+    "native_report": "/tmp/bossrush-feedback-after-38032/bossrush/User/reported-card-38032.json",
+    "native_frames": 720,
+    "inspected_screenshot": "/tmp/bossrush-feedback-after-38032/bossrush/snapshot/reported-card-38032-600.png"
+  },
+  "lunar_sniper": {
+    "card": 39046,
+    "pattern": "547",
+    "original": "/Users/happyelements/crack/THMHJ.Restored/src/THMHJ/THMHJ/Barrage.cs:877",
+    "cause": "原作Judge检测旧位置至新位置的运动线段，移植只依赖宿主端点判定，枪心快速弹出生后留下可站立空隙。",
+    "fix": "仅补端点之外被漏掉的运动线段命中；零判定半径的枪械装饰仍无伤害，没有补造子弹或改变出生时序。",
+    "simulation": {
+      "frames_per_variant": 1400,
+      "births_both_variants": 31130,
+      "supplemental_hits_enabled": 858,
+      "birth_records": "逐项相同",
+      "log": "/tmp/bossrush-sniper-sweep-check.log"
+    },
+    "native_report": "/tmp/bossrush-feedback-after-39046/bossrush/User/reported-card-39046.json",
+    "native_frames": 900,
+    "native_supplemental_hits": 396,
+    "inspected_screenshot": "/tmp/bossrush-feedback-after-39046/bossrush/snapshot/reported-card-39046-600.png",
+    "visual_result": "固定位置玩家已丢失残机，图中剩余7；实际碰撞回调已覆盖。"
+  },
+  "delivery": "仅源码修改和本地专项验证；本任务未提交、推送、构建或发布Android APK。"
+}

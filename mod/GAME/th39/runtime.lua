@@ -594,6 +594,7 @@ local function fadeScale(value,delta)
     return value>0 and min(100,max(0,value+delta)) or max(-100,min(0,value-delta))
 end
 local function updateParticle(s)
+    s.previousX,s.previousY=s.fx,s.fy
     s.age=s.age+1
     local t=s.age-(s.Mist and 15 or 0)
     s.status,s.statusFrame=s.controller.status,s.controller.statusFrame
@@ -630,6 +631,38 @@ end
 local function outOfBounds(s)
     return s.Outdispel and (s.fx<118 or s.fx>844 or s.fy< -51 or s.fy>771)
 end
+function R.sweptHit(s,px,py)
+    local p=profile(s.pattern,s.type)
+    if not p or p[7]<=0 or s.wscale==0 or s.hscale==0 then return false end
+    local bx,by=s.previousX or s.fx,s.previousY or s.fy
+    local dx,dy=s.fx-bx,s.fy-by
+    local length=dx*dx+dy*dy
+    local t=length>0 and ((px-bx)*dx+(py-by)*dy)/length or 1
+    if t<0 or t>1 then t=1 end -- 原Judge在线段外回退到当前端点。
+    local x,y=px-(bx+t*dx),py-(by+t*dy)
+    local radius=p[7]+1
+    local reach=radius*max(abs(s.wscale),abs(s.hscale))+.000001
+    if abs(x)>reach or abs(y)>reach then return false end
+    local heading=s.Withspeedd and math.deg(math.atan2(s.my or 0,s.mx or 0))+90 or s.head or 0
+    local ca,sa=cos(heading),sin(heading)
+    local rx,ry=x*ca+y*sa,y*ca-x*sa
+    return rx*rx/(radius*s.hscale)^2+ry*ry/(radius*s.wscale)^2<=1
+end
+function R.checkSweep(b)
+    local s=b.mhj;local c=s.controller
+    if not c.sweepPlayer or s.dis or s.alpha<=99 or s.age<=(s.Mist and 15 or 0) then return false end
+    local p=profile(s.pattern,s.type)
+    if not p or p[7]<=0 then return false end
+    local radius=(p[7]+1)*max(abs(s.wscale),abs(s.hscale))+c.sweepPadding
+    local px,py=c.sweepX,c.sweepY
+    -- 端点附近仍交给宿主碰撞；这里只补原作有、端点检测漏掉的整段穿越。
+    if (s.fx-px)^2+(s.fy-py)^2<=radius*radius then return false end
+    if R.sweptHit(s,px,py) and valid(c.sweepPlayer) then
+        c.sweepPlayer.class.colli(c.sweepPlayer,b)
+        return true
+    end
+    return false
+end
 R.classes.projectile=Class(bullet,{
     init=function(b,s)
         -- 不经过通用雾化类；CrazyStorm自己有15帧出生与事件时钟。
@@ -650,6 +683,7 @@ R.classes.projectile=Class(bullet,{
         end
         if not updateParticle(s) then clean(b);return end
         projected(b)
+        if not s.controller.visual and not s.controller.friendly then R.checkSweep(b) end
         if s.controller.friendly and R.playerWeaponHit then R.playerWeaponHit(b,s) end
         if outOfBounds(s) then clean(b) end
     end,
@@ -1168,6 +1202,12 @@ function R.tick(c)
     if c.pattern.audio then c.pattern.audio.centerEvents(center,t,R) end
     interpolate(center)
     stepControl(c)
+    c.sweepPlayer=nil
+    if not c.visual and not c.friendly and valid(player) and not cheat
+            and player.colli~=false and (player.protect or 0)<=0 then
+        c.sweepPlayer=player;c.sweepX,c.sweepY=R.player(c)
+        c.sweepPadding=max(abs(player.a or 0),abs(player.b or 0))/SCALE
+    end
     if c.pattern.centerAvailable then
         if valid(c.host) and not c.road then c.host.x,c.host.y=projectBullet(center.ox,center.oy) end
         c.offsetx,c.offsety=center.ox-center.fx,center.oy-center.fy

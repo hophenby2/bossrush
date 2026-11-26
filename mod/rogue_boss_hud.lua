@@ -28,6 +28,7 @@ local function collect()
         end
         seen[b]=true
         rows[#rows+1]={boss=b,hp=max(0,hp),maxhp=maximum,x=b.x,y=b.y,info=info,is_combat=combat,
+            countdown=info and info.countdown/60 or b.ui and b.ui.countdown or b.countdown,
             name=b.name and b.name~='' and b.name or entry and entry.title or '',
             dmgt=b.dmgt or 0,dmgmaxt=max(.001,b.dmgmaxt or 1),
             __hpbar_timer=90,_sp_point_auto=b._sp_point_auto or {}}
@@ -108,5 +109,14 @@ function H.renderPointers()
         if pointer then pointer:render() end
     end
     SetViewMode('ui')
+end
+function H.renderCountdown()
+    if not H.enabled() then return end
+    H.prepareRender()
+    local row=H.current[1]
+    local combat=row and (row.info and (row.info.phaseMode==1 or row.info.phaseMode==5) or row.is_combat)
+    if combat and not row.boss.__is_waiting then
+        AndroidPortrait.cardCountdown(row.countdown)
+    end
 end
 return H

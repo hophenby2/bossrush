@@ -1,5 +1,5 @@
 -- 原作自机运行桥：SHT 决定发射周期、位置、速度、判定和伤害，ANM 决定像素。
--- 所有类只从 SequenceResources.spawnPlayer 进入；练习、随机模式及旧顺序录像不走这里。
+-- 顺序模式和选择原作机体的练习从 SequenceResources.spawnPlayer 进入；项目机体及随机模式不走这里。
 local P=SequenceResources
 local floor,min,max,abs,sqrt=math.floor,math.min,math.max,math.abs,math.sqrt
 local New,object,task=New,object,task

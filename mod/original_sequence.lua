@@ -216,7 +216,8 @@ function S.restartChapter(scene)
     ResetPool();boss_group={}
     scene.sequence_last_card=nil
     if NativePlayers and NativePlayers.enabled() then NativePlayers.spawn()
-    else SequenceResources.spawnPlayer() end
+    elseif SequenceResources and SequenceResources.enabled() then SequenceResources.spawnPlayer()
+    else New(_G[lstg.var.player_name]) end
     if ui.OriginalHUD then ui.OriginalHUD.start() end
     task.New(scene,function() S.run(scene,lstg.var.sequence_key,index) end)
 end
@@ -230,7 +231,15 @@ function S.start(key,machine,loadout,practiceChapter)
     local entry=assert(S.catalog.get(key),'未知顺序关卡key')
     lstg.var.sequence_key=key
     lstg.var.sequence_practice_chapter=practiceChapter
-    if entry.native then
+    local projectPractice=false
+    if practiceChapter then
+        local selection=dofile('mod/practice_players.lua').configure(entry.level,machine or S.machines(entry)[1].id,loadout,key)
+        projectPractice=selection.kind=='project'
+        machine=selection.id
+    else lstg.var.practice_player=nil end
+    if projectPractice then
+        lstg.var.sequence_player=nil
+    elseif entry.native then
         local selected=assert(NativePlayers.machine(entry.level,machine or S.machines(entry)[1].id),
             '未知原作机体 '..tostring(machine))
         lstg.var.sequence_player=selected.id

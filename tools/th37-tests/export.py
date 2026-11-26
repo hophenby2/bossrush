@@ -167,7 +167,8 @@ def main():
     if m:out.append((time(m[1]),m[2]))
   return sorted(enumerate(out),key=lambda pair:(pair[1][0],pair[0]))
  chapters=[];next_id=37000;allcards=[]
- actors={2:('橙','Chen'),3:('伊吹萃香','Suika'),4:('八云蓝','Ran'),5:('爱丽丝·玛格特罗依德','Alice'),6:('圣白莲','Byakuren'),7:('帕秋莉·诺蕾姬','Knowledge'),8:('西行寺幽幽子','Yuyuko'),9:('八云紫','Yukari')}
+ # 原作dialogn姓名条、对话敌方索引与SetBoss演员编号对应；不能按关卡序号猜角色。
+ actors={2:('橙','Chen'),3:('伊吹萃香','Suika'),4:('爱丽丝·玛格特罗依德','Ran'),5:('莉莉·怀特','Alice'),6:('八云蓝','Byakuren'),7:('修普','Knowledge'),8:('西行寺幽幽子','Yuyuko'),9:('八云紫','Yukari')}
  for stage,diff in [(s,4) for s in range(1,7)]+[(7,5),(8,6)]:
   name=str(stage)+'0'+str(diff);names={line.split(' ',1)[0]:line.split(' ',1)[1] for line in text('s'+str(diff)).splitlines() if ' ' in line};cs=commands(text(name));bosses=[];roads=[];current=None;driver=[];lasttime=0;roadstart=0
   for order,(tick,cmd) in cs:

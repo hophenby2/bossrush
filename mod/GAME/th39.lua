@@ -385,7 +385,12 @@ for _,chapter in ipairs(D.chapters) do
             local group=entry.group
             local band='mhj3boss'..chapter.script..'_'..group.index..'a';group.band=band
             local lead=group.hosts[1]
-            local name=D.actors[lead.actor][1]
+            local names,seen={},{}
+            for _,host in ipairs(group.hosts) do
+                local actorName=D.actors[host.actor][1]
+                if not seen[actorName] then names[#names+1]=actorName;seen[actorName]=true end
+            end
+            local name=table.concat(names,' / ')
             local x,y=R.project(lead.x,lead.y)
             local cue=specialCue(group.cards[1]) or (group.role=='mid' and 'road' or 'boss')
             boss.Define(band,name,Media.track(chapter.stage,cue),nil,{x,y},nil,D.actors[lead.actor][2],LEVEL)

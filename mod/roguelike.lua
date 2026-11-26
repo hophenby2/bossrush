@@ -66,7 +66,12 @@ R.defaultFilters=poolSource.defaults
 R.copyFilters=poolSource.copy
 R.buildPool=poolSource.build
 function R.savedFilters(variant)
-    if variant=='staged' then return R.copyFilters(scoredata.rogue2_filters,'staged') end
+    if variant=='staged' then
+        local options=R.copyFilters(scoredata.rogue2_filters,'staged')
+        -- 过去固定包含耐久卡，保存的true不是用户勾选过的新选项。
+        if not scoredata.rogue2_survival_configured then options.cards.survival=false end
+        return options
+    end
     return R.copyFilters(scoredata.rogue10_filters)
 end
 -- 单人无限模式只需一个候选；双 Boss 与接续模式校验完整十战所需卡数。
@@ -127,7 +132,10 @@ function R.start(variant,filters)
         and type(record.cleared)=='number' and record.cleared>0 or false
     lstg.var.rogue_run=nil
     if variant=='single' then scoredata.rogue10_filters=R.copyFilters(options) end
-    if config.progression then scoredata.rogue2_filters=R.copyFilters(options,variant) end
+    if config.progression then
+        scoredata.rogue2_filters=R.copyFilters(options,variant)
+        scoredata.rogue2_survival_configured=true
+    end
     StopMusic('SCORE')
     lstg.var.current_system=''
     stage.group.Start(stage.groups[config.name])

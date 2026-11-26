@@ -134,7 +134,8 @@ for _,chapter in ipairs(D.chapters) do
         else
             local group=entry.boss;local band='asl'..group.cards[1].id..'a';group.band=band
             local cue=group.cards[1].role=='mid' and 'road' or 'boss'
-            boss.Define(band,'雪莲华 '..chapter.name..'面',Media.track(number,cue),nil,{0,110},nil,'Yukari',36)
+            local name=Actor.name(group.cards[1].key) or ('雪莲华 '..chapter.name..'面'..(group.cards[1].role=='mid' and '道中Boss' or '关底Boss'))
+            boss.Define(band,name,Media.track(number,cue),nil,{0,110},nil,'Yukari',36)
             for _,meta in ipairs(group.cards) do addCard(meta,band);chapter.units[#chapter.units+1]={id=meta.id,role=meta.role} end
         end
     end
@@ -142,7 +143,7 @@ end
 for _,meta in ipairs(D.extra) do
     local number=tonumber(meta.key:match('/stage(%d+)/')) or 7
     local cue=meta.role=='lastspell' and 'last' or 'boss'
-    local band='asl'..meta.id..'a';boss.Define(band,'雪莲华分支',Media.track(number,cue),nil,{0,110},nil,'Yukari',36)
+    local band='asl'..meta.id..'a';boss.Define(band,Actor.name(meta.key) or '雪莲华分支',Media.track(number,cue),nil,{0,110},nil,'Yukari',36)
     addCard(meta,band)
 end
 function C.units()

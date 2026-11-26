@@ -4,6 +4,8 @@ import argparse, hashlib, json, math
 from functools import cache
 from pathlib import Path
 import yaml, re, struct
+import sys
+sys.dont_write_bytecode=True
 from PIL import Image
 from export_background import Source, doc, fid, xyz, rgba, lua, ROOT, HEADER
 
@@ -14,6 +16,7 @@ source=Source(args.assets.resolve())
 out=ROOT/'mod/GAME/th38'
 art=ROOT/'Resources/th38/actors';art.mkdir(exist_ok=True)
 sprites={};controllers={};profiles={};phases={};portraits={};backgrounds={};hashes={}
+bossNames=['雪珂','暗华 美夜香','莉帕斯·缇米蒂丝·白雪','荼靡 结音 / 墨樱 初月','万光 绘照','妙严宫 雪华','蚀神 星罗']
 
 def record(path):
     hashes[path.relative_to(source.root).as_posix()]=hashlib.sha256(path.read_bytes()).hexdigest()
@@ -111,6 +114,14 @@ for path in sorted((source.root/'Resources/xuelianhua/prefab/boss').glob('*/*.pr
     if not ns:continue
     key=path.relative_to(source.root).as_posix()
     profiles[key]=dict(nodes=ns,mirror=move.get('DUICHEN',0),jump=move.get('jump',0))
+    nameplate=source.path(inside.get('boss_name_start',{}))
+    if nameplate:
+        number=re.fullmatch(r'boss_name([1-7])',nameplate.stem)
+        assert number,('未知原作姓名条',nameplate)
+        profiles[key]['name']=bossNames[int(number[1])-1]
+        record(nameplate);record(nameplate.with_suffix('.png'))
+    # 副体的Boss_in路径是未使用的占位数据，实际弹幕/阶段由主体现有Bossmove同步。
+    if move['double_boss2']:continue
     keys=[inside['path']]+move['path'];pictures=[inside['lihui']]+move['danmu_lihui']
     block=next(raw for _,_,raw in HEADER.findall(path.read_text()) if 'double_boss2:' in raw)
     raw=re.search(r'^  fuka_num: *(.*)$',block,re.M)[1]
@@ -125,6 +136,29 @@ for path in sorted((source.root/'Resources/xuelianhua/prefab/boss').glob('*/*.pr
         if pf and pf.relative_to(source.root).as_posix() not in portraits:
             pk=pf.relative_to(source.root).as_posix();portraits[pk]=nodes(pf)
         if pf and not move['double_boss2']:phases[phase]['portrait']=pf.relative_to(source.root).as_posix()
+# Boss_creat按原场景相邻tick创建主副体；同时保留自机分支的boss_B对应关系。
+for scene in sorted((source.root/'Scene').glob('Stage*.unity')):
+    spawns=[v for _,(k,v) in documents(scene).items() if k==114 and 'doubleboss' in v]
+    for secondary in spawns:
+        if not secondary['doubleboss']:continue
+        for field,index in [('boss_L',None),('boss_EXA',None),('boss_B',3)]:
+            def reference(row):
+                value=row.get(field,{})
+                return value[index] if index is not None and len(value)>index else value if index is None else {}
+            path=source.path(reference(secondary))
+            if not path:continue
+            key=path.relative_to(source.root).as_posix()
+            if key not in profiles:continue
+            move=next((v for k,v in documents(path).values() if k==114 and 'double_boss2' in v),None)
+            if not move or not move['double_boss2']:continue
+            primary=next((v for v in spawns if v['time_in']==secondary['time_in']-1),None)
+            assert primary,(scene,key,'副体缺少前一tick的主Boss')
+            main=source.path(reference(primary));assert main,(scene,key,'主Boss引用缺失')
+            main=main.relative_to(source.root).as_posix()
+            matched=0
+            for phase in phases.values():
+                if phase.get(1)==main:phase[2]=key;matched+=1
+            assert matched,(scene,key,main,'主Boss阶段缺失')
 # 符卡背景由Boss_fuka_creat按fuka_num动态生成，不属于Stage*.unity场景。
 for path in sorted((source.root/'Resources/xuelianhua/prefab/boss/fuka_beijing').glob('fuka*.prefab')):
     d=documents(path);trs=[(i,v) for i,(k,v) in d.items() if k==4]
@@ -173,6 +207,7 @@ for block in code.split('break;'):
 record(source.root/'Scripts/Boss_fuka_creat.cs')
 for name in ['Bossmove','Boss_move_doudong','Boss_in','Lihuimove1']:
     record(source.root/'Scripts'/(name+'.cs'))
+record(source.root/'Scripts/Anniu_xuanzhong.cs')
 (out/'actors.lua').write_text('-- 原作prefab、AnimatorController和AnimationClip离线参数。\nreturn '+lua(dict(sprites=sprites,controllers=controllers,profiles=profiles,phases=phases,portraits=portraits,backgrounds=backgrounds,spellMap=spellMap))+'\n')
 (out/'visual_sources.json').write_text(json.dumps(dict(sprites=len(sprites),profiles=len(profiles),phases=len(phases),portraits=len(portraits),sha256=hashes),ensure_ascii=False,indent=2)+'\n')
 print(len(profiles),'Boss prefabs,',len(phases),'phases,',len(sprites),'sprites,',len(portraits),'portraits')

@@ -37,7 +37,7 @@ function P.defaults(variant)
     if variant=='staged' then stages.TH42=false end
     return {stages=stages,
         difficulties={lunatic=true,extra=false},encounters={boss=true,road=false},
-        cards={nonspell=true,spell=true,survival=variant=='staged'},rules={enhanced=true}}
+        cards={nonspell=true,spell=true,survival=false},rules={enhanced=true}}
 end
 function P.copy(filters,variant)
     local defaults=P.defaults(variant)
@@ -56,7 +56,7 @@ function P.copy(filters,variant)
         out.stages.TH42=false
         out.difficulties={lunatic=true,extra=false}
         out.encounters={boss=true,road=false}
-        out.cards={nonspell=true,spell=true,survival=true}
+        out.cards={nonspell=true,spell=true,survival=out.cards.survival}
     end
     return out
 end
@@ -138,7 +138,7 @@ end
 function P.buildEndless(filters,extended)
     local options=P.copy(filters,'staged')
     options.difficulties.extra=extended==true
-    options.cards={nonspell=false,spell=true,survival=true}
+    options.cards={nonspell=false,spell=true,survival=options.cards.survival}
     local pool=P.build(options)
     local out,total={},0
     for _,bucket in ipairs(pool) do

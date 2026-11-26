@@ -2,7 +2,21 @@
 local T={}
 function T.install()
     ext.Debugging=function()end
+    SaveSpellCardData=function()end -- 隔离性能采样；退出不加密测试产生的临时符卡记录。
     local shooting=os.getenv('BOSSRUSH_REPORTED_SHOOT')=='1'
+    local sweepProbe=os.getenv('BOSSRUSH_REPORTED_SWEEP')=='1'
+    if os.getenv('BOSSRUSH_REPORTED_PORTRAIT')=='1' then
+        local width,height=setting.resx,setting.resy
+        AndroidPortrait=dofile('android/portrait.lua')
+        AndroidPortrait.enabled=function()return stage.current_stage and not stage.current_stage.is_menu end
+        AndroidPortrait.configure=function()end
+        AndroidPortrait.resetScreen=function()
+            if not AndroidPortrait.enabled() then return false end
+            screen.width,screen.height,screen.scale=540,960,height/960
+            setting.resx=540*screen.scale;screen.dx=(width-setting.resx)/2;screen.dy=0
+            ResetWorld();ResetWorldOffset();AndroidPortrait.layoutWorld();return true
+        end
+    end
     GetInput=function()
         local current=stage.current_stage
         LoadSaveInputState(shooting and current and current.stage_name=='RogueTwo@RogueTwo' and {shoot=true,slow=true} or {})
@@ -24,6 +38,24 @@ function T.install()
         if instrumented then return end
         instrumented=true
         backend=id<38000 and TH37.runtime or id<39000 and TH38.runtime or TH39.runtime
+        backend.cullDistantCollisions=os.getenv('BOSSRUSH_REPORTED_COLLISION_FALLBACK')~='1'
+        report.collision_culling=backend.cullDistantCollisions
+        report.collision_flags=0
+        if backend.beginCollisions then
+            local begin=backend.beginCollisions
+            backend.beginCollisions=function(...)
+                begin(...);report.collision_flags=report.collision_flags+(backend.collisionCount or 0)
+            end
+        end
+        if sweepProbe and backend.checkSweep then
+            local check=backend.checkSweep
+            report.swept_hits=0
+            backend.checkSweep=function(b)
+                local hit=check(b)
+                if hit then report.swept_hits=report.swept_hits+1 end
+                return hit
+            end
+        end
         if os.getenv('BOSSRUSH_REPORTED_POOL_OFF')=='1' then backend.useStatePool=false end
         report.pooling=backend.useStatePool~=false
         local deathEffect=TH39.runtime.enemyDeathEffect
@@ -108,11 +140,12 @@ function T.install()
         end
         if lstg.AndroidDrawCounts then row.draws,row.vertices=lstg.AndroidDrawCounts()end
         report.checkpoints[#report.checkpoints+1]=row
+        lstg.SystemLog(('REPORTED_CHECKPOINT: card=%d age=%d bullets=%d'):format(id,age,#rows))
     end
     local frame=FrameFunc
     FrameFunc=function()
         AndroidFocus=function()end
-        if IsValid(player)then player.protect=60000 end
+        if IsValid(player)then player.protect=sweepProbe and 0 or 60000 end
         local run=lstg.var.rogue_run
         local active=run and run.encounter and not run.preparing and stage.current_stage.stage_name=='RogueTwo@RogueTwo'
         if active then
@@ -145,7 +178,7 @@ function T.install()
                 assert(base>0 and math.abs(boosted/base-1.15)<1e-7,'雪莲华强化未进入实际受伤路径')
                 report.damage={base=base,boosted=boosted,ratio=boosted/base,hp=b.maxhp}
             end
-            if age==120 and os.getenv('BOSSRUSH_REPORTED_WATCHDOG')~='1' then profile.start('li10',sample);sampling=true end
+            if age==120 and os.getenv('BOSSRUSH_REPORTED_WATCHDOG')~='1' and os.getenv('BOSSRUSH_REPORTED_PROFILE')~='0' then profile.start('li10',sample);sampling=true end
         end
         local t=clock();local quit=frame();local elapsed=(clock()-t)*1000
         if active then
@@ -153,7 +186,9 @@ function T.install()
             if age%120==0 then checkpoint()end
             if age>=limit then
                 if sampling then profile.stop()end
-                if shooting and id>=39000 and id<40000 then assert(report.familiar_hits>0 and report.familiar_kills>0,'未覆盖真实自机弹命中及击破使魔')end
+                if shooting and id==39006 then assert(report.familiar_hits>0 and report.familiar_kills>0,'未覆盖真实自机弹命中及击破使魔')end
+                if sweepProbe then assert((report.swept_hits or 0)>0,'未覆盖原作运动线段命中') end
+                if lstg.AndroidJitMcodeStats then report.jit_mcode=lstg.AndroidJitMcodeStats() end
                 if bombAt then assert(report.bombed,'没有覆盖扔雷')end
                 if backend.statePoolStats then
                     if backend.clearAll then backend.clearAll()

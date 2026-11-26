@@ -100,7 +100,7 @@ def movement(s,default):
  m=re.search(r'(?:base\.)?Boss\.DestPoint = new PointF?\(([^)]+)\)|base\.DestPoint = new PointF?\(([^)]+)\)',s)
  if not m:return default
  return [float(eval(expression(x),{'__builtins__':{}},{})) for x in (m[1] or m[2]).split(',')]
-identities={'Ami':'娅米','Rakuki':'桃雨洛熙','Koreirei':'古灵灵','Seiryuu':'夏青柳','Kage':'魅明魔影','Rakukun':'桃雨洛薰','Tensei':'梦璃夜天星','Rika':'雾隐梨花'}
+identities={'Ami':'娅米','Rakuki':'桃雨洛熙','Koreirei':'古灵灵','Seiryuu':'夏青柳','Kage':'魅明魔影','Rakukun':'桃雨落薰','Tensei':'梦璃夜天星','Rika':'雾隐梨花'}
 stages={};phases=[];functions={};index=68000
 for chapter in ['01','02','03','04','05','06','Ex']:
  stage=(a.source/('GameState_SSS'+chapter+'.cs')).read_text();bs=re.findall(r'new (Boss_\w+)\(',stage);times=re.search(r'int\[\] array = new int\[\d+\] \{([^}]+)',stage)

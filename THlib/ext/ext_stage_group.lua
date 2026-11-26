@@ -124,6 +124,12 @@ function stg.frame(self)
     stg.frame_pause(self)
 end
 -- 答题冻结战斗时仍需处理暂停菜单，不能因此启动超额失误的原失败演出。
+local function restartPractice(self)
+    local v=lstg.var
+    if self.group.sequence_key then
+        OriginalSequence.start(self.group.sequence_key,v.practice_player or v.sequence_player,v.like_dreamer_loadout,v.sequence_practice_chapter)
+    else stage.group.PracticeStart(self.name,self.name=='Spell Practice@Spell Practice',v.practice_player,v.like_dreamer_loadout) end
+end
 function stg.frame_pause(self)
     local order = ext.GetPauseMenuOrder()
     if order == "返回标题菜单" then
@@ -141,7 +147,7 @@ function stg.frame_pause(self)
         end
         lstg.var.timeslow = nil
         if lstg.var.is_practice then
-            stage.group.PracticeStart(self.name,false,nil,lstg.var.like_dreamer_loadout)
+            restartPractice(self)
         else
             if ContinueGame then
                 stage.group.StartSaving()
@@ -158,7 +164,7 @@ function stg.frame_pause(self)
     end
     if order == "重新开始" then
         if lstg.var.is_practice then
-            stage.group.PracticeStart(self.name,false,nil,lstg.var.like_dreamer_loadout)
+            restartPractice(self)
         else
             if ContinueGame then
                 stage.group.StartSaving()
@@ -227,6 +233,9 @@ function stg.render()
 end
 
 function stg.Start(group,loadout,practice)
+    local projectPractice=practice and type(lstg.var.practice_player)=='string' and lstg.var.practice_player:match('^project:')
+    if not practice then lstg.var.practice_player=nil end
+    lstg.var.__original_practice_version=nil
     lstg.var.__drops_version=GameDrops.VERSION;lstg.var.upgrades=nil
     if GameNet then GameNet.newRound() end
     -- 移动模式随关卡初态保存，录像与续玩不依赖之后的本机设置。
@@ -235,13 +244,13 @@ function stg.Start(group,loadout,practice)
     lstg.var.__hp_scale_version=(group._name=='RogueTen' or group._name=='RogueTwo' or group._name=='RogueDuo' or group._name=='RogueChain') and 1 or nil
     lstg.var.__rogue_music_version=lstg.var.__hp_scale_version and 1 or nil
     lstg.var.__sequence_version=group.sequence_key and 1 or nil
-    lstg.var.__sequence_system_version=group.sequence_key and not group.sequence_native and SequenceResources and SequenceResources.VERSION or nil
+    lstg.var.__sequence_system_version=group.sequence_key and not group.sequence_native and not projectPractice and SequenceResources and SequenceResources.VERSION or nil
     lstg.var.original_resources=nil -- 新录像初态只保存机体与系统版本，不能带入上一局的对象状态。
     if lstg.var.__sequence_system_version then lstg.var.__drops_version=0;lstg.var.upgrades=nil end
     if not group.sequence_key then lstg.var.original_resources=nil;lstg.var.sequence_player=nil end
     if not group.sequence_key then lstg.var.sequence_run=nil end
     if NativePlayers then
-        NativePlayers.configure(group.sequence_native and group.sequence_level,lstg.var.sequence_player,loadout)
+        NativePlayers.configure(not projectPractice and group.sequence_native and group.sequence_level,lstg.var.sequence_player,loadout)
     end
     lstg.var.is_practice = practice==true
     lstg.var.cheat = false--关卡练习和普通游玩都不给自机无敌
@@ -277,15 +286,13 @@ function stg.PracticeStart(stagename, sc_pr, machine, loadout)
     lstg.var.__touch_always=AndroidInput~=nil and not BossRushDesktop
     lstg.var.__hp_scale_version=nil
     lstg.var.__rogue_music_version=nil
-    if NativePlayers then
-        local level=NativePlayers.practiceLevel(stagename,sc_pr and lstg.var.sc_group)
-        if level and not machine then
-            machine=lstg.var.native_player_level==level and lstg.var.native_player_id
-                or lstg.var.player_name=='marisa_player' and NativePlayers.machine(level,'marisa') and 'marisa'
-                or NativePlayers.machines(level)[1].id
-        end
-        NativePlayers.configure(level,machine,loadout)
-    end
+    local practice=dofile('mod/practice_players.lua')
+    local level=sc_pr and lstg.var.sc_group[1] or NativePlayers.practiceLevel(stagename)
+    if not level then for _,entry in ipairs(dofile('mod/original_practice.lua').stages) do
+        if stagename==entry.code..'@BossRush' then level=entry.level;break end
+    end end
+    local key=machine or practice.default(level,lstg.var.practice_player)
+    practice.configure(level,key,loadout)
     lstg.var.is_practice = true
     lstg.var.cheat = sc_pr or false--先写 lstg.var，下一行 stage.Set 会把它一起存进录像
     stage.Set('save', stagename)

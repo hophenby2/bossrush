@@ -10,7 +10,9 @@ stage.group.DefStageValue(name .. '@' .. name, 'init', function(self)
     local bgm = entry.card.practice_bgm or class.bgm
     self.level = class.StageLevel or 1
     if NativePlayers and NativePlayers.enabled() then NativePlayers.spawn()
+    elseif SequenceResources and SequenceResources.enabled() then SequenceResources.spawnPlayer()
     else New(_G[lstg.var.player_name]) end
+    if SequenceResources and SequenceResources.enabled() and ui.OriginalHUD then ui.OriginalHUD.start() end
     if class._bg ~= nil then
         background.Create(class._bg)
     end
@@ -22,7 +24,15 @@ stage.group.DefStageValue(name .. '@' .. name, 'init', function(self)
         local _ref = {}
         local t = 0
         for i, n in ipairs(_sc_pr_table[group][index].sc_group) do
-            _ref[i] = New(n.boss, { n.card })
+            local card=n.card
+            if SequenceResources and SequenceResources.enabled() then
+                card={};for k,v in pairs(n.card) do card[k]=v end
+                local game=SequenceResources.game()
+                local data=OriginalBalance and OriginalBalance.entries[game]
+                local balance=card._original_balance or data and data[card.source_card_id or card.card_id]
+                if balance then card.hp=balance.raw end
+            end
+            _ref[i] = New(n.boss, { card })
             t = t + 1
         end
         for i = 1, t do

@@ -178,14 +178,22 @@ local function motion(o,son,scale)
     else o.mx=f32(o.mx+f32(o.ax*scale));o.my=f32(o.my+f32(o.ay*scale)) end
     if son and (o.sonspeed or 0)~=0 then
         -- Barrage.Update用去掉横纵倍率后的速度更新逻辑方向，事件随后可修改head。
-        local heading
-        if o.my~=0 then
+        local heading=o.sourceHeading
+        local cached=heading and o.headingX==o.mx and o.headingY==o.my
+            and o.headingScaleX==(o.xscale or 1) and o.headingScaleY==(o.yscale or 1)
+        if cached then
+            -- 匀速弹的同一组单精度速度只需反算一次；力场、反弹、变速和倍率变化仍重新计算。
+        elseif o.my~=0 then
             local vx,vy=o.mx/(o.xscale or 1),o.my/(o.yscale or 1)
             local a=f32(f32(pi/2)-f32(math.atan(f32(f32(vx)/f32(vy)))))
             if o.my<0 then a=f32(a+pi) end
             heading=f32(a*degrees)
         else heading=o.mx>=0 and 0 or 180 end
         if heading==heading then
+            if not cached then
+                o.sourceHeading,o.headingX,o.headingY=heading,o.mx,o.my
+                o.headingScaleX,o.headingScaleY=o.xscale or 1,o.yscale or 1
+            end
             if o.sonspeed>0 then o.sonspeedd=heading end
             if o.Withspeedd then o.head=heading end
         end
@@ -237,6 +245,7 @@ local function projected(b)
     local x,y=s.fx+(s.controller.positionx or 0)-317,227-s.fy-(s.controller.positiony or 0)
     local img,p=texture(s.pattern,s.type)
     local a,c=max(0,(p[7]+1)*(s.wscale or 1)),max(0,(p[7]+1)*(s.hscale or 1))
+    s.collisionRadius=max(a,c)
     local rot=-((s.head or 0)+90)
     local layer=(s.controller.effectLayer or s.controller.drawLayer or LAYER.ENEMY_BULLET)+(s.layerid or 0)*2+(s.Blend and 1 or 0)
     -- 淡出在逻辑更新时退出弹组，避免持续Bomb反复扫描；消弹回调内不改碰撞链表。
@@ -386,7 +395,7 @@ R.classes.projectile=Class(bullet,{
         s.shadows=s.shadows or {};s.previousX,s.previousY=s.fx,s.fy
         s.sourceSpeedd=0
         if s.Withspeedd then s.head=s.sonspeedd end
-        R.objects[b]=true;s.controller.bullets[b]=s
+        R.objects[b]=s;s.controller.bullets[b]=s
         s.controller.serial=(s.controller.serial or 0)+1;s.serial=s.controller.serial
         s.bindingBucket=bindingBucket(s.controller,s.layerid,s.parentid,true)
         Bindings.add(s.bindingBucket,b,s)
@@ -483,22 +492,46 @@ function R.sweptHit(s,px,py)
     -- 原Judge在线段外回退到本帧端点。
     if along<0 or along>1 then along=1 end
     local x,y=px-(bx+along*dx),py-(by+along*dy)
-    local ca,sa=cos(s.head or 0),sin(s.head or 0)
-    local rx,ry=x*ca+y*sa,y*ca-x*sa
     local _,profile=texture(s.pattern,s.type)
     local radius=profile[7]+1
+    -- 旋转椭圆必定位于外接圆内；远离自机的弹不再逐颗调用三角函数。
+    local reach=abs(radius)*max(s.hscale,s.wscale)+.000001
+    if abs(x)>reach or abs(y)>reach then return false end
+    local ca,sa=cos(s.head or 0),sin(s.head or 0)
+    local rx,ry=x*ca+y*sa,y*ca-x*sa
     return rx*rx/(radius*s.hscale)^2+ry*ry/(radius*s.wscale)^2<=1
 end
 local collisionObjects={}
+local function collisionCandidate(s,px,py,padding,scale)
+    local reach=max(70,s.collisionRadius or 0)+.001
+    local bx,by=s.previousX or s.fx,s.previousY or s.fy
+    if px>=min(bx,s.fx)-reach and px<=max(bx,s.fx)+reach
+        and py>=min(by,s.fy)-reach and py<=max(by,s.fy)+reach then return true end
+    -- 宿主的自机/擦弹判定带自己的半径，特效平移也必须计算在内。
+    reach=(s.collisionRadius or 0)*scale+padding+.001
+    return abs(s.fx+(s.controller.positionx or 0)-px)<=reach
+        and abs(s.fy+(s.controller.positiony or 0)-py)<=reach
+end
 function R.beginCollisions()
     local count=0
     local p=valid(player) and player
     local px,py=R.player()
-    for b in pairs(R.objects) do
+    local cull=R.cullDistantCollisions~=false and p and p.colli~=false
+    local padding,scale=0,GetGlobalColliderScale and abs(GetGlobalColliderScale()) or 1
+    if cull then
+        padding=(p.rect and abs(p.a or 0)+abs(p.b or 0) or max(abs(p.a or 0),abs(p.b or 0)))*scale
+        local g=p.grazer
+        if valid(g) then
+            local radius=(g.rect and abs(g.a or 0)+abs(g.b or 0) or max(abs(g.a or 0),abs(g.b or 0)))*scale
+            padding=max(padding,radius+abs((g.x or p.x)-p.x)+abs((g.y or p.y)-p.y))
+        end
+        -- 未知的PLAYER组对象仍沿用全量关闭/恢复，不能改变其他碰撞系统的行为。
+        for _,o in ObjList(GROUP.PLAYER) do if o~=p and o~=g then cull=false;break end end
+    end
+    for b,s in pairs(R.objects) do
         -- 对象池回收与弱表的垃圾回收不同步，失效引用不能再读取任何对象字段。
         if valid(b) then
-            local s=b.mhj
-            if s and s.kind=='projectile' and b.colli then
+            if type(s)=='table' and s.kind=='projectile' and (not cull or collisionCandidate(s,px,py,padding,scale)) and b.colli then
                 count=count+1;collisionObjects[count]=b
                 if valid(p) and p.colli~=false then
                     if R.sweptHit(s,px,py) then
@@ -567,7 +600,7 @@ local function grazeBeam(b,s)
 end
 R.classes.beam=Class(object,{
     init=function(b,s)
-        s.is_projectile=true;s.kind='laser';b.mhj=s;b.bound=false;b.vx,b.vy=0,0;s.age=0;s.rlongs=0;s.rwscale=s.wscale;s.changes=s.changes or {};s.limits=s.limits or {};s.object=nil;R.objects[b]=true;s.controller.bullets[b]=s
+        s.is_projectile=true;s.kind='laser';b.mhj=s;b.bound=false;b.vx,b.vy=0,0;s.age=0;s.rlongs=0;s.rwscale=s.wscale;s.changes=s.changes or {};s.limits=s.limits or {};s.object=nil;R.objects[b]=s;s.controller.bullets[b]=s
         b.group,b.layer,b.colli=GROUP.LASER,s.controller.effectLayer or LAYER.ENEMY_BULLET,false
         b.IsLaser,b._inf_graze=true,true
         s.laserGraze={count=0,grazed={}}

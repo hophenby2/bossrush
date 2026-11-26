@@ -27,6 +27,7 @@ for _,entry in ipairs({
 }) do options[#options+1]=entry end
 options[#options+1]={group='rules',key='enhanced',text='强化模式',x=720,y=98}
 stagedOptions[#stagedOptions+1]={group='rules',key='enhanced',text='强化模式',x=505,y=130}
+stagedOptions[#stagedOptions+1]={group='cards',key='survival',text='时符（耐久卡）',x=720,y=130}
 U.options=options
 U.stagedOptions=stagedOptions
 local function entries(o) return o.pool_variant=='staged' and stagedOptions or options end
@@ -55,6 +56,7 @@ function U.toggle(o,index)
     local entry=entries(o)[index];if not entry then return end
     local group=o.pool_options[entry.group]
     group[entry.key]=not group[entry.key]
+    if o.pool_variant=='staged' and entry.group=='cards' and entry.key=='survival' then scoredata.rogue2_survival_configured=true end
     if o.pool_variant=='staged' then scoredata.rogue2_filters=RogueTen.copyFilters(o.pool_options,'staged')
     else
         scoredata.rogue10_filters=RogueTen.copyFilters(o.pool_options)

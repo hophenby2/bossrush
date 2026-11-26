@@ -1,0 +1,142 @@
+{
+  "version": "2026.11.26.11",
+  "version_code": 73,
+  "base_commit": "cd5e0a8b86c957ffa08d49bf4bdf1c9a91cbf28d",
+  "source_sha256": {
+    "THlib/UI/title.lua": "2cee2176e706e8a514c43a7feea05d536e46786415cba270d13683e5b205b808",
+    "THlib/UI/menu.lua": "bd9c7b18727bd465cfaf89234acbf7a355ed2b3f293339d531997514bd17c468",
+    "THlib/UI/sc_pr.lua": "adf633e43a37729651ec400bf258446c752f7a9e9197ed788aeb4cd4f1d3b227",
+    "THlib/UI/rogue_pool.lua": "c533c88e4453d3b233f046528b7ba51957e5e015f61cc4e835d5a6ee22b495d4",
+    "THlib/ext/ext_stage_group.lua": "46aa951932154537d3cb11c9c5e5af081776acf1bf1a65f7674832453d0d30b7",
+    "THlib/sequence_resources.lua": "5360ce7983c6d4642efba0fbb1db6d9fde56801b46906d9d8123a3a388343831",
+    "mod/practice_players.lua": "45e22f9ead581ef2a6915198d938f6bc6850342345b499f9844c8b1ae6f49822",
+    "mod/original_sequence.lua": "4f6e5839302bfd84ab201c22446be6696b5f8b2f7ac1af4c1da4b8f308d3b532",
+    "mod/rogue_pool.lua": "453b5aeb5f04fedcade71ec200f87954a535ba2a4644c6aeccd466b22dda642d",
+    "mod/roguelike.lua": "3952b1859594f963dd6e267c2f2b57209891043d89180b0e04847bdd8cc9888b",
+    "mod/GAME/th37/catalogue.lua": "e7b25c9bfe3b1eb56b4443a11dfaccde2cf9ab42c5222b6e66dc5a1b8c7a1096",
+    "mod/GAME/th38/actors.lua": "2d382549f690beffb098fb2cf8394c6bca971c62526f985d1b528a34542b96d2",
+    "mod/GAME/th39/catalogue.lua": "6e830595f420a7e1ca1cfb9bbb46c4984bdccecc1f8db3072e28ea093a697c04",
+    "mod/GAME/th40/phases.lua": "324cc9ef36fdc97c1c033d88cfba6191a05f0f65be153fbf05f556a9ca788190"
+  },
+  "changes": {
+    "challenge_survival": "高级选项增加时符复选框，默认关闭；过去固定保存的true不作为主动勾选；普通38张与无尽/extend卡池均遵守选项。",
+    "practice": "标题直接进入作品/关卡或符卡列表；之后只选择一次项目或原作机体。两类机体使用不同key，重开保留来源；红妖永风/文原作自机也接入符卡练习。移除旧练习选择说明。",
+    "boss_names": {
+      "spring": {
+        "4": "爱丽丝·玛格特罗依德",
+        "5": "莉莉·怀特",
+        "6": "八云蓝",
+        "7": "修普",
+        "stage4_order": [
+          "修普",
+          "八云蓝",
+          "修普"
+        ]
+      },
+      "night": {
+        "2": "廷达",
+        "3": "？？？",
+        "9": "「修普诺斯」",
+        "10": "「塔纳托斯」",
+        "dual": "多演员名称合并，不只显示首个角色。"
+      },
+      "snow": "按Boss_in.boss_name_start实际姓名条引用生成profile.name；无姓名条的中Boss保留明确的道中标识，不按关底身份推断。",
+      "summer": "依原作MusicRoom，桃雨洛薰修正为桃雨落薰；其他已核对署名保留。",
+      "other_ports": "祈华梦、栖霞园和Like Dreamer的实际Boss使用原作脚本/原作HUD署名，未引入按关卡序号替换角色的字典。"
+    }
+  },
+  "original_evidence": {
+    "spring_nameplate": {
+      "path": "/Users/happyelements/crack/THMHJ.PartII.Restored/src/THMHJ/bin/x86/Debug/net461/Content/Graphics/Info/dialogn.xna",
+      "sha256": "20a60246a878eadfe223c1ca43b7079a6b5d796b916bafcc81e993058f9ed7ce"
+    },
+    "night_nameplate": {
+      "path": "/Users/happyelements/repo_resource_backups_20260702/THMHJ.Restored/src/THMHJ/bin/x64/Debug/net472/Content/Graphics/Info/dialogn.xna",
+      "sha256": "239f52c58b29e2124309b4eafdb301610b5ec8d8ac6d798d7dabd8117c846a4c"
+    },
+    "snow": "mod/GAME/th38/visual_sources.json记录姓名条prefab、png和原作Anniu_xuanzhong.cs的SHA。",
+    "summer": "/Users/happyelements/origin/workspace/reconstructions/thsss-crazystorm/evidence/full-game/Shooting/MenuGroup_MusicRoom.cs:239"
+  },
+  "validation": {
+    "candidate_config": {
+      "command": "luajit tools/check_practice_players.lua",
+      "result": "十二作108个候选、跨来源切换、原作满火力、Dreamer装备清理通过",
+      "log": "/tmp/bossrush-practice-player-config.log"
+    },
+    "challenge_pool": {
+      "command": "luajit tools/check_rogue_staged_pool.lua",
+      "checks": 2688,
+      "log": "/tmp/bossrush-staged-survival-check.log"
+    },
+    "boss_names": {
+      "command": "luajit tools/check_boss_names.lua",
+      "spring_cards": 93,
+      "log": "/tmp/bossrush-boss-names-check.log"
+    },
+    "chapters": {
+      "command": "luajit tools/check_practice_options.lua",
+      "chapters": 106,
+      "log": "/tmp/bossrush-practice-options-check.log"
+    },
+    "native": {
+      "platform": "macOS arm64 Metal，虚拟竖屏540x960，非Android真机",
+      "report": {
+        "portrait": true,
+        "passed": true,
+        "cases": [
+          {
+            "key": "project:marisa_player",
+            "level": 35,
+            "chapter": false
+          },
+          {
+            "key": "original:reimu",
+            "level": 35,
+            "chapter": false
+          },
+          {
+            "key": "original:reimua",
+            "level": 30,
+            "chapter": false
+          },
+          {
+            "key": "project:reimu_player",
+            "level": 35,
+            "chapter": true
+          },
+          {
+            "key": "original:sanae",
+            "level": 35,
+            "chapter": true
+          },
+          {
+            "key": "original:marisab",
+            "level": 30,
+            "chapter": true
+          },
+          {
+            "key": "project:marisa_player",
+            "level": 39,
+            "chapter": false
+          },
+          {
+            "key": "project:reimu_player",
+            "level": 39,
+            "chapter": true
+          },
+          {
+            "key": "original:dream",
+            "level": 40,
+            "chapter": false
+          }
+        ]
+      },
+      "log": "/tmp/bossrush-practice-players-final.log",
+      "inspected_screenshot": "/tmp/bossrush-practice-players-final-20261126/bossrush/snapshot/practice-players-3.png"
+    },
+    "limitations": [
+      "未声称Android真机FPS实测。",
+      "原生验证覆盖9组实际选择，108个候选的枚举/配置通过不等于逐一运行108种射击。"
+    ]
+  }
+}

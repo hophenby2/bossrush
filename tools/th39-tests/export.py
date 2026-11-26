@@ -30,9 +30,9 @@ EVENT_FIELDS = {**PROPS, '进入遮罩瞬间': 'maskEntered', '状态': 'status'
 ROAD = set('SetEnemy CopyEnemy AddEvent SetEnemyItems SetNoHarmTime SetHideTime PauseByEnemy Pause BindFamiliar SetEnemyUnderneath SetEnemyBarrageDispel SetEnemyDeadCondition'.split())
 PRESENTATION = set('PlayMusic FadeoutMusic FadeinMusic LoadBackGround ShowDialog SetEnemyBarrageUnderActor RaiseEffect SetEnemyExplo SetBackgroundEffect StopBackgroundEffect AdjustBackgroundEffect FadeinBackground FadeinEnvSound FadeoutEnvSound PlaySound SkipMusic ReplaceBackgroundEffect DistortEffect BreakBackgroundEffect SetBossCardBackground SetBossCardOpenEffect SetBossCardSide SetBossCardTip PreloadMusic SetBossDialogDelay KeepBackground TimeIgnoreBackground SetSpecialItem SetBossCardBombMoveFactor SetBossCardBarrageOrder SetBossCardDialog SetBossCardDispel LastBoss PauseLantern Respawn PlaceTeammate StartProtect EndProtect'.split())
 ACTORS = [
-    ['莉格露·奈特巴格', 'Tewi'], ['今泉影狼', 'Kagerou'], ['因幡帝', 'Tewi'],
+    ['莉格露·奈特巴格', 'Tewi'], ['廷达', 'Kagerou'], ['？？？', 'Tewi'],
     ['因幡帝', 'Tewi'], ['上白泽慧音', 'Reisen'], ['铃仙·优昙华院·因幡', 'Reisen'],
-    ['蓬莱山辉夜', 'Reisen'], ['八意永琳', 'Reisen'], ['EX Boss', 'Yukari'], ['EX Boss', 'Yukari'],
+    ['蓬莱山辉夜', 'Reisen'], ['八意永琳', 'Reisen'], ['「修普诺斯」', 'Yukari'], ['「塔纳托斯」', 'Yukari'],
 ]
 
 

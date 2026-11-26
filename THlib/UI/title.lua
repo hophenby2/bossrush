@@ -115,24 +115,27 @@ function stage_menu:init()
         if level==40 then selectDreamerEquipment(source,machine,start)
         else startPractice(source,function() start(machine.id) end) end
     end
+    local practicePlayers=dofile('mod/practice_players.lua')
     local function selectNativePractice(source,level,start)
         local route=type(level)=='table' and level
         level=route and route.level or level
-        local machines=route and OriginalSequence.machines(route) or NativePlayers and NativePlayers.machines(level)
-        if not machines then startPractice(source,start);return end
+        local machines=practicePlayers.candidates(level)
         local selector
         local function back() menu.FadeOut(selector);menu.FadeIn(source) end
         local rows={}
         for _,machine in ipairs(machines) do
-            local id=machine.id
+            local id=machine.key
             rows[#rows+1]={machine.name,function()
                 scoredata.practice_machines=scoredata.practice_machines or {}
                 scoredata.practice_machines[tostring(level)]=id
-                launchNative(selector,level,machine,start)
+                if machine.kind=='native' and level==40 then
+                    selectDreamerEquipment(selector,machine.machine,function(_,loadout) start(id,loadout) end)
+                else startPractice(selector,function() start(id) end) end
             end,'',key=id}
         end
         rows[#rows+1]={'返回',back,'Back',key='back'}
-        selector=New(main_menu,'选择原作机体',rows,back)
+        selector=New(main_menu,'选择练习机体',rows,back)
+        selector.practice_players=true
         local saved=scoredata.practice_machines and scoredata.practice_machines[tostring(level)]
         for i,row in ipairs(rows) do if row.key==saved then selector.pos,selector._pos,selector.pos_pre=i,i,i end end
         menu.FadeOut(source);menu.FadeIn(selector)
@@ -140,7 +143,7 @@ function stage_menu:init()
     local function createPracticeMenus()
         if menu_stage_practice then return end
         menu_stage_practice=New(stage_select,function()
-            menu.FadeOut(menu_stage_practice);menu.FadeIn(menu_player_system_select)
+            menu.FadeOut(menu_stage_practice);menu.FadeIn(menu_title)
         end,function(pos)
             local entry=menu_stage_practice.stage_selects[pos]
             local selector;local rows={}
@@ -163,7 +166,7 @@ function stage_menu:init()
         end)
         menu_spell_practice=New(sc_pr_menu,function(index,group)
             if not index then
-                menu.FadeOut(menu_spell_practice);menu.FadeIn(menu_player_system_select);return
+                menu.FadeOut(menu_spell_practice);menu.FadeIn(menu_title);return
             end
             selectNativePractice(menu_spell_practice,group[1],function(id,loadout)
                 lstg.var.sc_index,lstg.var.sc_group=index,group
@@ -173,9 +176,9 @@ function stage_menu:init()
     end
     local function openPractice(mode)
         createPracticeMenus()
-        menu_player_system_select:fresh('practice')
-        menu_player_system_select.state=mode
-        menu.FadeIn(menu_player_system_select);menu.FadeOut(menu_title)
+        if mode=='stage_practice' then stage_select.fresh(menu_stage_practice);menu.FadeIn(menu_stage_practice)
+        else menu.FadeIn(menu_spell_practice) end
+        menu.FadeOut(menu_title)
     end
     local function openSequence()
         if not menu_sequence_select then

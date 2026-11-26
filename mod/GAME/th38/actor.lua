@@ -70,11 +70,17 @@ local function render(nodes,list,x,y,rot,mirror,tint)
         end
     end
 end
+function A.name(key,index)
+    local phase=D.phases[key]
+    local profile=phase and D.profiles[phase[index or 1]]
+    return profile and profile.name
+end
 function A.bind(o,key,index)
     o.no_hp_render=true -- 原作HUD显示Boss血条。
     local phase=D.phases[key]
     local profile=phase and phase[index or 1]
     if not profile then return end
+    o.name=A.name(key,index) or o.name
     if not o.asl_actor or o.asl_actor.profile~=profile then
         local p=D.profiles[profile]
         o.asl_actor={profile=profile,nodes=p.nodes,states=states(p.nodes),mirrorClock=0,mirror=1}

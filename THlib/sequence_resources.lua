@@ -1,11 +1,11 @@
--- 顺序模式独立的原作资源账本。原始火力单位保留为 0..128 / 风神录 0..100，
+-- 顺序模式与原作机体练习的资源账本。原始火力单位保留为 0..128 / 风神录 0..100，
 -- 不经过随机模式百分比成长；所有逻辑状态放在 var，重试和录像从同一初态重建。
 local P={VERSION=1,gameByLevel={[29]=8,[30]=6,[31]=95,[32]=7,[33]=10}}
 SequenceResources=P
 local floor,min,max=math.floor,math.min,math.max
 local cache={}
 local function var() return lstg.var end
-function P.enabled() return var().__sequence_version==1 and var().__sequence_system_version==P.VERSION end
+function P.enabled() return (var().__sequence_version==1 or var().__original_practice_version==1) and var().__sequence_system_version==P.VERSION end
 function P.state() return P.enabled() and var().original_resources end
 function P.game() local s=P.state();return s and s.game end
 dofile('THlib/sequence_audio.lua')
@@ -59,6 +59,9 @@ function P.reset()
         cherry_plus=0,border=0,faith=game==10 and 50000 or 0,faith_timer=0,faith_decay=90,time=0,clock=0,continues=0,
         continue_limit=var().sequence_continue_limit or 3,human=0,gauge=0,gauge_ramp=0,gauge_delay=0,bomb_count=0}
     if game==95 then s.power,s.bombs,s.lives=0,0,9 end
+    if var().__original_practice_version==1 and game~=95 then
+        s.power=game==10 and 100 or 128;s.lives,s.bombs=8,8
+    end
     var().original_resources=s
     var().power,var().faith,var().sakura,var().man=s.power,s.faith,s.cherry_plus,0
     var().pointrate=game==8 and 300000 or game==7 and 50000 or game==6 and (extra and 300000 or 200000) or s.faith

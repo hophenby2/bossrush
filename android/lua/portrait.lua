@@ -5,6 +5,22 @@ local WIDTH=540
 function P.enabled()
     return setting and setting.androidPortrait==true and setting.resy>setting.resx
 end
+function P.cardHeader(slot)
+    local w=lstg.world
+    local right=w.scrr-12
+    return {right=right,nameRight=right-84,nameWidth=w.scrr-w.scrl-108,
+        y=w.scrt-68-((slot or 1)-1)*26,timerWidth=76}
+end
+function P.cardCountdown(value,slot,alpha)
+    if value==nil then return end
+    local p=P.cardHeader(slot)
+    local text=string.format('%.2f',math.max(0,value))
+    local width=FindResFont('title'):calcSize(text).x*.5
+    local pulse=value<=5 and 1.1 or 1
+    local size=math.min(pulse,p.timerWidth/math.max(1,width))
+    local rgb=value<=5 and {255,64,64} or value<=10 and {255,160,160} or {255,255,255}
+    ui:RenderText('title',text,p.right,p.y,size,Color(alpha or 255,unpack(rgb)),'right','vcenter')
+end
 function P.configure(s)
     local enabled=s.androidPortrait~=false
     if P.requested==enabled then return end

@@ -338,12 +338,14 @@ function main_menu:render()
     local r2
     local height = min(ui.menu.line_height * 1.2, 395 / #self.text)
     if AndroidPortrait and AndroidPortrait.rendering then x,y,height=AndroidPortrait.mainLayout(self) end
+    if self.practice_players then x=AndroidPortrait and AndroidPortrait.rendering and screen.width-36 or screen.width*.75 end
     local R, G, B
     local sub_x, sub_y = 0, 0
     for i = 1, count do
         sub_x = cur_setting.easyrender and 0 or 4 + sin(timer / 2 + i * 45) * 2
         sub_y = cur_setting.easyrender and 0 or sin(timer / 3 + i * 30) * 2.5
         r2 = cur_setting.easyrender and 0 or task.SetMode[5](i / count + self._pos / count + timer / 720)
+        if self.practice_players then r2=0 end
         R, G, B = sp:HSVtoRGB(self.timer / 5, 0.3 + i / count * 0.2, 1)
         if i == self.pos then
             xos = ui.menu.shake_range * sin(ui.menu.shake_speed * self.pos_changed)
@@ -835,7 +837,7 @@ function player_system_select:render()
     elseif self.pool_options then
         rogue_pool_menu.render(self)
     else
-        local tips=self.practice_mode and {'选择自机后进入练习列表','关卡练习只进行所选关卡','符卡练习沿用原有无敌规则'}
+        local tips=self.practice_mode and {}
             or self.sequence_mode and {'按原作顺序进行道中与Boss战','Lunatic、Extra、Phantasm独立选择','道中增援沿原作时间轴继续','此模式不叠加血量倍率或强化','完成后可保存整段录像'}
             or self.simple_dual and {"TH31 / TH34 / TH35","每步同时两名 Boss、两张不同卡","十步二十张不重复，允许同角色","出场及首次定位横移 ±96，Y 不变","答对可复活三次，支持自动 / F5 保存"}
             or self.simple_chain and {"TH31 / TH34 / TH35","随机十张符卡或非符，不重复","Boss 剩余 30% HP 或不足 7 秒时","立即创建下一张，旧 Boss 继续战斗","答对可复活三次，支持自动 / F5 保存"}

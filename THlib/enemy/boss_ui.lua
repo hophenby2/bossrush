@@ -176,6 +176,7 @@ function timeCounter:frame()
     end
 end
 function timeCounter:render()
+    if AndroidPortrait and AndroidPortrait.enabled() and RogueBossHUD and RogueBossHUD.enabled() then return end
     local b = self.system.boss
     if not (IsValid(b)) then
         return

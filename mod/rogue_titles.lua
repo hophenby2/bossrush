@@ -48,6 +48,8 @@ function T.nameLayout(run)
     local w=lstg.world
     local width=screen.width-48
     local cornerWidth=w.scrr-w.scrl-24
+    local header=AndroidPortrait and AndroidPortrait.enabled() and AndroidPortrait.cardHeader()
+    if header then cornerWidth=header.nameWidth end
     local height=math.min(screen.height-80,w.scrt-w.scrb-80)
     local layout=a.layout
     if not layout or layout.width~=width or layout.height~=height or layout.cornerWidth~=cornerWidth then
@@ -69,6 +71,7 @@ function T.nameLayout(run)
     local current=size+(small-size)*move
     local y=screen.height/2+(count-1)*size*22/2+(#groups-1)*size*5
     local right,top=w.scrr-12,w.scrt-68
+    if header then right,top=header.nameRight,header.y end
     local rows={}
     for _,group in ipairs(groups) do
         for _,line in ipairs(group) do
@@ -83,11 +86,13 @@ function T.nameLayout(run)
 end
 function T.render(run)
     local rows=T.nameLayout(run)
-    if not rows then return end
+    local portrait=AndroidPortrait and AndroidPortrait.enabled()
+    if not rows and not portrait then return end
     canvas(function()
-        for _,p in ipairs(rows) do
+        for _,p in ipairs(rows or {}) do
             ui:RenderText('title',p.text,p.x,p.y,p.size,Color(p.alpha,255,255,255),'right','vcenter')
         end
+        if portrait and not run.preparing and not run.finished and RogueBossHUD then RogueBossHUD.renderCountdown() end
     end)
 end
 return T

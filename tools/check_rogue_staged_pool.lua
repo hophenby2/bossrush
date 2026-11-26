@@ -4,6 +4,26 @@ local setup=f:read('*a');f:close()
 local stop=assert(setup:find('local bossFilters=R.defaultFilters',1,true))
 local checks=[=[
 local filters=R.defaultFilters('staged')
+check(filters.cards.survival==false,'挑战模式默认不勾选时符')
+local timeFilters=R.copyFilters(filters,'staged');timeFilters.cards.survival=true
+check(R.copyFilters(timeFilters,'staged').cards.survival,'挑战模式保留时符勾选')
+for _,bucket in ipairs(R.buildPool(filters)) do for _,card in ipairs(bucket.cards) do check(not card.survival,'默认池排除时符')end end
+local timeCount=0
+for _,bucket in ipairs(R.buildPool(timeFilters))do for _,card in ipairs(bucket.cards)do if card.survival then timeCount=timeCount+1 end end end
+check(timeCount>0,'勾选时符后有真实耐久卡')
+scoredata.rogue2_filters=timeFilters;scoredata.rogue2_survival_configured=nil
+check(not R.savedFilters('staged').cards.survival,'过去强制保存的true不能当成主动勾选')
+scoredata.rogue2_survival_configured=true
+check(R.savedFilters('staged').cards.survival,'主动勾选后恢复上次时符选项')
+local menuOptions=dofile('THlib/UI/rogue_pool.lua');local timeIndex
+for i,o in ipairs(menuOptions.stagedOptions)do if o.group=='cards' and o.key=='survival' then timeIndex=i end end
+check(timeIndex~=nil,'挑战高级选项有时符复选框')
+local view={pool_variant='staged',pool_options=R.copyFilters(filters,'staged')}
+menuOptions.toggle(view,timeIndex);check(view.pool_options.cards.survival,'菜单勾选时符')
+menuOptions.toggle(view,timeIndex);check(not view.pool_options.cards.survival,'菜单取消时符')
+for _,bucket in ipairs(dofile('mod/rogue_pool.lua').buildEndless(filters,true))do
+    for _,card in ipairs(bucket.cards)do check(not card.survival,'无尽延伸也遵守时符开关')end
+end
 local function ids(cards)
     local out={};for _,card in ipairs(cards) do out[#out+1]=card.key end
     return table.concat(out,',')
