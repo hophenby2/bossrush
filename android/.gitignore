@@ -2,5 +2,6 @@
 build/
 dist/
 *.keystore
+signing/password.local
 local.properties
 __pycache__/

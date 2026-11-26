@@ -14,6 +14,7 @@ import re
 import struct
 import zlib
 from asset_policy import include_asset, native_font_images
+from apk_signing import load_identity, verify_certificate, PASSWORD_ENV
 
 ROOT = Path(__file__).resolve().parent
 GAME = ROOT.parent
@@ -493,14 +494,9 @@ def package_apk(sdk, ndk, assets):
 
 
 def sign_apk(tools, keytool, unsigned):
+    identity, keystore, signing_env = load_identity(keytool)
     aligned = BUILD / 'aligned.apk'
     run(executable(tools, 'zipalign'), '-f', '-p', '4', unsigned, aligned)
-    keystore = CACHE / 'debug.keystore'
-    if not keystore.exists():
-        run(keytool, '-genkeypair', '-keystore', keystore, '-storepass', 'android',
-            '-keypass', 'android', '-alias', 'androiddebugkey', '-keyalg', 'RSA',
-            '-keysize', '2048', '-validity', '10000',
-            '-dname', 'CN=Boss Rush HD Android Debug,O=Local Development,C=CN')
     dist = ROOT / 'dist'
     dist.mkdir(exist_ok=True)
     output = dist / 'BossRushHD-android-arm64-debug.apk'
@@ -508,9 +504,13 @@ def sign_apk(tools, keytool, unsigned):
     if idsig.exists():
         idsig.unlink()
     signer = [executable(keytool.parent, 'java'), '-jar', tools / 'lib/apksigner.jar']
-    run(*signer, 'sign', '--ks', keystore, '--ks-pass', 'pass:android',
-        '--v4-signing-enabled', 'false', '--out', output, aligned)
-    run(*signer, 'verify', '--verbose', '--print-certs', output)
+    run(*signer, 'sign', '--ks', keystore, '--ks-key-alias', identity['alias'],
+        '--ks-pass', 'env:' + PASSWORD_ENV, '--key-pass', 'env:' + PASSWORD_ENV,
+        '--v4-signing-enabled', 'false', '--out', output, aligned, env=signing_env)
+    verification = subprocess.run(list(map(str, [*signer, 'verify', '--verbose', '--print-certs', output])),
+                                  check=True, capture_output=True, text=True)
+    print(verification.stdout, end='', flush=True)
+    verify_certificate(verification.stdout, identity)
     digest = hashlib.file_digest(output.open('rb'), 'sha256').hexdigest()
     (dist / (output.name + '.sha256')).write_text(digest + '  ' + output.name + '\n')
     print(f'APK：{output}\nSHA-256：{digest}', flush=True)
@@ -559,6 +559,12 @@ def main():
         GAME = args.game_root.resolve()
         if not (GAME / 'core.lua').is_file():
             parser.error('--game-root 必须包含 core.lua')
+    if not args.assets_only:
+        java_home = os.environ.get('JAVA_HOME')
+        keytool = executable(Path(java_home) / 'bin', 'keytool') if java_home else shutil.which('keytool')
+        if not keytool:
+            raise RuntimeError('缺少JDK keytool')
+        load_identity(keytool)
     BUILD.mkdir(exist_ok=True)
     manifest = prepare_manifest()
     prepare_engine(args.engine_archive)

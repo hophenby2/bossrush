@@ -375,8 +375,9 @@ Windows 使用 PowerShell 指定工具路径与 UTF-8，以下为本机配置：
   $env:PATH+=";$env:ANDROID_HOME/cmake/3.22.1/bin"
   python android/build.py --jobs 4
 
-签名沿用 android/.cache/debug.keystore；本机从已有 Android 测试密钥复制，勿删除该密钥。
-打包脚本会执行签名校验并显示公开证书指纹，私钥不会入包或纳入版本控制。
+签名固定使用 android/signing/bossrush.p12，沿用既有安装包的密钥与证书。
+加密密钥库、证书指纹与签名逻辑已纳入Git；密码由本地password.local或环境变量提供，不入Git或APK。
+换机配置、密码备份和单独校验命令见 android/signing/README.zh-CN.md。
 
 只改 Lua、图片、音乐或 shader 时可以更新资源后重新签名：
 
@@ -418,7 +419,7 @@ shaders/：六个后处理的 GLES 实现；打包时生成 GFX 所需的位置�
 APK 为完整离线包，包含音乐和高清素材，体积约 390 MiB。
 应用不请求外部存储权限。新存档位于应用内部 files/bossrush/User，
 录像位于 files/bossrush/replay。卸载应用会清除这些私有数据。
-测试密钥位于 .cache/debug.keystore，不纳入版本控制。
+固定签名材料位于 android/signing/；本地解密密码不纳入版本控制。
 上游与依赖许可证、固定源码地址一并打入 assets/licenses/。
 
 测试范围与后续验收

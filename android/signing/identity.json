@@ -1,0 +1,6 @@
+{
+  "keystore": "bossrush.p12",
+  "store_type": "PKCS12",
+  "alias": "androiddebugkey",
+  "certificate_sha256": "5cf38a5e916314d33034b905523e48f878d38479d3de3c0059aac9777081e2db"
+}
