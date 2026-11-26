@@ -229,7 +229,7 @@ function TenguCamera:GetPhoto()
                 end--拍boss检测
 
                 object.BulletDo(function(o)
-                    if o.colli and Math.PointInRectangle(Math.NewPoint(o), rect) then
+                    if not OriginalBulletVisual.is_cancelling(o) and o.colli and Math.PointInRectangle(Math.NewPoint(o), rect) then
                         if o.onPhotoFunc then
                             o:onPhotoFunc()
                         end
@@ -245,7 +245,7 @@ function TenguCamera:GetPhoto()
                     end
                 end)
                 object.IndesDo(function(o)
-                    if o.colli and Math.PointInRectangle(Math.NewPoint(o), rect) then
+                    if not OriginalBulletVisual.is_cancelling(o) and o.colli and Math.PointInRectangle(Math.NewPoint(o), rect) then
                         if o.onPhotoFunc then
                             o:onPhotoFunc()
                         end
@@ -264,7 +264,7 @@ function TenguCamera:GetPhoto()
                     if o.onPhotoFunc then
                         o:onPhotoFunc()
                     end
-                    if o.colli and Math.PointInRectangle(Math.NewPoint(o), rect) then
+                    if not OriginalBulletVisual.is_cancelling(o) and o.colli and Math.PointInRectangle(Math.NewPoint(o), rect) then
                         local take_dmgFunc = o.class.base.take_damage2 or o.class.base.take_damage
                         if take_dmgFunc then
                             take_dmgFunc(o, (400 - Dist(self.centerx, self.centery, o.x, o.y)) * (GameDrops and GameDrops.power(self.player) or 1))
@@ -276,6 +276,7 @@ function TenguCamera:GetPhoto()
                     end
                 end)
                 object.LaserDo(function(o)
+                    if OriginalBulletVisual.is_cancelling(o) then return end
                     if o.IsBentLaser then
 
                         --无药可救的拍曲线激光检测，拍到激光头就可以消掉

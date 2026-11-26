@@ -1,0 +1,296 @@
+{
+  "date": "2026-11-26",
+  "version": "2026.11.26.5",
+  "source_parent_commit": "5ea1ad2cde730cdd09d378bbf62a049b57cd5412",
+  "source_sha256": {
+    "THlib/bullet/cancel_state.lua": "d1229a4c41d2a19f815bd0777e9f74f777e88302b68d3e02272b5be8689ec294",
+    "THlib/bullet/visual_match.lua": "d45bc9a4cd6b5c0616161583393655ab9dc29224270b431cf32148394cece762",
+    "THlib/bullet/clearbullet.lua": "b6033ffe2facdb67e848955d41c40789b6abfcdad51d44c495757e8f1e6ac7ec",
+    "mod/GAME/th37/runtime.lua": "ac0a4b5d34646d7e5fd38fe02e3e464002560060769d66cc539c3b770fda2d71",
+    "mod/GAME/th39/runtime.lua": "88086cb671bbf79119b7f857be99d8d1230708d447a5de6ed3fe4d5b64143d39",
+    "Resources/System/system.lua": "48988323dd81fe590eab334d4bcfc89b96bcefce59780d88537fc0d53753f06e",
+    "Resources/System/Beast.lua": "c2a211d231df039ee019c0e2445f71493c6c2e94c906e9d37f3d9dd32b003728",
+    "Resources/System/Season.lua": "31f473728e9dd39a532d539104c9bd45f94bb75c64cb3fe6b9fd9ee2936407b5",
+    "THlib/player/aya/aya_system.lua": "0c3b42d8498e89f69bc61ca589ce5b2de0dfbdc024a39bc769519a5b2255a7f4"
+  },
+  "scope": "挑战模式流星花火（39004 / 143）宿主Bomb重复消弹及同类入口；保留300帧Bomb、原生弹雾、淡出、首次消弹免疫和发弹参数。",
+  "native_method": {
+    "platform": "macOS原生Metal，Mac与安卓共用游戏及兼容层；非安卓设备帧率",
+    "seed": 739,
+    "mode": "RogueTwo@RogueTwo",
+    "frames": 1500,
+    "bomb_frame": 600,
+    "player": "reimu_player",
+    "input": "自机保护、不持续射击、每帧恢复Boss血量，确保相同固定窗口；第600帧触发正式GameDrops.bombInput",
+    "entry": "BOSSRUSH_MAC_TEST=fireworks-bomb",
+    "data_isolation": "BOSSRUSH_MAC_DATA临时目录"
+  },
+  "before": {
+    "cancel_calls": 16040,
+    "repeated_cancel_calls": 15783,
+    "cpu_windows": {
+      "before_bomb": {
+        "frames": 300,
+        "logic_mean_ms": 2.34,
+        "render_mean_ms": 1.936,
+        "cpu_mean_ms": 4.276,
+        "cpu_p95_ms": 5.824
+      },
+      "bomb_and_fade": {
+        "frames": 330,
+        "logic_mean_ms": 3.006,
+        "render_mean_ms": 2.022,
+        "cpu_mean_ms": 5.028,
+        "cpu_p95_ms": 6.955
+      },
+      "recovered": {
+        "frames": 400,
+        "logic_mean_ms": 3.104,
+        "render_mean_ms": 2.099,
+        "cpu_mean_ms": 5.203,
+        "cpu_p95_ms": 7.462
+      }
+    }
+  },
+  "after": {
+    "cancel_calls": 257,
+    "repeated_cancel_calls": 0,
+    "cpu_windows": {
+      "before_bomb": {
+        "frames": 300,
+        "logic_mean_ms": 2.592,
+        "render_mean_ms": 1.939,
+        "cpu_mean_ms": 4.531,
+        "cpu_p95_ms": 6.388
+      },
+      "bomb_and_fade": {
+        "frames": 330,
+        "logic_mean_ms": 3.15,
+        "render_mean_ms": 2.054,
+        "cpu_mean_ms": 5.203,
+        "cpu_p95_ms": 6.851
+      },
+      "recovered": {
+        "frames": 400,
+        "logic_mean_ms": 3.171,
+        "render_mean_ms": 2.13,
+        "cpu_mean_ms": 5.302,
+        "cpu_p95_ms": 7.697
+      }
+    }
+  },
+  "state_checkpoints_identical": [
+    {
+      "age": 60,
+      "objects": 0,
+      "dying": 0,
+      "state_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "before_calls": 0,
+      "after_calls": 0
+    },
+    {
+      "age": 120,
+      "objects": 0,
+      "dying": 0,
+      "state_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "before_calls": 0,
+      "after_calls": 0
+    },
+    {
+      "age": 180,
+      "objects": 0,
+      "dying": 0,
+      "state_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "before_calls": 0,
+      "after_calls": 0
+    },
+    {
+      "age": 240,
+      "objects": 114,
+      "dying": 0,
+      "state_sha256": "79ef484c137dc60bd440e1887b1cdc8821d05f3aec2b3e1f6a5f64a2ce030ad5",
+      "before_calls": 0,
+      "after_calls": 0
+    },
+    {
+      "age": 300,
+      "objects": 190,
+      "dying": 0,
+      "state_sha256": "97e3f7fdaf6b4ece282d5da6826031e28c57f4899795f0dbe3efc6d139347e57",
+      "before_calls": 0,
+      "after_calls": 0
+    },
+    {
+      "age": 360,
+      "objects": 279,
+      "dying": 0,
+      "state_sha256": "e2e1e647435152f5f5308636bd91d7a2bbda510157982909f9b5391b95a963d2",
+      "before_calls": 0,
+      "after_calls": 0
+    },
+    {
+      "age": 420,
+      "objects": 363,
+      "dying": 1,
+      "state_sha256": "ce3bb1be038abe20b9803d4e048948224fb22c805216c6a0c31f0057bd3618b6",
+      "before_calls": 0,
+      "after_calls": 0
+    },
+    {
+      "age": 480,
+      "objects": 335,
+      "dying": 0,
+      "state_sha256": "b29d4e0633ae7e1efa4ec4914e613b9d4a239c56cac98aadc273f383b772ad8d",
+      "before_calls": 0,
+      "after_calls": 0
+    },
+    {
+      "age": 540,
+      "objects": 708,
+      "dying": 0,
+      "state_sha256": "ae0203c4a579f49c8861d557e4fc92dfffb522ac88386001da929129cd04f775",
+      "before_calls": 0,
+      "after_calls": 0
+    },
+    {
+      "age": 600,
+      "objects": 1268,
+      "dying": 0,
+      "state_sha256": "1760fac699ff595e8b937ccae3e9c90081d92229b47e6aa4680069a673676fd8",
+      "before_calls": 0,
+      "after_calls": 0
+    },
+    {
+      "age": 660,
+      "objects": 1177,
+      "dying": 0,
+      "state_sha256": "b037d67d23e678f81d2b07959436e5e78740d6dc1f58e57aa57a6d98446a3fa8",
+      "before_calls": 0,
+      "after_calls": 0
+    },
+    {
+      "age": 720,
+      "objects": 833,
+      "dying": 76,
+      "state_sha256": "eaadeccea963dd69d93debb3a32956acbe2827da07b6c6b7ee5b88a16fe70215",
+      "before_calls": 3840,
+      "after_calls": 99
+    },
+    {
+      "age": 780,
+      "objects": 462,
+      "dying": 30,
+      "state_sha256": "edba09eb77f188c0e2b145cf76d8fa8c9ec8bfe13d8f7eb25a23a9341a89457d",
+      "before_calls": 10000,
+      "after_calls": 177
+    },
+    {
+      "age": 840,
+      "objects": 260,
+      "dying": 40,
+      "state_sha256": "1af95dcc8156e2e596a506b5556f6c81ce7d232106741f1a77b82652567366b9",
+      "before_calls": 14100,
+      "after_calls": 247
+    },
+    {
+      "age": 900,
+      "objects": 253,
+      "dying": 0,
+      "state_sha256": "48eea5e428188b55ff80c5ed643b93c2d74f6f1fb6f05d60910eb70b9a563e13",
+      "before_calls": 16040,
+      "after_calls": 257
+    },
+    {
+      "age": 960,
+      "objects": 709,
+      "dying": 0,
+      "state_sha256": "b4374a6a6ffe4042c4ebc30b9442fd8871ff30dfb54fb42fc9eb16542d6c0ebb",
+      "before_calls": 16040,
+      "after_calls": 257
+    },
+    {
+      "age": 1020,
+      "objects": 1299,
+      "dying": 0,
+      "state_sha256": "9dec156c1cc26488f0c630eda76da84ce10f19e6550b6f91328c5faa23ffc0a5",
+      "before_calls": 16040,
+      "after_calls": 257
+    },
+    {
+      "age": 1080,
+      "objects": 1134,
+      "dying": 0,
+      "state_sha256": "ba3a22cee6af7785943cee5e53c0e9f7e67be347a45240386a75136ce5cc25c5",
+      "before_calls": 16040,
+      "after_calls": 257
+    },
+    {
+      "age": 1140,
+      "objects": 845,
+      "dying": 0,
+      "state_sha256": "89569508107c09110c13deaf10f4f96393da71b500c6e4fab8268609500a79f8",
+      "before_calls": 16040,
+      "after_calls": 257
+    },
+    {
+      "age": 1200,
+      "objects": 620,
+      "dying": 0,
+      "state_sha256": "72d27d8c0b966d4cfebd3a623a0b2be312c1f3928246cfe924021b3ba934e63d",
+      "before_calls": 16040,
+      "after_calls": 257
+    },
+    {
+      "age": 1260,
+      "objects": 427,
+      "dying": 0,
+      "state_sha256": "b1ad6da5bf54bc01a167a9eeccb3fd97dd6a1ad4d538fec5e13f4a52a6740302",
+      "before_calls": 16040,
+      "after_calls": 257
+    },
+    {
+      "age": 1320,
+      "objects": 366,
+      "dying": 0,
+      "state_sha256": "b8b2f3e99134657e4ff7869dbf52425f300aeb70f71b68f02a4f8cdb427f9895",
+      "before_calls": 16040,
+      "after_calls": 257
+    },
+    {
+      "age": 1380,
+      "objects": 737,
+      "dying": 0,
+      "state_sha256": "ae398f6daeaf519c4f3bb7461982c86975e51eaf052a7e1248960bd79b94976f",
+      "before_calls": 16040,
+      "after_calls": 257
+    },
+    {
+      "age": 1440,
+      "objects": 1292,
+      "dying": 0,
+      "state_sha256": "e9295f587fee0bc927b2f44f8c81808c974e6bc046959fea3f80fed74cf0ba4e",
+      "before_calls": 16040,
+      "after_calls": 257
+    },
+    {
+      "age": 1500,
+      "objects": 1118,
+      "dying": 0,
+      "state_sha256": "b2f1573dbbb62ffa4a4ec028031136ffca782632e0f560bc8e83b3c11db25dbd",
+      "before_calls": 16040,
+      "after_calls": 257
+    }
+  ],
+  "passed_checks": [
+    "luajit tools/check_repeat_cancel.lua：重叠及持续消弹、永夜31帧/春雪20帧回收、安全退组、激光计时、栖霞园/旧作退场标记、首次免疫与强制清场、花映冢/兽/季节重复掉落",
+    "luajit tools/check_phase_clear.lua：7项旧目标/下一相/激光残段检查",
+    "luajit tools/th39-tests/check_fireworks.lua：4轮父子时序、弹雾和自然淡出",
+    "luajit tools/th37-tests/check_motion.lua：b191位移与弹雾、b367跨循环次数限制",
+    "改动Lua的loadfile语法及git diff --check"
+  ],
+  "limits": [
+    "Mac窗口CPU耗时差异不显著，不能据此宣称安卓帧率提升；已确认重复回调被消除且检查点状态一致。",
+    "当前adb没有连接设备，未采集安卓手机CPU/GPU耗时。",
+    "tools/check_bullet_visuals.lua的整份旧夹具未通过：缺少lstg.PlaySound桩，补齐后仍遇旧TH34类名引用；未修改业务逻辑绕过，本次改动的消弹分支改由专项覆盖。"
+  ]
+}

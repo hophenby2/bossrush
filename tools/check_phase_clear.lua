@@ -19,6 +19,7 @@ sign=function(x) return x<0 and -1 or 1 end
 GetV=function() return 0 end
 BulletBreak_Table={New=noop}
 OriginalBulletVisual={
+    is_cancelling=dofile('THlib/bullet/cancel_state.lua'),
     cancel_bullet=function(o) o.status='del' end,
     cancel_laser=function(o) o.status='del' end,
     laser_drops=noop,

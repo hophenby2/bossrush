@@ -224,7 +224,8 @@ local function projected(b)
     local a,c=max(0,(p[7]+1)*(s.wscale or 1)),max(0,(p[7]+1)*(s.hscale or 1))
     local rot=-((s.head or 0)+90)
     local layer=(s.controller.effectLayer or s.controller.drawLayer or LAYER.ENEMY_BULLET)+(s.layerid or 0)*2+(s.Blend and 1 or 0)
-    local group=s.controller.effectLayer and GROUP.GHOST or (s.Invincible and GROUP.INDES or GROUP.ENEMY_BULLET)
+    -- 淡出在逻辑更新时退出弹组，避免持续Bomb反复扫描；消弹回调内不改碰撞链表。
+    local group=(s.controller.effectLayer or s.dis) and GROUP.GHOST or (s.Invincible and GROUP.INDES or GROUP.ENEMY_BULLET)
     local collidable=not s.controller.effectLayer and not s.dis and s.age>(s.Mist and 15 or 0) and s.type>0 and (s.alpha or 100)>95 and s.wscale>0 and s.hscale>0
     if lstg.AndroidProjectBullet then
         lstg.AndroidProjectBullet(b,img,x,y,rot,s.wscale,s.hscale,a,c,layer,group,collidable)

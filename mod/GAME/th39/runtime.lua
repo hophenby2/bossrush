@@ -406,8 +406,9 @@ local function projected(b)
     b._a=max(0,min(255,(s.alpha or 100)*2.55*born*(s.controller.friendlyAlpha or 1)));b._r,b._g,b._b=s.colorR or 255,s.colorG or 255,s.colorB or 255
     b._blend=s.Blend and 'mul+add' or ''
     local layer=(s.controller.effectLayer or s.controller.drawLayer or LAYER.ENEMY_BULLET)+(s.controller.pattern.order==1 and .1 or 0)
-    local group=s.controller.effectLayer and GROUP.GHOST or (s.Invincible or p and p.invincible) and GROUP.INDES or GROUP.ENEMY_BULLET
-    local collidable=not s.controller.effectLayer and s.age>(s.Mist and 15 or 0) and s.type>1 and r>0 and (s.alpha or 100)>99 and s.wscale~=0 and s.hscale~=0
+    -- 消弹回调只关闭判定；下一次逻辑更新再退出弹组，保留原对象的30帧淡出。
+    local group=(s.controller.effectLayer or s.dis) and GROUP.GHOST or (s.Invincible or p and p.invincible) and GROUP.INDES or GROUP.ENEMY_BULLET
+    local collidable=not s.controller.effectLayer and not s.dis and s.age>(s.Mist and 15 or 0) and s.type>1 and r>0 and (s.alpha or 100)>99 and s.wscale~=0 and s.hscale~=0
     if lstg.AndroidProjectBullet then
         -- Mac/Android 共用现有原生接口，一次更新几何、判定、分组和层次。
         lstg.AndroidProjectBullet(b,nil,x,y,rot,hscale,vscale,a,bb,layer,group,collidable)

@@ -98,14 +98,14 @@ function Attack:frame()
             self:drop_item(x, y)
         end)
         object.BulletDo(function(o)
-            if Dist(self, o) < self.a then
+            if not OriginalBulletVisual.is_cancelling(o) and Dist(self, o) < self.a then
                 object.Del(o)
                 self:drop_item(o.x, o.y)
                 --New(main_item, o.x, o.y, nil, nil, true, nil, 0.6)
             end
         end)
         object.LaserDo(function(o)
-            if Dist(self, o) < self.a and not o.Isradial and not o.Isgrowing then
+            if not OriginalBulletVisual.is_cancelling(o) and Dist(self, o) < self.a and not o.Isradial and not o.Isgrowing then
                 object.Del(o)
                 self:drop_item(o.x, o.y)
                 --New(main_item, o.x, o.y, nil, nil, true, nil, 0.6)

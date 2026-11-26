@@ -188,12 +188,12 @@ local hzc_bullet_cleaner = Class(object, {
         self.a = self.timer * 11
         cutLasersByCircle(self.x, self.y, self.a, item.obj.faith_minor)
         object.BulletDo(function(o)
-            if Dist(self, o) < self.a then
+            if not OriginalBulletVisual.is_cancelling(o) and Dist(self, o) < self.a then
                 object.Kill(o)
             end
         end)
         object.LaserDo(function(o)
-            if Dist(self, o) < self.a and not o.Isradial and not o.Isgrowing then
+            if not OriginalBulletVisual.is_cancelling(o) and Dist(self, o) < self.a and not o.Isradial and not o.Isgrowing then
                 object.Kill(o)
             end
         end)
@@ -595,6 +595,7 @@ system.DoFrame = {
                     PlaySound("bonus2", 0.2, 0, false)
                     local b
                     object.BulletDo(function(unit)
+                        if OriginalBulletVisual.is_cancelling(unit) then return end
                         b = New(item.obj.sakura, unit.x, unit.y, nil, nil, 10)
                         b.attract = 8
                         b.target = player

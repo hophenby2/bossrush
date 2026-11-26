@@ -49,3 +49,10 @@ python3 tools/th38-tests/native.py --card 39060 --frames 500 --repeat --out /tmp
 ```
 
 首波弹幕 b1420 验证两发、15 帧雾化及首次有效帧的投影位移。严格桩检查八条路线、全部 123 个练习入口和 11 个切换阈值。Mac 真机测试使用临时数据目录，检查开场位移、实际伤害与双 Boss 同种子重试。Windows 原版逐帧对照和 Android 真机验证仍待完成。
+
+
+挑战模式流星花火扔雷（2026-11-26）
+----------------------------------
+共用消弹入口使用 `THlib/bullet/cancel_state.lua` 跳过已经开始消散或待删除的对象。春雪与永夜篇在消弹回调里只关判定，下一次逻辑更新再转入GHOST组，保留原对象与淡出寿命。花映冢、兽、季节与拍照入口同样跳过既有消散，避免重复回调、掉落或重置源激光计时；首次消弹的免疫和强制清场规则不变。
+
+`luajit tools/check_repeat_cancel.lua` 检查重叠/持续消弹与原寿命；`BOSSRUSH_MAC_TEST=fireworks-bomb` 在隔离数据目录运行正式挑战模式，记录第600帧扔雷前后的回调、轨迹检查点及CPU耗时。前后结果见 `verification-fireworks-bomb-2026-11-26.json`；该Mac采样不代表安卓真机帧率。

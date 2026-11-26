@@ -399,13 +399,13 @@ function bullet_killer:frame()
     end
     cutLasersByCircle(self.x, self.y, self.a,item.obj.signal)
     object.BulletDo(function(o)
-        if Dist(self, o) < self.a then
+        if not OriginalBulletVisual.is_cancelling(o) and Dist(self, o) < self.a then
             object.Del(o)
             New(item.obj.signal, o.x, o.y)
         end
     end)
     object.LaserDo(function(o)
-        if Dist(self, o) < self.a and not o.Isradial and not o.Isgrowing then
+        if not OriginalBulletVisual.is_cancelling(o) and Dist(self, o) < self.a and not o.Isradial and not o.Isgrowing then
             object.Kill(o)
         end
     end)

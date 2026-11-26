@@ -1,5 +1,6 @@
 -- 原作移植的显示与回收：精灵、调色板和动画取原作 ANM；判定和运动独立维护。
 local V = {}
+V.is_cancelling=dofile('THlib/bullet/cancel_state.lua')
 OriginalCollision=dofile('THlib/bullet/original_collision.lua')
 OriginalBalance=OriginalBalance or dofile('mod/GAME/original/low_speed_hp.lua')
 if not OriginalANM then dofile('THlib/anm/original.lua') end
@@ -171,6 +172,7 @@ function V.spawn_remaining(o)
     return c and c.native_game and spawn_left(o,c.native_game) or 0
 end
 function V.can_cancel(o,force)
+    if V.is_cancelling(o) then return false end
     -- 妖妖梦isProjectile敌机仍由EnemyManager管理，不在BulletManager消弹范围。
     -- 此标记的实体由自己的ECL寿命或所属阶段清理，命中/擦过无敌自机也不提前退场。
     if o._original_enemy_projectile then return false end

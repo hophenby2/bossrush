@@ -12,7 +12,7 @@ local function cutLasersByCircle(x1, y1, r, drop, force, targets)
         end
     end
     object.LaserDo(function(self)
-        if (not targets or targets[self]) and not self.IsBentLaser and IsValid(self) and self.status~='del' and self.status~='kill' then
+        if (not targets or targets[self]) and not OriginalBulletVisual.is_cancelling(self) and not self.IsBentLaser then
             local native=self._native_laser_game or self._native_laser_managed or self.th06_width
             if (native or (self.colli and self.alpha > 0.999)) and self.protect == 0 then
                 --用尽毕生所学
@@ -120,7 +120,7 @@ function bullet_cleaner:frame()
         local live,n=targets._live,0
         for i=1,#live do
             local o=live[i]
-            if IsValid(o) then
+            if not OriginalBulletVisual.is_cancelling(o) then
                 n=n+1;live[n]=o
             end
         end
@@ -132,12 +132,12 @@ function bullet_cleaner:frame()
     end
     cutLasersByCircle(self.x, self.y, self.a, (self.into == "Kill") and item.obj.faith_minor,self.indes,targets)
     object.BulletDo(function(o)
-        if (not targets or targets[o]) and Dist(self, o) < self.a then
+        if (not targets or targets[o]) and not OriginalBulletVisual.is_cancelling(o) and Dist(self, o) < self.a then
             OriginalBulletVisual.cancel_bullet(o,self.into,self.native_force)
         end
     end)
     object.LaserDo(function(o)
-        if (not targets or targets[o]) and IsValid(o) and o.status~='del' and o.status~='kill' and Dist(self, o) < self.a then
+        if (not targets or targets[o]) and not OriginalBulletVisual.is_cancelling(o) and Dist(self, o) < self.a then
             if self.indes or not (o.Isradial or o.Isgrowing) then
                 if o._native_laser_game or o._native_laser_managed or o.th06_width then
                     OriginalBulletVisual.cancel_laser(o,self.into=='Kill',self.indes)
@@ -147,7 +147,7 @@ function bullet_cleaner:frame()
     end)
     if self.indes then
         object.IndesDo(function(o)
-            if (not targets or targets[o]) and Dist(self, o) < self.a then
+            if (not targets or targets[o]) and not OriginalBulletVisual.is_cancelling(o) and Dist(self, o) < self.a then
                 OriginalBulletVisual.cancel_bullet(o,self.into,self.native_force)
             end
         end)
@@ -172,12 +172,12 @@ function bomb_bullet_killer:frame()
     end
     cutLasersByCircle(self.x, self.y, self.a, item.obj.faith_minor,self.kill_indes)
     object.BulletDo(function(o)
-        if Dist(self, o) < self.a then
+        if not OriginalBulletVisual.is_cancelling(o) and Dist(self, o) < self.a then
             OriginalBulletVisual.cancel_bullet(o,'Kill',false)
         end
     end)
     object.LaserDo(function(o)
-        if IsValid(o) and o.status~='del' and o.status~='kill' and Dist(self, o) < self.a then
+        if not OriginalBulletVisual.is_cancelling(o) and Dist(self, o) < self.a then
             if self.kill_indes or not (o.Isradial or o.Isgrowing) then
                 if o._native_laser_game or o._native_laser_managed or o.th06_width then
                     OriginalBulletVisual.cancel_laser(o,true,self.kill_indes)
@@ -187,7 +187,7 @@ function bomb_bullet_killer:frame()
     end)
     if self.kill_indes then
         object.IndesDo(function(o)
-            if Dist(self, o) < self.a then
+            if not OriginalBulletVisual.is_cancelling(o) and Dist(self, o) < self.a then
                 OriginalBulletVisual.cancel_bullet(o,'Kill',false)
             end
         end)
