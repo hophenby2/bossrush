@@ -24,7 +24,11 @@ local function erase(o)
         -- 原 BindingObj 被移出列表后仍保留最终坐标；子发射器下一帧仍会跟到那里。
         -- 引擎对象销毁后不能再读属性，因此在删除前保存绑定所需的数值。
         o.th38_binding_final={cx=o.cx,cy=o.cy,angle=o.angle or 0,direction=o.direction or 0,follow=o.follow}
+        -- EnemyPlane_TouhouYYY在击破和出屏时都移除自己的两层绑定光圈。
+        local rings=o.yyy_rings
+        o.yyy_rings=nil
         o.th38_removed=true;object.RawDel(o)
+        for _,effect in ipairs(rings or {}) do erase(effect) end
     end
 end
 -- System.Random的56槽减法发生器，对齐原MyRandom；不使用math.random的全局流。
@@ -88,6 +92,10 @@ local function sync(o)
         local layer=o.draw_layer or 0
         o.layer=LAYER.ENEMY_BULLET+(o.blend and -2 or layer<0 and -.2 or layer>0 and .2 or 0)
     end
+    if not o.emitter and o.mode=='effect' then
+        -- BaseStage.Show：加色特效在加色弹之后，普通特效在普通弹之后。
+        o.layer=LAYER.ENEMY_BULLET+(o.blend and -1 or .4)
+    end
     if o.mode=='enemy' and not o.emitter then
         local radius=(o.region or 4)*max(o.width,o.height)
         local collision=NativeActorCollision or dofile('THlib/native_actor_collision.lua')
@@ -128,7 +136,8 @@ local function cull(o)
     if o.life and o.life~=0 and o.age>o.life then erase(o);return true end
     -- BaseEmitter_CS 始终使用 BaseEnemyPlane 的边界，不能继承所发激光的回收规则。
     if not o.emitter and o.mode=='ray' then return false end
-    if (o.reflect or 0)>0 then
+    -- CS_Data只向BaseBullet_Touhou写Reflect；Enemy/Effect及发射器不继承该字段。
+    if not o.emitter and o.mode~='enemy' and o.mode~='effect' and (o.reflect or 0)>0 then
         if o.cx<128 then o.reflect=o.reflect-1;o.direction=180-o.direction;o.cx=256-o.cx
         elseif o.cx>=512 then o.reflect=o.reflect-1;o.direction=180-o.direction;o.cx=1024-o.cx end
         if o.cy<36 and o.reflect>0 then o.reflect=o.reflect-1;o.direction=-o.direction;o.cy=52-o.cy end
@@ -165,7 +174,8 @@ local function image(o)
 end
 local function draw(o)
     if not o.emitter then
-        local img=image(o);SetImageState(img,o.blend and 'mul+add' or '',clamp(o.alpha,0,255),clamp(o.red,0,255),clamp(o.green,0,255),clamp(o.blue,0,255))
+        -- EnemyPlaneList统一在普通混合批次绘制，不受MBG的Active高光字段影响。
+        local img=image(o);SetImageState(img,o.mode~='enemy' and o.blend and 'mul+add' or '',clamp(o.alpha,0,255),clamp(o.red,0,255),clamp(o.green,0,255),clamp(o.blue,0,255))
         Render(img,o.x,o.y,o.rot,o.width,o.height)
     end
 end
@@ -279,6 +289,17 @@ end
 local function bind(o,parent)
     o.parent=parent;o.parent_last=nil;update(o)
 end
+local function yyyRings(o)
+    local rings={};o.yyy_rings=rings
+    for i=0,1 do
+        local effect=spawn(o.run,{mode='effect',texture=o.enemy..'_'..i,cx=o.cx,cy=o.cy,
+            speed=0,direction=0,angle=i==0 and 90 or 0,spin=i==0 and -5 or -10,
+            width=i==0 and 1 or 1.5,height=i==0 and 1 or 1.5,blend=i==1,life=0,p={}},false)
+        rings[#rings+1]=effect
+        -- 原SetBinding会立即Ctrl一次，随后同帧EffectList还会再更新一次。
+        bind(effect,o)
+    end
+end
 local function r(o,key) return (o.random and o.random[key] or 0)*N.pm(o.run) end
 function N.emit(o)
     local run=o.run;local fx,fy=o.fx,o.fy
@@ -362,7 +383,9 @@ update=function(o)
     elseif o.mode=='enemy' then
         if o.hp<=0 then object.Kill(o);return end
         if o.enemy:find('MaoYu',1,true) then o.angle=o.angle+15
-        elseif o.enemy:find('YYY',1,true) then o.angle=o.angle+5
+        elseif o.enemy:find('YYY',1,true) then
+            o.angle=o.angle+5
+            if o.age==1 then yyyRings(o) end
         else o.angle=90;o.follow=false end
         if o.enemy:find('Ghost',1,true) then
             local dx=integer(o.run,0,6)*sin(integer(o.run,0,360)*R)

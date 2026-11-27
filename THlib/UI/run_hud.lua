@@ -89,6 +89,14 @@ function H.lives()
     local misses=lstg.var.dead or 0
     return math.max(0,limit-misses),limit
 end
+function H.spareLives()
+    -- 残机不包含正在操控的这一架；9次死亡后显示0，第10次才耗尽生命。
+    local native=SequenceResources and SequenceResources.state()
+    if native then return math.max(0,native.lives),8 end
+    local s=stage.current_stage
+    local limit=lstg.var.rogue_run and (RogueTen.MISS_LIMIT-1) or s.AllowMissCount or 9
+    return math.max(0,limit-(lstg.var.dead or 0)),limit
+end
 function H.resources(x1,x2,top,alpha)
     if SequenceResources and SequenceResources.enabled() then return H.original(x1,x2,top,alpha) end
     local native=NativePlayers and NativePlayers.state()

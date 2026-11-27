@@ -88,6 +88,20 @@ Mac 可用 `package_mac.py --base-app <已有.app> --engine <已有LuaSTG-x缓�
 
 出生弹雾由`mist.lua`按原`ParticleBeginBullet`实现：读取原弹型颜色表，固定2倍大小、出生位置不跟弹移动，8帧渐隐；与弹体判定分开。每个run只有两个分混合模式的渲染对象，粒子本身保存在短寿命列表中；清场释放，不消耗CrazyStorm发弹随机流。
 
+`CS_Data`只向`BaseBullet_Touhou`写入Reflect和Layer，Enemy/Effect不能继承这些普通弹字段。
+火舞「夏夜流火」（68036）的`EnemyYYY4`因此不反弹。本体按`BaseStage.Show`使用普通混合，
+两层绑定光圈按`EnemyPlane_TouhouYYY.Ctrl`在首次更新时创建：内圈角度90、每帧旋转−5，
+外圈1.5倍、每帧旋转−10并加色混合。光圈不继承本体的染色，击破或出屏时随本体移除。
+绑定保留原`SetBinding`立即更新一次、随后同帧EffectList再更新一次的顺序。
+
+```sh
+luajit tools/th40-tests/fiery_flow.lua
+luajit tools/check_portrait_spare_lives.lua
+```
+
+前者运行本卡实际阶段1200帧，检查反弹类型、绘制参数、光圈绑定与回收；后者直接调用竖屏HUD
+和挑战帧回调，检查残机初始9、归零后继续、再次死亡结算。这些Lua检查不等同于安卓画面实测。
+
 ## Boss与符卡画面
 
 `export_visuals.py`从原构造函数离线导出81个符卡类的背景、立绘及中心点；

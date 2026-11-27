@@ -504,7 +504,7 @@ function P.hud(alpha)
     end
     local count=GameDrops.bombsEnabled() and ((GameNet and GameNet.host()) and 2 or 1) or 0
     if not native then
-        P.drawInventory('life',lifeX,lifeY,ui.RunHUD.lives(),alpha)
+        P.drawInventory('life',lifeX,lifeY,ui.RunHUD.spareLives(),alpha)
         for slot=1,count do
             P.drawInventory('bombs',bombX,bombY-(slot-1)*30,GameDrops.bombState(slot),alpha,count==2 and 'P'..slot..' ' or '')
         end

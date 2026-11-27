@@ -63,7 +63,7 @@ return function(P)
             if button then
                 P.drawSlowButton({x=x,y=y},id=='slow')
                 text(id=='slow' and '低速 开' or 'Bomb',x,y,.75,id=='slow' and Color(255,12,50,28) or nil)
-            else P.drawInventory(id,x,y,id=='life' and 10 or 3,255) end
+            else P.drawInventory(id,x,y,id=='life' and 9 or 3,255) end
             SetImageState('white','',self.drag and self.drag.id==id and Color(255,255,222,120) or Color(155,130,183,209))
             misc.RenderOutLine('white',x1,x2,y1,y2,0,1)
             P.bind(self.owner,x1,x2,y1,y2,function()end,function(px,py,phase) self:move(key,px,py,phase) end)

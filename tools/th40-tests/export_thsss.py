@@ -98,9 +98,11 @@ def record(row,kind,origin):
   if boolean(81):
    r['mode']='enemy';p.update(enemy=s[82],hp=get(83),red_drop=get(84),blue_drop=get(85),enemy_color=get(86),backfire=boolean(87),clear_radius=get(88),green_drop=get(89),star_drop=get(90))
   elif get(91)>0:r['mode']='effect';p['texture']=s[92]
+  # 原CS_Data用is BaseBullet_Touhou保护Reflect赋值，Enemy与Effect忽略该列。
+  if r['mode'] in ['enemy','effect']:p['reflect']=0
   # CS_Data在设置Type之后应用自定义纹理，与EffectType是否为零无关。
   if len(s)>95 and s[92]:p['texture']=s[92]
-  if get(78)!=0:p['draw_layer']=get(78)
+  if r['mode']=='bullet' and get(78)!=0:p['draw_layer']=get(78)
   for j,k in enumerate(['x','y','radius','radius_angle','ways','cycle','emit_angle','spread','speed','direction','accel','accel_angle','p.angle','p.speed','p.direction','p.accel','p.accel_angle']):r.setdefault('random',{})[k]=get(53+j)
   e,b=s[51],s[52]
  r['p']=p
