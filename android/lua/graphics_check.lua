@@ -1,6 +1,10 @@
 -- 私有诊断开关 graphics：验证宽屏 RT 坐标、NPOT 平铺和 2D/3D 批次切换。
 local Q = {}
 function Q.run()
+    local options=io.open('User/android-diagnostics','rb')
+    local mode=options and options:read('*a') or ''
+    if options then options:close() end
+    local compare=mode:match('batch%-compare')~=nil
     local s = stage.New('android_graphics', true, true)
     function s:init()
         LoadTexture('android:checker', 'android/test-sampler.png')
@@ -11,14 +15,22 @@ function Q.run()
         SetImageState('android:object-probe','',Color(255,70,130,230))
         local function init(o,x)
             o.img='android:object-probe';o.group=GROUP.GHOST;o.layer=1000;o.bound=false;o.colli=false
-            o.x,o.y=x,40;o.vy=1;o.hscale,o.vscale=1,1
+            o.x,o.y=x,40;o.vy=compare and 0 or 1;o.hscale,o.vscale=1,1
         end
         -- 仅用原生速度积分，从 y=40 移动到截图里的 y≈100，检查空场中的两条矩阵更新路径。
         New(Class(object,{init=init,render=DefaultRenderFunc},true),140)
         New(Class(object,{init=init,render=function(o) DefaultRenderFunc(o) end},true),170)
     end
     function s:frame()
-        if self.timer==60 then
+        if compare then
+            -- 固定同一画面，对比原上传和集中上传，包含超过16位索引容量的多材质数据。
+            local optimized=self.timer>=61
+            lstg.AndroidStreamUploads(optimized);lstg.AndroidGroupedUploads(optimized)
+            if self.timer==60 or self.timer==62 then
+                if not plus.DirectoryExists('snapshot') then plus.CreateDirectory('snapshot') end
+                Snapshot('snapshot/android-triangles-'..(optimized and 'grouped' or 'original')..'.png')
+            end
+        elseif self.timer==60 then
             if not plus.DirectoryExists('snapshot') then plus.CreateDirectory('snapshot') end
             Snapshot('snapshot/android-graphics.png')
         end
@@ -61,6 +73,13 @@ function Q.run()
         Render4V('white',-2,2,0,2,2,0,2,-2,0,-2,-2,0)
         SetViewMode('ui')
         RenderTTF('title','Android 2D / RT / NPOT / 3D',480,520,white,'centerpoint')
+        if compare and self.timer>=58 and self.timer<=64 then
+            for i=0,20479 do
+                local row=math.floor(i/64)
+                SetImageState('white',row%2==0 and '' or 'mul+add',Color(100,70+i%160,90+row%150,210))
+                Render('white',30+(i%64)*5,110+(row%64)*3,0,4,2)
+            end
+        end
         SetViewMode('world')
     end
     stage.Set('none','android_graphics')

@@ -288,6 +288,52 @@ replace(_gles_commands, '''    //NOTE: do not use GL_MAP_INVALIDATE_BUFFER_BIT h
 for _buffer_target in ['GL_ARRAY_BUFFER','GL_ELEMENT_ARRAY_BUFFER','GL_UNIFORM_BUFFER','GL_SHADER_STORAGE_BUFFER']:
     replace(_gles_commands, f'uploadBufferData({_buffer_target}, offset, size, buffer);',
             f'uploadBufferData({_buffer_target}, offset, size, buffer, gpuBuffer->size);')
+# 每批Map/Unmap会在模拟器中产生同步往返，在真机也可能等待正在使用的存储。
+# 完整覆盖时换存储；部分更新仅写指定范围，不破坏同一buffer的其他字段或顶点。
+_gles_source=(engine / _gles_commands).read_text()
+if 'extern "C" bool bossrushAndroidStreamUploads();' not in _gles_source:
+    replace(_gles_commands, '#include "GLES3Commands.h"', '''#include "GLES3Commands.h"
+#if defined(__ANDROID__)
+extern "C" bool bossrushAndroidStreamUploads();
+#endif''')
+replace(_gles_commands, 'extern "C" bool bossrushAndroidStreamUploads();',
+        'extern "C" bool bossrushAndroidStreamUploads();\nextern "C" bool bossrushAndroidUniformSubData();')
+if 'if (bossrushAndroidStreamUploads())' not in _gles_source:
+    replace(_gles_commands, '''static void uploadBufferData(GLenum target, GLintptr offset, GLsizeiptr length, const void *buffer, GLsizeiptr capacity) {
+#if 0''', '''static void uploadBufferData(GLenum target, GLintptr offset, GLsizeiptr length, const void *buffer, GLsizeiptr capacity) {
+#if defined(__ANDROID__)
+    if (bossrushAndroidStreamUploads()) {
+        if (offset == 0 && length == capacity) {
+            GL_CHECK(glBufferData(target, capacity, buffer, GL_STREAM_DRAW));
+        } else {
+            GL_CHECK(glBufferSubData(target, offset, length, buffer));
+        }
+        return;
+    }
+#endif
+#if 0''')
+replace(_gles_commands, '        if (offset == 0 && length == capacity) {',
+        '''        // 每份ProgramState已有独立UBO，小参数缓冲不必每次重新分配存储。
+        if (offset == 0 && length == capacity && (target != GL_UNIFORM_BUFFER || !bossrushAndroidUniformSubData())) {''')
+# 材质仍逐批有序绘制，只有顶点/索引上传集中到同一个16位索引数据块。
+_cocos_renderer='frameworks/cocos2d-x/cocos/renderer/CCRenderer.cpp'
+shutil.copy2(root / 'native/triangle_upload.inc', (engine / _cocos_renderer).with_name('AndroidTriangleUpload.inc'))
+replace(_cocos_renderer, '#include "renderer/CCRenderer.h"', '''#include "renderer/CCRenderer.h"
+#if defined(__ANDROID__)
+extern "C" bool bossrushAndroidGroupedUploads();
+#endif''')
+replace(_cocos_renderer, '''    for (int i = 0; i < batchesTotal; ++i)
+    {
+        const auto& tb = _triBatchesToDraw[i];
+        size_t vTotal  = 0;''', '''#if defined(__ANDROID__)
+    if (bossrushAndroidGroupedUploads()) {
+#include "AndroidTriangleUpload.inc"
+    } else
+#endif
+    for (int i = 0; i < batchesTotal; ++i)
+    {
+        const auto& tb = _triBatchesToDraw[i];
+        size_t vTotal  = 0;''')
 # 雾切换复用默认状态的存储；普通setProgram仍保留原有重建语义。
 replace('frameworks/LSTG/RenderMode.h',
         'void setProgram(cocos2d::backend::Program* program);',

@@ -121,3 +121,25 @@ for _,class in ipairs({hzc,beast,season})do
  assert(calls==1 and rewards<=1,'旧式消弹重复回调/掉落')
 end
 print('PASS 花映冢、兽系统、季节释放不重复消弹/掉落')
+
+-- 一帧辅助对象退出时不再扫描；持续范围下一帧的新对象仍能处理新弹。
+local scans=0
+object.BulletDo=function(fn)scans=scans+1;for _,o in ipairs(test)do if IsValid(o)then fn(o)end end end
+local function shot(x,y)
+ return {_live=true,x=x,y=y,class={kill=function(o)o.fade_out=true end}}
+end
+test={shot(3,4),shot(6,8)};calls=0
+local first=rawNew(bomb_bullet_killer,0,0,10,10,false);first.timer=0
+bomb_bullet_killer.frame(first)
+assert(calls==1 and test[1].fade_out and not test[2].fade_out,'严格半径边界改变')
+test[#test+1]=shot(0,0)
+first.timer=1;bomb_bullet_killer.frame(first)
+assert(scans==1 and calls==1 and not IsValid(first),'辅助对象退出时仍重复扫描')
+local nextFrame=rawNew(bomb_bullet_killer,0,0,10,10,false);nextFrame.timer=0
+bomb_bullet_killer.frame(nextFrame)
+assert(scans==2 and calls==2 and test[3].fade_out,'下一帧范围未处理新出生子弹')
+local immune={_live=true,imgclass={native_game=10},tb={cancel=3}}
+assert(not V.can_cancel(immune,false))
+immune.tb.cancel=0;assert(V.can_cancel(immune,false),'实时解除免疫被缓存')
+immune.status='kill';assert(not V.can_cancel(immune,true),'强制消弹重复处理待删除弹')
+print('PASS 单帧扫描、半径边界、新弹与实时免疫')

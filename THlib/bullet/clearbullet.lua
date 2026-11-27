@@ -112,6 +112,8 @@ function bullet_cleaner:frame()
     end
     if self.timer > self.time2 then
         object.RawDel(self)
+        if perf then perf.finish('logic.cancel') end
+        return
     end
     local targets=self.targets
     if targets and targets._live then
@@ -130,10 +132,13 @@ function bullet_cleaner:frame()
             return
         end
     end
+    local x,y,r=self.x,self.y,self.a
+    local rr=r*r
     cutLasersByCircle(self.x, self.y, self.a, (self.into == "Kill") and item.obj.faith_minor,self.indes,targets)
     object.BulletDo(function(o)
-        if (not targets or targets[o]) and not OriginalBulletVisual.is_cancelling(o) and Dist(self, o) < self.a then
-            OriginalBulletVisual.cancel_bullet(o,self.into,self.native_force)
+        if r>0 and (not targets or targets[o]) then
+            local dx,dy=o.x-x,o.y-y
+            if dx*dx+dy*dy<rr then OriginalBulletVisual.cancel_bullet(o,self.into,self.native_force) end
         end
     end)
     object.LaserDo(function(o)
@@ -147,8 +152,9 @@ function bullet_cleaner:frame()
     end)
     if self.indes then
         object.IndesDo(function(o)
-            if (not targets or targets[o]) and not OriginalBulletVisual.is_cancelling(o) and Dist(self, o) < self.a then
-                OriginalBulletVisual.cancel_bullet(o,self.into,self.native_force)
+            if r>0 and (not targets or targets[o]) then
+                local dx,dy=o.x-x,o.y-y
+                if dx*dx+dy*dy<rr then OriginalBulletVisual.cancel_bullet(o,self.into,self.native_force) end
             end
         end)
     end
@@ -169,10 +175,16 @@ end
 function bomb_bullet_killer:frame()
     if self.timer == 1 then
         Del(self)
+        return
     end
+    local x,y,r=self.x,self.y,self.a
+    if r<=0 then return end
+    local rr=r*r
     cutLasersByCircle(self.x, self.y, self.a, item.obj.faith_minor,self.kill_indes)
     object.BulletDo(function(o)
-        if not OriginalBulletVisual.is_cancelling(o) and Dist(self, o) < self.a then
+        -- cancel_bullet统一检查退场和原作免疫，不能在扫描与取消入口各查一次。
+        local dx,dy=o.x-x,o.y-y
+        if dx*dx+dy*dy < rr then
             OriginalBulletVisual.cancel_bullet(o,'Kill',false)
         end
     end)
@@ -187,7 +199,8 @@ function bomb_bullet_killer:frame()
     end)
     if self.kill_indes then
         object.IndesDo(function(o)
-            if not OriginalBulletVisual.is_cancelling(o) and Dist(self, o) < self.a then
+            local dx,dy=o.x-x,o.y-y
+            if dx*dx+dy*dy < rr then
                 OriginalBulletVisual.cancel_bullet(o,'Kill',false)
             end
         end)

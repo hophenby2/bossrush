@@ -61,6 +61,10 @@ local bomb=cleaner(false)
 local later=point();pools.bullets[3]=later
 bullet_cleaner.frame(bomb)
 check(nextBullet.status=='del' and nextIndes.status=='del' and nextLaser.status=='del' and later.status=='del','Bomb持续清除效果期间的新弹幕')
+local expiredBullet=point();pools.bullets[#pools.bullets+1]=expiredBullet
+bomb.timer=bomb.time2+1
+bullet_cleaner.frame(bomb)
+check(bomb.status=='del' and not expiredBullet.status,'清场圈退出后不再扫描新弹')
 -- 调用正式切割函数确认残段继承目标身份，随后由同一消弹圈继续清除。
 pools={bullets={},lasers={},indes={}}
 local beam={x=-100,y=0,rot=0,l1=0,l2=300,l3=0,index=1,imgid=1,w=8,head=0}

@@ -1,3 +1,12 @@
+2026.11.27.2 安卓挑战模式绘制与消弹优化（2026-11-27）
+连续材质批次集中上传顶点和索引，按16位索引范围分块；每批原有的材质、混合、模型矩阵、绘制顺序和RT边界保留。达到65536顶点时换块，超大单批仍独立上传。
+安卓上传不再逐批Map/Unmap。顶点/索引整块覆盖时允许更换存储，局部修改保留其他字节；小UBO继续合并字段更新，提交时使用SubData，避免每次重新分配存储。
+共用Bomb辅助对象只在有效帧扫描，清场圈退出后立即返回；圆形范围改用平方距离，首次消弹由统一入口检查退场与原作免疫。风神录实时免疫优先返回，不缓存同帧可变的判定。
+集中上传检查：python3 android/tests/check_triangle_upload.py；既有合批检查：python3 android/tests/check_sprite_batch.py；消弹检查：luajit tools/check_repeat_cancel.lua 和 luajit tools/check_phase_clear.lua。
+隔离诊断文件User/android-diagnostics使用“graphics batch-compare”时，对同一静态画面的20480个混合材质四边形（81920顶点）、2D/3D与RT绘制进行原/新路径截图对照；正常游玩不执行。截图位于snapshot/android-triangles-original.png和android-triangles-grouped.png，比较时仅遮罩右下角动态FPS区。
+ARM64模拟器两轮均自然完成38卡、实际拾取37次中间强化，分别实际扔雷26/25次。约115.8倍火力下，最终路径扔雷首秒平均20.08ms，随后第1至6秒平均16.66ms；同局持续消弹扫描约2.79→0.68ms。
+完整挑战的输入、对照窗口、结果和平台限制见tests/verification-challenge-performance-2026-11-27.json。绘制提交计时与CPU调用栈不是GPU耗时，模拟器结果不能作为骁龙手机实测。
+
 2026.11.27.1 安卓ARM64 JIT兼容修复（2026-11-27）
 雷电9.1.39的Houdini 9.0.7a转译下，旧库在加载界面和独立string.len返回检查中均可触发SIGSEGV；错误字节码地址比正确值少4GiB。
 修复ARM64 JIT远地址装载：超过正负2GiB的页相对常量改用完整64位立即数，保留JIT及近地址优化。独立ADRP指令检查未复现错误，故不将其归结为通用ARM64指令实现缺陷。

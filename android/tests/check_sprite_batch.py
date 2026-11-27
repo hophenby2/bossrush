@@ -19,6 +19,8 @@ prefix = r'''
 #include <cmath>
 #include <iostream>
 using namespace std;
+static bool androidProfileBatches=false;
+static void androidRecordSpriteBatch(size_t) {}
 struct Point {float x,y,z;};
 struct Vertex {Point vertices;unsigned color;};
 struct Mat4 {

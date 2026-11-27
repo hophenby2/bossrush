@@ -1,0 +1,1325 @@
+{
+  "日期": "2026-11-27",
+  "版本": "2026.11.27.2",
+  "基线提交": "0d77d2316871042462837c32d012766f0140c851",
+  "平台": {
+    "系统": "Android 36.1 ARM64 模拟器",
+    "CPU": "ARM64硬件虚拟化，Apple M4 Max宿主",
+    "GPU": "OpenGL ES Translator / Metal",
+    "真机": "一加Ace5Pro / 骁龙8E未连接，未作真机性能结论"
+  },
+  "场景": {
+    "入口": "正式挑战模式 RogueTwo@RogueTwo",
+    "路线种子": 2026112630,
+    "机体": "项目原生灵梦",
+    "路线": 38,
+    "强化": "实际拾取37次中间选项，最终火力176.1338",
+    "射击": "持续射击；每480逻辑帧前240帧低速",
+    "扔雷": "每1800战斗逻辑帧脉冲一次X；锁定时最多重试120帧；保留实际库存与自然恢复",
+    "自机": "固定在(0,-176)，仅强化拾取时移动到奖励行；protect=600避免测试中途死亡",
+    "结束": "按实际伤害击破或原有超时自然完成；不锁Boss血量，不定时强制结束，不注入雷库存",
+    "资源": "正常资源加载、渲染、强化和换卡上下文，不屏蔽自机或敌弹绘制"
+  },
+  "对照说明": [
+    "第一轮在同局同卡交替集中/逐材质上传；小UBO仍使用整块换存储，持续消弹按30帧ABBA交替原/新代码。",
+    "第二轮所有逻辑及集中上传使用正式优化；仅39015、38015、39046的卡龄180至659帧对UBO更新方式作ABBA对照，后期全部使用正式默认值。",
+    "正常战斗统计排除进场前180帧与扔雷后360帧；首发雷窗口另按实际输入时刻单列。完整路线没有从单卡或人工后期状态起跑。",
+    "逐帧计时和辅助计数存在观测开销；消弹探针只计调用次数，不额外重复is_cancelling。计时包含驱动等待，CPU调用栈不等于GPU耗时。",
+    "交替窗口的弹幕数量和阶段会变化，不能把跨整局的不同卡龄窗口视为完全相同帧的严格对照。"
+  ],
+  "检查": {
+    "有序几何": "python3 android/tests/check_triangle_upload.py：材质/颜色/UV/模型变换/索引偏移/65536边界/超大单批通过",
+    "既有合批": "python3 android/tests/check_sprite_batch.py：通过",
+    "持续消弹": "luajit tools/check_repeat_cancel.lua：重叠、淡出寿命、免疫实时变化、辅助对象退出与半径边界通过",
+    "换卡清场": "luajit tools/check_phase_clear.lua：8项通过",
+    "GPU缓冲": "AndroidVerifyGraphics：实际GPU回读整块、局部、重复更新和UBO内容通过",
+    "GPU像素": {
+      "size": [
+        720,
+        1600
+      ],
+      "masked_fps_region": [
+        310,
+        1490,
+        720,
+        1600
+      ],
+      "channel_extrema": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "equal": true,
+      "quad_count": 20480,
+      "vertex_count": 81920
+    },
+    "补丁重复应用": "固定缓存再次执行android/patch_engine.py通过"
+  },
+  "集中上传同局对照": {
+    "3670": {
+      "False": {
+        "frames": 308,
+        "interval_ms": 23.8111,
+        "logic_ms": 3.9709,
+        "render_ms": 1.8766,
+        "bomb_scan_ms": 0,
+        "cancel_calls": 4.1299,
+        "objects": 1305.1266,
+        "draws": 167.3864,
+        "vertices": 12203.4545,
+        "frame_p95_ms": 30.7261,
+        "frame_p99_ms": 50.8694
+      },
+      "True": {
+        "frames": 130,
+        "interval_ms": 16.6237,
+        "logic_ms": 4.7413,
+        "render_ms": 2.1347,
+        "bomb_scan_ms": 0,
+        "cancel_calls": 0,
+        "objects": 1458.4231,
+        "draws": 166.9385,
+        "vertices": 13884.6923,
+        "frame_p95_ms": 18.7621,
+        "frame_p99_ms": 19.3696
+      }
+    },
+    "37045": {
+      "False": {
+        "frames": 312,
+        "interval_ms": 21.4578,
+        "logic_ms": 1.645,
+        "render_ms": 0.9277,
+        "bomb_scan_ms": 0,
+        "cancel_calls": 0,
+        "objects": 423.5994,
+        "draws": 172.5449,
+        "vertices": 9009.4808,
+        "frame_p95_ms": 42.1465,
+        "frame_p99_ms": 45.5753
+      },
+      "True": {
+        "frames": 119,
+        "interval_ms": 16.6609,
+        "logic_ms": 0.6518,
+        "render_ms": 0.5972,
+        "bomb_scan_ms": 0,
+        "cancel_calls": 0,
+        "objects": 106.3025,
+        "draws": 169.1765,
+        "vertices": 7762.3361,
+        "frame_p95_ms": 17.8241,
+        "frame_p99_ms": 18.0276
+      }
+    },
+    "38015": {
+      "False": {
+        "frames": 420,
+        "interval_ms": 21.6842,
+        "logic_ms": 2.043,
+        "render_ms": 1.2067,
+        "bomb_scan_ms": 0,
+        "cancel_calls": 0,
+        "objects": 601.4143,
+        "draws": 179.8833,
+        "vertices": 10168.4286,
+        "frame_p95_ms": 24.7074,
+        "frame_p99_ms": 26.2897
+      },
+      "True": {
+        "frames": 150,
+        "interval_ms": 16.614,
+        "logic_ms": 1.4286,
+        "render_ms": 0.9725,
+        "bomb_scan_ms": 0,
+        "cancel_calls": 0,
+        "objects": 329.1333,
+        "draws": 179.2733,
+        "vertices": 9053.52,
+        "frame_p95_ms": 17.6231,
+        "frame_p99_ms": 19.0125
+      }
+    },
+    "39015": {
+      "False": {
+        "frames": 428,
+        "interval_ms": 32.1211,
+        "logic_ms": 2.2249,
+        "render_ms": 1.7288,
+        "bomb_scan_ms": 0,
+        "cancel_calls": 0,
+        "objects": 581.1822,
+        "draws": 226.4042,
+        "vertices": 16123.5421,
+        "frame_p95_ms": 57.0725,
+        "frame_p99_ms": 67.2825
+      },
+      "True": {
+        "frames": 261,
+        "interval_ms": 22.1563,
+        "logic_ms": 2.1029,
+        "render_ms": 1.6268,
+        "bomb_scan_ms": 0,
+        "cancel_calls": 0,
+        "objects": 523.3448,
+        "draws": 225.8046,
+        "vertices": 13086.3448,
+        "frame_p95_ms": 37.4782,
+        "frame_p99_ms": 48.6159
+      }
+    },
+    "39046": {
+      "False": {
+        "frames": 240,
+        "interval_ms": 22.6085,
+        "logic_ms": 1.4365,
+        "render_ms": 1.0121,
+        "bomb_scan_ms": 0,
+        "cancel_calls": 0,
+        "objects": 343.1917,
+        "draws": 188.5708,
+        "vertices": 10166.925,
+        "frame_p95_ms": 47.9673,
+        "frame_p99_ms": 51.9965
+      },
+      "True": {
+        "frames": 523,
+        "interval_ms": 16.6822,
+        "logic_ms": 1.4637,
+        "render_ms": 0.9614,
+        "bomb_scan_ms": 0,
+        "cancel_calls": 0,
+        "objects": 384.0153,
+        "draws": 190.0822,
+        "vertices": 9843.8317,
+        "frame_p95_ms": 18.0152,
+        "frame_p99_ms": 19.8775
+      }
+    }
+  },
+  "持续消弹同局对照": {
+    "False": {
+      "frames": 360,
+      "interval_ms": 17.8479,
+      "logic_ms": 8.5617,
+      "render_ms": 2.2891,
+      "bomb_scan_ms": 2.7878,
+      "cancel_calls": 2190.2167,
+      "objects": 1640.1556,
+      "draws": 66.0611,
+      "vertices": 14731.6,
+      "frame_p95_ms": 23.0799,
+      "frame_p99_ms": 25.0616
+    },
+    "True": {
+      "frames": 360,
+      "interval_ms": 16.6208,
+      "logic_ms": 6.0368,
+      "render_ms": 2.0581,
+      "bomb_scan_ms": 0.6784,
+      "cancel_calls": 1187.7278,
+      "objects": 1663.1528,
+      "draws": 52.8389,
+      "vertices": 14513.1667,
+      "frame_p95_ms": 18.0117,
+      "frame_p99_ms": 19.1156
+    }
+  },
+  "UBO同局对照": {
+    "38015": {
+      "False": {
+        "frames": 240,
+        "interval_ms": 16.8738,
+        "logic_ms": 1.6337,
+        "render_ms": 1.0042,
+        "bomb_scan_ms": 0,
+        "cancel_calls": 0,
+        "objects": 650.4,
+        "draws": 178.5042,
+        "vertices": 10764.925,
+        "frame_p95_ms": 18.8936,
+        "frame_p99_ms": 26.2641
+      },
+      "True": {
+        "frames": 239,
+        "interval_ms": 16.6671,
+        "logic_ms": 1.415,
+        "render_ms": 0.9178,
+        "bomb_scan_ms": 0,
+        "cancel_calls": 0,
+        "objects": 443.3515,
+        "draws": 180.6987,
+        "vertices": 9508.4184,
+        "frame_p95_ms": 18.3605,
+        "frame_p99_ms": 18.5877
+      }
+    },
+    "39015": {
+      "False": {
+        "frames": 240,
+        "interval_ms": 17.1306,
+        "logic_ms": 1.6665,
+        "render_ms": 1.2641,
+        "bomb_scan_ms": 0,
+        "cancel_calls": 0,
+        "objects": 563.0708,
+        "draws": 228.1208,
+        "vertices": 17261.25,
+        "frame_p95_ms": 19.5283,
+        "frame_p99_ms": 23.924
+      },
+      "True": {
+        "frames": 142,
+        "interval_ms": 16.5964,
+        "logic_ms": 1.4612,
+        "render_ms": 1.1274,
+        "bomb_scan_ms": 0,
+        "cancel_calls": 0,
+        "objects": 552.8028,
+        "draws": 217.8873,
+        "vertices": 10410.8028,
+        "frame_p95_ms": 18.3812,
+        "frame_p99_ms": 19.7641
+      }
+    },
+    "39046": {
+      "False": {
+        "frames": 240,
+        "interval_ms": 16.66,
+        "logic_ms": 1.469,
+        "render_ms": 0.9134,
+        "bomb_scan_ms": 0,
+        "cancel_calls": 0,
+        "objects": 343.2,
+        "draws": 188.5125,
+        "vertices": 10163.675,
+        "frame_p95_ms": 18.4372,
+        "frame_p99_ms": 21.9875
+      },
+      "True": {
+        "frames": 227,
+        "interval_ms": 16.6748,
+        "logic_ms": 1.5698,
+        "render_ms": 1.034,
+        "bomb_scan_ms": 0,
+        "cancel_calls": 0,
+        "objects": 322.2115,
+        "draws": 191.3436,
+        "vertices": 10065.2511,
+        "frame_p95_ms": 18.6257,
+        "frame_p99_ms": 19.68
+      }
+    }
+  },
+  "最终正式路径逐卡统计": {
+    "400": {
+      "frames": 2344,
+      "interval_ms": 16.7796,
+      "logic_ms": 1.3778,
+      "render_ms": 0.8599,
+      "bomb_scan_ms": 0,
+      "cancel_calls": 0,
+      "objects": 321.1664,
+      "draws": 111.3097,
+      "vertices": 8511.5759,
+      "frame_p95_ms": 19.0071,
+      "frame_p99_ms": 21.3064
+    },
+    "431": {
+      "frames": 496,
+      "interval_ms": 16.666,
+      "logic_ms": 1.1934,
+      "render_ms": 0.8221,
+      "bomb_scan_ms": 0,
+      "cancel_calls": 0,
+      "objects": 393.5847,
+      "draws": 58.6452,
+      "vertices": 7117.0403,
+      "frame_p95_ms": 18.3866,
+      "frame_p99_ms": 19.6008
+    },
+    "433": {
+      "frames": 489,
+      "interval_ms": 16.6676,
+      "logic_ms": 0.9786,
+      "render_ms": 0.9039,
+      "bomb_scan_ms": 0,
+      "cancel_calls": 0,
+      "objects": 350.6053,
+      "draws": 196.7157,
+      "vertices": 8386.6012,
+      "frame_p95_ms": 18.6063,
+      "frame_p99_ms": 19.5457
+    },
+    "446": {
+      "frames": 529,
+      "interval_ms": 16.6656,
+      "logic_ms": 1.5149,
+      "render_ms": 0.8928,
+      "bomb_scan_ms": 0,
+      "cancel_calls": 0,
+      "objects": 547.6389,
+      "draws": 73.414,
+      "vertices": 9078.9641,
+      "frame_p95_ms": 18.5717,
+      "frame_p99_ms": 19.2937
+    },
+    "471": {
+      "frames": 316,
+      "interval_ms": 16.6665,
+      "logic_ms": 1.6983,
+      "render_ms": 0.9682,
+      "bomb_scan_ms": 0,
+      "cancel_calls": 0,
+      "objects": 442.6456,
+      "draws": 52.2532,
+      "vertices": 8240.2975,
+      "frame_p95_ms": 18.463,
+      "frame_p99_ms": 19.2084
+    },
+    "3600": {
+      "frames": 5218,
+      "interval_ms": 16.6788,
+      "logic_ms": 5.0465,
+      "render_ms": 1.751,
+      "bomb_scan_ms": 0,
+      "cancel_calls": 0,
+      "objects": 1562.7848,
+      "draws": 45.2721,
+      "vertices": 13316.9632,
+      "frame_p95_ms": 18.6392,
+      "frame_p99_ms": 19.6609
+    },
+    "3606": {
+      "frames": 681,
+      "interval_ms": 16.669,
+      "logic_ms": 3.3779,
+      "render_ms": 1.452,
+      "bomb_scan_ms": 0,
+      "cancel_calls": 1.5859,
+      "objects": 1084.1674,
+      "draws": 44.7651,
+      "vertices": 9789.815,
+      "frame_p95_ms": 18.6089,
+      "frame_p99_ms": 19.65
+    },
+    "3662": {
+      "frames": 153,
+      "interval_ms": 16.6786,
+      "logic_ms": 2.4332,
+      "render_ms": 1.2973,
+      "bomb_scan_ms": 0,
+      "cancel_calls": 5.6209,
+      "objects": 858.0588,
+      "draws": 167.0327,
+      "vertices": 10013.1373,
+      "frame_p95_ms": 18.4106,
+      "frame_p99_ms": 19.0975
+    },
+    "3670": {
+      "frames": 439,
+      "interval_ms": 16.7799,
+      "logic_ms": 4.2708,
+      "render_ms": 1.8228,
+      "bomb_scan_ms": 0,
+      "cancel_calls": 2.9499,
+      "objects": 1302.8064,
+      "draws": 167.1913,
+      "vertices": 12517.4624,
+      "frame_p95_ms": 18.8468,
+      "frame_p99_ms": 22.1208
+    },
+    "3808": {
+      "frames": 1221,
+      "interval_ms": 16.6674,
+      "logic_ms": 1.9894,
+      "render_ms": 1.0019,
+      "bomb_scan_ms": 0,
+      "cancel_calls": 0,
+      "objects": 611.1204,
+      "draws": 43.4251,
+      "vertices": 8420.8747,
+      "frame_p95_ms": 18.5495,
+      "frame_p99_ms": 19.4663
+    },
+    "3910": {
+      "frames": 357,
+      "interval_ms": 16.673,
+      "logic_ms": 1.3199,
+      "render_ms": 0.8681,
+      "bomb_scan_ms": 0,
+      "cancel_calls": 0,
+      "objects": 357.3081,
+      "draws": 42.2773,
+      "vertices": 7603.7479,
+      "frame_p95_ms": 18.4584,
+      "frame_p99_ms": 19.4236
+    },
+    "3912": {
+      "frames": 326,
+      "interval_ms": 16.6702,
+      "logic_ms": 0.9365,
+      "render_ms": 0.756,
+      "bomb_scan_ms": 0,
+      "cancel_calls": 0,
+      "objects": 311.1104,
+      "draws": 164.7209,
+      "vertices": 7693.7669,
+      "frame_p95_ms": 18.373,
+      "frame_p99_ms": 19.7003
+    },
+    "3952": {
+      "frames": 452,
+      "interval_ms": 16.856,
+      "logic_ms": 1.8696,
+      "render_ms": 1.2608,
+      "bomb_scan_ms": 0,
+      "cancel_calls": 0,
+      "objects": 472.385,
+      "draws": 164.4934,
+      "vertices": 9072.1726,
+      "frame_p95_ms": 18.9263,
+      "frame_p99_ms": 21.8347
+    },
+    "3960": {
+      "frames": 1256,
+      "interval_ms": 16.6877,
+      "logic_ms": 1.4345,
+      "render_ms": 0.878,
+      "bomb_scan_ms": 0,
+      "cancel_calls": 0,
+      "objects": 478.215,
+      "draws": 165.0088,
+      "vertices": 9429.5685,
+      "frame_p95_ms": 18.6527,
+      "frame_p99_ms": 19.6379
+    },
+    "4390": {
+      "frames": 452,
+      "interval_ms": 16.6667,
+      "logic_ms": 1.3525,
+      "render_ms": 0.9023,
+      "bomb_scan_ms": 0,
+      "cancel_calls": 0.3385,
+      "objects": 419.0398,
+      "draws": 164.1504,
+      "vertices": 8295.9956,
+      "frame_p95_ms": 18.7326,
+      "frame_p99_ms": 19.541
+    },
+    "4393": {
+      "frames": 1152,
+      "interval_ms": 16.6684,
+      "logic_ms": 1.3992,
+      "render_ms": 0.7462,
+      "bomb_scan_ms": 0,
+      "cancel_calls": 0,
+      "objects": 274.7977,
+      "draws": 44.1319,
+      "vertices": 6277.5417,
+      "frame_p95_ms": 18.5525,
+      "frame_p99_ms": 19.4159
+    },
+    "4442": {
+      "frames": 489,
+      "interval_ms": 16.6655,
+      "logic_ms": 1.1499,
+      "render_ms": 0.8534,
+      "bomb_scan_ms": 0,
+      "cancel_calls": 0.0777,
+      "objects": 312.7239,
+      "draws": 164.4151,
+      "vertices": 8834.2209,
+      "frame_p95_ms": 18.6068,
+      "frame_p99_ms": 19.64
+    },
+    "4454": {
+      "frames": 470,
+      "interval_ms": 16.6674,
+      "logic_ms": 1.2529,
+      "render_ms": 0.875,
+      "bomb_scan_ms": 0,
+      "cancel_calls": 0.0745,
+      "objects": 339.717,
+      "draws": 170.2979,
+      "vertices": 8505.0383,
+      "frame_p95_ms": 18.5427,
+      "frame_p99_ms": 19.6594
+    },
+    "4455": {
+      "frames": 704,
+      "interval_ms": 16.6673,
+      "logic_ms": 2.033,
+      "render_ms": 1.3881,
+      "bomb_scan_ms": 0,
+      "cancel_calls": 0,
+      "objects": 605.8139,
+      "draws": 44.3224,
+      "vertices": 10009.875,
+      "frame_p95_ms": 18.554,
+      "frame_p99_ms": 19.6057
+    },
+    "37013": {
+      "frames": 891,
+      "interval_ms": 16.6687,
+      "logic_ms": 1.7023,
+      "render_ms": 1.0204,
+      "bomb_scan_ms": 0,
+      "cancel_calls": 0,
+      "objects": 559.2974,
+      "draws": 174.7239,
+      "vertices": 9591.3535,
+      "frame_p95_ms": 18.5919,
+      "frame_p99_ms": 19.6469
+    },
+    "37045": {
+      "frames": 737,
+      "interval_ms": 16.6672,
+      "logic_ms": 1.2508,
+      "render_ms": 0.8484,
+      "bomb_scan_ms": 0,
+      "cancel_calls": 0,
+      "objects": 377.825,
+      "draws": 172.1248,
+      "vertices": 8463.0122,
+      "frame_p95_ms": 18.7091,
+      "frame_p99_ms": 19.5965
+    },
+    "38015": {
+      "frames": 298,
+      "interval_ms": 16.6623,
+      "logic_ms": 1.418,
+      "render_ms": 0.9228,
+      "bomb_scan_ms": 0,
+      "cancel_calls": 0,
+      "objects": 457.4362,
+      "draws": 180.9698,
+      "vertices": 9463.8121,
+      "frame_p95_ms": 18.4138,
+      "frame_p99_ms": 18.8119
+    },
+    "38025": {
+      "frames": 28,
+      "interval_ms": 16.6212,
+      "logic_ms": 1.9955,
+      "render_ms": 1.126,
+      "bomb_scan_ms": 0,
+      "cancel_calls": 0,
+      "objects": 651.6786,
+      "draws": 175.5714,
+      "vertices": 11633.7857,
+      "frame_p95_ms": 19.4612,
+      "frame_p99_ms": 20.9752
+    },
+    "38045": {
+      "frames": 739,
+      "interval_ms": 16.6667,
+      "logic_ms": 2.0391,
+      "render_ms": 1.1336,
+      "bomb_scan_ms": 0,
+      "cancel_calls": 0,
+      "objects": 810.6022,
+      "draws": 172.0271,
+      "vertices": 11892.6252,
+      "frame_p95_ms": 18.5463,
+      "frame_p99_ms": 19.6231
+    },
+    "38053": {
+      "frames": 1315,
+      "interval_ms": 16.7016,
+      "logic_ms": 2.0117,
+      "render_ms": 1.2038,
+      "bomb_scan_ms": 0,
+      "cancel_calls": 0.0023,
+      "objects": 662.9658,
+      "draws": 177.0106,
+      "vertices": 10191.8738,
+      "frame_p95_ms": 18.5352,
+      "frame_p99_ms": 19.4687
+    },
+    "39015": {
+      "frames": 481,
+      "interval_ms": 16.6449,
+      "logic_ms": 1.8831,
+      "render_ms": 1.4141,
+      "bomb_scan_ms": 0,
+      "cancel_calls": 0,
+      "objects": 567.4886,
+      "draws": 223.5946,
+      "vertices": 13694.8316,
+      "frame_p95_ms": 18.4957,
+      "frame_p99_ms": 19.9711
+    },
+    "39046": {
+      "frames": 873,
+      "interval_ms": 16.6682,
+      "logic_ms": 1.4918,
+      "render_ms": 0.957,
+      "bomb_scan_ms": 0,
+      "cancel_calls": 0,
+      "objects": 392.5326,
+      "draws": 188.5899,
+      "vertices": 9455.6632,
+      "frame_p95_ms": 18.6257,
+      "frame_p99_ms": 19.7353
+    },
+    "68021": {
+      "frames": 232,
+      "interval_ms": 16.6654,
+      "logic_ms": 1.5235,
+      "render_ms": 0.791,
+      "bomb_scan_ms": 0,
+      "cancel_calls": 0,
+      "objects": 254.1724,
+      "draws": 166.3362,
+      "vertices": 7266.6466,
+      "frame_p95_ms": 18.4985,
+      "frame_p99_ms": 19.6686
+    },
+    "68050": {
+      "frames": 821,
+      "interval_ms": 16.6703,
+      "logic_ms": 1.019,
+      "render_ms": 0.7626,
+      "bomb_scan_ms": 0,
+      "cancel_calls": 0,
+      "objects": 250.9013,
+      "draws": 163.1766,
+      "vertices": 7916.0024,
+      "frame_p95_ms": 18.668,
+      "frame_p99_ms": 19.6213
+    },
+    "68055": {
+      "frames": 1679,
+      "interval_ms": 16.8146,
+      "logic_ms": 1.2206,
+      "render_ms": 0.8786,
+      "bomb_scan_ms": 0,
+      "cancel_calls": 0,
+      "objects": 397.2222,
+      "draws": 166.9392,
+      "vertices": 8638.2204,
+      "frame_p95_ms": 18.7868,
+      "frame_p99_ms": 20.233
+    },
+    "70104": {
+      "frames": 1061,
+      "interval_ms": 16.7144,
+      "logic_ms": 0.4636,
+      "render_ms": 0.8557,
+      "bomb_scan_ms": 0,
+      "cancel_calls": 0,
+      "objects": 282.2337,
+      "draws": 171.8294,
+      "vertices": 7780.9934,
+      "frame_p95_ms": 18.5885,
+      "frame_p99_ms": 19.658
+    },
+    "70323": {
+      "frames": 622,
+      "interval_ms": 16.6657,
+      "logic_ms": 1.3102,
+      "render_ms": 1.29,
+      "bomb_scan_ms": 0,
+      "cancel_calls": 0,
+      "objects": 634.5514,
+      "draws": 74.365,
+      "vertices": 8389.9293,
+      "frame_p95_ms": 18.4619,
+      "frame_p99_ms": 19.6335
+    },
+    "70407": {
+      "frames": 309,
+      "interval_ms": 16.67,
+      "logic_ms": 0.4795,
+      "render_ms": 0.9452,
+      "bomb_scan_ms": 0,
+      "cancel_calls": 0,
+      "objects": 163.6731,
+      "draws": 77.5987,
+      "vertices": 9227.7282,
+      "frame_p95_ms": 18.3925,
+      "frame_p99_ms": 19.4544
+    },
+    "70510": {
+      "frames": 578,
+      "interval_ms": 16.8421,
+      "logic_ms": 1.0124,
+      "render_ms": 1.0279,
+      "bomb_scan_ms": 0,
+      "cancel_calls": 0,
+      "objects": 603.0519,
+      "draws": 173.5813,
+      "vertices": 10019.2215,
+      "frame_p95_ms": 18.9135,
+      "frame_p99_ms": 22.2973
+    },
+    "82402": {
+      "frames": 343,
+      "interval_ms": 16.6662,
+      "logic_ms": 0.9526,
+      "render_ms": 0.8125,
+      "bomb_scan_ms": 0,
+      "cancel_calls": 0.2041,
+      "objects": 346.3557,
+      "draws": 110.2536,
+      "vertices": 7260,
+      "frame_p95_ms": 18.6307,
+      "frame_p99_ms": 19.702
+    },
+    "84409": {
+      "frames": 792,
+      "interval_ms": 16.6663,
+      "logic_ms": 1.6344,
+      "render_ms": 1.2038,
+      "bomb_scan_ms": 0,
+      "cancel_calls": 0,
+      "objects": 1031.0101,
+      "draws": 56.529,
+      "vertices": 10116.8864,
+      "frame_p95_ms": 18.5715,
+      "frame_p99_ms": 19.4104
+    },
+    "85405": {
+      "frames": 146,
+      "interval_ms": 17.361,
+      "logic_ms": 1.227,
+      "render_ms": 1.3387,
+      "bomb_scan_ms": 0,
+      "cancel_calls": 0,
+      "objects": 948.4041,
+      "draws": 171.9726,
+      "vertices": 12299.589,
+      "frame_p95_ms": 20.3008,
+      "frame_p99_ms": 29.5736
+    },
+    "86401": {
+      "frames": 837,
+      "interval_ms": 16.6666,
+      "logic_ms": 1.2176,
+      "render_ms": 1.3539,
+      "bomb_scan_ms": 0,
+      "cancel_calls": 0.0908,
+      "objects": 691.2139,
+      "draws": 191.0203,
+      "vertices": 10263.8781,
+      "frame_p95_ms": 18.667,
+      "frame_p99_ms": 19.569
+    }
+  },
+  "后期雷": {
+    "compare-group": [
+      {
+        "card": 3600,
+        "battle_ticks": 34200,
+        "power": 115.8108,
+        "age": 1718,
+        "windows": {
+          "before": {
+            "frames": 180,
+            "interval_ms": 16.6698,
+            "logic_ms": 4.6201,
+            "render_ms": 1.8978,
+            "bomb_scan_ms": 0,
+            "cancel_calls": 0,
+            "objects": 1555.7778,
+            "draws": 45.5944,
+            "vertices": 13864.3333,
+            "frame_p95_ms": 18.4178,
+            "frame_p99_ms": 18.9812
+          },
+          "first_second": {
+            "frames": 60,
+            "interval_ms": 33.2033,
+            "logic_ms": 7.5051,
+            "render_ms": 2.9343,
+            "bomb_scan_ms": 1.9798,
+            "cancel_calls": 123.5833,
+            "objects": 1693.3333,
+            "draws": 231.4167,
+            "vertices": 19089.2,
+            "frame_p95_ms": 40.9715,
+            "frame_p99_ms": 44.2835
+          },
+          "one_to_six_seconds": {
+            "frames": 300,
+            "interval_ms": 17.469,
+            "logic_ms": 7.1367,
+            "render_ms": 2.1886,
+            "bomb_scan_ms": 1.4075,
+            "cancel_calls": 1351.4833,
+            "objects": 1636.88,
+            "draws": 57.5533,
+            "vertices": 15003.66,
+            "frame_p95_ms": 22.5501,
+            "frame_p99_ms": 25.0119
+          },
+          "after": {
+            "frames": 180,
+            "interval_ms": 16.6578,
+            "logic_ms": 4.7717,
+            "render_ms": 1.9633,
+            "bomb_scan_ms": 0,
+            "cancel_calls": 0,
+            "objects": 1640.3278,
+            "draws": 45.8389,
+            "vertices": 14190.7667,
+            "frame_p95_ms": 18.6696,
+            "frame_p99_ms": 19.1334
+          }
+        }
+      },
+      {
+        "card": 3600,
+        "battle_ticks": 36000,
+        "power": 115.8108,
+        "age": 3518,
+        "windows": {
+          "before": {
+            "frames": 180,
+            "interval_ms": 16.6644,
+            "logic_ms": 5.624,
+            "render_ms": 1.8806,
+            "bomb_scan_ms": 0,
+            "cancel_calls": 0,
+            "objects": 1634.0667,
+            "draws": 44.8833,
+            "vertices": 13850.7667,
+            "frame_p95_ms": 18.3067,
+            "frame_p99_ms": 18.8816
+          },
+          "first_second": {
+            "frames": 60,
+            "interval_ms": 24.4204,
+            "logic_ms": 7.4509,
+            "render_ms": 3.0803,
+            "bomb_scan_ms": 2.0139,
+            "cancel_calls": 107.7333,
+            "objects": 1714.4833,
+            "draws": 233.1167,
+            "vertices": 18782.6,
+            "frame_p95_ms": 31.568,
+            "frame_p99_ms": 36.9291
+          },
+          "one_to_six_seconds": {
+            "frames": 300,
+            "interval_ms": 16.675,
+            "logic_ms": 6.2579,
+            "render_ms": 2.0542,
+            "bomb_scan_ms": 1.3775,
+            "cancel_calls": 1357.3967,
+            "objects": 1639.3933,
+            "draws": 56.3433,
+            "vertices": 14386.86,
+            "frame_p95_ms": 18.2975,
+            "frame_p99_ms": 19.1977
+          },
+          "after": {
+            "frames": 180,
+            "interval_ms": 16.7585,
+            "logic_ms": 5.9782,
+            "render_ms": 2.0453,
+            "bomb_scan_ms": 0,
+            "cancel_calls": 0,
+            "objects": 1640.7667,
+            "draws": 45.7111,
+            "vertices": 13535.7,
+            "frame_p95_ms": 18.907,
+            "frame_p99_ms": 22.2919
+          }
+        }
+      },
+      {
+        "card": 3600,
+        "battle_ticks": 37800,
+        "power": 115.8108,
+        "age": 5318,
+        "windows": {
+          "before": {
+            "frames": 180,
+            "interval_ms": 16.6638,
+            "logic_ms": 4.8114,
+            "render_ms": 1.9689,
+            "bomb_scan_ms": 0,
+            "cancel_calls": 0,
+            "objects": 1645.1611,
+            "draws": 45.1611,
+            "vertices": 13184.8,
+            "frame_p95_ms": 17.9325,
+            "frame_p99_ms": 18.9928
+          },
+          "first_second": {
+            "frames": 60,
+            "interval_ms": 32.7706,
+            "logic_ms": 7.5648,
+            "render_ms": 3.0397,
+            "bomb_scan_ms": 1.9919,
+            "cancel_calls": 125.6333,
+            "objects": 1744.5,
+            "draws": 232.6,
+            "vertices": 18157,
+            "frame_p95_ms": 41.1214,
+            "frame_p99_ms": 44.4363
+          },
+          "one_to_six_seconds": {
+            "frames": 300,
+            "interval_ms": 17.2277,
+            "logic_ms": 6.9917,
+            "render_ms": 2.1092,
+            "bomb_scan_ms": 1.3896,
+            "cancel_calls": 1357.87,
+            "objects": 1649.91,
+            "draws": 57.1367,
+            "vertices": 13818.6,
+            "frame_p95_ms": 20.4364,
+            "frame_p99_ms": 24.03
+          },
+          "after": {
+            "frames": 180,
+            "interval_ms": 16.6696,
+            "logic_ms": 5.2129,
+            "render_ms": 2.2379,
+            "bomb_scan_ms": 0,
+            "cancel_calls": 0,
+            "objects": 1640.8167,
+            "draws": 45.5222,
+            "vertices": 12958.7333,
+            "frame_p95_ms": 18.0771,
+            "frame_p99_ms": 18.8835
+          }
+        }
+      }
+    ],
+    "final": [
+      {
+        "card": 3600,
+        "battle_ticks": 32400,
+        "power": 115.8108,
+        "age": 1079,
+        "windows": {
+          "before": {
+            "frames": 180,
+            "interval_ms": 16.668,
+            "logic_ms": 4.6555,
+            "render_ms": 1.7446,
+            "bomb_scan_ms": 0,
+            "cancel_calls": 0,
+            "objects": 1438.4889,
+            "draws": 45.4611,
+            "vertices": 13422,
+            "frame_p95_ms": 18.5797,
+            "frame_p99_ms": 18.9695
+          },
+          "first_second": {
+            "frames": 60,
+            "interval_ms": 19.7341,
+            "logic_ms": 5.6318,
+            "render_ms": 2.4191,
+            "bomb_scan_ms": 0.5372,
+            "cancel_calls": 64.2333,
+            "objects": 1573.5833,
+            "draws": 231.7167,
+            "vertices": 18537.7,
+            "frame_p95_ms": 26.2653,
+            "frame_p99_ms": 30.1488
+          },
+          "one_to_six_seconds": {
+            "frames": 300,
+            "interval_ms": 16.6597,
+            "logic_ms": 6.0416,
+            "render_ms": 1.9785,
+            "bomb_scan_ms": 0.4869,
+            "cancel_calls": 825.7133,
+            "objects": 1503.6033,
+            "draws": 56.4233,
+            "vertices": 14328.14,
+            "frame_p95_ms": 18.6566,
+            "frame_p99_ms": 19.8007
+          },
+          "after": {
+            "frames": 180,
+            "interval_ms": 16.6731,
+            "logic_ms": 4.6988,
+            "render_ms": 1.7401,
+            "bomb_scan_ms": 0,
+            "cancel_calls": 0,
+            "objects": 1536.5333,
+            "draws": 45.2,
+            "vertices": 13733.8667,
+            "frame_p95_ms": 18.4869,
+            "frame_p99_ms": 19.771
+          }
+        }
+      },
+      {
+        "card": 3600,
+        "battle_ticks": 34200,
+        "power": 115.8108,
+        "age": 2879,
+        "windows": {
+          "before": {
+            "frames": 180,
+            "interval_ms": 16.6649,
+            "logic_ms": 5.7624,
+            "render_ms": 1.7658,
+            "bomb_scan_ms": 0,
+            "cancel_calls": 0,
+            "objects": 1643.0556,
+            "draws": 45.8556,
+            "vertices": 13999.1667,
+            "frame_p95_ms": 18.4565,
+            "frame_p99_ms": 19.616
+          },
+          "first_second": {
+            "frames": 60,
+            "interval_ms": 20.2703,
+            "logic_ms": 6.2036,
+            "render_ms": 2.7877,
+            "bomb_scan_ms": 0.6466,
+            "cancel_calls": 90.9833,
+            "objects": 1797.35,
+            "draws": 232.1167,
+            "vertices": 19235,
+            "frame_p95_ms": 27.2709,
+            "frame_p99_ms": 30.5556
+          },
+          "one_to_six_seconds": {
+            "frames": 300,
+            "interval_ms": 16.6691,
+            "logic_ms": 5.5634,
+            "render_ms": 1.9232,
+            "bomb_scan_ms": 0.4859,
+            "cancel_calls": 921.3633,
+            "objects": 1649.9233,
+            "draws": 57.2667,
+            "vertices": 14579.18,
+            "frame_p95_ms": 18.4221,
+            "frame_p99_ms": 19.6306
+          },
+          "after": {
+            "frames": 180,
+            "interval_ms": 17.044,
+            "logic_ms": 6.2436,
+            "render_ms": 1.9909,
+            "bomb_scan_ms": 0,
+            "cancel_calls": 0,
+            "objects": 1630.0611,
+            "draws": 45.3667,
+            "vertices": 13672.5333,
+            "frame_p95_ms": 19.9456,
+            "frame_p99_ms": 23.6847
+          }
+        }
+      },
+      {
+        "card": 3600,
+        "battle_ticks": 36000,
+        "power": 115.8108,
+        "age": 4679,
+        "windows": {
+          "before": {
+            "frames": 180,
+            "interval_ms": 16.6548,
+            "logic_ms": 4.8359,
+            "render_ms": 1.7783,
+            "bomb_scan_ms": 0,
+            "cancel_calls": 0,
+            "objects": 1643.9333,
+            "draws": 45,
+            "vertices": 13385.9,
+            "frame_p95_ms": 18.5772,
+            "frame_p99_ms": 19.5854
+          },
+          "first_second": {
+            "frames": 60,
+            "interval_ms": 20.0443,
+            "logic_ms": 6.1905,
+            "render_ms": 2.6529,
+            "bomb_scan_ms": 0.6645,
+            "cancel_calls": 96.8833,
+            "objects": 1795.8,
+            "draws": 231.9333,
+            "vertices": 18620.5,
+            "frame_p95_ms": 27.6067,
+            "frame_p99_ms": 30.898
+          },
+          "one_to_six_seconds": {
+            "frames": 300,
+            "interval_ms": 16.6624,
+            "logic_ms": 6.3046,
+            "render_ms": 2.0416,
+            "bomb_scan_ms": 0.535,
+            "cancel_calls": 919.5067,
+            "objects": 1649.37,
+            "draws": 56.6333,
+            "vertices": 13971.24,
+            "frame_p95_ms": 18.6915,
+            "frame_p99_ms": 19.8069
+          },
+          "after": {
+            "frames": 180,
+            "interval_ms": 16.668,
+            "logic_ms": 5.4519,
+            "render_ms": 2.1155,
+            "bomb_scan_ms": 0,
+            "cancel_calls": 0,
+            "objects": 1631.1056,
+            "draws": 45.15,
+            "vertices": 13085.3667,
+            "frame_p95_ms": 18.3902,
+            "frame_p99_ms": 19.5729
+          }
+        }
+      },
+      {
+        "card": 3600,
+        "battle_ticks": 37800,
+        "power": 115.8108,
+        "age": 6479,
+        "windows": {
+          "before": {
+            "frames": 180,
+            "interval_ms": 16.6554,
+            "logic_ms": 5.6709,
+            "render_ms": 1.7737,
+            "bomb_scan_ms": 0,
+            "cancel_calls": 0,
+            "objects": 1643.25,
+            "draws": 44.8833,
+            "vertices": 12847.2667,
+            "frame_p95_ms": 18.5725,
+            "frame_p99_ms": 19.8524
+          },
+          "first_second": {
+            "frames": 60,
+            "interval_ms": 20.2772,
+            "logic_ms": 6.2354,
+            "render_ms": 2.8311,
+            "bomb_scan_ms": 0.6547,
+            "cancel_calls": 104.9,
+            "objects": 1798.0667,
+            "draws": 231.3833,
+            "vertices": 18020.4,
+            "frame_p95_ms": 28.1314,
+            "frame_p99_ms": 30.877
+          },
+          "one_to_six_seconds": {
+            "frames": 300,
+            "interval_ms": 16.6686,
+            "logic_ms": 4.684,
+            "render_ms": 1.6933,
+            "bomb_scan_ms": 0.5014,
+            "cancel_calls": 925.5267,
+            "objects": 1388.2233,
+            "draws": 59.2767,
+            "vertices": 12083.72,
+            "frame_p95_ms": 18.5604,
+            "frame_p99_ms": 19.4566
+          },
+          "after": {
+            "frames": 4,
+            "interval_ms": 16.6682,
+            "logic_ms": 0.7907,
+            "render_ms": 0.9758,
+            "bomb_scan_ms": 0,
+            "cancel_calls": 0,
+            "objects": 197,
+            "draws": 82.75,
+            "vertices": 5635.5,
+            "frame_p95_ms": 18.5643,
+            "frame_p99_ms": 18.5643
+          }
+        }
+      }
+    ]
+  },
+  "整局完成": {
+    "compare-group": {
+      "complete": true,
+      "runs": [
+        {
+          "completed": 38,
+          "seed": 2026112630,
+          "mode": "staged"
+        }
+      ],
+      "errors": {},
+      "middle_upgrades": 37,
+      "successful_bombs": 26
+    },
+    "final": {
+      "complete": true,
+      "runs": [
+        {
+          "completed": 38,
+          "seed": 2026112630,
+          "mode": "staged"
+        }
+      ],
+      "errors": {},
+      "middle_upgrades": 37,
+      "successful_bombs": 25
+    }
+  },
+  "机器码缓存": {
+    "compare-group": {
+      "regions": 405,
+      "failures": 0,
+      "os_failures": 0,
+      "outside_range": 0,
+      "cache_limit_hits": 0
+    },
+    "final": {
+      "regions": 405,
+      "failures": 0,
+      "os_failures": 0,
+      "outside_range": 0,
+      "cache_limit_hits": 0
+    }
+  },
+  "源码SHA256": {
+    "THlib/bullet/cancel_state.lua": "955c8325f3dc6f42c666cf159d02b4b9682854b5840c062e271fcec5a6ac6e8c",
+    "THlib/bullet/clearbullet.lua": "ab4b600d91537def0ae8decd93fff5cbd0fb12a5ed823902f3ffc66751065e73",
+    "THlib/bullet/visual_match.lua": "62aa07c6125050019fe74817b30e462159668e455bc864d27e64daf352c2b52c",
+    "android/native/compat.cpp": "603d2ba596049bc39305d0e6b5fc2fbb4620af9bbb11e13d92b8a4acaa9579ac",
+    "android/native/triangle_upload.inc": "9e89158b966c77db1602fd03c23ad44515e6936677580e2ae4fb22f9064a16a2",
+    "android/patch_engine.py": "75b252f90e864dc2e1da8fef289437022f7ab13b9a9bd1d1d55f1daeffa19b63",
+    "android/lua/graphics_check.lua": "2483dd444934ddabc8dded8ffb4c85d431e9a8394d2a04d11f8e846620085fe0"
+  },
+  "整局资源趋势": {
+    "战斗卸载计数起止": [
+      2,
+      2
+    ],
+    "RSS采样KiB": {
+      "首": 898732,
+      "尾": 1189832,
+      "最大": 1198240
+    },
+    "说明": "未更改缓存预算或资源卸载规则；RSS不是显存。"
+  },
+  "诊断原生库SHA256": {
+    "compare-group": "c5a04cde748c41c734e1c7b73fd34ede35ed203c5d6ade06dac8cf341ec0a08c",
+    "final": "6ef0a7eae167d5d2535dc26f2b30fbd69c3efdebdea5b7ebef996ce7de400703"
+  },
+  "本地测试用正式APK": {
+    "文件": "android/dist/BossRushHD-Android-2026.11.27.2-500MB.apk",
+    "字节": 492824775,
+    "SHA256": "21e0b2cfbac62038586e77962b8a9725150efdd925df700838ab1e5474d00651",
+    "原生库与最终诊断包一致": true
+  },
+  "原始采样": "android/dist/BossRushHD-Android-2026.11.27.2-performance.zip（未纳入git）"
+}

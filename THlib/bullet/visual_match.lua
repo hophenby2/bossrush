@@ -172,19 +172,22 @@ function V.spawn_remaining(o)
     return c and c.native_game and spawn_left(o,c.native_game) or 0
 end
 function V.can_cancel(o,force)
-    if V.is_cancelling(o) then return false end
+    -- 风神录密集的不可消弹会在Bomb期间反复经过此入口。
+    -- 先读实时免疫标记；不缓存结果，仍允许ECL在同一帧更改可消状态。
+    if not IsValid(o) then return false end
+    local c=o.imgclass
+    if not force and c and c.native_game==10 then
+        local cancel=o.tb and o.tb.cancel or o.th10_cancel or 0
+        if cancel~=0 then return false end
+    end
+    if V.is_cancelling(o,true) then return false end
     -- 妖妖梦isProjectile敌机仍由EnemyManager管理，不在BulletManager消弹范围。
     -- 此标记的实体由自己的ECL寿命或所属阶段清理，命中/擦过无敌自机也不提前退场。
     if o._original_enemy_projectile then return false end
-    local c=o.imgclass
     if not c or not c.native_game then return true end
     if force then return true end
     local flags=c.native_game==8 and o.ex_flags or c.native_game==7 and o.c_flags or 0
     if math.floor((flags or 0)/4096)%2==1 then return false end
-    if c.native_game==10 then
-        local cancel=o.tb and o.tb.cancel or o.th10_cancel or 0
-        if cancel~=0 then return false end
-    end
     -- 红/妖的出生分支不执行自机消弹检测；关卡整体清场仍可强制消除。
     if (c.native_game==6 or c.native_game==7) and spawn_left(o,c.native_game)>0 then return false end
     return true

@@ -36,7 +36,9 @@ try:
     # 雷电异步移除旧任务，立即启动会让新进程一并被取消。
     time.sleep(1)
     if args.mode.startswith('graphics'):
-        adb('shell','run-as',package,'rm','-f','files/bossrush/snapshot/android-graphics.png',check=False)
+        pictures=['android-triangles-original','android-triangles-grouped'] if 'batch-compare' in args.mode else ['android-graphics']
+        for name in pictures:
+            adb('shell','run-as',package,'rm','-f','files/bossrush/snapshot/'+name+'.png',check=False)
     write_mode(mode.encode())
     adb('shell','am','start','-n',package+'/.BossRushActivity')
     deadline=time.monotonic()+args.timeout
@@ -60,8 +62,22 @@ try:
         assert pid==adb('shell','pidof',package).stdout.strip(),'返回前台后进程发生变化'
         (args.output/'screen-return.png').write_bytes(adb('exec-out','screencap','-p').stdout)
     if args.mode.startswith('graphics'):
-        picture=adb('exec-out','run-as',package,'cat','files/bossrush/snapshot/android-graphics.png')
-        (args.output/'native-snapshot.png').write_bytes(picture.stdout)
+        for name in pictures:
+            picture=adb('exec-out','run-as',package,'cat','files/bossrush/snapshot/'+name+'.png')
+            destination=name+'.png' if 'batch-compare' in args.mode else 'native-snapshot.png'
+            (args.output/destination).write_bytes(picture.stdout)
+        if 'batch-compare' in args.mode:
+            from PIL import Image,ImageChops,ImageDraw
+            original=Image.open(args.output/'android-triangles-original.png').convert('RGBA')
+            grouped=Image.open(args.output/'android-triangles-grouped.png').convert('RGBA')
+            assert original.size==grouped.size,'原/新路径截图尺寸不同'
+            mask=(original.width-410,original.height-110,original.width,original.height)
+            for im in (original,grouped):ImageDraw.Draw(im).rectangle(mask,fill=(0,0,0,0))
+            extrema=ImageChops.difference(original,grouped).getextrema()
+            result={'size':original.size,'masked_fps_region':mask,'channel_extrema':extrema,
+                    'equal':not any(high for low,high in extrema),'quad_count':20480,'vertex_count':81920}
+            (args.output/'comparison.json').write_text(json.dumps(result,indent=2))
+            assert result['equal'],'原/新路径像素不同，见对照截图与comparison.json'
     if not args.mode.startswith('graphics'):
         state=adb('exec-out','run-as',package,'cat','files/bossrush/User/android-case-state.txt')
         (args.output/'state.txt').write_bytes(state.stdout)

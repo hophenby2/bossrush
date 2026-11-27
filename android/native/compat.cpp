@@ -64,6 +64,28 @@ LUA_REGISTER_FUNC_DEF(lstg, AndroidClearPreparedTextures) {
 }
 #if CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID
 #include <EGL/egl.h>
+// 保留原上传路径供同进程诊断对照；正式运行使用无映射的有序缓冲更新。
+static bool androidStreamUploads = true;
+static bool androidGroupedUploads = true;
+static bool androidUniformSubData = true;
+extern "C" bool bossrushAndroidStreamUploads() { return androidStreamUploads; }
+extern "C" bool bossrushAndroidGroupedUploads() { return androidGroupedUploads; }
+extern "C" bool bossrushAndroidUniformSubData() { return androidUniformSubData; }
+LUA_REGISTER_FUNC_DEF(lstg, AndroidStreamUploads) {
+    if (!lua_isnoneornil(L, 1)) androidStreamUploads = lua_toboolean(L, 1);
+    lua_pushboolean(L, androidStreamUploads);
+    return 1;
+}
+LUA_REGISTER_FUNC_DEF(lstg, AndroidGroupedUploads) {
+    if (!lua_isnoneornil(L, 1)) androidGroupedUploads = lua_toboolean(L, 1);
+    lua_pushboolean(L, androidGroupedUploads);
+    return 1;
+}
+LUA_REGISTER_FUNC_DEF(lstg, AndroidUniformSubData) {
+    if (!lua_isnoneornil(L, 1)) androidUniformSubData = lua_toboolean(L, 1);
+    lua_pushboolean(L, androidUniformSubData);
+    return 1;
+}
 #endif
 
 static bool androidVsyncRequested=false;
@@ -307,6 +329,39 @@ LUA_REGISTER_FUNC_DEF(lstg, AndroidVerifyGraphics) {
     }
     uniform->release();
     if (!ok) return luaL_error(L, "UBO 合并提交的 GPU 读取校验失败");
+    // 顶点和索引缓冲直接经过上传入口，检查整块换存储后局部更新仍保留其他字节。
+    // 两条路径都读取真实 GPU 内容；避免只检查 CPU 侧影子数据而漏掉上传错误。
+#if CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID
+    const bool originalUploads = androidStreamUploads;
+    for (bool stream : { false, true }) {
+        androidStreamUploads = stream;
+        for (auto usage : { cc::gfx::BufferUsageBit::VERTEX, cc::gfx::BufferUsageBit::INDEX }) {
+            info.usage = usage;
+            auto* buffer = new BufferGFX(info);
+            unsigned char bytes[64];
+            for (int phase = 0; phase < 6 && ok; ++phase) {
+                const bool full = phase % 3 == 0;
+                const size_t offset = full ? 0 : phase % 3 == 1 ? 0 : 32;
+                const size_t length = full ? sizeof(bytes) : 16;
+                std::memset(bytes + offset, phase + 1, length);
+                buffer->update(bytes + offset, length, offset);
+                auto* handle = buffer->getHandler();
+                if (auto* agent = dynamic_cast<cc::gfx::BufferAgent*>(handle)) handle = agent->getActor();
+                const auto name = static_cast<cc::gfx::GLES3Buffer*>(handle)->gpuBuffer()->glBuffer;
+                // COPY_READ 不改动引擎缓存的 VAO / 顶点 / 索引绑定。
+                glBindBuffer(GL_COPY_READ_BUFFER, name);
+                const auto* actual = glMapBufferRange(GL_COPY_READ_BUFFER, 0, sizeof(bytes), GL_MAP_READ_BIT);
+                ok = actual && !std::memcmp(actual, bytes, sizeof(bytes));
+                if (actual) ok = glUnmapBuffer(GL_COPY_READ_BUFFER) && ok;
+                if (!ok) cocos2d::log("BOSSRUSH_BUFFER_CHECK: stream=%d usage=%d phase=%d", stream, int(usage), phase);
+            }
+            glBindBuffer(GL_COPY_READ_BUFFER, 0);
+            buffer->release();
+        }
+    }
+    androidStreamUploads = originalUploads;
+    if (!ok) return luaL_error(L, "顶点/索引缓冲整块与局部上传的 GPU 读取校验失败");
+#endif
     lua_pushboolean(L, true); return 1;
 }
 #endif
