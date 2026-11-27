@@ -1,3 +1,15 @@
+打包产物目录
+dist/顶层只保留带版本号的APK；压缩报告、构建记录、性能报告和SHA-256校验统一放入dist/reports/。
+不再额外生成固定名称的debug APK。签名临时文件位于build/，成功发布时移动为正式版本号APK。
+
+2026.11.27.6 双Boss入场、蓄力显示与自机弹绘制修复（2026-11-27）
+雪莲华主副Boss分别读取原作逐阶段起点，恢复120tick坐标校准，卡内阈值转场保留当前位置。
+祈华梦敌方蓄力圈恢复原作图层，原作自机弹继续使用宿主的下置图层。
+普通自机弹、灵梦追踪弹残影与魔理沙激光等既有绘制放大统一封顶10倍；碰撞尺寸、火力成长和伤害倍率不变。
+发行目录只保留带版本号APK，报告和校验放入reports/，不再生成重复debug包。
+双Boss位置专项与Mac原生画面检查通过；构建沿用固定签名和500MB档。
+构建：python3 android/build.py --compression-profile 500mb。
+
 2026.11.27.5 祈华梦光背强化伤害修复（2026-11-27）
 光背独立碰撞回调接入自机火力成长，再走原作转伤；敌方阶段HP与伤害单位只折算一次。
 宿主直接伤害和索敌识别光背自身的转伤入口，保留原作开场无敌、渐进减伤与自机无敌时的减伤规则。
@@ -321,11 +333,12 @@ Mac 入口、系统要求与性能限制见 ../macos/README.zh-CN.md。
 Boss Rush HD Android 内部测试版
 ============================
 
-安装包：dist/BossRushHD-android-arm64-debug.apk
-校验值：同名 .sha256 文件
+安装包：dist/BossRushHD-Android-<版本>-500MB.apk（其他容量档同理）
+报告和校验：dist/reports/，保留版本前缀；包括压缩报告、构建记录及同名 .apk.sha256。
+dist顶层只保留带版本号的APK，不再生成重复的debug包；签名中间件留在build/。
 系统：Android 9（API 28）及以上，ARM64，OpenGL ES 3.0 及以上。
 应用标识：org.bossrush.hd。当前使用本地测试密钥签名，可侧载安装。
-连接设备后可用：adb install -r android/dist/BossRushHD-android-arm64-debug.apk
+连接设备后可用：adb install -r android/dist/BossRushHD-Android-<版本>-500MB.apk
 
 本目录是完整的 Android 构建入口。引擎固定为 LuaSTG-x 20260913 发布源码，
 下载地址、SHA-256、NDK 版本见 engine.lock.json，不跟随 master。

@@ -537,6 +537,17 @@ emit=function(e)
 end
 local function bossMotion(s)
     local e=s.settings
+    -- Basic 的 a51_4 是向弹幕表坐标校准，不是出生时瞬移。
+    -- 起点来自 Boss_in / Bossmove 的逐阶段位置，主副体各自保存。
+    local entry=s.entryMotion
+    if entry then
+        local t=entry.time
+        s.direction=entry.angle
+        s.speed=entry.distance*math.pi*.00417*sin(math.deg(.0261694659*t))*100
+        entry.time=t+1
+        if entry.time==121 then s.entryMotion=nil;s.moveClock=0 end
+        return
+    end
     if e.a51_5~=1 and e.a51_6~=1 then return end
     s.moveClock=s.moveClock+1
     local period=max(1,e.a4_9)
@@ -650,7 +661,7 @@ local function load(key)
     return R.patterns[key]
 end
 R.preparePattern=load
-function R.controller(host,key,first)
+function R.controller(host,key,first,retainedPositions)
     local c={host=host,time=first or 0,emitters={},entities={},byName={},vars={0,0,0,0},closed=false,key=key};R.controllers[c]=true
     local pat=load(key)
     for _,d in ipairs(pat.items) do
@@ -672,6 +683,15 @@ function R.controller(host,key,first)
         local s={c=c,x=e.a2_1,y=e.a2_3,speed=0,direction=0,rotation=90,accel=0,accelDirection=0,djX=0,djY=0,
             alive=true,kind='boss',birth=0,events=e.sonEvents,vars=c.vars,limits={},changes={},life=e.a6_6,settings=e,moveClock=0}
         s.main=bossIndex==1
+        local position=retainedPositions and retainedPositions[bossIndex]
+            or R.actor and R.actor.position(key,bossIndex)
+        if position then s.x,s.y=position[1],position[2] end
+        if not retainedPositions and e.a51_4==1 then
+            local px,py=R.player()
+            local tx,ty=e.a2_1==-99999 and px or e.a2_1,e.a2_3==-99999 and py or e.a2_3
+            s.entryMotion={distance=((tx-s.x)^2+(ty-s.y)^2)^.5,angle=angle(s.x,s.y,tx,ty),time=0}
+        end
+        if s.main and valid(host) then host.x,host.y=project(s.x,s.y);host.vx,host.vy=0,0 end
         if not s.main then New(R.classes.partner,s) end
         if R.actor then R.actor.bind(s.main and host or s.native,key,bossIndex) end
         local target=s.main and host or s.native
@@ -720,7 +740,7 @@ function R.transition(c,key,reset,clear)
             s.alive=false
         elseif s.alive then keep[#keep+1]=s end
     end
-    local nextState=R.controller(c.host,key,reset and 0 or c.time)
+    local nextState=R.controller(c.host,key,reset and 0 or c.time,positions)
     c.syncEveryTick=nextState.syncEveryTick or not clear and c.syncEveryTick
     c.time,c.key,c.emitters,c.byName=nextState.time,key,nextState.emitters,nextState.byName
     for _,e in ipairs(c.emitters) do e.c=c;e.vars=c.vars end

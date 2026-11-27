@@ -170,7 +170,7 @@ function trail:frame()
     end
 end
 function trail:render()
-    local factor=GameDrops and GameDrops.power(self) or 1
+    local factor=GameDrops and GameDrops.bulletScale(self) or 1
     local draw=lstg.AndroidRenderSprite
     if draw then
         -- 安卓直接提交残影的顶点色，避免雷弹逐片改共享图片状态、创建 Color。

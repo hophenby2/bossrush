@@ -75,6 +75,10 @@ function A.name(key,index)
     local profile=phase and D.profiles[phase[index or 1]]
     return profile and profile.name
 end
+function A.position(key,index)
+    local phase=D.phases[key]
+    return phase and phase.positions and phase.positions[index]
+end
 function A.bind(o,key,index)
     o.no_hp_render=true -- 原作HUD显示Boss血条。
     local phase=D.phases[key]

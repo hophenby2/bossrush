@@ -123,14 +123,16 @@ for path in sorted((source.root/'Resources/xuelianhua/prefab/boss').glob('*/*.pr
     # 副体的Boss_in路径是未使用的占位数据，实际弹幕/阶段由主体现有Bossmove同步。
     if move['double_boss2']:continue
     keys=[inside['path']]+move['path'];pictures=[inside['lihui']]+move['danmu_lihui']
+    positions=[[inside['chushix'],inside['chushiy']]]+[[p['x'],p['y']] for p in move['danmu_chushiweizhi']]
     block=next(raw for _,_,raw in HEADER.findall(path.read_text()) if 'double_boss2:' in raw)
     raw=re.search(r'^  fuka_num: *(.*)$',block,re.M)[1]
     numbers=[inside['fuka_num']]+(list(struct.unpack('<'+'i'*(len(raw)//8),bytes.fromhex(raw))) if raw else [])
-    for phase,pic,number in zip(keys,pictures,numbers):
+    for phase,pic,number,position in zip(keys,pictures,numbers,positions):
         phase=(phase or '').replace('xuelianhua/danmaku/','').replace('//','/')
         if not phase:continue
         index=2 if move['double_boss2'] else 1
         phases.setdefault(phase,{})[index]=key
+        phases[phase].setdefault('positions',{})[index]=position
         if not move['double_boss2']:phases[phase]['number']=number
         pf=source.path(pic)
         if pf and pf.relative_to(source.root).as_posix() not in portraits:
@@ -155,9 +157,18 @@ for scene in sorted((source.root/'Scene').glob('Stage*.unity')):
             assert primary,(scene,key,'副体缺少前一tick的主Boss')
             main=source.path(reference(primary));assert main,(scene,key,'主Boss引用缺失')
             main=main.relative_to(source.root).as_posix()
+            inside=next(v for k,v in documents(path).values() if k==114 and 'lihui' in v)
+            positions=[[inside['chushix'],inside['chushiy']]]+[[p['x'],p['y']] for p in move['danmu_chushiweizhi']]
+            primary_move=next(v for k,v in documents(source.root/main).values() if k==114 and 'double_boss2' in v)
+            primary_inside=next(v for k,v in documents(source.root/main).values() if k==114 and 'lihui' in v)
+            phase_keys=[(p or '').replace('xuelianhua/danmaku/','').replace('//','/') for p in [primary_inside['path']]+primary_move['path']]
+            secondary_positions=dict(zip(phase_keys,positions))
             matched=0
-            for phase in phases.values():
-                if phase.get(1)==main:phase[2]=key;matched+=1
+            for phase_key,phase in phases.items():
+                if phase.get(1)==main:
+                    phase[2]=key
+                    phase['positions'][2]=secondary_positions[phase_key]
+                    matched+=1
             assert matched,(scene,key,main,'主Boss阶段缺失')
 # 符卡背景由Boss_fuka_creat按fuka_num动态生成，不属于Stage*.unity场景。
 for path in sorted((source.root/'Resources/xuelianhua/prefab/boss/fuka_beijing').glob('fuka*.prefab')):

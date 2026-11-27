@@ -77,6 +77,8 @@ function D.laserInset(p,angle)
     return math.max(0,radius(box.baseA,box.baseB)-radius(box.A,box.B))
 end
 function D.power(o) local red=D.values(o);return D.enabled() and red/100 or 1 end
+-- 绘制放大最多10倍；伤害继续使用完整火力，碰撞尺寸不变。
+function D.bulletScale(o) return math.min(10,D.power(o)) end
 function D.recoveryRate(o) local _,blue=D.values(o);return D.enabled() and blue/100 or 1 end
 function D.bombState(o)
     local s=peek();local p=s and s.players[D.slot(o)]
@@ -84,7 +86,7 @@ function D.bombState(o)
 end
 function D.damage(amount,o) return amount*D.power(o) end
 function D.renderBullet(o)
-    local factor=D.power(o)
+    local factor=D.bulletScale(o)
     if factor==1 then return DefaultRenderFunc(o) end
     -- 只在绘制时放大，保持原始缩放、碰撞半径与命中倍率；联机捕获实际绘制尺寸。
     local h,v=o.hscale,o.vscale;o.hscale=h*factor;o.vscale=v*factor

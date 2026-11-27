@@ -136,7 +136,7 @@ function marisa_player:shoot()
 
 end
 function marisa_player:render()
-    local fireScale=GameDrops and GameDrops.power(self) or 1
+    local fireScale=GameDrops and GameDrops.bulletScale(self) or 1
     --support
     SetImageState('marisa_support', '', 255, 255, 255, 255)
     for i = 1, 4 do

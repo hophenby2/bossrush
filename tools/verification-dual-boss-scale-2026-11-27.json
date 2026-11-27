@@ -1,0 +1,91 @@
+{
+  "date": "2026-11-27",
+  "platform": "LuaJIT 5.1；macOS / LuaSTG-x / Metal",
+  "checks": {
+    "snow_dual_positions": {
+      "stages": 14,
+      "positions": 28,
+      "motion_traces": 8,
+      "within_card_transition_preserves_position": true
+    },
+    "snow_native": {
+      "card": 38032,
+      "mode": "符卡练习",
+      "logic_frames": 250,
+      "checkpoint": "e640d8e01515e7489ad752fb2a34c20f5466764de4aa40206b28be114d7daf33",
+      "screenshot": "/tmp/bossrush-th38-dual-native/mac-battle.png"
+    },
+    "theis_charge": {
+      "card": 70305,
+      "mode": "挑战模式强化开启",
+      "circle_layer": -499,
+      "boss_layer": -600,
+      "circle_draws": 60,
+      "particle_draws": {
+        "left": 1832,
+        "right": 1766
+      },
+      "screenshot": "/tmp/bossrush-theis-charge-fixed/bossrush/snapshot/theis-charge.png"
+    },
+    "bullet_scale": {
+      "factors": [
+        1,
+        1.15,
+        5,
+        10,
+        11,
+        100
+      ],
+      "maximum_render_factor": 10,
+      "collision_unchanged": true,
+      "damage_factor_uncapped": true
+    },
+    "theis_final_spell": {
+      "card": 70610,
+      "action": "按用户确认保留原作时序",
+      "source_ticks": 5100,
+      "speed_changes": [
+        {
+          "timer": 870,
+          "rate": 1.25
+        },
+        {
+          "timer": 1650,
+          "rate": 1.35
+        },
+        {
+          "timer": 2430,
+          "rate": 1.45
+        },
+        {
+          "timer": 3210,
+          "rate": 1.6
+        },
+        {
+          "timer": 3990,
+          "rate": 1.75
+        },
+        {
+          "timer": 4770,
+          "rate": 2
+        }
+      ]
+    }
+  },
+  "limits": [
+    "未进行Android本次实机检查",
+    "未重新打包APK"
+  ],
+  "source_sha256": {
+    "mod/GAME/th38/runtime.lua": "72fa72ed0ee394772a1f131dea7a8a707884208f7b1d57d141704902830bd3e3",
+    "mod/GAME/th38/actor.lua": "5a027cdc3f02152e76701ba0515f334a7393bf7e8818d4528b69eb8dda554b75",
+    "mod/GAME/th38/actors.lua": "d1468a8fbe8acb238469c5ab135654897751593c925910c4638e9f066d84b1cf",
+    "tools/th38-tests/export_visuals.py": "5bbd02c3fcb837558edf8bb750f78d330eb55cc72bd155bb481c7895d9cf23a6",
+    "mod/GAME/th41.lua": "14aef0982a9901657aedc0860d5921787b026208c9a9e69f5bfed805699288c7",
+    "mod/GAME/ports/theis/native_players/bridge.lua": "2e5b7c3b19cf2a867447a45135794bb6eaab356b4730862a2efb8b1458f5bd3f",
+    "THlib/drops.lua": "440b84e32e1c519c68e6d52e737539347ca1762a1add3358fbb606ea78a99ce0",
+    "THlib/native_players.lua": "3bd18477f04eb032a0dff4597956b6650d45a94707dde2e09f6042bb26114d67",
+    "THlib/player/reimu/reimu.lua": "a3f957bf6361024198a7e47c263100807ce0ce70058c55855ec5451bb4d37a58",
+    "THlib/player/marisa/marisa.lua": "51b3c2a146cdd632b5be11b3edf75b7769ebc0318eeac3f2d47d4c88cbf5f5c8"
+  }
+}

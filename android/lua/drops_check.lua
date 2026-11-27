@@ -19,7 +19,7 @@ function C.install(mode)
         local expected
         D.renderBullet=function(o)
             local h,v=o.hscale,o.vscale
-            expected={h=h,v=v,factor=D.power(o)}
+            expected={h=h,v=v,factor=D.bulletScale(o)}
             renderBullet(o);expected=nil
             assert(o.hscale==h and o.vscale==v,'实际绘制后未恢复弹体缩放')
         end

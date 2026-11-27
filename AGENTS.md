@@ -102,7 +102,9 @@ open 'macos/dist/Boss Rush HD.app'
 python3 android/build.py --lossy-images --compress-audio --optimize-fonts --transparent-webp --compact-music
 ```
 
-产物在 `android/dist/`，包括固定名称测试 APK、带界面版本号的 APK 和 SHA-256 文件。`--package-only` / `--update-assets` 用于复用已有原生库，前提是原生补丁与编译选项匹配；新增解码能力或原生接口时不能只换 Lua。实际依赖版本见 `android/engine.lock.json`。
+`android/dist/` 顶层只保留带界面版本号的 APK；压缩报告、构建记录、性能报告及 SHA-256 校验文件统一放入 `android/dist/reports/`，手工生成的交付记录也必须遵守此目录约定。签名中间件留在 `android/build/`，不再生成或交付重复的固定名 debug APK。其他架构的独立 dist 目录遵循相同布局。
+
+`--package-only` / `--update-assets` 用于复用已有原生库，前提是原生补丁与编译选项匹配；新增解码能力或原生接口时不能只换 Lua。实际依赖版本见 `android/engine.lock.json`。
 
 图片分类、裁剪和压缩策略位于 `android/asset_policy.py`、`android/build.py` 及相关工具中；优化包体不能直接改坏正式源素材。包体预算以本次 APK 的实际字节数计算，不沿用历史版本的大小结论。
 

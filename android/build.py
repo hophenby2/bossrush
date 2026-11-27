@@ -507,8 +507,8 @@ def sign_apk(tools, keytool, unsigned):
     run(executable(tools, 'zipalign'), '-f', '-p', '4', unsigned, aligned)
     dist = DIST
     dist.mkdir(exist_ok=True)
-    arch_name = 'arm64' if ABI == 'arm64-v8a' else ABI
-    output = dist / f'BossRushHD-android-{arch_name}-debug.apk'
+    # 签名中间件留在build；dist顶层只发布带版本号的APK，不再复制debug包。
+    output = BUILD / 'signed.apk'
     idsig = Path(str(output) + '.idsig')
     if idsig.exists():
         idsig.unlink()
@@ -521,21 +521,21 @@ def sign_apk(tools, keytool, unsigned):
     print(verification.stdout, end='', flush=True)
     verify_certificate(verification.stdout, identity)
     digest = hashlib.file_digest(output.open('rb'), 'sha256').hexdigest()
-    (dist / (output.name + '.sha256')).write_text(digest + '  ' + output.name + '\n')
-    print(f'APK：{output}\nSHA-256：{digest}', flush=True)
     if COMPRESSION_PROFILE and output.stat().st_size>=PROFILES[COMPRESSION_PROFILE]['max_bytes']:
         raise RuntimeError(f'{COMPRESSION_PROFILE} APK超过预算：{output.stat().st_size}字节')
     # 用户包名只保留平台、正式版本和容量档位；架构与源码提交放构建记录。
     suffix='-'+COMPRESSION_PROFILE.upper() if COMPRESSION_PROFILE else ''
     release = dist / f'BossRushHD-Android-{game_version(GAME)}{suffix}.apk'
-    shutil.copy2(output, release)
-    write_utf8(dist / (release.name + '.sha256'), digest + '  ' + release.name + '\n')
+    output.replace(release)
+    reports = dist / 'reports'
+    reports.mkdir(exist_ok=True)
+    write_utf8(reports / (release.name + '.sha256'), digest + '  ' + release.name + '\n')
     write_utf8(BUILD / 'packaged-manifest.sha256',
                hashlib.sha256((BUILD / 'AndroidManifest.xml').read_bytes()).hexdigest())
-    print(f'发行包：{release}', flush=True)
+    print(f'发行包：{release}\nSHA-256：{digest}\n报告与校验：{reports}', flush=True)
     if COMPRESSION_PROFILE:
         for name in ('asset-optimization','music-optimization','audio-optimization','font-optimization'):
-            shutil.copy2(BUILD/(name+'.json'),dist/(release.stem+'-'+name+'.json'))
+            shutil.copy2(BUILD/(name+'.json'),reports/(release.stem+'-'+name+'.json'))
 
 
 def main():

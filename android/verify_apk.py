@@ -6,15 +6,26 @@ import hashlib
 import io
 import json
 import struct
+import sys
 import wave
 import zipfile
 
 ROOT = Path(__file__).resolve().parent
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--game-root', type=Path, default=ROOT.parent, help='与 APK 对应的游戏源码快照')
+parser.add_argument('--apk', type=Path, help='待检查的带版本号APK；默认使用当前版本，多个容量档时须指定')
 args = parser.parse_args()
 GAME = args.game_root.resolve()
-apk = ROOT / 'dist/BossRushHD-android-arm64-debug.apk'
+if args.apk:
+    apk = args.apk.resolve()
+else:
+    sys.path.insert(0, str(ROOT.parent / 'tools'))
+    from release_version import game_version
+    prefix = f'BossRushHD-Android-{game_version(GAME)}'
+    candidates = sorted([*(ROOT / 'dist').glob(prefix + '.apk'), *(ROOT / 'dist').glob(prefix + '-*.apk')])
+    if len(candidates) != 1:
+        parser.error('当前版本的APK不唯一或尚未打包，请通过--apk指定安装包')
+    apk = candidates[0]
 with zipfile.ZipFile(apk) as archive:
     names = archive.namelist()
     assert len(names) == len(set(names)), 'APK 中有重名文件'
@@ -84,7 +95,7 @@ with zipfile.ZipFile(apk) as archive:
         assert 'u_fogColor.a*c.a' in text, '雾颜色透明度未参与混合：' + shader
     assert 'assets/licenses/SOURCE.txt' in names
 digest = hashlib.file_digest(apk.open('rb'), 'sha256').hexdigest()
-saved = (ROOT / 'dist' / (apk.name+'.sha256')).read_text().split()[0]
+saved = (apk.parent / 'reports' / (apk.name+'.sha256')).read_text().split()[0]
 assert digest == saved, 'APK SHA-256 不匹配'
 print(f'APK 校验通过：{len(paths)} 个游戏资源，{wav_count} 个 WAV 无损重封装，{len(libraries)} 个 ARM64 库，{len(shaders)} 个后处理shader；不含用户存档。')
 print(f'大小：{apk.stat().st_size/1024/1024:.1f} MiB；SHA-256：{digest}')

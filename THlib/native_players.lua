@@ -340,7 +340,7 @@ local function emit(p,img,x,y,v,dir,dmg,r,scale,homing,main)
     return o
 end
 function Shot:render()
-    local factor=GameDrops and GameDrops.power(self) or 1
+    local factor=GameDrops and GameDrops.bulletScale(self) or 1
     SetImageState(self.img,'',self.native_alpha or 255,255,255,255)
     Render(self.img,self.x,self.y,self.rot,self.hscale*factor,self.vscale*factor)
 end

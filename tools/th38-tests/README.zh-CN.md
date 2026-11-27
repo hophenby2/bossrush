@@ -1,5 +1,15 @@
 # TH38：东方雪莲华原生对象接入初版
 
+## 2026-11-27：双Boss逐阶段出生位置
+
+`export_visuals.py`分别导出主副体的`Boss_in.chushix/chushiy`和
+`Bossmove.danmu_chushiweizhi`。`runtime.lua`从对应阶段起点创建角色；
+`Basic.a51_4=1`时按原作120tick正弦速度移向弹幕表坐标，不能将目标坐标直接作为出生位置。
+卡内阈值转阶段保留当前位置，不重复入场校准。
+
+`luajit tools/th38-tests/check_boss_positions.lua`覆盖四面A/B共14阶段、28个出生位置、
+8条校准轨迹及卡内转阶段。Mac原生符卡练习38032运行250帧，画面中两角色分别在各自位置绘制。
+
 ## 2026-11-27：洒向乐土的血雨的激光转弹
 
 怒枪「洒向乐土的血雨」（38012，`L/stage2/boss2/2`）的`danmaku1.txt`生成寿命120tick的

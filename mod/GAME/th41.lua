@@ -60,6 +60,9 @@ env.GROUP_ENEMY_BULLET,env.GROUP_INDES,env.GROUP_ITEM=GROUP.ENEMY_BULLET,GROUP.I
 env.GROUP_SPELL=GROUP.SPELL
 env.GROUP_ALL=GROUP
 for key,value in pairs(LAYER) do env['LAYER_'..key]=value end
+-- 原作也用自机弹层放蓄力圈等敌方特效；宿主下调自机弹层不能连带遮住这些特效。
+-- 真正的原作自机弹在其私有环境使用宿主的自机弹层。
+env.LAYER_PLAYER_BULLET=-500
 env.LAYER_ENEMY_BULLET_EF=LAYER.ENEMY_BULLET_EF
 env.math.clamp=function(x,a,b) return math.max(a,math.min(x,b)) end
 env.math.lerp=function(a,b,t) return a+(b-a)*t end

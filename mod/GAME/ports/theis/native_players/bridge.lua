@@ -6,6 +6,7 @@ function B.load(name)
     local source=assert(_editor_class.TH41.source)
     local env=setmetatable({}, {__index=source});local api=setmetatable({}, {__index=source.lstg})
     env.lstg=api
+    env.LAYER_PLAYER_BULLET=LAYER.PLAYER_BULLET
     -- 原作索敌只枚举本作对象；宿主的顺序/练习载体不能覆盖光背的优先级。
     env.ObjList=function(group)
         local iter,state,first=ObjList(group)
