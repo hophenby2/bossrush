@@ -23,6 +23,7 @@ function GameInit()
             LoadMusic('release:verify',music.path,music.last,music.length)
             RemoveResource('global',4,'release:verify');result.music=result.music+1
         end
+        if config.resources_only then save(true);return end
         lstg.DoFile('game-core.lua')
         local initialize=GameInit;initialize()
         setting.mod='Boss Rush HD';cur_setting=DeSerialize(Serialize(setting))

@@ -26,6 +26,7 @@ replay/
 LuaSTGSub.exe
 *.dll
 /windows/build/
+/windows/dist/
 
 # ---------- 资源包（由 mod/、THlib/、Resources/、shader/ 打包而来，属派生副本） ----------
 /mod.dat

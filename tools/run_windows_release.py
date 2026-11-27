@@ -18,6 +18,7 @@ def main():
     p.add_argument('package',type=Path)
     p.add_argument('--output',type=Path,required=True)
     p.add_argument('--timeout',type=int,default=360)
+    p.add_argument('--resources-only',action='store_true',help='只验证所有压缩媒体的实际引擎解码，不进入关卡')
     a=p.parse_args()
     if os.name!='nt':raise SystemExit('真实引擎验证须在Windows执行')
     a.output.mkdir(parents=True,exist_ok=False)
@@ -30,7 +31,7 @@ def main():
             if path.endswith('.png'):
                 with Image.open(io.BytesIO(z.read(prefix+aliases.get(path,path)))) as image:
                     images.append({'path':path,'width':image.width,'height':image.height})
-        audio=sorted(path for path in paths if path.endswith('.wav'))
+        audio=sorted(path for path in paths if path.endswith(('.wav','.flac')))
         z.extractall(a.output)
     game=a.output/Path(prefix.rstrip('/'))
     (game/'User').mkdir();(game/'replay').mkdir();(game/'snapshot').mkdir()
@@ -41,8 +42,15 @@ def main():
         for name,info in json.loads((game/'mod/GAME/original/std/music.json').read_text()).items():
             music.append({'path':'music/ORIG_'+name+'.ogg','last':info['loop_end']/info['rate'],
                 'length':(info['loop_end']-info['loop_start'])/info['rate']})
-    (game/'native-config.json').write_text(json.dumps({'images':images,'audio':audio,'levels':[29,30,31,32,33],
-        'sequences':sequences,'music':music}),encoding='utf-8')
+    if a.resources_only:
+        import soundfile as sf
+        music=[];sequences=[]
+        for folder in ('music','Resources/ports/theis/res/music','Resources/ports/dreamer/res/likedreamer/bgm','Resources/th43/music'):
+            for path in sorted((game/folder).glob('*.ogg')):
+                info=sf.info(path);duration=info.frames/info.samplerate
+                music.append({'path':path.relative_to(game).as_posix(),'last':duration,'length':duration})
+    (game/'native-config.json').write_text(json.dumps({'images':images,'audio':audio,'levels':[] if a.resources_only else [29,30,31,32,33],
+        'sequences':sequences,'music':music,'resources_only':a.resources_only}),encoding='utf-8')
     shutil.move(game/'core.lua',game/'game-core.lua')
     shutil.copy2(Path(__file__).resolve().parents[1]/'windows/verify.lua',game/'core.lua')
     entry=(game/'launch').read_text(encoding='utf-8-sig')
@@ -59,7 +67,7 @@ def main():
         (a.output/'native-result.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
         assert report['ok'],report
         assert report['images']==len(images) and report['audio']==len(audio)
-        assert len(report['entries'])==5+len(sequences) and report.get('music',0)==len(music)
+        assert len(report['entries'])==(0 if a.resources_only else 5+len(sequences)) and report.get('music',0)==len(music)
         print(json.dumps(report,ensure_ascii=False))
     finally:
         if process.poll() is None:process.kill();process.wait()

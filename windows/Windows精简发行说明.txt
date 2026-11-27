@@ -1,3 +1,12 @@
+Windows同档媒体构建（2026-11-27）
+先构建当前提交的安卓包，再复用正式准备管线生成的媒体；不重复编码图片或音频。
+python android/build.py --compression-profile 500mb
+python tools/package_windows.py --compression-profile 500mb
+Windows压缩包位于windows/dist，校验与构建报告位于windows/dist/reports；单包严格小于500,000,000字节。
+图片、音效、BGM与安卓同档逐字节一致，Windows字体保留原始完整数据；PNG/WAV/FLAC逻辑路径按文件头解码，重复图片用别名补齐。
+核对：python tools/check_windows_package.py <Windows包.zip> --output <报告.json>
+真实引擎解码：python tools/run_windows_release.py <Windows包.zip> --resources-only --output <新的隔离目录>
+
 Windows x64精简发行说明（2026-11-10）
 
 文件：BossRushHD-Windows-x64-26.11.10-slim.zip

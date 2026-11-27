@@ -8,14 +8,39 @@ import zipfile
 import json
 import re
 import sys
+import subprocess
 from release_version import game_version
 
 ROOT=Path(__file__).resolve().parents[1]
 TOOL_ROOT=ROOT
 ENGINE_ROOT=ROOT
-OUTPUT=ROOT/'android/dist'
+OUTPUT=ROOT/'windows/dist'
 
-def package(version,optimize=False):
+
+def prepared_resources(files, profile_name, prepared):
+    """复用安卓正式管线的同档媒体，Windows字体仍使用原文件。"""
+    sys.path.insert(0,str(TOOL_ROOT/'android'))
+    from asset_policy import include_asset, native_font_images
+    from build import PROFILES
+    metadata=json.loads((prepared/'android/build-profile.json').read_text(encoding='utf-8'))
+    commit=subprocess.check_output(['git','-C',str(ROOT),'rev-parse','HEAD'],text=True).strip()
+    assert metadata['profile']==profile_name and metadata['version']==game_version(ROOT),'安卓预处理资源档位或版本不符'
+    assert metadata['source_commit']==commit,'安卓预处理资源不是当前提交，请先重新构建安卓包'
+    variants=dict(re.findall(r'\["(.*?)"\]="(.*?)"',(prepared/'asset_variants.lua').read_text(encoding='utf-8')))
+    result={}
+    media=0
+    for name,path in files.items():
+        if not include_asset(name):continue
+        if name.startswith(('THlib/','Resources/','mod/','music/','BadApple/')) and path.suffix.lower() in {'.png','.wav','.flac','.ogg'}:
+            packed=prepared/variants.get(name,name)
+            assert packed.is_file(),f'安卓预处理资源缺失：{name}'
+            result[name]=packed;media+=1
+        else:result[name]=path
+    profile={'version':game_version(ROOT),'profile':profile_name,'source_commit':commit,
+             'architecture':'x86_64','media_files':media,'windows_fonts_original':True,**PROFILES[profile_name]}
+    return result,profile,{p.relative_to(ROOT).as_posix() for p in native_font_images(ROOT)}
+
+def package(version,optimize=False,compression_profile=None,prepared=None):
     exe=ENGINE_ROOT/'LuaSTGSub.exe'
     data=exe.read_bytes();header=struct.unpack_from('<I',data,0x3c)[0]
     assert data[:2]==b'MZ' and data[header:header+4]==b'PE\0\0', '缺少有效 Windows 引擎'
@@ -40,7 +65,16 @@ def package(version,optimize=False):
     aliases={}
     image_records={}
     audio_records={}
-    if optimize:
+    profile=None
+    font_bitmaps=set()
+    if compression_profile:
+        assert version==game_version(ROOT),'压缩档位使用当前界面版本号'
+        files,profile,font_bitmaps=prepared_resources(files,compression_profile,prepared)
+        image_records=json.loads((prepared.parent.parent/'asset-optimization.json').read_text(encoding='utf-8'))
+        audio_records=json.loads((prepared.parent.parent/'audio-optimization.json').read_text(encoding='utf-8'))
+        generated['windows/build-profile.json']=(json.dumps(profile,ensure_ascii=False,indent=2)+'\n').encode()
+        optimize=True
+    elif optimize:
         sys.path.insert(0,str(TOOL_ROOT/'android'))
         from asset_optimizer import optimize_images
         from audio_optimizer import optimize_audio
@@ -50,8 +84,8 @@ def package(version,optimize=False):
         sounds,audio_records=optimize_audio(audio,TOOL_ROOT/'android/.cache/vorbis-sounds')
         # Sub按文件头解码图片/音频，保留PNG/WAV逻辑文件名以兼容原枚举和原作脚本。
         for name,path in list(files.items()): files[name]=optimized.get(path,sounds.get(path,path))
+    if optimize:
         # HGE字体在C++内部读取Bitmap，不经过Lua LoadTexture；这些图保留实体文件。
-        font_bitmaps=set()
         for name,path in files.items():
             if name.endswith('.fnt'):
                 for bitmap in re.findall(r'(?im)^Bitmap\s*=\s*([^\r\n]+)',path.read_text(encoding='utf-8-sig')):
@@ -74,8 +108,9 @@ def package(version,optimize=False):
         generated['launch']=entry.replace(anchor,'lstg.DoFile("windows/assets.lua")\n'+anchor).encode()
         del files['launch']
     out=OUTPUT;out.mkdir(parents=True,exist_ok=True)
-    name=f'BossRushHD-Windows-x64-{version}'+('-slim' if optimize else '')
-    target=out/(name+'.zip')
+    name=(f'BossRushHD-Windows-{version}-{compression_profile.upper()}' if compression_profile else
+          f'BossRushHD-Windows-x64-{version}'+('-slim' if optimize else ''))
+    target=out/(name+'.partial.zip')
     guide=f'''Boss Rush HD {version} Windows x64 发行版
 
 完整离线包，含 LuaSTG Sub 引擎、脚本、音乐与素材。完整解压后运行 LuaSTGSub.exe。
@@ -117,7 +152,21 @@ roguelike 模式没有战数上限：所选卡池内每轮不重复，抽完后�
 引擎及依赖许可证见 licenses/。
 '''
 
-    if optimize:
+    if compression_profile:
+        music_note=('BGM为'+str(profile['music_sample_rate']/1000)+'kHz单声道Vorbis约'+str(profile['music_bitrate_kbps'])+'kbps，保留时长与循环时间。'
+                    if profile.get('music_sample_rate') else 'BGM保留原采样率、声道、时长与循环时间，使用同档Vorbis压缩。')
+        guide=f'''Boss Rush HD {version} Windows x64
+
+完整解压后运行LuaSTGSub.exe，需要支持Direct3D 11的Windows x64电脑。
+包含当前源码登记的全部作品和模式；游戏内容与同版本安卓包一致。
+方向键移动，Shift低速，Z射击/确认，X使用Bomb/返回，C特殊操作，Esc暂停。
+
+采用与安卓相同的{compression_profile.upper()}媒体：核心图片无损，背景和立绘保留尺寸，音效保留采样率、声道和帧数。
+{music_note}Windows字体保留完整原始数据。
+本包不含玩家存档、录像、个人设置、日志或构建缓存。首次启动在游戏目录建立本地数据。
+原有User和replay目录可自行保留；引擎及依赖许可证见licenses。
+'''
+    elif optimize:
         guide=guide.replace('完整离线包，含 LuaSTG Sub 引擎、脚本、音乐与素材。','精简离线包，含 LuaSTG Sub 引擎、脚本、音乐与素材。')
         guide+='\n本版修复顺序局原曲选择、风神录死亡P点轨迹、永夜抄导弹/激光、魔炮绘制及Cherry/Cherry+规则，并接入原作续关。\n'
         guide+='\n精简范围：保留TH31–TH35及当前随机模式。已删除关卡的旧录像不在兼容范围，原录像文件不改写。\n核心图片无损；非核心适度压缩；音效压缩为Ogg，关卡脚本、资源尺寸和Alpha不变。\n'
@@ -134,13 +183,18 @@ roguelike 模式没有战数上限：所选卡池内每轮不重复，抽完后�
         for source,actual in aliases.items():assert name+'/'+actual in archive.namelist(),source
         assert not any('/User/' in n or '/replay/' in n for n in archive.namelist())
     digest=hashlib.file_digest(target.open('rb'),'sha256').hexdigest()
-    target.with_suffix('.zip.sha256').write_text(digest+'  '+target.name+'\n')
+    if profile and target.stat().st_size>=profile['max_bytes']:
+        raise RuntimeError(f'{compression_profile} Windows包超过预算：{target.stat().st_size}字节')
+    target=target.replace(out/(name+'.zip'))
+    reports=out/'reports';reports.mkdir(exist_ok=True)
+    (reports/(target.name+'.sha256')).write_text(digest+'  '+target.name+'\n')
     if optimize:
         report={'file':target.name,'bytes':target.stat().st_size,'sha256':digest,'logical_images':len(image_records),
                 'lossy_images':sum(r.get('lossy',False) for r in image_records.values()),'deduplicated_images':len(aliases),
                 'converted_audio':sum(r['converted'] for r in audio_records.values()),'font_bitmaps_kept':sorted(font_bitmaps),
-                'engine_sha256':hashlib.sha256(exe.read_bytes()).hexdigest(),'source_materials_changed':False}
-        (out/(name+'-verification.json')).write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+                'engine_sha256':hashlib.sha256(exe.read_bytes()).hexdigest(),'source_materials_changed':False,
+                'compression_profile':profile}
+        (reports/(name+'-verification.json')).write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
     print(f'Windows 完整包校验通过：{len(files)} 个文件，{target.stat().st_size/1024/1024:.1f} MiB；SHA-256 {digest}')
     return target
 
@@ -151,7 +205,9 @@ if __name__=='__main__':
     parser.add_argument('--engine-root',type=Path,default=ENGINE_ROOT,help='Windows 引擎、DLL 及其相邻许可证目录')
     parser.add_argument('--output-dir',type=Path,default=OUTPUT)
     parser.add_argument('--optimize-assets',action='store_true',help='复用核心无损/非核心压缩、Ogg音效及重复图片去重规则')
+    parser.add_argument('--compression-profile',choices=('1gb','750mb','500mb'),help='复用同提交、同档位的安卓预处理媒体')
+    parser.add_argument('--prepared-assets',type=Path,default=ROOT/'android/build/assets/game',help='安卓正式资源准备管线的game目录')
     args=parser.parse_args()
     if args.game_root: ROOT=args.game_root.resolve()
     ENGINE_ROOT=args.engine_root.resolve();OUTPUT=args.output_dir.resolve()
-    package(args.version or game_version(ROOT),args.optimize_assets)
+    package(args.version or game_version(ROOT),args.optimize_assets,args.compression_profile,args.prepared_assets.resolve())
