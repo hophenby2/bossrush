@@ -87,7 +87,8 @@ def write_utf8(path, text):
 def asset_compression(path):
     # FreeType 默认通过 AAsset_seek 流式读取；字体压缩后反复跳读会重复解压。
     # Ogg 同样需要随机访问，已有自身压缩，直接存储也避免循环播放时再套一层解压。
-    return zipfile.ZIP_STORED if path.suffix.lower() in {'.ttf', '.otf', '.ogg'} else zipfile.ZIP_DEFLATED
+    # WebP直接使用自身压缩，避免AAsset读取纹理时先解一层收益很小的ZIP压缩。
+    return zipfile.ZIP_STORED if path.suffix.lower() in {'.ttf', '.otf', '.ogg', '.webp'} else zipfile.ZIP_DEFLATED
 
 
 def prepare_wav(source, target):

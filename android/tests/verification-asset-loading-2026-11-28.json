@@ -1,0 +1,27 @@
+{
+  "date": "2026-11-28",
+  "source_package": "BossRushHD-Android-2026.11.28.1-500MB.apk",
+  "webp_files": 4204,
+  "webp_bytes": 356282368,
+  "original_webp_zip_saving_bytes": 646484,
+  "original_apk_bytes": 493174416,
+  "unsigned_candidate_bytes": 493312131,
+  "file_sizes_and_crc_equal": true,
+  "zip_crc_passed": true,
+  "host_zip_read_cpu_seconds": {
+    "deflate": [
+      0.09375,
+      0.21875
+    ],
+    "stored": [
+      0.078125,
+      0.109375
+    ],
+    "deflate_median": 0.15625,
+    "stored_median": 0.09375
+  },
+  "scope": "Windows主机、内存ZIP、读取全部WebP的CPU时间；不代表Android真机启动时间。",
+  "unchanged": "资源文件内容、图像编码、加载时机和游戏逻辑冻结规则",
+  "device_runtime_test": false,
+  "note": "候选仅为私有未签名压缩布局验证文件，未交付APK；最终安装包仍须经正式zipalign和签名并检查500MB预算。"
+}
