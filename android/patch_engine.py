@@ -39,7 +39,7 @@ if _renderer_text != _renderer.read_text(encoding='utf-8-sig'):
 
 replace('CMakeLists.txt', 'set(CC_USE_GFX LSTGX_USE_GFX)', 'set(CC_USE_GFX ${LSTGX_USE_GFX})')
 _luajit_cmake = engine / 'frameworks/cocos2d-x/external/lua/luajit/CMakeLists.txt'
-_luajit_text = _luajit_cmake.read_text()
+_luajit_text = _luajit_cmake.read_text(encoding='utf-8')
 if 'if(ANDROID AND BOSSRUSH_LUAJIT_LIBRARY)' not in _luajit_text:
     _luajit_cmake.write_text(_luajit_text + '''
 if(ANDROID AND BOSSRUSH_LUAJIT_LIBRARY)
@@ -47,7 +47,7 @@ if(ANDROID AND BOSSRUSH_LUAJIT_LIBRARY)
   set_target_properties(luajit PROPERTIES IMPORTED_LOCATION "${BOSSRUSH_LUAJIT_LIBRARY}"
     INTERFACE_INCLUDE_DIRECTORIES "${BOSSRUSH_LUAJIT_INCLUDE}")
 endif()
-''')
+''', encoding='utf-8')
 # OpenAL 已支持 MONO8/STEREO8；旧解码器却在读取原作 PCM8 音效前将其拒绝。
 replace('frameworks/Audio/AudioDecoderWav.cpp',
         'if (bit_depth != 16)', 'if (bit_depth != 8 && bit_depth != 16)')
@@ -290,7 +290,7 @@ for _buffer_target in ['GL_ARRAY_BUFFER','GL_ELEMENT_ARRAY_BUFFER','GL_UNIFORM_B
             f'uploadBufferData({_buffer_target}, offset, size, buffer, gpuBuffer->size);')
 # 每批Map/Unmap会在模拟器中产生同步往返，在真机也可能等待正在使用的存储。
 # 完整覆盖时换存储；部分更新仅写指定范围，不破坏同一buffer的其他字段或顶点。
-_gles_source=(engine / _gles_commands).read_text()
+_gles_source=(engine / _gles_commands).read_text(encoding='utf-8')
 if 'extern "C" bool bossrushAndroidStreamUploads();' not in _gles_source:
     replace(_gles_commands, '#include "GLES3Commands.h"', '''#include "GLES3Commands.h"
 #if defined(__ANDROID__)
@@ -504,12 +504,12 @@ replace('frameworks/LSTG/Resource/ResFont.cpp',
 replace('frameworks/LSTG/Resource/ResFont.cpp', 'c = static_cast<char>(c_hex);',
         'c = static_cast<uint32_t>(c_hex);')
 target = engine / 'CMakeLists.txt'
-text = target.read_text()
+text = target.read_text(encoding='utf-8')
 marker = '# Boss Rush HD Android bridge'
 if marker not in text:
     target.write_text(text + '\n' + marker + '\nif(ANDROID)\n'
                       '  target_sources(cocos2dlua PRIVATE android/bridge.cpp android/compat.cpp)\n'
-                      '  target_include_directories(cocos2dlua PRIVATE android)\nendif()\n')
+                      '  target_include_directories(cocos2dlua PRIVATE android)\nendif()\n', encoding='utf-8')
 copy = engine / 'android'
 copy.mkdir(exist_ok=True)
 for p in (root / 'native').glob('*'):
@@ -526,7 +526,7 @@ for relative in ['frameworks/LSTG/Object/GameObjectManager.cpp', 'frameworks/LST
     source = target.read_text(encoding='utf-8-sig')
     updated = re.sub(r'\bnoexcept\b', '', source)
     if updated != source:
-        target.write_text(updated)
+        target.write_text(updated, encoding='utf-8')
 # 复用退役的Lua实例表；原生对象仍走allocateObject，保留新UID、出生顺序和完整组件重置。
 # 不把存活对象留在旧更新位置，否则由Boss帧创建的弹体可能晚一帧更新。
 replace('frameworks/LSTG/Object/GameObjectManager.h',
@@ -559,7 +559,7 @@ replace(manager, 'p->timer++;\n\t\tp->cm->updateAni();\n\t\tp->ani_timer++;',
         'if (!p->androidFrozen) {\n\t\t\tp->timer++;\n\t\t\tp->cm->updateAni();\n\t\t\tp->ani_timer++;\n\t\t}')
 # 世界位和超级暂停必须进入原生对象属性，不能只给 Lua 空实现。
 p = engine / manager
-text = p.read_text()
+text = p.read_text(encoding='utf-8')
 key = 'const char* key = luaL_checklstring(L, 2, &strlen);'
 get, set_ = text.split('int GameObjectManager::SetAttr(lua_State* L)', 1)
 if 'strcmp(key, "world")' not in get:
@@ -570,7 +570,7 @@ if 'strcmp(key, "world")' not in set_:
                        '\n\tif (!strcmp(key, "nopause")) { p->androidNoPause = lua_toboolean(L, 3); return 0; }')
 updated = get + 'int GameObjectManager::SetAttr(lua_State* L)' + set_
 if updated != text:
-    p.write_text(updated)
+    p.write_text(updated, encoding='utf-8')
 pool = 'frameworks/LSTG/Object/GameObjectPool.cpp'
 p = engine / pool
 text = p.read_text(encoding='utf-8-sig')
@@ -580,7 +580,7 @@ if 'if (!obj[i]->androidFrozen)' not in text:
     body = body.replace('for (auto i = begin; i < end; ++i)\n',
                         'for (auto i = begin; i < end; ++i)\n\t\tif (!obj[i]->androidFrozen)\n')
     p.write_text(a + 'void GameObjectPool::update(size_t begin, size_t end)' + body +
-                 'cocos2d::Vec2 GameObjectPool::getPosition' + rest)
+                 'cocos2d::Vec2 GameObjectPool::getPosition' + rest, encoding='utf-8')
 # 速度积分直接写对象池，绕过 Lua 属性的变换失效标记。
 # 自绘类在 DefaultRenderFunc 中按需重算矩阵，空场时也必须看到实际移动。
 replace(pool, '''\tfor (auto i = begin; i < end; ++i)
@@ -635,7 +635,7 @@ replace(manager, '''void GameObjectManager::CollisionCheck(size_t groupA, size_t
 # 小任务仍先完成全部命中检测，再执行回调，与线程路径保持同样的快照语义。
 # 升级本轮旧缓存；回调可嵌套发起碰撞，命中结果须由当前调用独占。
 _manager_path=engine / manager
-_manager_text=_manager_path.read_text()
+_manager_text=_manager_path.read_text(encoding='utf-8')
 _previous_hits='''                static vector<size_t> hits;
                 hits.clear();
                 for (size_t j=0;j<size;++j)
@@ -648,7 +648,7 @@ _current_hits='''                vector<std::pair<GameObject*,GameObject*>> hits
                 for (const auto& hit : hits)
                     callBack(L,hit.first,hit.second,LGOBJ_CC_COLLI,ot_idx);'''
 if _previous_hits in _manager_text:
-    _manager_path.write_text(_manager_text.replace(_previous_hits,_current_hits))
+    _manager_path.write_text(_manager_text.replace(_previous_hits,_current_hits), encoding='utf-8')
 replace(manager, '''\t\t\tconst auto size = to_colli_lhs.size();
 \t\t\tauto dat_l = to_colli_lhs.data();''', '''            const auto size = to_colli_lhs.size();
             if (size < 2048) {
