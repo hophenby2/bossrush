@@ -53,6 +53,31 @@ replace('frameworks/Audio/AudioDecoderWav.cpp',
         'if (bit_depth != 16)', 'if (bit_depth != 8 && bit_depth != 16)')
 replace('frameworks/Audio/AudioDecoderWav.cpp',
         'only support 16bit format, got ', 'only support 8/16bit PCM format, got ')
+# 短音效在资源加载期解码为静态 PCM。流式 Source 每次重播都会清空队列、seek 并重新解码，
+# 密集擦弹时这些操作发生在游戏线程；音乐和超过 1 MiB PCM 的长音效仍保持流式播放。
+replace('frameworks/LSTG/Resource/ResAudio.cpp', '#include "../Audio/AudioEngine.h"',
+        '#include "../Audio/AudioEngine.h"\n#include "../Audio/AudioSoundData.h"')
+replace('frameworks/LSTG/Resource/ResAudio.cpp', '\tsource = audio::Source::createFromDecoder(d);', '''    constexpr int64_t soundPcmLimit = 1024 * 1024;
+    const auto frames = d->getTotalFrames();
+    const auto bytesPerFrame = d->getBytesPerFrame();
+    if (getType() == ResourceType::SoundEffect && frames > 0 && bytesPerFrame > 0
+        && frames <= soundPcmLimit / bytesPerFrame)
+    {
+        audio::SoundData pcm(static_cast<int>(frames), static_cast<int>(d->getSampleRate()),
+            static_cast<int>(d->getBitDepth()), static_cast<int>(d->getChannelCount()));
+        const auto bytes = frames * bytesPerFrame;
+        if (pcm.getSize() != static_cast<size_t>(bytes)) return false;
+        auto* target = static_cast<char*>(pcm.getData());
+        int64_t filled = 0;
+        while (filled < bytes)
+        {
+            const auto decoded = d->decode(target + filled, bytes - filled);
+            if (decoded <= 0 || decoded > bytes - filled) return false;
+            filled += decoded;
+        }
+        source = audio::Source::createFromSoundData(&pcm);
+    }
+    else source = audio::Source::createFromDecoder(d);''')
 # 应用按 Choreographer 的显示时钟请求60帧；不能再在 GL 线程里叠加 Thread.sleep。
 renderer_java = 'frameworks/cocos2d-x/cocos/platform/android/java/src/org/cocos/lib/CocosRenderer.java'
 replace(renderer_java, '    private long mLastTickInNanoSeconds;', '''    private static volatile boolean externalFramePacing;

@@ -199,6 +199,8 @@ local function DoFrame()
     if RogueEncounter and RogueEncounter.preloading() then return end
     if NativeTime and not NativeTime.allowFrame() then return end
     if SaveResume and not SaveResume.beforeLogic() then return end
+    -- 回放快进等入口可在一次绘制内跑多个逻辑步，音效去重也必须随逻辑步重置。
+    if lstg.BeginSoundFrame then lstg.BeginSoundFrame() end
     --刷新输入
     GetInput()
     if SequenceResources and SequenceResources.continueFrame and SequenceResources.continueFrame(stage.current_stage) then

@@ -57,6 +57,10 @@ function P.beginRender()
     P.controls={};P.modal=nil
 end
 function P.clearInput()
+    for _,t in pairs(P.touches) do
+        local o=t.hit and t.hit.owner
+        if o and o.scrollTouch then o.scrollTouch=nil;o.scrollVelocity=0 end
+    end
     P.controls,P.touches,P.pending={},{},{}
     P.modal,P.menuView,P.rendering,P.owner,P.closeAction=nil,nil,nil,nil,nil
 end
@@ -72,6 +76,7 @@ function P.touch(id,x,y,event)
             local c=P.controls[i]
             if c.stage==stage.current_stage and available(c.owner) and (not P.modal or c.owner==P.modal) and contains(c,x,y) then hit=c;break end
         end
+        if hit and hit.drag and hit.owner.scrollTouch then hit=nil end
         P.touches[id]={hit=hit,x=x,y=y}
         if hit and hit.drag then P.pending[#P.pending+1]={hit=hit,x=x,y=y,drag=true,phase="began"} end
     else
@@ -347,13 +352,11 @@ function P.spellPractice(o,render)
                 P.bind(o,0,180,420,480,function() switch(-1) end)
                 P.bind(o,780,960,420,480,function() switch(1) end)
                 P.place(480,270,WIDTH/2,screen.height/2,.68)
-                for i,entry in ipairs(o._spell) do
-                    local chosen=entry
-                    local y=255-i*48+(#o._spell+1)*24
-                    P.bind(o,120,840,y-24,y+24,function()
-                        for index,row in ipairs(o.spell) do if row==chosen then o.pos=index;pulse(13);return end end
-                    end)
-                end
+                local scroll=sc_pr_menu.Scroll
+                local top=255+scroll.rows*24
+                P.bind(o,120,840,top-scroll.rows*48,top,function()end,function(x,y,phase)
+                    scroll.touch(o,x,y,phase,48)
+                end)
                 P.place(480,55,WIDTH/2,140,.6)
                 local function filter(field)
                     o[field]=not o[field];sc_pr_menu.TweakCard(o,o.onlyshowcard,o.onlyshowspecialcard)

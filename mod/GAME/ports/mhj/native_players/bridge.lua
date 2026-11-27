@@ -434,6 +434,9 @@ function game:PlayEffect(add,id,p)
         -- 队友保护圈在原作设 effect=false，包含有判定的弹体；绘制顺序与是否参与碰撞分别处理。
         if night and self.effect==false then c.effectLayer=nil
         elseif c.drawLayer then c.effectLayer=c.drawLayer end
+        -- Equipment 的 505～508 是四条机体路线的队友结界；普通护身演出不参与挡弹。
+        c.teammateProtection=night and self.effect==false and
+            (id=='505' or id=='506' or id=='507' or id=='508')
         c.weaponTarget=player and player.body and CS.copy(player.body.position)
         self.clock=self.clock+1;R.tick(c);self.time.now=c.time
     end

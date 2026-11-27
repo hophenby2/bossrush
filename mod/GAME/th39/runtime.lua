@@ -25,6 +25,7 @@ local function projectBullet(x,y) return R.project(x-145,y) end
 local function unproject(o) return o.x/SCALE+481,360-o.y/SCALE end
 local function trunc(x) return x<0 and math.ceil(x) or floor(x) end
 local function valid(o) return o and IsValid(o) end
+local teammateBarrier=dofile('mod/GAME/th39/teammate_barrier.lua')(valid)
 local function random(c)
     if not c.visual then return ran:Float(0,1) end
     -- 背景有自己的随机状态，练习回放背景时不会改动弹幕的随机序列。
@@ -535,6 +536,7 @@ local function projected(b)
     local s=b.mhj
     local x,y=projectBullet(s.fx,s.fy)
     local p=profile(s.pattern,s.type)
+    if s.controller.friendly then teammateBarrier.sync(b,s,p) end
     local r=p and p[7] or 0
     local a,bb=r*abs(s.wscale)*SCALE,r*abs(s.hscale)*SCALE
     local rot=-((s.Withspeedd and math.deg(math.atan2(s.my or 0,s.mx or 0)) or s.head or 0)+90)
@@ -561,6 +563,7 @@ local function projected(b)
     end
 end
 local function clean(b)
+    teammateBarrier.remove(b)
     local s=b.mhj
     if s then clearChanges(s) end
     if s and s.controller and s.controller.host==b then R.stopEmitter(s.controller) end
@@ -684,6 +687,13 @@ R.classes.projectile=Class(bullet,{
             return
         end
         if not updateParticle(s) then clean(b);return end
+        -- 完整结界先拦截弹体，再提交宿主碰撞和原作的穿越判定。
+        -- 结界可以挡住攻击中不可炸掉的弹；不能套用炸弹的 Invincible 过滤。
+        if teammateBarrier.count>0 and not s.controller.visual and not s.controller.friendly and s.alpha>99
+                and s.age>(s.Mist and 15 or 0) then
+            local p=profile(s.pattern,s.type)
+            if p and p[7]>0 and teammateBarrier.intercept(s) then Del(b) end
+        end
         projected(b)
         if not s.controller.visual and not s.controller.friendly then R.checkSweep(b) end
         if s.controller.friendly and R.playerWeaponHit then R.playerWeaponHit(b,s) end

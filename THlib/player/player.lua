@@ -255,8 +255,14 @@ function grazer:colli(other, new, x, y)
         self:other_colli(other)
         if (not (other._graze) or other._inf_graze) or (other.IsLaser and new) then
             item.PlayerGraze(other,new,x,y)
-            if SequenceResources and SequenceResources.enabled() then SequenceResources.systemSound('graze',self.x)
-            else PlaySound("graze", 0.5, self.x / 120) end
+            -- 原作按逻辑帧合并同名擦弹音；计数和粒子仍逐颗处理，避免密集擦弹反复重启音源。
+            local scope=stage.current_stage
+            local stamp=scope and scope.timer or self.timer
+            if self._grazeSoundScope~=scope or self._grazeSoundFrame~=stamp then
+                self._grazeSoundScope,self._grazeSoundFrame=scope,stamp
+                if SequenceResources and SequenceResources.enabled() then SequenceResources.systemSound('graze',self.x)
+                else PlaySound("graze", 0.5, self.x / 120) end
+            end
             table.insert(self.gp, { x = self.x, y = self.y,
                                     a = ran:Float(0, 360), v = ran:Float(4, 5),
                                     alpha = 180, timer = 1, rot = ran:Float(0, 360), omiga = ran:Sign() * 5 })

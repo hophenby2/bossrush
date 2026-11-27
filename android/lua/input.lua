@@ -153,7 +153,11 @@ function I.touch(id, x, y, event)
     if AndroidPortrait and AndroidPortrait.touch(id,x,y,event) then return end
     if event == 'ended' or event == 'cancelled' then
         local old = I.touches[id]
-        if event=='ended' and old and old.spellMenu and old.spellMenu==spellMenu() then
+        if old and old.spellScroll then
+            if old.spellMenu==spellMenu() then sc_pr_menu.Scroll.touch(old.spellMenu,x,y,event,ui.menu.sc_pr_line_height) end
+            old.ignored=true;I.mouseTap=0;I.wheel=0
+        end
+        if event=='ended' and old and not old.spellScroll and old.spellMenu and old.spellMenu==spellMenu() then
             local dx,dy=x-old.startX,y-old.startY
             local delta
             if math.abs(dx)>=48 and math.abs(dx)>math.abs(dy)*1.3 then
@@ -231,7 +235,20 @@ function I.touch(id, x, y, event)
                 t.pauseStartX, t.pauseStartY = x, y
             end
             if t.button then I.lastTap=nil end
+            if t.spellMenu and not t.button then
+                local height=ui.menu.sc_pr_line_height
+                local top=255+sc_pr_menu.Scroll.rows*height/2
+                if x>=120 and x<=840 and y>=top-sc_pr_menu.Scroll.rows*height and y<=top then
+                    if t.spellMenu.scrollTouch then t.spellMenu,t.ignored=nil,true
+                    else
+                        t.spellScroll,t.ignored=true,true
+                        sc_pr_menu.Scroll.touch(t.spellMenu,x,y,'began',height)
+                    end
+                end
+            end
             I.touches[id] = t
+        elseif t.spellScroll then
+            if t.spellMenu==spellMenu() then sc_pr_menu.Scroll.touch(t.spellMenu,x,y,'moved',ui.menu.sc_pr_line_height) end
         elseif t.drag and t.player == player then
             if t.tapX and (x-t.tapX)^2+(y-t.tapY)^2>144 then t.tapMoved=true end
             local w, offset = lstg.world, lstg.worldoffset or {}
@@ -250,6 +267,11 @@ function I.touch(id, x, y, event)
     rebuild()
 end
 function I.reset(keepToggles)
+    for _,t in pairs(I.touches) do
+        if t.spellScroll and t.spellMenu then
+            t.spellMenu.scrollTouch=nil;t.spellMenu.scrollVelocity=0
+        end
+    end
     I.touches = {}; I.movementId = nil; I.keys = {}; I.pulses = {}; I.mouse.down = false; I.mouseTap = 0; I.wheel = 0; I.last = nil; I.lastTap=nil; I.targetX, I.targetY = nil, nil
     if not keepToggles then I.toggles={} end
     I.pauseTap = nil

@@ -3,6 +3,10 @@
 return function(native,expose)
     -- 按逻辑名保存音量，不持有资源句柄；缓存卸载仍可释放资源，Lua userdata 被 GC 也不会丢设置。
     local music,sounds={},{}
+    local soundFrame,played=0,{}
+    local soundResources=setmetatable({},{__mode='v'})
+    -- 每个逻辑步单独合并；暂停菜单也推进，避免用已冻结的关卡 timer 吞掉菜单音。
+    expose('BeginSoundFrame',function() soundFrame=soundFrame+1 end)
     local bgmFactor,seFactor=1,1
     native.SetBGMVolume(1);native.SetSEVolume(1)
     local function apply(rows,factor,find)
@@ -19,8 +23,24 @@ return function(native,expose)
     expose('PlaySound',function(name,volume,pan)
         local resource=assert(FindResSound(name),name)
         volume=volume or 1;sounds[name]=volume
-        return native.PlaySound(name,volume*seFactor,pan)
+        local gain=volume*seFactor
+        if not BossRushDesktop then
+            local previous=played[name]
+            if previous and previous.frame==soundFrame and previous.gain==gain and previous.pan==(pan or 0)
+                and soundResources[name]==resource then return end
+            if not previous then previous={};played[name]=previous end
+            previous.frame,previous.gain,previous.pan=soundFrame,gain,pan or 0
+            soundResources[name]=resource
+        end
+        return native.PlaySound(name,gain,pan)
     end)
+    for _,action in ipairs({'StopSound','PauseSound','ResumeSound'}) do
+        local method=native[action]
+        if method then expose(action,function(name,...)
+            played[name],soundResources[name]=nil,nil
+            return method(name,...)
+        end) end
+    end
     expose('SetBGMVolume',function(name,volume)
         if volume==nil then
             if bgmFactor==name then return end

@@ -16,7 +16,7 @@ python3 tools/th39-tests/export.py \
 
 输入文件哈希、转换数量及演出和代理事件计数记录在 `mod/GAME/th39/sources.json`。游戏直接加载生成的 Lua 和 PNG。
 
-五面「绝对弹界（违规终极射击）」及对应难度的队友绑定另由`export_teammates.py --content <原作Content目录>`补导，产物为`teammates.lua`和`teammate_sources.json`。保留灵、魔、早、妹四条机体分支，使魔槽位按原指令创建不受击的队友轨迹对象。原作机体将位置传入`SpecialSystem.UpdateTeammate`；随机模式的宿主机体由独立对象复用原`Character`、`Equipment`的跟随、保护圈和退场逻辑。保护圈随队友移动，攻击原有Cover事件继续按原范围消弹；切卡回收效果及引用。此修复未运行游戏测试。
+五面「绝对弹界（违规终极射击）」及对应难度的队友绑定另由`export_teammates.py --content <原作Content目录>`补导，产物为`teammates.lua`和`teammate_sources.json`。保留灵、魔、早、妹四条机体分支，使魔槽位按原指令创建不受击的队友轨迹对象。原作机体将位置传入`SpecialSystem.UpdateTeammate`；随机模式的宿主机体由独立对象复用原`Character`、`Equipment`的跟随、保护圈和退场逻辑。`teammate_barrier.lua`为505～508效果中的完整`paopao`圆圈接入挡弹：按实际弹图中心和缩放计算椭圆，在宿主碰撞与穿越判定前拦截弹体，不受炸弹的不可消弹标志限制；圆圈退场及破碎的`shield1`碎片不提供保护。攻击原有Cover事件独立保留；切卡回收效果及引用。此修复未运行游戏测试。
 
 ## 差异
 

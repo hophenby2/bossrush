@@ -229,6 +229,7 @@ local function start()
             frames = frames + 1
             syncSurfaceSize()
             if profiler then profiler.begin('input') end
+            if lstg.BeginSoundFrame then lstg.BeginSoundFrame() end
             AndroidInput.beginFrame()
             if profiler then profiler.finish('input') end
             if frames <= 3 then

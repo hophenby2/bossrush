@@ -1,5 +1,6 @@
 ---@class sc_pr_menu
 sc_pr_menu = Class(object)
+sc_pr_menu.Scroll=dofile('THlib/UI/spell_scroll.lua')
 function sc_pr_menu.GetCardInfo(sc, player)
     return spell_card_data[sc.card_id][player]
 end
@@ -70,7 +71,8 @@ function sc_pr_menu:init(exit_func)
     for i,row in ipairs(self.spell) do
         if _sc_pr_table[row[4]][row[1]].sc_group[1].card.card_id==saved.card_id then self.pos=i;break end
     end
-    self._spell, self._pos = sp:GetListSection(self.spell, 14, self.pos, 7)
+    if sc_pr_menu.Scroll.enabled() then sc_pr_menu.Scroll.update(self)
+    else self._spell, self._pos = sp:GetListSection(self.spell, 14, self.pos, 7) end
     self.tri = { 1, 1 }
     self.set_index = { 0, 0 }
 
@@ -142,7 +144,8 @@ function sc_pr_menu:frame()
     for i in ipairs(self.set_index) do
         self.set_index[i] = self.set_index[i] - self.set_index[i] * 0.1
     end
-    self._spell, self._pos = sp:GetListSection(self.spell, 14, self.pos, 7)
+    if sc_pr_menu.Scroll.enabled() then sc_pr_menu.Scroll.update(self,false)
+    else self._spell, self._pos = sp:GetListSection(self.spell, 14, self.pos, 7) end
     self.cur_nums = 0
     for _, t in ipairs(self.spell) do
         local group = t[4]
@@ -153,6 +156,7 @@ function sc_pr_menu:frame()
     end
     if self.locked then
         self.touch_diff=nil
+        self.scrollTouch=nil;self.scrollVelocity=0
         return
     end
     local mouse = ext.mouse
@@ -244,6 +248,7 @@ function sc_pr_menu:frame()
     self.pos = sp:TweakValue(self.pos, max(1, #self.spell), 1)
     self.pos = max(1, self.pos)
     self:remember()
+    if sc_pr_menu.Scroll.enabled() then sc_pr_menu.Scroll.update(self) end
     if self.pos_changed > 0 then
         self.pos_changed = self.pos_changed - 1
     end
@@ -284,11 +289,12 @@ function sc_pr_menu:render()
     if AndroidPortrait and AndroidPortrait.rendering then AndroidPortrait.place(480,270,270,screen.height/2,.68) end
     SetImageState("white", "", 150 * self.alpha * self.tri_alpha2, 0, 0, 0)
     local y = -15
+    local rowCount=sc_pr_menu.Scroll.enabled() and sc_pr_menu.Scroll.rows or #self._spell
     RenderRect('white',
             self.x - ui.menu.sc_pr_width * 0.5 - ui.menu.sc_pr_margin,
             self.x + ui.menu.sc_pr_width * 0.5 + ui.menu.sc_pr_margin,
-            self.y - ui.menu.sc_pr_line_height * #self._spell * 0.5 - ui.menu.sc_pr_margin + y,
-            self.y + ui.menu.sc_pr_line_height * #self._spell * 0.5 + ui.menu.sc_pr_margin + y)
+            self.y - ui.menu.sc_pr_line_height * rowCount * 0.5 - ui.menu.sc_pr_margin + y,
+            self.y + ui.menu.sc_pr_line_height * rowCount * 0.5 + ui.menu.sc_pr_margin + y)
     local text1, text2, text3 = {}, {}, {}
     local sc, name, card, nums
     for i, t in ipairs(self._spell) do
@@ -331,9 +337,14 @@ function sc_pr_menu:render()
     end
 
     local a = self.alpha * self.tri_alpha2
-    ui:DrawMenuTTF(text1, self._pos, self.x - ui.menu.sc_pr_width * 0.5, self.y + y, a, self.timer, 'left', self.tri_alpha)
-    ui:DrawMenuTTF(text2, self._pos, self.x + ui.menu.sc_pr_width * 0.5, self.y + y, a, self.timer, 'right', self.tri_alpha)
-    ui:DrawMenuTTF(text3, self._pos, self.x, self.y + y, a, self.timer, 'center', self.tri_alpha)
+    if sc_pr_menu.Scroll.enabled() then
+        sc_pr_menu.Scroll.draw(self,{{text1,self.x-ui.menu.sc_pr_width*.5,'left'},
+            {text2,self.x+ui.menu.sc_pr_width*.5,'right'},{text3,self.x,'center'}},ui.menu.sc_pr_line_height,a)
+    else
+        ui:DrawMenuTTF(text1, self._pos, self.x - ui.menu.sc_pr_width * 0.5, self.y + y, a, self.timer, 'left', self.tri_alpha)
+        ui:DrawMenuTTF(text2, self._pos, self.x + ui.menu.sc_pr_width * 0.5, self.y + y, a, self.timer, 'right', self.tri_alpha)
+        ui:DrawMenuTTF(text3, self._pos, self.x, self.y + y, a, self.timer, 'center', self.tri_alpha)
+    end
     if AndroidPortrait and AndroidPortrait.rendering then AndroidPortrait.place(480,55,270,140,.6) end
     ui:RenderText("title", ("%s%s：%d"):format(self.difficulty[self.diffpos], "卡数", self.cur_nums),
             130, 70, 1, Color(a * 255, 255, 255, 255), "left", "vcenter")
