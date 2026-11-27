@@ -42,6 +42,8 @@ local function new(class,...)
     -- 即使出生时两轴相等也必须保留椭圆类型，否则生长后会出现大块圆形判定。
     if AndroidPlatform and o.rect==false then o.rect='ellipse' end
     o.theis_port_object=true
+    -- 光背等受击代理直接继承object；宿主激光、Bomb和索敌也须走原作转伤链。
+    o._theis_take_damage=env.enemybase and env.enemybase.damage
     -- 三面等原作背景直接继承 object，未经过 background.init；
     -- 在桥接层统一登记，练习加载页才能在场景建好后退出。
     if class.rogue_stage_background==W.level then lstg.tmpvar.bg=o end
@@ -479,6 +481,21 @@ for number=1,7 do
     end
 end
 W.source=env
+
+-- 光背使用独立碰撞回调，未经过enemybase.colli的强化伤害桥接。
+-- 保留原作转伤、弹体销毁和命中反馈；火力只在输入端乘一次。
+do
+    local backlight=env.s6_boss.back_light
+    local sourceCollision=backlight.colli
+    backlight.colli=function(o,shot)
+        if not (shot.dmg and GameDrops and GameDrops.enabled()) then return sourceCollision(o,shot) end
+        env.enemybase.damage(o,GameDrops.damage(shot.dmg,shot))
+        shot.killerenemy=o.mst
+        if not shot.killflag then api.Kill(shot) end
+        if not shot.mute and IsValid(o.mst) then env.EISlib.Effect.DamageEnemyEffect(o.mst) end
+    end
+    backlight[5]=backlight.colli
+end
 
 local function clear()
     if objects then

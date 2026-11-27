@@ -1,0 +1,44 @@
+{
+  "date": "2026-11-27",
+  "card": 70610,
+  "title": "「从祗园精舍到诸行无常」",
+  "cause": "光背独立碰撞回调漏乘火力，但阶段HP倍率继续生效；宿主直接伤害及索敌也漏掉光背自身的转伤方法。",
+  "native": {
+    "direct": 199.3532686602,
+    "factor": 1.01,
+    "mode": "挑战模式强化开启",
+    "passed": true,
+    "platform": "macOS Metal，共用移动端逻辑",
+    "expected": 199.3532686602,
+    "target_light": true,
+    "power": 100,
+    "legacy_collision": 1.9935326866016,
+    "collision": 199.3532686602,
+    "boss_colli": false,
+    "card": 70610
+  },
+  "native_scope": "强制本卡为正式挑战模式首卡，开启强化，以原生碰撞对照原作回调；不是38卡整局或安卓设备实测。",
+  "lua": {
+    "commands": [
+      "luajit tools/check_theis_backlight_damage.lua",
+      "luajit tools/check_player_target_lifecycle.lua",
+      "luajit tools/check_theis_entry.lua"
+    ],
+    "cases": [
+      "练习：原始伤害",
+      "未开启强化：基础火力与伤害单位",
+      "强化：100倍火力、38阶段累计倍率741.247938"
+    ],
+    "scope": "通过正式H.enter累计建立38阶段状态；覆盖碰撞、直接伤害、源类转伤、索敌、退役目标、5秒无敌及20秒前渐进减伤。"
+  },
+  "source_sha256": {
+    "THlib/enemy/enemy.lua": "abd64975387954e4ef8c101328e84fc21672f4ca7d32e39297bf044c08b04e6b",
+    "mod/GAME/th41.lua": "141e9f54fecdd5f4bb502c5e4c29337d281825d50339e7c3b9cc500139ba5779",
+    "mod/GAME/ports/theis/EISlib/stage/stage6/Oukain_boss.lua": "6335a3e9228958e6b34c3200dbf399fab9d49fcb272d321fd25d654068f774d1",
+    "mod/GAME/ports/theis/EISlib/stage/stage6/s6_boss_lunatic.lua": "ada35b394e9c29c30c6eac0bbfc033032b3c0e0e70d1c5433ea49a0d835e6047",
+    "THlib/drops.lua": "9bae674685ec615cc004d0280358b227eef2bb4cb2c024c033fd4eefcf594896",
+    "THlib/rogue_hp.lua": "4935b16606400fe6e6a4bbcf8ace5024568f29d85a888c3ae32369fe32537e7e",
+    "macos/lua/theis_damage_test.lua": "ea59565804f08ff8bb1ecb8c616025616c17a4d68b71ba0c00b3c692a71c2541",
+    "tools/check_theis_backlight_damage.lua": "4471d71c4df9e918da7854fa2f7836850a76b48ce53908f7e950c895a4f67c68"
+  }
+}

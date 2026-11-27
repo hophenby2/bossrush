@@ -191,6 +191,14 @@ end
 
 -- 换成object的退役对象没有base；栖霞园数组类则显式提供伤害入口。
 function GetDamageHandler(obj, secondary)
+    if obj._theis_take_damage then
+        local class=obj.class
+        while class do
+            if class.take_damage then return obj._theis_take_damage end
+            class=class.base
+        end
+        return nil
+    end
     local base=obj.class.base
     if secondary and base then return base.take_damage2 or base.take_damage end
     return obj._th43_take_damage or base and base.take_damage
