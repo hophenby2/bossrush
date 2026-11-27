@@ -71,7 +71,9 @@ local function actors(b)
     end
     if b.mhj3_card then for _,a in ipairs(b.mhj3_card.actors) do add(a.object) end end
     if b.asl_controller then for _,s in ipairs(b.asl_controller.entities) do
-        if s.kind=='boss' and not s.main and s.alive then add(s.native) end
+        if s.kind=='boss' and (b.asl_controller.linked or not s.main) and s.alive then
+            add(s.native,b.asl_controller.linked)
+        end
     end end
     if b.th07_instruments then for _,o in pairs(b.th07_instruments.roles or {}) do add(o) end end
     -- 红魔乡入场时先建立控制状态，ECL执行器随后才建立actors。

@@ -17,15 +17,21 @@ b.current_card={phase_kind='boss'};H.prepareRender()
 assert(H.entry==lstg.var.rogue_run.encounter,'换卡后仍用上一张的HUD数据')
 print('随机模式首卡绘制前血条/指示器补建、动画单次推进与重进/换卡更新通过')
 local countdown
-AndroidPortrait={cardCountdown=function(value)countdown=value end}
-b.is_combat=true;b.ui={countdown=53};H.frame();H.renderCountdown()
+GROUP={GHOST=0};object={RawDel=function(o)o.live=false end}
+New=function(cls,...)local o={live=true};if cls.init then cls.init(o,...)end;return o end
+boss.sc_name={init=function(o,carrier,name)o.name=name end,render=function()end}
+boss.timeCounter=function(display)return {frame=function()end,render=function()countdown=display.countdown end}end
+local run=lstg.var.rogue_run;run.card_title={names={'阶段卡'}}
+local function header()return {right=400,y=600}end
+local function renderCountdown()H.updateHeaders(run,true);H.renderHeaders(run,{},false,header)end
+b.is_combat=true;b.ui={countdown=53};H.frame();renderCountdown()
 assert(countdown==53,'宿主Boss倒计时没有进入竖屏HUD')
 lstg.var.rogue_run.encounter={level=39,kind='boss'}
 b.is_combat=nil;b._bosssys={GetCurrentCard=function()return {is_combat=true}end}
 GameContent.ports[39]={source={boss={GetBossTable=function()return {b}end}}}
-b.ui.countdown=26.49;H.prepareRender();H.renderCountdown()
+b.ui.countdown=26.49;H.prepareRender();renderCountdown()
 assert(countdown==26.49,'祈华梦没有使用原卡倒计时')
 lstg.var.rogue_run.encounter={level=40,kind='boss'}
 GameContent.ports[40]={source={runtime={},BossHud={snapshots=function()return {{boss=b,hp=100,maxHp=200,phaseMode=5,countdown=3180}}end}}}
-H.prepareRender();H.renderCountdown();assert(countdown==53,'Like Dreamer帧数未换算为秒或耐久符无倒计时')
-print('宿主、祈华梦和Like Dreamer耐久符倒计时来源通过')
+H.prepareRender();renderCountdown();assert(countdown==53,'Like Dreamer帧数未换算为秒或耐久符无倒计时')
+print('宿主、祈华梦和Like Dreamer耐久符倒计时进入原生组件，来源换算通过')

@@ -65,7 +65,8 @@ def main():
                 textures[key]={'file':file.relative_to(ROOT).as_posix(),'size':list(im.size)}
             out.update(texture=key,scale=[value.m_Scale.x,value.m_Scale.y],offset=[value.m_Offset.x,value.m_Offset.y])
         return out
-    supported={'Tongyong_death','Tongyong_suofang','Tongyong_jianxianjianyin','Soundyinliangkongzhi','Xiaodan'}
+    supported={'Tongyong_death','Tongyong_suofang','Tongyong_jianxianjianyin','Soundyinliangkongzhi','Xiaodan',
+               'Boss4_link_xuli','Enemy_death'}
     def node(go):
         out={'name':go.m_Name,'scripts':[],'children':[]}
         objects=[c.component.deref() for c in go.m_Component]
@@ -85,10 +86,13 @@ def main():
                 out['audio']={'clip':a.m_audioClip.read().m_Name,'volume':a.m_Volume,'playOnAwake':a.m_PlayOnAwake}
             elif o.type.name=='ParticleSystem':
                 cfg=o.read_typetree(check_read=False)
-                allowed={'InitialModule','ShapeModule','EmissionModule','RotationModule','ColorModule'}
+                allowed={'InitialModule','ShapeModule','EmissionModule','RotationModule','ColorModule','RotationBySpeedModule','VelocityModule'}
                 enabled={k for k,v in cfg.items() if k.endswith('Module') and v.get('enabled')}
                 assert enabled<=allowed,(go.m_Name,enabled-allowed)
                 cfg={k:v for k,v in cfg.items() if not k.endswith('Module') or k in enabled}
+                if 'VelocityModule' in cfg:
+                    for key,v in cfg['VelocityModule'].items():
+                        if isinstance(v,dict) and key!='speedModifier':assert v['minMaxState']==0 and v['scalar']==0,(go.m_Name,key)
                 assert cfg['ShapeModule']['type']==10 and cfg['EmissionModule']['m_BurstCount']==0
                 r=next(x for x in objects if x.type.name=='ParticleSystemRenderer').read()
                 assert r.m_RenderMode==0 and r.m_RenderAlignment==0
@@ -115,9 +119,10 @@ def main():
         return out
     keys={'xuelianhua/prefab/xiaodantexiao'}
     keys|={f'xuelianhua/prefab/enemy/xuli_texiao/{name}_{i}' for name in ('xuli','baozha') for i in range(8)}
+    keys|={'xuelianhua/prefab/enemy/xuli_texiao/atob','xuelianhua/prefab/enemy/xuli_texiao/btoa','xuelianhua/prefab/boss/boss_death'}
     for key,pointer in manager.m_Container:
         if key in keys and pointer.deref().type.name=='GameObject':prefabs[key.rsplit('/',1)[-1]]=node(pointer.read())
-    assert len(prefabs)==17,len(prefabs)
+    assert len(prefabs)==20,len(prefabs)
     ilspy=shutil.which('ilspycmd') or str(Path.home()/'.dotnet/tools/ilspycmd')
     def script(name):return subprocess.run([ilspy,'-t',name,str(args.data/'Managed/Assembly-CSharp.dll')],check=True,capture_output=True,text=True).stdout
     xiaodan,sincos=script('Xiaodan'),script('Sincos')

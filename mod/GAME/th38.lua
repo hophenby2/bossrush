@@ -65,7 +65,7 @@ local function addCard(meta,band)
         if self.asl_clock<=opening then
             for _,s in ipairs(self.asl_controller.entities) do
                 if s.kind=='boss' then
-                    local o=s.main and self or s.native
+                    local o=s.native or s.main and self
                     if valid(o) then Actor.tick(o,s);Actor.tick(o,s) end
                 end
             end

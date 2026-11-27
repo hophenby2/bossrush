@@ -1,0 +1,114 @@
+{
+  "date": "2026-11-27",
+  "native": {
+    "passed": true,
+    "platform": "macOS arm64 / Metal",
+    "entry": "正式挑战模式入口，横竖屏各460帧",
+    "results": [
+      {
+        "cases": [
+          {
+            "native_timers": 460,
+            "bomb_scale": 1.0302,
+            "shot_scale": 5,
+            "bomb_hits": 2126,
+            "shot_hits": 23,
+            "factor": 1.0302,
+            "hp_flight": true,
+            "title_size": 3.2,
+            "child": true,
+            "gauge": true,
+            "synchronized": 3,
+            "native_names": 400,
+            "portrait": false
+          },
+          {
+            "native_timers": 460,
+            "bomb_scale": 5,
+            "shot_scale": 5,
+            "bomb_hits": 710,
+            "shot_hits": 10,
+            "factor": 7.167871194206,
+            "hp_flight": true,
+            "title_size": 2.5230769230769,
+            "child": true,
+            "gauge": true,
+            "synchronized": 3,
+            "native_names": 400,
+            "portrait": true
+          }
+        ],
+        "platform": "macOS Metal，共用移动端逻辑",
+        "machine": "reimu_player"
+      },
+      {
+        "cases": [
+          {
+            "bomb_hits": 5466,
+            "shot_hits": 4,
+            "native_names": 400,
+            "hp_flight": true,
+            "child": true,
+            "synchronized": 3,
+            "title_size": 3.2,
+            "portrait": false,
+            "native_timers": 460,
+            "gauge": true,
+            "bomb_scale": 1.0302,
+            "shot_scale": 5,
+            "factor": 1.0302
+          },
+          {
+            "bomb_hits": 2993,
+            "shot_hits": 2,
+            "native_names": 400,
+            "hp_flight": true,
+            "child": true,
+            "synchronized": 3,
+            "title_size": 2.5230769230769,
+            "portrait": true,
+            "native_timers": 460,
+            "gauge": true,
+            "bomb_scale": 5,
+            "shot_scale": 5,
+            "factor": 7.167871194206
+          }
+        ],
+        "platform": "macOS Metal，共用移动端逻辑",
+        "machine": "marisa_player"
+      }
+    ]
+  },
+  "logic_checks": [
+    "火力×1.2、恢复倍率+0.1、立即一雷，移除缩小判定奖励；库存99以上持续恢复并保留余数",
+    "普通射击保持完整火力伤害，雷伤按Boss血量倍率；雷及命中/连锁子对象继承来源，绘制封顶5倍且判定不变",
+    "横版残机/Bomb固定9格及同色+x；竖版默认Bomb在低速右侧，库存下移，自定义位置保持",
+    "Like Dreamer圆槽恢复进度；12/23/24库存绿点完整绘制，库存不变时复用顶点批次",
+    "卡名/倍率第6、31、59帧同字号并保持上下关系，第60帧同时落位；横竖版及超长名单行缩放",
+    "使用原生卡名组件与原生倒计时；阶段大字期间计时器仍显示；第1至8帧决死回归"
+  ],
+  "visual_checks": [
+    "横版卡名与原生倒计时分列，倍率落位在卡名下方",
+    "竖版中央卡名/倍率同步飞入、原生倒计时、低速/Bomb左右布局及恢复圈/库存绿点"
+  ],
+  "limitations": [
+    "未在Android设备或Windows引擎实测",
+    "为检查实际雷弹伤害来源及UI，将测试Boss HP维持在1e18；此结果不用于击破时间或性能结论",
+    "未生成APK，未提交或推送"
+  ],
+  "source_sha256": {
+    "Resources/System/system.lua": "8f48011863545926d0af224497779bf6b60621e742dea2d40d43275f634f44df",
+    "THlib/UI/run_hud.lua": "e54150d79b4895755bf3a4b0dcceec9aa4064a0c7c41413021d79b0ff7d36acd",
+    "THlib/drops.lua": "5ab14fb67b18574cac94895289005deaa6f2f7ffda7b87e1a4018cd0260f39db",
+    "THlib/enemy/boss_ui.lua": "b6a077436d19c23f5604a6397f511212637a7ea739df7b0ebc8e0261d1485769",
+    "THlib/player/player.lua": "7661afaa80035ca5d57e6ca09414e78844343fab9dad4505544b8d2d28b8203d",
+    "THlib/player/bomb_gauge.lua": "e97f2935101ec0d40e3a04d3fbe590879268177b0ccea94272e1e99843c4d6a5",
+    "THlib/player/reimu/reimu.lua": "cda736c493ec23b54620a54fd57398752e49d0351e1e02ac03546d2986f05c3a",
+    "THlib/player/marisa/marisa.lua": "26934ec550c4698bef40a0d6e5c571d8ae8d5ff623324c73edfcb0300466ba8d",
+    "THlib/rogue_hp.lua": "887805245d37d2532036fb3f0ed14745c737f86333c919f2ccfa4f8a3c359112",
+    "android/lua/portrait.lua": "594ce3443467440b5d1a62c75278f403c6997301eb205fc65bd4aa70349b7759",
+    "mod/rogue_boss_hud.lua": "ac376fd25845e9a3cc2673a9aafb8efc345a280ffcd57fc49f85eef59ba7ed2d",
+    "mod/rogue_titles.lua": "4a0066643775d62ef5352e1a8f4b804558505b12105eb7c38c469fa37703c581",
+    "mod/roguelike.lua": "ca96447a61912b73411e31cf8fb5513406f70d1e980579abd1de5cf81187bf31"
+  }
+}

@@ -1,7 +1,7 @@
 -- 每个新阶段将已累计的敌方HP再乘(1+阶段号/100)，不改原卡表或弹速。
 -- 动画按逻辑帧推进，显示值只在文字落定后更新；录像不依赖实际渲染帧数。
-local DELAY,FLIGHT,FADE=6,48,6 -- 飞行由24帧延长到48帧，速度减半；停留和淡出节奏保持原值。
-local H={VERSION=1,DURATION=DELAY+FLIGHT+FADE}
+local Titles=dofile('mod/rogue_titles.lua')
+local H={VERSION=1,DURATION=Titles.NAME_DURATION}
 local rawNew=New
 local wrapped=setmetatable({},{__mode='k'})
 local damageDepth=0
@@ -61,10 +61,18 @@ function H.enter(index)
     local event={stage=index,factor=factor,total=s.total,age=0}
     if s.animation then s.queue[#s.queue+1]=event else s.animation=event end
 end
+function H.announceTitle(run)
+    local s=state();if not s then return end
+    -- 新卡直接绑定最新一次强化提示；快速切卡不补播已经过去的中央动画。
+    if #s.queue>0 then s.animation=s.queue[#s.queue];s.queue={} end
+    if s.animation then s.animation.age=0;s.animation.syncTitle=true end
+end
 function H.frame()
     local s=state();local a=s and s.animation
     if not a then return end
-    a.age=a.age+1
+    local run=lstg.var.rogue_run
+    if run.stage_banner or run.preparing then return end
+    if a.syncTitle and run.card_title then a.age=run.card_title.age else a.age=a.age+1 end
     if a.age>=H.DURATION then
         s.shown,s.shown_stage=a.total,a.stage
         s.animation=table.remove(s.queue,1)
@@ -84,9 +92,9 @@ end
 -- RenderTTF实际按字体尺寸的0.5倍绘制，title数字字宽按11像素留余量，两侧各留12像素。
 -- 只在多行仍超出底部时缩小整组，先保证常见的大倍率能用正常字号换行。
 -- ×只出现在首行，数字不断位、不省略，排版不参与实际血量计算。
-function H.layout(value,width,height)
+function H.layout(value,width,height,maxSize)
     local digits=H.format(value):sub(#'×'+1)
-    local scale,lines=1,{}
+    local scale,lines=math.min(1,maxSize or 1),{}
     repeat
         local capacity=math.max(2,math.floor((width-24)/(11*scale)))
         lines={'×'..digits:sub(1,capacity-1)}
@@ -99,19 +107,29 @@ end
 function H.render(x,y,width,height,align)
     local s=state();if not s then return end
     local a=s.animation
-    local oldAlpha=a and math.max(0,math.min(1,(DELAY+FLIGHT-a.age)/FADE))*255 or 255
-    local lines,scale,gap=H.layout(s.shown,width or x*2,height or math.max(1,y-8))
-    for i,line in ipairs(lines) do
-        ui:RenderText('title',line,x,y-(i-1)*gap,scale,Color(oldAlpha,H.rgb(s.shown_stage)),align or 'centerpoint','vcenter')
+    local run=lstg.var.rogue_run
+    local blocked=run.stage_banner or run.preparing
+    if run.card_title and not blocked then Titles.nameLayout(run) end
+    local title=run.card_title and run.card_title.layout
+    if title then
+        -- 倍率和卡名作为同一组移动，落定后仍在最后一行卡名下方。
+        local header=Titles.headerLayout(#title.groups)
+        x,y,width,align=header.nameRight,header.y-title.small*32,header.nameWidth,'right'
     end
-    -- 阶段大字显示时，倍率的飞行动画不占用同一个屏幕中心；数值与计时照常推进。
-    if not a or lstg.var.rogue_run.stage_banner then return end
-    local t=math.max(0,math.min(1,(a.age-DELAY)/FLIGHT))
-    local move=t*t*(3-2*t)
-    local alpha=math.min(1,(H.DURATION-a.age)/FADE)*255
-    local centerX,centerY=screen.width/2,screen.height/2
-    ui:RenderText('title',('×%.2f'):format(a.factor),centerX+(x-centerX)*move,centerY+(y-centerY)*move,
-        2.6-1.6*move,Color(alpha,H.rgb(a.stage)),align or 'centerpoint','vcenter')
+    local oldAlpha=a and not blocked and math.max(0,1-a.age/Titles.NAME_IN)*255 or 255
+    local lines,scale,gap=H.layout(s.shown,width or x*2,height or math.max(1,y-8),title and title.small)
+    Titles.canvas(function()
+        for i,line in ipairs(lines) do
+            boss.sc_name.renderLabel(line,{x=x,y=y-(i-1)*gap,size=scale,color=Color(oldAlpha,H.rgb(s.shown_stage)),
+                align=align or 'centerpoint',vcenter=true,background=false})
+        end
+        if not a or blocked then return end
+        local text=('×%.2f'):format(a.factor)
+        local right=align=='right' and x or x+Titles.textWidth(text,'sc_menu')*scale/2
+        local p=Titles.flightLayout(text,a.age,right,y,scale,nil,title and title.size,title and Titles.captionStartY(title))
+        p.color=Color(p.alpha,H.rgb(a.stage))
+        boss.sc_name.renderLabel(text,p)
+    end)
 end
 function H.beginCard(o)
     o._hp_growth_factor=H.enabled() and H.factor() or nil

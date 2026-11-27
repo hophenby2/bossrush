@@ -14,6 +14,14 @@ local function collect()
     local rows,seen={},{}
     local function add(b,info)
         if not b or not IsValid(b) or seen[b] then return end
+        if b.asl_controller and b.asl_controller.linked then
+            -- 双子星的流程宿主没有受击血槽；底条、血圈和位置箭头均取两个真实身体。
+            seen[b]=true
+            for _,s in ipairs(b.asl_controller.entities) do
+                if s.kind=='boss' and s.alive then add(s.native) end
+            end
+            return
+        end
         local card=b.current_card
         if b._sequence_road_carrier or card and (card.phase_kind=='road' or card.port_source
             or entry and entry.kind=='road' and card.card_id==entry.cardId) then return end
@@ -50,6 +58,58 @@ local function collect()
         for _,b in ipairs(boss_group) do add(b) end
     end
     return rows
+end
+local function clearHeaders()
+    for _,h in ipairs(H.headers or {}) do
+        if IsValid(h.name) then object.RawDel(h.name) end
+        if IsValid(h.carrier) then object.RawDel(h.carrier) end
+    end
+    H.headers,H.headerTitle,H.headerTick={},nil,nil
+end
+function H.updateHeaders(run,advance)
+    local title=run and not run.finished and not run.preparing and run.card_title
+    if not title then clearHeaders();return end
+    if H.headerTitle~=title then
+        clearHeaders();H.headerTitle=title
+        for i,name in ipairs(title.names) do
+            local carrier=New(object)
+            carrier.group,carrier.bound,carrier.colli,carrier.hide=GROUP.GHOST,false,false,true
+            carrier.is_sc,carrier.ui_slot,carrier.current_card=true,i,{phase_name=name}
+            local display={drawtime=true,countdown=0}
+            local label=New(boss.sc_name,carrier,name,false)
+            label.rogue_header,label.hide=true,true
+            local counter=boss.timeCounter(display,{boss=carrier})
+            -- 运行时原有计时器继续负责音效；这里只接原生组件的显示。
+            carrier.NotPlayTimeOutSound=true
+            H.headers[i]={carrier=carrier,name=label,counter=counter,display=display}
+        end
+    end
+    local rows=H.enabled() and H.current or (lstg.var.rogue_run and collect() or {})
+    local tick=stage.current_stage.timer
+    for i,h in ipairs(H.headers) do
+        local row=rows[i] or rows[1]
+        if row and not IsValid(row.boss) then row=nil end
+        local b=h.carrier
+        b.is_combat=not not (row and (row.is_combat or row.info and (row.info.phaseMode==1 or row.info.phaseMode==5)))
+        b.__is_waiting=not b.is_combat or row and row.boss.__is_waiting
+        b.x,b.y=row and row.x or 0,row and row.y or 0
+        b.timer=math.max(30,row and row.boss.timer or 30)
+        h.display.countdown=row and row.countdown or 0
+        if advance and H.headerTick~=tick then h.counter:frame() end
+    end
+    if advance then H.headerTick=tick end
+end
+function H.renderHeaders(run,rows,settled,headerLayout)
+    H.updateHeaders(run,false)
+    for i,h in ipairs(H.headers or {}) do
+        local p=headerLayout(i)
+        h.counter.header_layout={right=p.right,y=p.timerY or p.y}
+        h.counter:render()
+        if settled and rows[i] then
+            h.name.header_layout=rows[i];h.name.header_layout.background=true
+            boss.sc_name.render(h.name)
+        end
+    end
 end
 local function synchronize(advance)
     if not H.enabled() then
@@ -109,14 +169,5 @@ function H.renderPointers()
         if pointer then pointer:render() end
     end
     SetViewMode('ui')
-end
-function H.renderCountdown()
-    if not H.enabled() then return end
-    H.prepareRender()
-    local row=H.current[1]
-    local combat=row and (row.info and (row.info.phaseMode==1 or row.info.phaseMode==5) or row.is_combat)
-    if combat and not row.boss.__is_waiting then
-        AndroidPortrait.cardCountdown(row.countdown)
-    end
 end
 return H

@@ -291,6 +291,11 @@ _G.beast_back = beast_back
 local achievement = ext.achievement
 local system = { }
 function system:init()
+    local function shot(owner,free,class,...)
+        local o=New(class,...)
+        if free and owner and GameDrops then GameDrops.markBomb(o,owner) end
+        return o
+    end
     self.frame4_ChargeAction = {
         function(owner,free)
             local player=owner or player
@@ -303,7 +308,7 @@ function system:init()
                 for _ = 1, 30 do
                     for a = -p[1], p[1] do
                         for d = -1, 1, 2 do
-                            New(b, player.x + 15 * d, y, 7, a * 5 - rot * d + 90 + 90 * d, 900, p[2])
+                            shot(owner,free,b, player.x + 15 * d, y, 7, a * 5 - rot * d + 90 + 90 * d, 900, p[2])
                         end
                     end
                     task.Wait()
@@ -316,7 +321,7 @@ function system:init()
                 for _ = 1, 40 do
                     for a = -p[1], p[1] do
                         for d = -1, 1, 2 do
-                            New(b, player.x + 15 * d, y, 7, a * p[2] - rot * d + 90 + 90 * d, p[3])
+                            shot(owner,free,b, player.x + 15 * d, y, 7, a * p[2] - rot * d + 90 + 90 * d, p[3])
                         end
                     end
                     task.Wait()
@@ -338,7 +343,7 @@ function system:init()
                 for v = 3, 3 + p[1] - 1 do
                     a = ran:Float(0, 360)
                     for _ = 1, 20 do
-                        New(b, player.x, player.y, v, a, 900, p[3])
+                        shot(owner,free,b, player.x, player.y, v, a, 900, p[3])
                         a = a + 18
                     end
                     task.Wait(p[2])
@@ -349,7 +354,7 @@ function system:init()
                 for v = 6, 6 + p[1] - 1 do
                     a = ran:Float(0, 360)
                     for _ = 1, 30 do
-                        New(b, player.x, player.y, v, a, p[2])
+                        shot(owner,free,b, player.x, player.y, v, a, p[2])
                         a = a + 12
                     end
                     task.Wait(8)
@@ -1146,7 +1151,7 @@ function Circle_Attack:init(x, y, radius, color, time, dmg, nocbn, owner)
     self.leaf = {}
     local p=owner or player
     p.protect=owner and max(p.protect or 0,time) or time
-    if owner then self._drop_owner=GameDrops.slot(owner) end
+    if owner then GameDrops.markBomb(self,owner) end
     task.New(self, function()
         for i = 1, time / 2 do
             self.r = self.radius * sin(i / (time / 4 * 3) * 90)
@@ -1200,10 +1205,11 @@ function Circle_Attack:render()
     for i = 1, 16 do
         SetImageState("c_attack" .. i, 'mul+add', self.alpha * 255, 255, 255, 255)
     end
-    misc.RenderRing("c_attack", self.x, self.y, self.r - 22, self.r + 10, self.timer * 8, 32, 16)
+    local scale=GameDrops and GameDrops.bulletScale(self) or 1
+    misc.RenderRing("c_attack", self.x, self.y, (self.r - 22)*scale, (self.r + 10)*scale, self.timer * 8, 32, 16)
     SetImageState("leaf", "mul+add", 255, 250, 128, 114)
     for _, l in ipairs(self.leaf) do
-        Render("leaf", l.x, l.y, l.rot, l.scale)
+        Render("leaf", self.x+(l.x-self.x)*scale, self.y+(l.y-self.y)*scale, l.rot, l.scale*scale)
     end
 end
 

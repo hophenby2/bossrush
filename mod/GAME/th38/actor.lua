@@ -66,7 +66,7 @@ local function render(nodes,list,x,y,rot,mirror,tint)
             local c=n.color;local a=math.max(0,math.min(1,s.alpha or c[4]))
             SetImageState(id,tint and tint.blend or '',a*255*(tint and tint.alpha or 1),c[1]*255*(tint and tint.red or 1),c[2]*255*(tint and tint.green or 1),c[3]*255*(tint and tint.blue or 1))
             Render(id,x+s.x*48*(mirror or 1),y+(s.y+s.bob)*48,(rot or 0)+n.rotation,
-                scale*n.sx*(n.flip[1]==1 and -1 or 1)*(mirror or 1),scale*n.sy*(n.flip[2]==1 and -1 or 1))
+                scale*(s.sx or n.sx)*(n.flip[1]==1 and -1 or 1)*(mirror or 1),scale*n.sy*(n.flip[2]==1 and -1 or 1))
         end
     end
 end
@@ -110,6 +110,15 @@ end
 function A.render(o)
     local a=o.asl_actor
     if a and not o.hide then render(a.nodes,a.states,o.x,o.y,a.rotation,a.mirror,a.tint) end
+    local s=o.asl
+    if s and s.c.linked and not (RogueBossHUD and RogueBossHUD.enabled()) then
+        local bar=D.linkedBar
+        a.healthStates=a.healthStates or states(bar.nodes)
+        for i,n in ipairs(bar.nodes) do
+            if n.linkedHealth then a.healthStates[i].sx=n.sx*math.max(0,o.hp/o.maxhp) end
+        end
+        render(bar.nodes,a.healthStates,o.x,o.y+bar.offset*48,0,1)
+    end
 end
 local Portrait=Class(object,{
     init=function(o,nodes)
@@ -143,5 +152,6 @@ function A.prepare(key)
     end
     for _,id in ipairs(phase) do nodes(D.profiles[id].nodes) end
     nodes(phase.portrait and D.portraits[phase.portrait])
+    if phase.linked then nodes(D.linkedBar.nodes) end
 end
 return A

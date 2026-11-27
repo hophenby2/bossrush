@@ -82,6 +82,7 @@ function player_class:render()
         Render(s.img, s.x, s.y, s.rot, s.hscale, s.vscale)
     end
     self._playersys:doRenderBeforeEvent()
+    if GameDrops then GameDrops.renderBombGauge(self) end
     self._playersys:render()
     self._playersys:doRenderAfterEvent()
 end

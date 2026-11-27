@@ -380,7 +380,18 @@ function system:frame()
     else
         if GameDrops then GameDrops.playerStep(p) end
         self:updateKeyState() --更新自机按键状态（之后应改为外部调用）
-        if GameDrops then GameDrops.bombInput(p,self.keyState,self.keyStatePre) end
+        -- 命中后保留8个逻辑帧接收决死；残机、miss计数和死亡演出只在窗口结束后提交。
+        if p.__deathbomb_pending and p.death<=90 then
+            p.__deathbomb_pending=nil
+            if not (SequenceResources and SequenceResources.systemSound('death',p.x)) then PlaySound("pldead00",0.5) end
+            if GameNet then GameNet.miss(p) end
+            item.PlayerMiss(p)
+            New(player_death_ef,p.x,p.y)
+        end
+        if GameDrops and GameDrops.bombInput(p,self.keyState,self.keyStatePre) and p.__deathbomb_pending then
+            p.__deathbomb_pending=nil
+            p.death=0
+        end
         self:findTarget() --更新target目标
         self:doFrameEvent() --执行帧逻辑事件
     end
@@ -432,11 +443,8 @@ function system:colli(other)
                 lstg.var.sakura = 0
                 lstg.var.sakura_bonus = false
             else
-                if not (SequenceResources and SequenceResources.systemSound('death',p.x)) then PlaySound("pldead00", 0.5) end
-                p.death = 90--无决死的10帧
-                if GameNet then GameNet.miss(p) end
-                item.PlayerMiss(p)
-                New(player_death_ef, p.x, p.y)
+                p.death=98
+                p.__deathbomb_pending=true
             end
             cancel_contact_bullet(other)
             return true

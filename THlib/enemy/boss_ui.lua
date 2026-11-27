@@ -63,7 +63,7 @@ function boss.ui:render()
             if self.infobar and not self.no_infobar then
                 self.infobar:render()
             end
-            if self.timeCounter and not self.no_timeCounter then
+            if self.timeCounter and not self.no_timeCounter and not (RogueTen and RogueTen.usesTitleOverlay()) then
                 self.timeCounter:render()
             end
             if self.pointer and not self.no_pointer then
@@ -176,7 +176,8 @@ function timeCounter:frame()
     end
 end
 function timeCounter:render()
-    if AndroidPortrait and AndroidPortrait.enabled() and RogueBossHUD and RogueBossHUD.enabled() then return end
+    local layout=self.header_layout
+    if not layout and AndroidPortrait and AndroidPortrait.enabled() and RogueBossHUD and RogueBossHUD.enabled() then return end
     local b = self.system.boss
     if not (IsValid(b)) then
         return
@@ -190,6 +191,7 @@ function timeCounter:render()
         local dy = (b.ui_slot - 1) * 44
         local x = self.x + scrx
         local y1 = self.y + self.yoffset - dy + self.yoffset2 * 30 + scry
+        if layout then x,y1=layout.right-16,layout.y end
         local ttf = "bonus2"
         if cd1 >= self.t1 then
             SetFontState(ttf, "", alpha1 * 255, 255, 255, 255)
@@ -376,6 +378,7 @@ function sc_name:init(b, name, score)
 end
 local Smooth = task.Smooth
 function sc_name:frame()
+    if self.rogue_header then return end
     local b = self.boss
     if not self.death then
         local sc_hist = { 0, 0 }
@@ -445,7 +448,21 @@ function sc_name:frame()
         end
     end
 end
+-- 符卡名组件的统一字体/底纹，外部布局也通过此入口绘制。
+function sc_name.renderLabel(name,layout)
+    if layout.background~=false then
+        SetImageState("boss_spell_name_bg","",Color(layout.backgroundAlpha or layout.alpha or 255,255,255,255))
+        Render("boss_spell_name_bg",layout.backgroundX or layout.x+8*layout.size,
+            layout.backgroundY or layout.y+13*layout.size,0,layout.backgroundScale or layout.size)
+    end
+    ui:RenderText("sc_menu",name,layout.x,layout.y,layout.size,layout.color or Color(layout.alpha or 255,255,255,255),
+        layout.align or "right",layout.vcenter and "vcenter" or "noclip")
+end
 function sc_name:render()
+    if self.rogue_header then
+        if self.header_layout then sc_name.renderLabel(self.name,self.header_layout) end
+        return
+    end
     if RogueTen and RogueTen.usesTitleOverlay and RogueTen.usesTitleOverlay() then return end
     if ui.OriginalHUD and ui.OriginalHUD.enabled() then return end
     -- 标题使用屏幕 HUD 坐标，保留原入场动画，不继承前一个对象的视口。
@@ -465,13 +482,10 @@ function sc_name:render()
     if distance <= 90 then
         a_ = 1 - (90 - max(distance, 40)) / 60
     end
-    SetImageState("boss_spell_name_bg", "",
-            Color(255 * self.talpha * a_, 255, 255, 255))
-    x = self.x + self.xoffset2 + scrx
-    Render("boss_spell_name_bg", x, y, 0, 1 + 0.5 * self._scale2)
-    x = self.x + self.xoffset2 + self.xp + scrx
-    y = y - 13
-    ui:RenderText("sc_menu", self.name, x, y, self._scale, Color(self._alpha * a_ * 255, 255, 255, 255), "right", "noclip")
+    x=self.x+self.xoffset2+self.xp+scrx
+    y=y-13
+    sc_name.renderLabel(self.name,{x=x,y=y,size=self._scale,alpha=self._alpha*a_*255,
+        backgroundX=x-self.xp,backgroundY=y+13,backgroundScale=1+.5*self._scale2,backgroundAlpha=255*self.talpha*a_})
     if self.score then
         local dy = self._dy
         local xm, ym = 4, -1 --字符坐标偏移值

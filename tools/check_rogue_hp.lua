@@ -13,16 +13,21 @@ H.enter(1)
 check(near(H.factor(),1.01) and state.shown==1 and state.animation.factor==1.01,'第一阶段实际HP先乘1.01，显示等待动画')
 local drawn={};Color=function(a,r,g,b) return {a=a,r=r,g=g,b=b} end
 ui={RenderText=function(_,_,text,x,y,scale,color) drawn[#drawn+1]={text=text,x=x,y=y,scale=scale,color=color} end}
+SetViewMode=function(mode)lstg.viewmode=mode end;SetRenderRect=function()end
+GetImageScale=function()return 1 end;SetImageScale=function()end
+boss={sc_name={renderLabel=function(text,p)ui:RenderText('sc_menu',text,p.x,p.y,p.size,p.color or Color(p.alpha,255,255,255))end}}
+local titles=dofile('mod/rogue_titles.lua')
+local function center(p)return p.x-titles.textWidth(p.text,'sc_menu')*p.scale/2 end
 local age,total=state.animation.age,state.total;H.render(144,165)
-check(#drawn==2 and drawn[1].text=='×1' and drawn[2].text=='×1.01' and drawn[2].x==480 and drawn[2].y==270,'第一阶段从屏幕中央显示×1.01')
+check(#drawn==2 and drawn[1].text=='×1' and drawn[2].text=='×1.01' and near(center(drawn[2]),480) and drawn[2].y==270,'第一阶段从屏幕中央显示×1.01')
 check(state.animation.age==age and state.total==total,'渲染保持只读，逻辑帧决定动画')
 screen.width,screen.height=540,1200;drawn={};H.render(270,100)
-check(drawn[2].x==270 and drawn[2].y==600,'竖屏倍率动画从实际屏幕中央出发')
+check(near(center(drawn[2]),270) and drawn[2].y==600,'竖屏倍率动画从实际屏幕中央出发')
 screen.width,screen.height=960,540
-for _=1,18 do H.frame() end
+for _=1,42 do H.frame() end
 drawn={};H.render(144,165)
-check(drawn[2].x<480 and drawn[2].x>144 and drawn[2].y<270 and drawn[2].y>165,'倍率文字快速向左下移动')
-for _=19,H.DURATION-6 do H.frame() end
+check(center(drawn[2])<480 and center(drawn[2])>144 and drawn[2].y<270 and drawn[2].y>165,'倍率文字按卡名时序向左下移动')
+for _=43,H.DURATION-6 do H.frame() end
 drawn={};H.render(144,165)
 check(drawn[1].color.a==0 and state.shown==1,'落定前淡出旧数值，避免两串倍率重叠，尚不更新累计值')
 for _=H.DURATION-5,H.DURATION-1 do H.frame() end
@@ -131,6 +136,27 @@ for level=35,41 do
     check(near(9000-target.hp,expected),'完整火力换算只生效一次：'..level)
     check(target.maxhp==9000,'原作血量阈值保持数值域：'..level)
 end
+run.enhanced=true;run.source_hp=false;H.init(run);H.enter(1)
+lstg.world={scrl=288,scrr=672,scrb=18,scrt=522}
+titles.announce(run,{title=string.rep('长符卡',20)})
+run.stage_banner={}
+for _=1,3 do titles.frame(run);H.frame()end
+check(run.card_title.age==0 and run.hp_growth.animation.age==0,'阶段大字期间两条提示均等待')
+run.stage_banner=nil
+for i=1,H.DURATION-1 do
+    titles.frame(run);H.frame()
+    check(run.card_title.age==i and run.hp_growth.animation.age==i,'卡名与倍率共用时钟：'..i)
+    if i==6 or i==31 or i==59 then
+        local rows=titles.nameLayout(run);drawn={};H.render(144,165)
+        check(near(drawn[2].scale,rows[1].size),'卡名和倍率飞行字号相同：'..i)
+        check(near(rows[1].y-drawn[2].y,rows[1].size*32),'倍率始终跟随在卡名下方：'..i)
+    end
+end
+titles.frame(run);H.frame()
+check(run.card_title.age==H.DURATION and not run.hp_growth.animation and near(run.hp_growth.shown,1.01),'两条提示在同一帧落位')
+drawn={};H.render(144,165)
+local landed=titles.nameLayout(run)[1]
+check(near(drawn[1].x,landed.x) and near(drawn[1].y,landed.y-landed.size*32) and near(drawn[1].scale,landed.size),'累计倍率落位后保持在卡名下方且字号相同')
 lstg.var.__hp_scale_version=nil
 check(not H.enabled() and H.factor()==1 and New(actor,100).hp==100,'非随机模式不启用阶段HP倍率')
 drawn={};H.render(144,165);check(#drawn==0,'非随机模式不插入倍率动画')

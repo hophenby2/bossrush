@@ -59,7 +59,7 @@ function H.attributes(scrr,scrt,alpha,layout)
     local gutter=layout and layout.gutter or 0
     local width=(right-left-(columns-1)*gutter)/columns
     local gap=62
-    local rows={{'火力','red',D.MAX/D.UNIT},{D.bombsEnabled() and 'Bomb恢复速度' or '射速','blue',D.MAX/D.UNIT},{'判定','green',100}}
+    local rows={{'火力','red',D.MAX/D.UNIT},{D.bombsEnabled() and 'Bomb恢复速度' or '射速','blue',D.MAX/D.UNIT}}
     for i,row in ipairs(rows) do
         local x1=left+(i-1)%columns*(width+gutter)
         local x2=x1+width
@@ -131,13 +131,10 @@ function H.resources(x1,x2,top,alpha)
         end
         return
     end
-    local lives,limit=H.lives()
-    text('生命',x1,top,.8,alpha,colors.red,'left','vcenter')
+    local lives=H.spareLives()
+    text('残机',x1,top,.8,alpha,colors.red,'left','vcenter')
     text(lives,x2,top,.8,alpha,colors.red,'right','vcenter')
-    local slots=math.min(limit,10)
-    for i=1,slots do
-        GameDrops.renderStar('star_big2',x1+(i-.5)*(x2-x1)/slots,top-28,23,1,alpha*(i<=lives and 1 or .18))
-    end
+    GameDrops.renderInventory('star_big2',lives,x1,x2,top-28,23,alpha,colors.red)
     if GameDrops.bombsEnabled() then
         local count=(GameNet and GameNet.host()) and 2 or 1
         GameDrops.renderBombs(x1,x2,top-60,alpha,count)

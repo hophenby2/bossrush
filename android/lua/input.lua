@@ -102,7 +102,8 @@ local function clock() return lstg.AndroidClock and lstg.AndroidClock() or os.cl
 local function controlBlocked(p)
     local death=p.death or 0
     -- death<50已进入可操作的复活阶段，>90也由自机系统视为正常；无敌protect不锁定移动。
-    return p.lock or p.dialog or p.time_stop or p.realrealreal_lock or (death>=50 and death<=90)
+    return p.lock or p.dialog or p.time_stop or p.realrealreal_lock
+        or (death>=50 and death<=90 and not p.__deathbomb_pending and not p.original_deathbomb)
 end
 local function tapInterval()
     return math.max(50,math.min(500,tonumber(setting and setting.touchBombInterval) or 170))/1000

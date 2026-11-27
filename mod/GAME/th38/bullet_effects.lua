@@ -7,6 +7,7 @@ local scales=mist.child.scales
 local M={data=D}
 local images,ready,free,count={},false,{},0
 local pool
+local effectSeed=7919
 local palette={{1,.25,.25},{1,.25,1},{.25,.25,1},{.25,1,1},{.25,1,.25},{1,1,.25},{1,.5,0},{1,1,1}}
 local floatBox=require('ffi').new('float[1]')
 local function f32(x) floatBox[0]=x;return tonumber(floatBox[0]) end
@@ -53,6 +54,9 @@ local function clone(cfg)
 end
 local function start(n)
     if n.particles and n.cfg.particles.playOnAwake then n.particles:Play() end
+    for _,s in ipairs(n.scripts) do
+        if s.cfg.kind=='Enemy_death' then Presentation.sound('battle09_enemy_death',(n.world.position.x-4.5)*48) end
+    end
     local audio=n.cfg.audio
     if audio and audio.playOnAwake then Presentation.sound(audio.clip,(n.world.position.x-4.5)*48,audio.volume) end
     for _,child in ipairs(n.children) do start(child) end
@@ -85,6 +89,10 @@ local function step(n)
                 if c.a_kuadu==0 then n.alpha=c.jianxian_or_jianyin~=0 and 1 or 0 end
                 s.done=true
             end
+        elseif c.kind=='Enemy_death' then
+            local size=c.xishu*sin(t*1.2857)
+            n.sx,n.sy=size,size;n.alpha=1-(t-50)*.05
+            if t+1==70 and c.b==0 then n.dead=true;dispose(n) end
         end
         s.time=t+1
     end end
@@ -92,7 +100,15 @@ local function step(n)
 end
 local function particleStep(n)
     if n.dead then return end
-    if n.particles then n.particles:FixedUpdate() end
+    if n.particles then
+        n.particles:FixedUpdate()
+        if n.homing then
+            for _,p in ipairs(n.particles.particles) do
+                local k=(p.life-p.age)*75+5
+                p.x,p.y=p.x+(n.homing[1]-p.x)/k,p.y+(n.homing[2]-p.y)/k
+            end
+        end
+    end
     for _,child in ipairs(n.children) do particleStep(child) end
 end
 local function alive(n)
@@ -159,6 +175,20 @@ function M.emission(e,x,y,host)
     end
     world(p.root);start(p.root)
     local list=e.c.attack_effects or {};e.c.attack_effects=list;list[#list+1]=p
+end
+function M.linked(c,kind,s,other)
+    ensure(c,'attack')
+    local name=kind=='death' and 'boss_death' or kind=='link' and (s.main and 'atob' or 'btoa')
+        or (kind=='charge' and 'xuli_' or 'baozha_')..(s.main and 0 or 3)
+    local p={root=clone(assert(D.prefabs[name])),birth=c.time+1}
+    p.root.x,p.root.y=(other or s).x,(other or s).y
+    if kind=='death' then
+        -- 原作击破旋转用Unity.Random，不能消耗弹幕用的Seedrandom序列。
+        effectSeed=effectSeed*48271%2147483647;p.root.angle=effectSeed/2147483647*360
+    end
+    if kind=='link' then p.root.homing={s.x,s.y} end
+    world(p.root);start(p.root)
+    c.attack_effects=c.attack_effects or {};c.attack_effects[#c.attack_effects+1]=p
 end
 function M.endBullet(s)
     if s.kind~='bullet' or s.dispel~=1 or s.endEffect or count>=D.endLimit then return end

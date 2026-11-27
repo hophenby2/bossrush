@@ -262,15 +262,27 @@ R.classes.curve=Class(object,{
 })
 R.classes.partner=Class(enemy,{
     init=function(b,s)
-        b.asl=s;s.native=b;enemybase.init(b,100000,false)
+        b.asl=s;s.native=b;enemybase.init(b,s.c.linked and s.life or 100000,false)
+        if s.c.linked then b.maxhp=s.life;b.owner=s.c.host;b.IsBoss=true;b.is_combat=true end
         b.img='ball_mid8';b.bound=false;b.vx,b.vy=0,0;b.a,b.b=18,18;R.objects[b]=true
         b.x,b.y=project(s.x,s.y);SetAttr(b,'colli',true)
     end,
     frame=function(b)
         local s=b.asl
         if not s.alive or s.c.closed then clean(b);return end
-        if valid(s.c.host) then s.c.host.hp=max(0,s.c.host.hp-(100000-b.hp)) end
-        b.hp=100000;b.x,b.y=project(s.x,s.y);b.vx,b.vy=0,0
+        if s.c.linked then
+            local owner=s.c.host
+            if valid(owner) then
+                b.dmg_factor,b.DMG_factor,b.astral_dmg_factor=owner.dmg_factor,owner.DMG_factor,owner.astral_dmg_factor
+                b.is_combat,b.protect=owner.is_combat,s.c.hostAppearance.protect
+                b.countdown,b.__is_waiting,b.__hpbar_timer=owner.countdown,owner.__is_waiting,owner.__hpbar_timer
+                b.time_sc=owner.time_sc
+            end
+        else
+            if valid(s.c.host) then s.c.host.hp=max(0,s.c.host.hp-(100000-b.hp)) end
+            b.hp=100000
+        end
+        b.x,b.y=project(s.x,s.y);b.vx,b.vy=0,0
     end,
     render=function(b) if R.actor then R.actor.render(b) end end,
     del=function(b) clean(b) end,kill=function(b) clean(b) end,
@@ -549,8 +561,9 @@ local function bossMotion(s)
         return
     end
     if e.a51_5~=1 and e.a51_6~=1 then return end
-    s.moveClock=s.moveClock+1
     local period=max(1,e.a4_9)
+    -- Bossmove：复活时停住下一次移动的等待时间，已经开始的移动继续完成。
+    if s.moveClock>=period or not s.c.linkReviving then s.moveClock=s.moveClock+1 end
     if s.moveClock<period then return end
     if not s.destination then
         local tx,ty,d
@@ -577,7 +590,10 @@ local function move(s,deferBulletProjection)
     if s.age<0 then return end
     if s.native and not valid(s.native) then clean(s.native);return end
     if s.kind=='enemy' and s.native then s.life=s.native.hp end
-    if s.kind=='boss' and s.main and valid(c.host) then s.life=c.host.hp end
+    if s.kind=='boss' then
+        if c.linked and valid(s.native) then s.life=s.native.hp
+        elseif s.main and valid(c.host) then s.life=c.host.hp end
+    end
     if s.kind=='boss' then bossMotion(s) end
     local parent=s.parent
     if parent and not parent.alive then
@@ -591,7 +607,7 @@ local function move(s,deferBulletProjection)
     end
     local boundBullet=parent and s.kind=='bullet'
     if boundBullet then followParent(s,parent) end
-    events(s,s.events,s.age,true)
+    if s.kind~='boss' or not c.linkReviving then events(s,s.events,s.age,true) end
     if s.beamMode==1 then
         if parent then followParent(s,parent) end
         FixedLaser.step(s)
@@ -617,7 +633,10 @@ local function move(s,deferBulletProjection)
         return
     end
     if s.kind=='enemy' and valid(s.native) then s.native.hp=s.life end
-    if s.kind=='boss' and s.main and valid(c.host) then c.host.hp=s.life end
+    if s.kind=='boss' then
+        if c.linked and valid(s.native) then s.native.hp=s.life
+        elseif s.main and valid(c.host) then c.host.hp=s.life end
+    end
     local dx,dy
     if boundBullet then
         -- 原作的运动绑定以父对象的朝向为角度零点，静止时也更新朝向。
@@ -638,9 +657,10 @@ local function move(s,deferBulletProjection)
     end
     if parent and not boundBullet then followParent(s,parent) end
     if s.kind=='boss' then
-        local host=s.main and c.host or s.native
+        local host=s.native or s.main and c.host
         if valid(host) then
             host.x,host.y=project(s.x,s.y);host.vx,host.vy=0,0
+            if c.linked and s.main and valid(c.host) then c.host.x,c.host.y=host.x,host.y end
             if R.actor then R.actor.tick(host,s) end
         end
     else
@@ -663,6 +683,14 @@ end
 R.preparePattern=load
 function R.controller(host,key,first,retainedPositions)
     local c={host=host,time=first or 0,emitters={},entities={},byName={},vars={0,0,0,0},closed=false,key=key};R.controllers[c]=true
+    local phase=R.actor and R.actor.data.phases[key]
+    c.linked=phase and phase.linked
+    if c.linked and valid(host) then
+        c.hostAppearance={hide=host.hide,colli=host._colli,protect=host.protect,group=host.group,no_hp_render=host.no_hp_render}
+        -- 宿主只管理倒计时和结算；雷的全组伤害也只能伤到两个真实身体。
+        host.hide,host._colli,host.protect,host.group=true,false,true,GROUP.GHOST;SetAttr(host,'colli',false)
+        host.no_hp_render=true
+    end
     local pat=load(key)
     for _,d in ipairs(pat.items) do
         local e=template(d,c);c.emitters[#c.emitters+1]=e;c.byName[d.name]=e
@@ -692,25 +720,64 @@ function R.controller(host,key,first,retainedPositions)
             s.entryMotion={distance=((tx-s.x)^2+(ty-s.y)^2)^.5,angle=angle(s.x,s.y,tx,ty),time=0}
         end
         if s.main and valid(host) then host.x,host.y=project(s.x,s.y);host.vx,host.vy=0,0 end
-        if not s.main then New(R.classes.partner,s) end
-        if R.actor then R.actor.bind(s.main and host or s.native,key,bossIndex) end
-        local target=s.main and host or s.native
+        if c.linked or not s.main then New(R.classes.partner,s) end
+        local target=s.native or s.main and host
+        if R.actor then R.actor.bind(target,key,bossIndex) end
         local collision=NativeActorCollision or dofile('THlib/native_actor_collision.lua')
         if target then collision.bind(target,e.a51_2*.48,e.a51_2*.48,'ellipse',e.a51_1*.48,e.a51_1*.48,'ellipse') end
         c.entities[#c.entities+1]=s;attach(e,s);e.skip=true
     end
     return c
 end
+-- Boss4link / Bossmove.boss4_fuhuotime，单位为原作120Hz tick。
+local function linkedBosses(c)
+    if not c.linked then return end
+    local bodies,total,down={},0,0
+    for _,s in ipairs(c.entities) do if s.kind=='boss' and valid(s.native) then
+        bodies[#bodies+1]=s
+        s.life=max(0,s.native.hp);s.native.hp=s.life
+        total=total+s.life
+        if s.life<=0 then down=down+1 end
+    end end
+    for _,s in ipairs(bodies) do
+        if s.life<=0 then
+            s.reviveTick=(s.reviveTick or 0)+1
+            local t=s.reviveTick
+            if t==2 then Effects.linked(c,'death',s) end
+            if t==100 then
+                for _,other in ipairs(bodies) do if other~=s then Effects.linked(c,'link',s,other) end end
+            end
+            if t==310 then Effects.linked(c,'charge',s) end
+            if t==400 then
+                Effects.linked(c,'revive',s)
+                s.life,s.native.hp,s.reviveTick=4500,4500,0
+                s.native.protect=false
+                total=total+4500;down=down-1
+            end
+        end
+        -- 原作主Boss先推进自己的复活，再检查双体击破；保留第400tick的严格边界。
+        if s.main and s.life<=0 and down==#bodies then
+            c.linkReviving,c.linkDefeated=false,true
+            if valid(c.host) then c.host.hp=0 end
+            return
+        end
+    end
+    c.linkReviving=down>0
+    if valid(c.host) then c.host.hp=max(1,total) end
+end
 function R.step(c,deferBulletProjection)
-    if not c or c.closed then return end
+    if not c or c.closed or c.linkDefeated then return end
     do
         Mist.tick(c)
         Effects.tick(c)
+        linkedBosses(c)
         -- 新对象下一tick开始积分；所有对象仍是引擎内的子弹/敌机/激光实体。
         local n=#c.entities
         for i=1,n do local s=c.entities[i];if s.alive then move(s,deferBulletProjection) end end
         local ecount=#c.emitters
-        for i=1,ecount do local e=c.emitters[i];if e.alive and not e.skip and not e.deep then emit(e) end end
+        if not c.linkReviving and not c.linkDefeated then
+            for i=1,ecount do local e=c.emitters[i];if e.alive and not e.skip and not e.deep then emit(e) end end
+        end
         local j=1
         for i=1,#c.entities do local s=c.entities[i];if s.alive then c.entities[j]=s;j=j+1 elseif valid(s.native) then clean(s.native) end end
         for i=#c.entities,j,-1 do c.entities[i]=nil end
@@ -761,6 +828,13 @@ function R.clear(c)
     Mist.clear(c)
     Effects.clear(c)
     c.closed=true
+    if c.hostAppearance and valid(c.host) then
+        c.host.hide,c.host._colli=c.hostAppearance.hide,c.hostAppearance.colli
+        c.host.protect=c.hostAppearance.protect
+        c.host.group=c.hostAppearance.group
+        c.host.no_hp_render=c.hostAppearance.no_hp_render
+        SetAttr(c.host,'colli',c.host._colli)
+    end
     for _,s in ipairs(c.entities) do
         if s.native then clean(s.native) else release(s);bulletPool.retire(s) end
         s.alive=false
@@ -779,6 +853,7 @@ function R.deathClear(x,y,r,outside,dropKind)
             if s.kind=='enemy' or s.kind=='boss' then
                 if not outside and s.invincible~=1 and not b.protect and Dist(x,y,b.x,b.y)<r then
                     if s.kind=='enemy' then b.hp=b.hp-40
+                    elseif s.c.linked then Damage(b,40)
                     elseif valid(s.c.host) then Damage(s.c.host,40) end
                 end
             elseif s.kind=='beam' and s.invincible~=1 then

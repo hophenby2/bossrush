@@ -1,16 +1,16 @@
--- 击破或超时阶段后的紫黄蓝三选一。成长和选择过程都保存在var中，供录像与关内恢复重建。
-local D={VERSION=9,UNIT=100,TIME=2*60,MIN=100,MAX=100000,HITBOX_MIN=2500,BOMB_FRAMES=30*60,BOMB_MAX=9,BOMB_INITIAL=3}
+-- 击破或超时后的火力、恢复速度、立即获得Bomb三选一。
+local D={VERSION=9,UNIT=100,TIME=2*60,MIN=100,MAX=100000,HITBOX_MIN=2500,BOMB_FRAMES=30*60,BOMB_INITIAL=3,HUD_SLOTS=9}
 -- red/green/blue保留为成长逻辑键；条、文字、遮罩和选项中玉共用显示配色。
-D.palette={red={205,145,255,name='紫',bullet=4},green={255,225,100,name='黄',bullet=12},blue={110,190,255,name='蓝',bullet=6}}
+D.palette={red={205,145,255,name='紫',bullet=4},green={110,235,145,name='绿',bullet=10},blue={110,190,255,name='蓝',bullet=6}}
 -- 数值以百分之一为整数单位；只做加法和有理数乘法，避免长局累计浮点误差。
--- 蓝、紫、黄三项奖励固定，蓝色的10个百分点等于恢复倍率增加0.1。
+-- 恢复倍率+0.1、火力×1.2、库存+1；Bomb库存不使用百分数单位。
 D.colorPool={
-    {{'blue','add',10}},{{'red','mul',23,20}},
-    {{'green','mul',9,10}},
+    {{'blue','add',10}},{{'red','mul',6,5}},
+    {{'bombs','add',1}},
 }
 function D.enabled() return lstg.var.__drops_version==D.VERSION end
 D.bombsEnabled=D.enabled
-function D.bombLimit() return D.BOMB_MAX end
+function D.bombLimit() return math.huge end
 local function fresh()
     return {red=10000,blue=10000,green=10000,bombs=D.BOMB_INITIAL,bomb_fraction=0}
 end
@@ -77,14 +77,23 @@ function D.laserInset(p,angle)
     return math.max(0,radius(box.baseA,box.baseB)-radius(box.A,box.B))
 end
 function D.power(o) local red=D.values(o);return D.enabled() and red/100 or 1 end
--- 绘制放大最多10倍；伤害继续使用完整火力，碰撞尺寸不变。
-function D.bulletScale(o) return math.min(10,D.power(o)) end
+function D.bombPower() return D.enabled() and GameHPScale and GameHPScale.factor() or 1 end
+-- 只限制绘制倍率，不改判定；Bomb和普通射击使用各自的强化来源。
+function D.bulletScale(o) return math.min(5,o and o._drop_bomb and D.bombPower() or D.power(o)) end
+function D.inheritShot(o,parent)
+    if parent then o._drop_owner=parent._drop_owner;o._drop_bomb=parent._drop_bomb end
+    return o
+end
+function D.markBomb(o,owner)
+    if D.enabled() then o._drop_owner=D.slot(owner);o._drop_bomb=true end
+    return o
+end
 function D.recoveryRate(o) local _,blue=D.values(o);return D.enabled() and blue/100 or 1 end
 function D.bombState(o)
     local s=peek();local p=s and s.players[D.slot(o)]
     return p and p.bombs or 0,p and p.bomb_fraction/(D.BOMB_FRAMES*10000) or 0
 end
-function D.damage(amount,o) return amount*D.power(o) end
+function D.damage(amount,o) return amount*(o and o._drop_bomb and D.bombPower() or D.power(o)) end
 function D.renderBullet(o)
     local factor=D.bulletScale(o)
     if factor==1 then return DefaultRenderFunc(o) end
@@ -95,20 +104,19 @@ function D.renderBullet(o)
     if not ok then error(result,0) end
     return result
 end
+local gauge
 function D.bind()
     ensure()
+    if D.enabled() then gauge=gauge or dofile('THlib/player/bomb_gauge.lua');gauge.prepare() end
 end
+function D.renderBombGauge(p) if D.enabled() and gauge then gauge.render(p,D.bombState(p)) end end
 function D.playerStep(p)
     local s=ensure();if not s then return end
     local c=s.players[D.slot(p)]
-    -- 满库存不积攒额外恢复量；恢复使用整数，蓝色只参与 Bomb 计时。
-    local limit=D.bombLimit()
-    if c.bombs<limit then
-        c.bomb_fraction=c.bomb_fraction+c.blue
-        local unit=D.BOMB_FRAMES*10000;local restored=math.floor(c.bomb_fraction/unit)
-        c.bombs=math.min(limit,c.bombs+restored)
-        c.bomb_fraction=c.bombs==limit and 0 or c.bomb_fraction-restored*unit
-    else c.bomb_fraction=0 end
+    -- 库存无限，始终积累恢复进度；多次恢复仍保留整数余数。
+    c.bomb_fraction=c.bomb_fraction+c.blue
+    local unit=D.BOMB_FRAMES*10000;local restored=math.floor(c.bomb_fraction/unit)
+    c.bombs=c.bombs+restored;c.bomb_fraction=c.bomb_fraction-restored*unit
 end
 function D.bombInput(p,key,previous)
     if not D.enabled() or not key.spell or previous.spell then return false end
@@ -158,10 +166,11 @@ function D.apply(slot,option)
     local s=assert(ensure());local p=s.players[D.slot(slot)]
     for _,op in ipairs(assert(D.colorPool[option])) do
         local value=p[op[1]]
-        if op[2]=='add' then value=value+op[3]*100 else value=math.floor(value*op[3]/op[4]+0.5) end
+        if op[2]=='add' then value=value+op[3]*(op[1]=='bombs' and 1 or 100) else value=math.floor(value*op[3]/op[4]+0.5) end
         local lower,upper=D.MIN,D.MAX
         if op[1]=='green' then lower,upper=D.HITBOX_MIN,10000 end
-        if op[1]=='red' then upper=math.huge end
+        if op[1]=='red' or op[1]=='bombs' then upper=math.huge end
+        if op[1]=='bombs' then lower=0 end
         p[op[1]]=math.max(lower,math.min(upper,value))
     end
 end
@@ -224,9 +233,9 @@ function D.optionLines(id)
     local out={}
     for _,op in ipairs(D.colorPool[id]) do
         local text=op[2]=='add' and ('+'..number(op[3]/100)) or ('×'..number(op[3]/op[4]))
-        if op[1]=='green' then
-            out[#out+1]={color='green',text=D.palette.green.name..' 判定'}
-            out[#out+1]={color='green',text=text}
+        if op[1]=='bombs' then
+            out[#out+1]={color='green',text='立即获得Bomb',scale=.5}
+            out[#out+1]={color='green',text='+1'}
         else
             local name=op[1]=='red' and '火力' or 'Bomb恢复速度'
             out[#out+1]={color=op[1],text=name,scale=op[1]=='blue' and .5 or .7}
@@ -268,27 +277,36 @@ function D.renderStar(image,x,y,size,fraction,alpha)
     edge(sweep)
 end
 function D.renderBombs(x1,x2,y,alpha,count)
-    local limit=D.bombLimit()
     local stock=D.bombState(1)
-    local value=count==2 and ('P1 %d / P2 %d'):format(stock,D.bombState(2)) or ('%d / %d'):format(stock,limit)
+    local value=count==2 and ('P1 %d / P2 %d'):format(stock,D.bombState(2)) or ('%d'):format(stock)
     local color=Color(alpha,110,235,145)
     ui:RenderText('title','Bomb',x1,y,.8,color,'left','vcenter')
     ui:RenderText('title',value,x2,y,.8,color,'right','vcenter')
     for slot=1,count do
         local bombs,fraction=D.bombState(slot)
         local left=x1+(count==2 and 26 or 0)
-        local step=(x2-left)/limit
         local cy=y-25-(slot-1)*28
         local size=count==2 and 23 or 26
         if count==2 then ui:RenderText('title','P'..slot,x1,cy-6,.55,Color(alpha,110,235,145),'left','bottom') end
-        for i=1,limit do
-            local x=left+(i-.5)*step
-            if i<=bombs then D.renderStar('star_big10',x,cy,size,1,alpha)
-            else
-                D.renderStar('star_big10',x,cy,size,1,alpha*.18)
-                if i==bombs+1 then D.renderStar('star_big10',x,cy,size,fraction,alpha) end
-            end
-        end
+        D.renderInventory('star_big10',bombs,left,x2,cy,size,alpha,{110,235,145},fraction)
+    end
+end
+function D.inventoryLayout(x1,x2,size)
+    local step=(x2-x1-40)/D.HUD_SLOTS
+    local last=x1+(D.HUD_SLOTS-.5)*step
+    return step,last+size/2+3
+end
+function D.renderInventory(image,stock,x1,x2,y,size,alpha,rgb,fraction)
+    local step,overflowX=D.inventoryLayout(x1,x2,size)
+    for i=1,D.HUD_SLOTS do
+        local x=x1+(i-.5)*step
+        D.renderStar(image,x,y,size,1,alpha*(i<=stock and 1 or .18))
+        if fraction and i==stock+1 then D.renderStar(image,x,y,size,fraction,alpha) end
+    end
+    if stock>D.HUD_SLOTS then
+        local value='+'..('%d'):format(stock-D.HUD_SLOTS)
+        local scale=math.min(.7,(x2-overflowX)/math.max(1,#value*11))
+        ui:RenderText('title',value,overflowX,y,scale,Color(alpha,unpack(rgb)),'left','vcenter')
     end
 end
 function D.renderHUD(scrr,scrt,alpha)

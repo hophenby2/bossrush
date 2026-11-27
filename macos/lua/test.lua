@@ -8,6 +8,8 @@ function T.install()
     if mode=='starlit-perf' then return dofile('macos/starlit_perf.lua').install() end
     if mode=='fireworks-bomb' then return dofile('macos/fireworks_bomb_test.lua').install() end
     if mode=='rogue-hp-ring' then return dofile('macos/rogue_hp_ring_test.lua').install() end
+    if mode=='linked-boss' then return dofile('macos/linked_boss_test.lua').install() end
+    if mode=='rogue-rewards' then return dofile('macos/rogue_rewards_test.lua').install() end
     if mode=='rogue-hud-resources' then return dofile('macos/rogue_hud_resources_test.lua').install() end
     if mode=='portrait-layout' then return dofile('macos/portrait_layout_test.lua').install() end
     if mode=='rogue-display' then return dofile('macos/rogue_display_test.lua').install() end

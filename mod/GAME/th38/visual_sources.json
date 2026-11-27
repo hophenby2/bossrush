@@ -1,5 +1,5 @@
 {
-  "sprites": 301,
+  "sprites": 303,
   "profiles": 16,
   "phases": 79,
   "portraits": 11,
@@ -332,6 +332,14 @@
     "Scripts/Bossmove.cs": "8843f1db176e8b1ac3da5d30f9b76f08ddf0773da3f8019ffb50d012d533cb6f",
     "Scripts/Boss_in.cs": "dd6c2d71874231344e2bec2b7c025d7a874a74eade2f6e1a389bfb896a4c5690",
     "Scripts/Lihuimove1.cs": "791b65a0d5a9640fd1414d8f2d9c6b3fd951570bee15a32c61da587e2aaed364",
-    "Scripts/Anniu_xuanzhong.cs": "f1c3c84b2d0d42b18c2dbc6d433bdfc2935975fe4d63c965818f6cf812059628"
+    "Scripts/Anniu_xuanzhong.cs": "f1c3c84b2d0d42b18c2dbc6d433bdfc2935975fe4d63c965818f6cf812059628",
+    "Resources/xuelianhua/image/menu/xuetiao_enemy.png": "0e68878decd35933de4d3213960c151bbad394a0f6594bac59b40bfd75cfd562",
+    "Resources/xuelianhua/image/menu/xuetiao_enemy.png.meta": "47ac2cf4054e0c907dd97610064caa63172477f6704d00ad92ad21f6b1ade329",
+    "Resources/xuelianhua/image/menu/xuetiao_enemy1.png": "002d011993e0bb40e3ffc06ec94d565f963997e08b0c0dd7789e1e062d654637",
+    "Resources/xuelianhua/image/menu/xuetiao_enemy1.png.meta": "fd5eb375245ecbeba7825d746c22e1eeac13835adc870a45941ea3b4521130e1",
+    "Scripts/Boss4link.cs": "974b7f9fbc142e0456ace1ead17e684068d97341460a2c1c95d96dc7781a793d",
+    "Scripts/Boss4xuetiao.cs": "5f6531e3606edbc9c38c4b83b7798186aeca4f25a4fe3a5bda08ac8576120ed8",
+    "Scripts/Boss4_link_xuli.cs": "936ef98c9eb4266e8fc360b348d9b37d638c8f70e9e2ecb64099fdb05e3d27af",
+    "Scripts/Saoqi.cs": "dcbfbd71a90217d0dfafad6dadde493dece218c615be8732cc3de008c0da6615"
   }
 }

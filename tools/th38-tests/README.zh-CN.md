@@ -123,3 +123,11 @@ python3 tools/th38-tests/native.py --card 38065 --repeat --frames 300 --out /tmp
 ```
 
 LuaSTG仍按60Hz宿主帧成对推进原作120Hz tick，存在一个宿主帧内的量化差异；上述检查不表示其他Unity专用组件或Windows Sub已完成等价验证。
+
+## 联结「死生有命双子星」
+
+38034、38041 按 `Boss4link`、`Bossmove.boss4_fuhuotime` 和 `Boss4xuetiao` 接入：两个身体各5500血，单体倒下后第400原作tick恢复4500血。等待复活时 `Basic` / `Basic_zi` 停止执行，已有子弹继续运动；Boss已开始的移动继续，下一次移动的等待停止。保留主Boss先复活、再判断双体击破的同tick顺序。
+
+流程宿主不受击，强化模式的伤害换算分别作用于两个真实身体。练习显示原prefab的独立短条，挑战/混沌显示各自的宿主血圈、底条和位置箭头。倒下、连接粒子、蓄力和复活爆发从同一发行包导出，特效不消耗弹幕随机数。
+
+`luajit tools/th38-tests/check_linked_boss.lua` 覆盖两路线的伤害隔离、400tick边界、运动、血条、特效和清场。Mac专项用 `BOSSRUSH_MAC_TEST=linked-boss` 与隔离的 `BOSSRUSH_MAC_DATA` 运行正式挑战入口，同时逐帧检查共用自机第1–8帧决死。安卓双击的跨命中输入与第9帧失败边界见 `tools/native-player-tests/check_deathbomb.lua`。

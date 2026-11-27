@@ -190,7 +190,8 @@ function trail:render()
     player_bullet_trail.render(self)
 end
 function trail:kill()
-    New(bullets.trail_ef, self.x, self.y, player_bullet_straight.GetEffectRotation(self))
+    local effect=New(bullets.trail_ef, self.x, self.y, player_bullet_straight.GetEffectRotation(self))
+    if GameDrops then GameDrops.inheritShot(effect,self) end
 end
 bullets.trail = trail
 -------------------------------------------------------
@@ -222,7 +223,7 @@ function trail_ef:frame()
 end
 function trail_ef:render()
     SetAnimationState(self.img, 'mul+add', self.alpha, 255, 255, 255)
-    DefaultRenderFunc(self)
+    if GameDrops then GameDrops.renderBullet(self) else DefaultRenderFunc(self) end
 end
 bullets.trail_ef = trail_ef
 -------------------------------------------------------

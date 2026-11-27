@@ -351,9 +351,9 @@ local function register(variant,config)
     end
     function battle:frame()
         encounter.frame(self.timer)
-        if GameHPScale then GameHPScale.frame() end
         staged.frame(lstg.var.rogue_run)
         titles.frame(lstg.var.rogue_run)
+        if GameHPScale then GameHPScale.frame() end
         releaseChainGhosts(self)
         if self.rogue_finished then stage.group.frame(self);return end
         if misses()>=R.MISS_LIMIT then R.finish(self,false);return end

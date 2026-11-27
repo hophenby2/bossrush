@@ -6,6 +6,8 @@
     "Managed/Assembly-CSharp.dll": "93a96cffffb0edebec41d248c680666221dfd34f70499d9cfe6ea3931ab2d699"
   },
   "resources": [
+    "xuelianhua/prefab/boss/boss_death",
+    "xuelianhua/prefab/enemy/xuli_texiao/atob",
     "xuelianhua/prefab/enemy/xuli_texiao/baozha_0",
     "xuelianhua/prefab/enemy/xuli_texiao/baozha_1",
     "xuelianhua/prefab/enemy/xuli_texiao/baozha_2",
@@ -14,6 +16,7 @@
     "xuelianhua/prefab/enemy/xuli_texiao/baozha_5",
     "xuelianhua/prefab/enemy/xuli_texiao/baozha_6",
     "xuelianhua/prefab/enemy/xuli_texiao/baozha_7",
+    "xuelianhua/prefab/enemy/xuli_texiao/btoa",
     "xuelianhua/prefab/enemy/xuli_texiao/xuli_0",
     "xuelianhua/prefab/enemy/xuli_texiao/xuli_1",
     "xuelianhua/prefab/enemy/xuli_texiao/xuli_2",
@@ -25,6 +28,17 @@
     "xuelianhua/prefab/xiaodantexiao"
   ],
   "sprites": {
+    "4051": {
+      "name": "mofa2_2",
+      "texture": 362,
+      "rect": {
+        "x": 256.0,
+        "y": 384.0,
+        "width": 128.0,
+        "height": 128.0
+      },
+      "sha256": "3cd776929435d99494984a6c6e08edf9818e7d0699dc92a754d24c3d9525bfbe"
+    },
     "3294": {
       "name": "baopo0",
       "texture": 1018,

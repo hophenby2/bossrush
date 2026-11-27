@@ -101,6 +101,7 @@ def nodes(path,only=None):
         if anim and source.path(anim['m_Controller']):n['controller']=controller(source.path(anim['m_Controller']))
         for script,fields in [('Boss_move_doudong',['A','time_start','time_zhouqi']),('Lihuimove1',['yidongx','yidongy']),('Tongyong_xuanzhuan',['zhuansu']),('Tongyong_death',['time'])]:
             if script in scripts:n[script]={k:scripts[script][k] for k in fields}
+        if 'Boss4xuetiao' in scripts:n['linkedHealth']=1
         if n.get('sprite') or n.get('controller'):output.append(n)
     return sorted(output,key=lambda x:x['order'])
 
@@ -127,12 +128,14 @@ for path in sorted((source.root/'Resources/xuelianhua/prefab/boss').glob('*/*.pr
     block=next(raw for _,_,raw in HEADER.findall(path.read_text()) if 'double_boss2:' in raw)
     raw=re.search(r'^  fuka_num: *(.*)$',block,re.M)[1]
     numbers=[inside['fuka_num']]+(list(struct.unpack('<'+'i'*(len(raw)//8),bytes.fromhex(raw))) if raw else [])
-    for phase,pic,number,position in zip(keys,pictures,numbers,positions):
+    link=next((v for k,v in d.values() if k==114 and 'boss4_life' in v),None)
+    for phase_index,(phase,pic,number,position) in enumerate(zip(keys,pictures,numbers,positions)):
         phase=(phase or '').replace('xuelianhua/danmaku/','').replace('//','/')
         if not phase:continue
         index=2 if move['double_boss2'] else 1
         phases.setdefault(phase,{})[index]=key
         phases[phase].setdefault('positions',{})[index]=position
+        if link and phase_index==link['start_num']:phases[phase]['linked']=1
         if not move['double_boss2']:phases[phase]['number']=number
         pf=source.path(pic)
         if pf and pf.relative_to(source.root).as_posix() not in portraits:
@@ -219,6 +222,9 @@ record(source.root/'Scripts/Boss_fuka_creat.cs')
 for name in ['Bossmove','Boss_move_doudong','Boss_in','Lihuimove1']:
     record(source.root/'Scripts'/(name+'.cs'))
 record(source.root/'Scripts/Anniu_xuanzhong.cs')
-(out/'actors.lua').write_text('-- 原作prefab、AnimatorController和AnimationClip离线参数。\nreturn '+lua(dict(sprites=sprites,controllers=controllers,profiles=profiles,phases=phases,portraits=portraits,backgrounds=backgrounds,spellMap=spellMap))+'\n')
+bar=source.root/'Resources/xuelianhua/prefab/boss/l/xuetiao_4boss.prefab'
+linkedBar=dict(nodes=nodes(bar,{'xuetiao_4boss','xuetiao'}),offset=next(v['b'] for k,v in documents(bar).values() if k==114 and 'b' in v))
+for name in ['Boss4link','Boss4xuetiao','Boss4_link_xuli','Saoqi']:record(source.root/'Scripts'/(name+'.cs'))
+(out/'actors.lua').write_text('-- 原作prefab、AnimatorController和AnimationClip离线参数。\nreturn '+lua(dict(sprites=sprites,controllers=controllers,profiles=profiles,phases=phases,portraits=portraits,backgrounds=backgrounds,spellMap=spellMap,linkedBar=linkedBar))+'\n')
 (out/'visual_sources.json').write_text(json.dumps(dict(sprites=len(sprites),profiles=len(profiles),phases=len(phases),portraits=len(portraits),sha256=hashes),ensure_ascii=False,indent=2)+'\n')
 print(len(profiles),'Boss prefabs,',len(phases),'phases,',len(sprites),'sprites,',len(portraits),'portraits')

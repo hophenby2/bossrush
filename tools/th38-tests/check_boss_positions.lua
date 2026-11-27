@@ -22,7 +22,7 @@ for _,route in ipairs({'A','B'})do for phase,positions in ipairs(expected[route]
  assert(#bosses==2,'双Boss数量不符：'..key)
  for i,s in ipairs(bosses)do
   near(s.x,positions[i][1],key..'初始x');near(s.y,positions[i][2],key..'初始y')
-  local o=s.main and host or s.native;local x,y=R.project(s.x,s.y)
+  local o=s.native or s.main and host;local x,y=R.project(s.x,s.y)
   near(o.x,x,key..'出生投影x');near(o.y,y,key..'出生投影y')
   assert(o.asl_actor and o.asl_actor.profile==A.data.phases[key][i],'主副体绑定错位')
  end

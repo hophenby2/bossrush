@@ -10,8 +10,7 @@ LoadFX("fx:pause_menu_blur", "shader\\texture_BoxBlur49.hlsl")
 
 
 local TIP = {
-    '测试tip1',
-    string.rep('测试tip2',20),
+    '本游戏免费公开，素材来源于网络',
 }
 _G.TIP = TIP
 

@@ -1,0 +1,51 @@
+{
+  "date": "2026-11-27",
+  "native": {
+    "passed": true,
+    "samples": [
+      {
+        "main_damage": 878.69922707715,
+        "partner_damage": 878.69922707715,
+        "originalBars": true,
+        "bottomBars": 2,
+        "revivalTicks": 400,
+        "rings": true,
+        "key": "L/stage4/bossA/6"
+      },
+      {
+        "main_damage": 878.69922707715,
+        "partner_damage": 878.69922707715,
+        "originalBars": true,
+        "bottomBars": 2,
+        "revivalTicks": 400,
+        "rings": true,
+        "key": "L/stage4/bossB/6"
+      }
+    ],
+    "deathbombCases": 8,
+    "platform": "macOS Metal，共用逻辑"
+  },
+  "logic_checks": [
+    "共用碰撞/帧/Bomb入口：第1至8帧决死，第9帧失败，无雷、按住X及只登记一次miss",
+    "安卓正式输入Lua：第一击→命中→第二击，及原作自机决死状态；非安卓设备实测",
+    "双子星A/B：各5500HP，双向伤害隔离，400tick复活4500HP及主副体同tick顺序",
+    "双子星两张卡完整时限5410宿主帧无Lua错误/清场残留，及14阶段双Boss位置回归"
+  ],
+  "limitations": [
+    "未在安卓设备或Windows引擎实测",
+    "未生成APK或发布Release"
+  ],
+  "source_sha256": {
+    "THlib/player/player_system.lua": "b1b9e78ffa50194ec6815543efcfd18204c8e66ce5fc6f3cd582fe1f95a8fd65",
+    "android/lua/input.lua": "2f71a6d0d15b9ef6ecdbe83b37dfbc7c1ecb61e48fe6b68dece933b43e4e5111",
+    "THlib/enemy/portrait_hp.lua": "c4cfe12502066253fbf2fc5930fc58627f4f94393d1a1dd052d7403f534b573c",
+    "mod/rogue_boss_hud.lua": "05d60b691ac6b7659f1ba9a03e93388845ba670420a2267e6cb9a0d9d9131321",
+    "mod/GAME/th38.lua": "ac5d89d06a41b3da67b58c86e65919cf1fb09e445001c5f669691fc789bf9acf",
+    "mod/GAME/th38/runtime.lua": "bb53623e4b57852aaef196d6192b8460b9ea1ff82e3099bf7889450ee5c6b4be",
+    "mod/GAME/th38/actor.lua": "5cf9c756455d9e04db01ac5e06a1442fa1bcb7c84f96fc7fc7066858cba7804a",
+    "mod/GAME/th38/actors.lua": "dfe2bc47c4e810377896467aa41499fc4070b60dabae3f2c25bed128ad3759a5",
+    "mod/GAME/th38/bullet_effects.lua": "d5c89ebf297d2ed94586d6c1c1f0303481726494e336c2b705de0bafca34a7e1",
+    "mod/GAME/th38/bullet_effects_data.lua": "545956f6ab486c44222e66de6a6393b2d3874a434961d6805254e4c89de8ff8a",
+    "mod/GAME/th38/particles.lua": "b1b5f2f514c8e1bf130ddd23a8061ccb75ff3ef70d79076aac80478c2398b02d"
+  }
+}

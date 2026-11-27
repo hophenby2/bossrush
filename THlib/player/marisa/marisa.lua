@@ -209,7 +209,8 @@ end
 function missile:kill()
     PlaySound('msl2', 0.3)
     local a, r = ran:Float(0, 360), ran:Float(0, 6)
-    New(bullets.missile_ef, self.x + r * cos(a), self.y + r * sin(a), self.dmg, 5)
+    local effect=New(bullets.missile_ef, self.x + r * cos(a), self.y + r * sin(a), self.dmg, 5)
+    if GameDrops then GameDrops.inheritShot(effect,self) end
 end
 bullets.missile = missile
 
@@ -231,7 +232,8 @@ end
 function missile_ef:frame()
     if self.timer == 3 and self.t > 0 then
         local a, r = ran:Float(0, 360), ran:Float(8, 16)
-        New(bullets.missile_ef, self.x + r * cos(a), self.y + r * sin(a), self.dmg * 20, self.t - 1)
+        local effect=New(bullets.missile_ef, self.x + r * cos(a), self.y + r * sin(a), self.dmg * 20, self.t - 1)
+        if GameDrops then GameDrops.inheritShot(effect,self) end
     end
     if self.timer == 15 then
         Del(self)

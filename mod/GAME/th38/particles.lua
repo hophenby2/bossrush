@@ -116,8 +116,9 @@ function M.new(cfg,transform,textures)
             local p=self.particles[i];p.age=p.age+dt
             if p.age>=p.life then table.remove(self.particles,i)
             else
-                p.x,p.y=p.x+p.vx*dt,p.y+p.vy*dt;p.vy=p.vy+p.gravity*dt
                 local t=p.age/p.life
+                local speed=cfg.VelocityModule and value(cfg.VelocityModule.speedModifier,t,p.r) or 1
+                p.x,p.y=p.x+p.vx*speed*dt,p.y+p.vy*speed*dt;p.vy=p.vy+p.gravity*dt
                 if cfg.RotationModule then
                     local m=cfg.RotationModule
                     p.rotation=p.rotation+value(m.curve,t,p.r)*dt
