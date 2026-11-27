@@ -4,6 +4,7 @@
 local R={classes={},patterns={},objects=setmetatable({},{__mode='k'}),controllers=setmetatable({},{__mode='k'}),bulletCount=0,bulletLimit=1500}
 local Time=NativeTime or dofile('THlib/native_time.lua')
 local FixedLaser=dofile('mod/GAME/th38/fixed_laser.lua')
+local MovingLaser=dofile('mod/GAME/th38/moving_laser.lua')
 local Presentation=dofile('mod/GAME/th38/presentation.lua')
 local Mist=dofile('mod/GAME/th38/mist.lua')
 local Pool=dofile('mod/GAME/ports/object_pool.lua')
@@ -127,8 +128,8 @@ local function sync(b,s)
             b.alpha=min(1,max(0,s.alpha/100));b.colli=s.collision and s.lineActive
             return
         end
-        b.rot=s.direction+180;b.w0=max(0,s.width*7.68);b.l2=max(0,min(s.length,s.age*abs(s.speed)*.0025)*192)
-        b.w=b.w0;b.alpha=min(1,max(0,s.alpha/100));b.colli=s.collision and s.life>0
+        b.rot=MovingLaser.direction(s)+180;b.w0=max(0,s.lineRadius*96);b.l2=max(0,(s.lineLength*4-.16*s.width)*48)
+        b.w=b.w0;b.alpha=min(1,max(0,s.alpha/100));b.colli=s.collision and s.alive
         return
     end
     if s.kind=='enemy' then
@@ -297,7 +298,7 @@ R.classes.beam=Class(laser,{
             SetImageState(img,s.blend==1 and 'mul+screen' or '',s.alpha*2.55,s.red*2.55,s.green*2.55,s.blue*2.55)
             if s.beamMode==1 then
                 Render(img,b.x,b.y,FixedLaser.direction(s)-90,max(0,s.lineWidth)*scale,s.lineLength*scale)
-            else Render(img,b.x,b.y,s.direction-90,s.width*scale,math.min(s.length,s.age*abs(s.speed)*.0025)*scale) end
+            else Render(img,b.x,b.y,MovingLaser.direction(s)-90,s.lineWidth*scale,s.lineLength*scale) end
         else laser.render(b) end
     end,
     del=function(b) clean(b) end,kill=function(b) clean(b) end,
@@ -323,7 +324,7 @@ local function assign(s,key,value)
     if key:sub(1,3)=='var' then s.vars[tonumber(key:sub(4))]=value;return end
     if key:sub(1,6)=='global' then s.c.vars[tonumber(key:sub(7))]=value;return end
     if integerFields[key] then value=trunc(value) end
-    if s.beamMode==1 and key=='life' then value=max(0,value) end
+    if s.kind=='beam' and key=='life' then value=max(0,value) end
     if key=='a4_3' or key=='a4_12' then value=max(1,value) end
     if key=='shape' then value=max(0,min(25,value)) end
     if key=='shape' and s.kind=='bullet' then s.dispelSize=Effects.baseSize(value) end
@@ -444,6 +445,7 @@ local function spawn(e,x,y,direction,speed)
     s.tailTicks,s.contact,s.hit=max(5,floor((e.a54_2 or 5)/5)*5),e.a48_4*.01,e.a48_5*.01
     s.immune,s.followSpeed,s.length,s.width=e.a48_6,e.a8_9==1,e.a54_2 and e.a54_2*.01 or 1,e.a54_3 or 1
     if s.beamMode==1 then FixedLaser.init(s,e) end
+    if s.beamMode==0 then MovingLaser.init(s,e) end
     if s.kind=='enemy' and s.enemyType==21 then
         -- Enemy_chuliluo 的 life 是持续tick、pdbj是时间倍率；没有敌机贴图和碰撞。
         s.kind='time';s.slowLeft=s.life;s.slowScale=f32(e.a48_4*f32(.01))
@@ -584,6 +586,14 @@ local function move(s,deferBulletProjection)
         FixedLaser.step(s)
         if valid(s.native) then
             if s.alive then sync(s.native,s);FixedLaser.collide(s,s.native) else clean(s.native) end
+        end
+        return
+    end
+    if s.beamMode==0 then
+        if parent then followParent(s,parent) end
+        MovingLaser.step(s)
+        if valid(s.native) then
+            if s.alive then sync(s.native,s) else clean(s.native) end
         end
         return
     end
@@ -761,14 +771,15 @@ function R.deathClear(x,y,r,outside,dropKind)
                         end
                     end
                 else
-                    -- Laser_zhi_delete缩短纵轴，每次回退头部0.16单位；宽度不变。
-                    local co,si=cos(s.direction),sin(s.direction)
+                    -- 与自然收束、出屏共用真实纵轴，不能只改目标长度后按age重算。
+                    local direction=MovingLaser.direction(s)
+                    local co,si=cos(direction),sin(direction)
                     local function distance()
                         local dx,dy=x-b.x,y-b.y;local along=math.max(0,math.min(b.l2,-dx*co-dy*si))
                         return math.sqrt((dx+along*co)^2+(dy+along*si)^2)
                     end
-                    while s.length>.08*s.width and (outside and distance()>r or not outside and distance()<r+(b.w or 0)/2) do
-                        s.length=s.length-.04;s.x,s.y=s.x-.16*co,s.y-.16*si;sync(b,s)
+                    while (outside and distance()>r or not outside and distance()<r+(b.w or 0)/2) and MovingLaser.shrink(s) do
+                        sync(b,s)
                     end
                 end
             elseif s.kind=='curve' then

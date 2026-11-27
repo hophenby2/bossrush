@@ -1,5 +1,27 @@
 # TH38：东方雪莲华原生对象接入初版
 
+## 2026-11-27：洒向乐土的血雨的激光转弹
+
+怒枪「洒向乐土的血雨」（38012，`L/stage2/boss2/2`）的`danmaku1.txt`生成寿命120tick的
+`Laser_move_zhi`，并以相对深绑定方式挂载`danmaku2.txt`。子发射器在自身120tick触发额外发射，
+生成四档速度的米弹。旧后端在该tick先按寿命删除激光，子发射器因宿主已死而没有发弹。
+
+`moving_laser.lua`按发行包`THasl_Data/Managed/Assembly-CSharp.dll`中的`Laser_move_zhi.FixedUpdate`
+和`Laser_zhi_delete`维护实际纵轴、生成长度和收束状态。寿命到期时按速度的四分之一缩短纵轴，
+回退本tick的头部位移；达到原宽度对应的收束阈值才销毁本体及其绑定发射器。
+出屏与自机消弹也缩短同一条实际纵轴，不再用`age × speed`重算，绘制使用原作半宽缩放。
+原始发弹参数与120tick触发事件保持不变，本修正应用于同类移动激光。
+
+```sh
+luajit tools/th38-tests/check_blood_rain.lua
+luajit tools/th38-tests/check_warning_angle.lua
+STAGE_STRICT_NEW=1 luajit tools/th38-tests/check_full.lua /tmp/th38-blood-rain-full.json 38012
+```
+
+本卡1800tick定向检查覆盖301次转弹、289次自然收束、实际绘制参数、消弹及清场；
+完整时限3690宿主帧模拟通过，相邻非符的固定激光预警方向检查通过。
+以上为Lua检查，未进行本次安卓画面实测。
+
 ## 2026-11-20：三连城的固定激光
 
 `EXA/boss2/12` 的城墙方块是 `a54_1=1` 的 `Laser_move_line`，其移动速度参数为 0。此前将它与移动激光合并，并按 `age × speed` 计算长度，导致原图和判定段均为零长。`fixed_laser.lua` 现在单独维护该子类型：原 prefab 的 0.1 初始横向缩放、每 tick 0.28 的头部推进与 0.07 的纵向伸展、预警倒计时、按原宽度的 1/100 增宽、判定开启和寿命结束后的收束。生成长度保留原作以四为单位取整和最后一步超出的行为，不依赖普通弹速度。
