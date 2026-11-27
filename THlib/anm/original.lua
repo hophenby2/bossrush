@@ -44,6 +44,7 @@ function A.load(game, archive)
         s.img='original/'..key..'/sprite'..id
         s.tex=tex
         s.path='Resources/Original/'..game..'/'..archive..'_'..s[1]..'.png'
+        s.texture_size=data.texture_sizes and data.texture_sizes[s[1]]
     end
     local ops=game==6 and op6 or ((game==7 or game==8) and op8 or game==11 and op11 or op95)
     for _,script in pairs(data.scripts) do
@@ -281,7 +282,14 @@ function A.sprite_resource(v)
     resource_timer=timer
     if not s.loaded or s.epoch~=resource_epoch then
         if not CheckRes('tex',s.tex) then LoadTexture(s.tex,s.path) end
-        if not CheckRes('img',s.img) then LoadImage(s.img,s.tex,s[2],s[3],s[4],s[5]) end
+        s.uvx,s.uvy=1,1
+        if s.texture_size then
+            local tw,th=GetTextureSize(s.tex)
+            s.uvx,s.uvy=tw/s.texture_size[1],th/s.texture_size[2]
+        end
+        if not CheckRes('img',s.img) then
+            LoadImage(s.img,s.tex,s[2]*s.uvx,s[3]*s.uvy,s[4]*s.uvx,s[5]*s.uvy)
+        end
         s.loaded,s.epoch=true,resource_epoch
     end
     if lstg.AndroidRenderSprite and not s.native_draw_resource then
@@ -340,7 +348,7 @@ function A.draw_vm(v,x,y,angle,sx,sy,alpha,tint,override,rotation)
             local theta=v.rotation[3]+(i==count-1 and 0 or i*2*math.pi/(count-1))
             return {cx+math.cos(theta)*r,cy-math.sin(theta)*r,.5,u,(v.v+i*repeats/(count-1))*th,co}
         end
-        local u0,u1=s[2]+v.u*tw,s[2]+s[4]+v.u*tw
+        local u0,u1=s[2]*s.uvx+v.u*tw,(s[2]+s[4])*s.uvx+v.u*tw
         for i=0,count-2 do
             -- 原triangle strip的对角线连接inner[i]与outer[i+1]。
             local outerA,innerA=point(i,outer,u0),point(i,inner,u1)
@@ -368,7 +376,7 @@ function A.draw_vm(v,x,y,angle,sx,sy,alpha,tint,override,rotation)
         for i=0,count-2 do
             local aa,bb=first+i*step,first+(i+1)*step
             local vv,ww=(v.v+i*repeats/(count-1))*th,(v.v+(i+1)*repeats/(count-1))*th
-            local u0,u1=s[2]+v.u*tw,s[2]+s[4]+v.u*tw
+            local u0,u1=s[2]*s.uvx+v.u*tw,(s[2]+s[4])*s.uvx+v.u*tw
             RenderTexture(s.tex,v.blend,point(aa,outer,u0,vv),point(bb,outer,u0,ww),point(bb,inner,u1,ww),point(aa,inner,u1,vv))
         end
         return
@@ -395,17 +403,18 @@ function A.draw_vm(v,x,y,angle,sx,sy,alpha,tint,override,rotation)
         local function corner(dx,dy,u,w)
             return {px+dx*cr-dy*sr,py+dx*sr+dy*cr,.5,u,w,co}
         end
-        local u,w=s[2]+v.u*tw,s[3]+v.v*th
+        local u,w=s[2]*s.uvx+v.u*tw,s[3]*s.uvy+v.v*th
+        local uw,vh=s[4]*s.uvx,s[5]*s.uvy
         local points={corner(-s[4]*sx/2,s[5]*sy/2,u,w),
-            corner(s[4]*sx/2,s[5]*sy/2,u+s[4],w),corner(s[4]*sx/2,-s[5]*sy/2,u+s[4],w+s[5]),
-            corner(-s[4]*sx/2,-s[5]*sy/2,u,w+s[5])}
+            corner(s[4]*sx/2,s[5]*sy/2,u+uw,w),corner(s[4]*sx/2,-s[5]*sy/2,u+uw,w+vh),
+            corner(-s[4]*sx/2,-s[5]*sy/2,u,w+vh)}
         if override and override.clip then clipped_quad(s.tex,v.blend,override.clip,points)
         else RenderTexture(s.tex,v.blend,unpack(points)) end
     elseif lstg.AndroidRenderSprite then
-        lstg.AndroidRenderSprite(s.native_draw_resource,v.blend,px,py,rot,sx,sy,ca,cr,cg,cb)
+        lstg.AndroidRenderSprite(s.native_draw_resource,v.blend,px,py,rot,sx/s.uvx,sy/s.uvy,ca,cr,cg,cb)
     else
         SetImageState(image,v.blend,Color(ca,cr,cg,cb))
-        Render(image,px,py,rot,sx,sy)
+        Render(image,px,py,rot,sx/s.uvx,sy/s.uvy)
     end
 end
 function A.collect_draw_vms(v,rows)

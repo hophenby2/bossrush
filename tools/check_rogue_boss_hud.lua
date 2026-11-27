@@ -35,3 +35,24 @@ lstg.var.rogue_run.encounter={level=40,kind='boss'}
 GameContent.ports[40]={source={runtime={},BossHud={snapshots=function()return {{boss=b,hp=100,maxHp=200,phaseMode=5,countdown=3180}}end}}}
 H.prepareRender();renderCountdown();assert(countdown==53,'Like Dreamer帧数未换算为秒或耐久符无倒计时')
 print('宿主、祈华梦和Like Dreamer耐久符倒计时进入原生组件，来源换算通过')
+-- 退场必须经过真实组件的del/frame；切卡不能直接删除已落位的名称。
+local f=assert(io.open('THlib/enemy/boss_ui.lua','rb'));local source=f:read('*a');f:close()
+local first=assert(source:find('function sc_name:frame()',1,true))
+local last=assert(source:find('function sc_name.renderLabel',first,true))
+abs,min,max=math.abs,math.min,math.max
+assert(loadstring('local sc_name=...\n'..source:sub(first,last-1)))(boss.sc_name)
+first=assert(source:find('function sc_name:del()',1,true))
+last=assert(source:find('sc_name.kill =',first,true))
+assert(loadstring('local sc_name=...\n'..source:sub(first,last-1)))(boss.sc_name)
+object.Preserve=function()end
+object.Del=function(o)boss.sc_name.del(o)end
+local h=H.headers[1];h.name.boss=h.carrier
+h.name.header_layout={x=340,y=600,size=.5,alpha=255}
+run.card_title={names={'下一张卡'}}
+H.updateHeaders(run,false)
+assert(h.retired and h.name.live and h.name.death and h.name.timer==-1,'切卡未进入原生退场')
+h.name.timer=1;boss.sc_name.frame(h.name)
+assert(h.name.xoffset2==6 and h.name.live,'原生退场没有继续向右移出')
+h.name.timer=61;boss.sc_name.frame(h.name);H.updateHeaders(run,false)
+assert(not h.name.live and not h.carrier.live and #H.retired==0,'退场结束后载体没有回收')
+print('卡名沿用原生退场时序与右移逻辑，结束后回收载体通过')

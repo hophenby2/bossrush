@@ -6,9 +6,10 @@ stage={current_stage={is_menu=false,AllowMissCount=9}}
 Color=function(a,r,g,b)return {a=a,r=r,g=g,b=b}end
 IsValid=function(o)return o~=nil end
 local texts,stars,quads,wedges={},{},0,0
+local lastQuad
 ui={RenderText=function(_,font,text,x,y,size,c,align)texts[#texts+1]={text=text,x=x,y=y,size=size,color=c,align=align}end}
 SetImageState=noop
-Render4V=function()quads=quads+1 end
+Render4V=function(...)quads=quads+1;lastQuad={...}end
 RenderTexture=function()wedges=wedges+1 end
 GetImageTextureRegion=function()return 'white',0,0,8,8 end
 local D=dofile('THlib/drops.lua');GameDrops=D;D.reset()
@@ -37,6 +38,11 @@ local rendered
 DefaultRenderFunc=function(o)rendered={o.hscale,o.vscale,o.a,o.b}end
 D.renderBullet(bomb);near(rendered[1],2);near(rendered[2],3)
 assert(rendered[3]==3 and rendered[4]==4 and bomb.hscale==.4 and bomb.vscale==.6,'放大改变判定或泄漏缩放')
+D.renderStar('star_big10',80,120,26,1,255)
+assert(lastQuad[1]=='star_big10' and quads==1,'库存满星未使用原图四顶点接口')
+for i,v in ipairs({67,133,.5,93,133,.5,93,107,.5,67,107,.5})do near(lastQuad[i+1],v)end
+local oldQuads=quads;D.renderStar('star_big10',80,120,26,.5,128)
+assert(quads==oldQuads and wedges>0,'恢复进度仍须按原UV裁切扇形')
 D.renderStar=function(image,x,y,size,fill,alpha)stars[#stars+1]={x=x,y=y,fill=fill,image=image}end
 local positions
 for _,stock in ipairs({3,9,12,103})do

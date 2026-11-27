@@ -94,6 +94,11 @@ local Scene=Class(object,{
     render=function(o)
         if not setting.displayBG then return end
         SetViewMode('world')
+        -- 原作底图768×896、100PPU对应7.68×8.96单位的背景区域。
+        -- 按场地适配整组背景，不能沿用角色的48像素/单位，否则上下会各露出8.96像素。
+        local w=lstg.world
+        local pixels=math.max((w.r-w.l)/7.68,(w.t-w.b)/8.96)
+        local pictureScale=pixels/48
         local resolved={}
         local function transform(index)
             if resolved[index] then return resolved[index] end
@@ -124,7 +129,8 @@ local Scene=Class(object,{
             if v.active and v.alpha>0 then
                 local id,scale=A.picture(n.sprite);local rgb=n.color
                 SetImageState(id,n.blend or '',math.min(1,v.alpha)*255,rgb[1]*255,rgb[2]*255,rgb[3]*255)
-                Render(id,(v.x-4.5)*48,(v.y+4.8)*48,v.rot,scale*v.sx,scale*v.sy*(n.projectionY or 1))
+                Render(id,(v.x-4.5)*pixels,(v.y+4.8)*pixels,v.rot,
+                    scale*v.sx*pictureScale,scale*v.sy*(n.projectionY or 1)*pictureScale)
             end
         end
     end,

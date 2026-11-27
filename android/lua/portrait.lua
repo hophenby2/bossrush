@@ -8,8 +8,8 @@ end
 function P.cardHeader(slot)
     local w=lstg.world
     local right=w.scrr-12
-    return {right=right,nameRight=right-84,nameWidth=w.scrr-w.scrl-108,
-        y=w.scrt-68-((slot or 1)-1)*26,timerWidth=76}
+    return {right=right,nameRight=right-52,nameWidth=w.scrr-w.scrl-76,
+        y=w.scrt-68-((slot or 1)-1)*26,timerWidth=44}
 end
 function P.configure(s)
     local enabled=s.androidPortrait~=false

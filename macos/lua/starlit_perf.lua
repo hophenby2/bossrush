@@ -4,7 +4,13 @@
 local T={}
 function T.install()
     ext.Debugging=function()end
-    AndroidFocus=function()end
+    GetLastKey=function()return 0 end
+    -- 主入口在安装诊断后才创建焦点回调，须在首帧屏蔽，避免采样被失焦暂停截断。
+    local frame=FrameFunc
+    FrameFunc=function(...)
+        AndroidFocus=function()end
+        return frame(...)
+    end
     GetInput=function()LoadSaveInputState({})end
 end
 return T

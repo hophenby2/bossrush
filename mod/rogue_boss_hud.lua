@@ -1,5 +1,5 @@
 -- 随机模式沿用宿主血条、血圈和位置指示器，独立后端只提供真实 Boss 数据。
-local H={pointers={},rings={},current={}}
+local H={pointers={},rings={},current={},retired={}}
 local hpRing=dofile('THlib/enemy/portrait_hp.lua')
 local min,max=math.min,math.max
 function H.enabled()
@@ -59,14 +59,30 @@ local function collect()
     end
     return rows
 end
-local function clearHeaders()
-    for _,h in ipairs(H.headers or {}) do
+local function retireHeader(h)
+    if h.retired then return end
+    h.retired=true
+    if IsValid(h.name) and h.name.header_layout then
+        -- 使用组件自身的del/frame退场，不能在切卡时直接RawDel截断动画。
+        object.Del(h.name)
+        H.retired[#H.retired+1]=h
+    else
         if IsValid(h.name) then object.RawDel(h.name) end
         if IsValid(h.carrier) then object.RawDel(h.carrier) end
     end
+end
+local function clearHeaders()
+    for _,h in ipairs(H.headers or {}) do retireHeader(h) end
     H.headers,H.headerTitle,H.headerTick={},nil,nil
 end
 function H.updateHeaders(run,advance)
+    for i=#H.retired,1,-1 do
+        local h=H.retired[i]
+        if not IsValid(h.name) then
+            if IsValid(h.carrier) then object.RawDel(h.carrier) end
+            table.remove(H.retired,i)
+        end
+    end
     local title=run and not run.finished and not run.preparing and run.card_title
     if not title then clearHeaders();return end
     if H.headerTitle~=title then
@@ -78,6 +94,7 @@ function H.updateHeaders(run,advance)
             local display={drawtime=true,countdown=0}
             local label=New(boss.sc_name,carrier,name,false)
             label.rogue_header,label.hide=true,true
+            label.xoffset,label.xoffset2,label.talpha,label.talpha3=0,0,1,1
             local counter=boss.timeCounter(display,{boss=carrier})
             -- 运行时原有计时器继续负责音效；这里只接原生组件的显示。
             carrier.NotPlayTimeOutSound=true
@@ -87,27 +104,36 @@ function H.updateHeaders(run,advance)
     local rows=H.enabled() and H.current or (lstg.var.rogue_run and collect() or {})
     local tick=stage.current_stage.timer
     for i,h in ipairs(H.headers) do
-        local row=rows[i] or rows[1]
-        if row and not IsValid(row.boss) then row=nil end
-        local b=h.carrier
-        b.is_combat=not not (row and (row.is_combat or row.info and (row.info.phaseMode==1 or row.info.phaseMode==5)))
-        b.__is_waiting=not b.is_combat or row and row.boss.__is_waiting
-        b.x,b.y=row and row.x or 0,row and row.y or 0
-        b.timer=math.max(30,row and row.boss.timer or 30)
-        h.display.countdown=row and row.countdown or 0
-        if advance and H.headerTick~=tick then h.counter:frame() end
+        if not h.retired then
+            local row=rows[i] or rows[1]
+            if row and not IsValid(row.boss) then row=nil end
+            local b=h.carrier
+            b.is_combat=not not (row and (row.is_combat or row.info and (row.info.phaseMode==1 or row.info.phaseMode==5)))
+            b.__is_waiting=not b.is_combat or row and row.boss.__is_waiting
+            b.x,b.y=row and row.x or 0,row and row.y or 0
+            b.timer=math.max(30,row and row.boss.timer or 30)
+            if row then b.is_exploding=row.boss.is_exploding end
+            h.display.countdown=row and row.countdown or 0
+            if advance and H.headerTick~=tick then h.counter:frame() end
+            if b.is_combat then h.engaged=true elseif h.engaged then retireHeader(h) end
+        end
     end
     if advance then H.headerTick=tick end
 end
 function H.renderHeaders(run,rows,settled,headerLayout)
     H.updateHeaders(run,false)
+    for _,h in ipairs(H.retired) do
+        if IsValid(h.name) then boss.sc_name.render(h.name) end
+    end
     for i,h in ipairs(H.headers or {}) do
-        local p=headerLayout(i)
-        h.counter.header_layout={right=p.right,y=p.timerY or p.y}
-        h.counter:render()
-        if settled and rows[i] then
-            h.name.header_layout=rows[i];h.name.header_layout.background=true
-            boss.sc_name.render(h.name)
+        if not h.retired then
+            local p=headerLayout(i)
+            h.counter.header_layout={right=p.right,y=p.timerY or p.y}
+            h.counter:render()
+            if rows[i] then
+                h.name.header_layout=rows[i];h.name.header_layout.background=true
+                if settled then boss.sc_name.render(h.name) end
+            end
         end
     end
 end

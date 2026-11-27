@@ -250,14 +250,19 @@ end
 -- 直接裁切同一张绿色大星的纹理；满星与扇形共用尺寸，避开弹图默认的0.5缩放。
 function D.renderStar(image,x,y,size,fraction,alpha)
     if fraction<=0 then return end
+    if fraction>=1 then
+        -- 库存满星使用同一张图的四顶点接口；固定尺寸不吃弹图默认缩放，
+        -- 也无需每帧为18个残机/雷图标重复创建顶点表和取UV的闭包。
+        local half=size/2
+        SetImageState(image,'',Color(alpha,255,255,255))
+        Render4V(image,x-half,y+half,.5,x+half,y+half,.5,
+            x+half,y-half,.5,x-half,y-half,.5)
+        return
+    end
     local tex,u,v,w,h=GetImageTextureRegion(image)
     local color=Color(alpha,255,255,255)
     local function vertex(dx,dy)
         return {x+dx*size,y+dy*size,.5,u+(.5+dx)*w,v+(.5-dy)*h,color}
-    end
-    if fraction>=1 then
-        RenderTexture(tex,'',vertex(-.5,.5),vertex(.5,.5),vertex(.5,-.5),vertex(-.5,-.5))
-        return
     end
     -- 从正上方顺时针扫过方形，经过每个角补一个三角面，保持原星形轮廓和UV。
     local sweep=fraction*2*math.pi

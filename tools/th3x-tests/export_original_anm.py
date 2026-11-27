@@ -148,6 +148,12 @@ def parse(decl, assetdir, dest, game, archive):
                     int(prop('colorKey', '0'), 0), alpha)
         else:
             raise FileNotFoundError(source)
+        # TH07/08 的 width/height 是逻辑尺寸；THTX 可以存放更高分辨率的同一张图。
+        # 原作先按实际/逻辑尺寸换算 UV，再用逻辑尺寸画几何，不能直接截取左上角。
+        logical_size = [int(prop('width')), int(prop('height'))]
+        physical_size = list(struct.unpack_from('>II', (dest / texture).read_bytes(), 16))
+        if game in (7, 8) and physical_size != logical_size:
+            data.setdefault('texture_sizes', {})[index] = logical_size
         data.setdefault('textures', []).append(texture)
         for m in re.finditer(r'sprite(\d+): \{ x: ([\d.-]+), y: ([\d.-]+), w: ([\d.-]+), h: ([\d.-]+)', entry):
             sid = sprite_id(m[1]) + (old_base if game == 7 else 0)

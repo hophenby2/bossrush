@@ -378,7 +378,7 @@ function sc_name:init(b, name, score)
 end
 local Smooth = task.Smooth
 function sc_name:frame()
-    if self.rogue_header then return end
+    if self.rogue_header and not self.death then return end
     local b = self.boss
     if not self.death then
         local sc_hist = { 0, 0 }
@@ -460,7 +460,13 @@ function sc_name.renderLabel(name,layout)
 end
 function sc_name:render()
     if self.rogue_header then
-        if self.header_layout then sc_name.renderLabel(self.name,self.header_layout) end
+        if self.header_layout then
+            local p=self.header_layout
+            local x=p.x
+            if self.death then p.x=x+self.xoffset2 end
+            sc_name.renderLabel(self.name,p)
+            p.x=x
+        end
         return
     end
     if RogueTen and RogueTen.usesTitleOverlay and RogueTen.usesTitleOverlay() then return end

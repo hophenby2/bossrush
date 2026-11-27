@@ -29,7 +29,7 @@ drawn={};H.render(144,165)
 check(center(drawn[2])<480 and center(drawn[2])>144 and drawn[2].y<270 and drawn[2].y>165,'倍率文字按卡名时序向左下移动')
 for _=43,H.DURATION-6 do H.frame() end
 drawn={};H.render(144,165)
-check(drawn[1].color.a==0 and state.shown==1,'落定前淡出旧数值，避免两串倍率重叠，尚不更新累计值')
+check(drawn[1].color.a==255 and state.shown==1,'落定前保留原位置累计倍率，飞行增量不提前更新累计值')
 for _=H.DURATION-5,H.DURATION-1 do H.frame() end
 check(state.shown==1,'消失前不提前更新左下累计倍率')
 H.frame();check(near(state.shown,1.01) and not state.animation and state.shown_stage==1,'动画结束时更新显示及颜色')
@@ -155,8 +155,8 @@ end
 titles.frame(run);H.frame()
 check(run.card_title.age==H.DURATION and not run.hp_growth.animation and near(run.hp_growth.shown,1.01),'两条提示在同一帧落位')
 drawn={};H.render(144,165)
-local landed=titles.nameLayout(run)[1]
-check(near(drawn[1].x,landed.x) and near(drawn[1].y,landed.y-landed.size*32) and near(drawn[1].scale,landed.size),'累计倍率落位后保持在卡名下方且字号相同')
+check(near(drawn[1].x,144) and near(drawn[1].y,165) and drawn[1].color.a==255,
+    '飞行增量落位后更新原位置累计倍率，不把累计组件移到卡名下方')
 lstg.var.__hp_scale_version=nil
 check(not H.enabled() and H.factor()==1 and New(actor,100).hp==100,'非随机模式不启用阶段HP倍率')
 drawn={};H.render(144,165);check(#drawn==0,'非随机模式不插入倍率动画')

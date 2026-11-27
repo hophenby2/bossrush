@@ -25,11 +25,19 @@ def check(cache, game=7, archives=None):
         actual_ids = {int(k): int(v) for k, v in re.findall(r'\[(-?\d+)\]=(\d+)', ids)}
         bases = text.split('["sprite_bases"]={', 1)[1].split('}', 1)[0] if '["sprite_bases"]=' in text else ''
         actual_bases = {int(k): int(v) for k, v in re.findall(r'\[(\d+)\]=(\d+)', bases)}
-        expected_sprites, expected_ids, expected_bases = {}, {}, {}
+        sizes = text.split('["texture_sizes"]={', 1)[1].split('},["', 1)[0] if '["texture_sizes"]=' in text else ''
+        actual_sizes = {int(k): [int(n) for n in v.split(',')] for k, v in
+                        re.findall(r'\[(\d+)\]=\{([^{}]+)\}', sizes)}
+        expected_sprites, expected_ids, expected_bases, expected_sizes = {}, {}, {}, {}
         offset = base = logical = entry = sprite_number = 0
         while True:
             ns, nc = struct.unpack_from('<ii', raw, offset)
             next_offset, = struct.unpack_from('<I', raw, offset + 56)
+            logical_size = list(struct.unpack_from('<II', raw, offset + 12))
+            image = ROOT / f'Resources/Original/{game}/{archive}_{entry}.png'
+            physical_size = list(struct.unpack_from('>II', image.read_bytes(), 16))
+            if physical_size != logical_size:
+                expected_sizes[entry] = logical_size
             largest = 0
             for i in range(ns):
                 ptr, = struct.unpack_from('<I', raw, offset + 64 + i * 4)
@@ -53,6 +61,7 @@ def check(cache, game=7, archives=None):
         assert actual_sprites == expected_sprites, archive + ' 精灵坐标/纹理页编号不符'
         assert actual_ids == expected_ids, archive + ' 原始动画编号不符'
         assert actual_bases == expected_bases, archive + ' 动画的精灵基址不符'
+        assert actual_sizes == expected_sizes, archive + ' 纹理逻辑尺寸与实际像素换算缺失'
         assert info['sprites'] == len(expected_sprites) and info['scripts'] == logical, archive + ' manifest 计数不符'
         checks += len(expected_sprites) + len(expected_ids) + len(expected_bases) + 2
     print(f'TH{game:02} 原始 ANM 二进制布局核对通过：{len(manifest)} 份，{checks} 项')

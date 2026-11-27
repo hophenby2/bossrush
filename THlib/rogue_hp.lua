@@ -111,22 +111,21 @@ function H.render(x,y,width,height,align)
     local blocked=run.stage_banner or run.preparing
     if run.card_title and not blocked then Titles.nameLayout(run) end
     local title=run.card_title and run.card_title.layout
-    if title then
-        -- 倍率和卡名作为同一组移动，落定后仍在最后一行卡名下方。
-        local header=Titles.headerLayout(#title.groups)
-        x,y,width,align=header.nameRight,header.y-title.small*32,header.nameWidth,'right'
-    end
-    local oldAlpha=a and not blocked and math.max(0,1-a.age/Titles.NAME_IN)*255 or 255
-    local lines,scale,gap=H.layout(s.shown,width or x*2,height or math.max(1,y-8),title and title.small)
+    -- 原有累计倍率常驻原位，入场文字到达目标后由frame统一更新。
+    local lines,scale,gap=H.layout(s.shown,width or x*2,height or math.max(1,y-8))
     Titles.canvas(function()
         for i,line in ipairs(lines) do
-            boss.sc_name.renderLabel(line,{x=x,y=y-(i-1)*gap,size=scale,color=Color(oldAlpha,H.rgb(s.shown_stage)),
-                align=align or 'centerpoint',vcenter=true,background=false})
+            ui:RenderText('title',line,x,y-(i-1)*gap,scale,Color(255,H.rgb(s.shown_stage)),align or 'centerpoint','vcenter')
         end
         if not a or blocked then return end
         local text=('×%.2f'):format(a.factor)
         local right=align=='right' and x or x+Titles.textWidth(text,'sc_menu')*scale/2
-        local p=Titles.flightLayout(text,a.age,right,y,scale,nil,title and title.size,title and Titles.captionStartY(title))
+        local targetY,small=y,scale
+        if title then
+            local header=Titles.headerLayout(#title.groups)
+            right,targetY,small=header.nameRight,header.y-title.small*32,title.small
+        end
+        local p=Titles.flightLayout(text,a.age,right,targetY,small,nil,title and title.size,title and Titles.captionStartY(title))
         p.color=Color(p.alpha,H.rgb(a.stage))
         boss.sc_name.renderLabel(text,p)
     end)

@@ -1205,11 +1205,10 @@ function Circle_Attack:render()
     for i = 1, 16 do
         SetImageState("c_attack" .. i, 'mul+add', self.alpha * 255, 255, 255, 255)
     end
-    local scale=GameDrops and GameDrops.bulletScale(self) or 1
-    misc.RenderRing("c_attack", self.x, self.y, (self.r - 22)*scale, (self.r + 10)*scale, self.timer * 8, 32, 16)
+    misc.RenderRing("c_attack", self.x, self.y, self.r - 22, self.r + 10, self.timer * 8, 32, 16)
     SetImageState("leaf", "mul+add", 255, 250, 128, 114)
     for _, l in ipairs(self.leaf) do
-        Render("leaf", self.x+(l.x-self.x)*scale, self.y+(l.y-self.y)*scale, l.rot, l.scale*scale)
+        Render("leaf", l.x, l.y, l.rot, l.scale)
     end
 end
 

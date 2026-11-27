@@ -54,7 +54,7 @@ function T.headerLayout(slot)
     local w=lstg.world
     local right,y=w.scrr-12,w.scrt-1-((slot or 1)-1)*44
     -- 原生计时器放在卡名右侧，下方为同步落位的强化倍率留出一行。
-    return {right=right,nameRight=right-84,nameWidth=w.scrr-w.scrl-108,y=y,timerY=y}
+    return {right=right,nameRight=right-52,nameWidth=w.scrr-w.scrl-76,y=y,timerY=y}
 end
 function T.flightLayout(text,age,x,y,small,widthLimit,initialSize,startY)
     local width=textWidth(text,'sc_menu')

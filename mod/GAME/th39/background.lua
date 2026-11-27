@@ -135,7 +135,8 @@ local Scene=Class(background,{
         else background.DelBG();lstg.tmpvar.bg=o end
         o.chapter=chapter
         o.pending={}
-        o.group,o.layer,o.colli,o.bound=GROUP.GHOST,LAYER.BG-.1,false,false
+        -- 随机模式的符卡层应在保留的首个关卡背景之上，不能依赖两个对象的创建顺序。
+        o.group,o.layer,o.colli,o.bound=GROUP.GHOST,o.spellOnly and LAYER.BG+.01 or LAYER.BG-.1,false,false
         local px,py=R.player()
         local prepared=ready and ready.chapter==chapter and ready.start==start and ready.spellOnly==o.spellOnly and ready
         ready=nil
@@ -174,7 +175,9 @@ local Scene=Class(background,{
         if not setting or not setting.displayBG then draw(o,4);draw(o,3);return end
         SetViewMode('world')
         local w=lstg.world
-        if not o.spellOnly then
+        -- 原作先清空战斗合成面；KeepBackground 才保留关卡层。
+        -- 随机模式保留的首张关卡背景也应由当前符卡的底层覆盖，不能从透明边缘漏出。
+        if not o.spellOnly or o.spell and not o.spell.keep then
             SetImageState('white','',255,0,0,0)
             RenderRect('white',w.l,w.r,w.b,w.t)
             SetImageState('white','',255,255,255,255)
