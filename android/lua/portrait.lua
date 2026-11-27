@@ -498,11 +498,19 @@ function P.hud(alpha)
         for slot=1,count do
             P.drawInventory('bombs',bombX,bombY-(slot-1)*30,GameDrops.bombState(slot),alpha,count==2 and 'P'..slot..' ' or '')
         end
+        P.growthStats(alpha)
     end
     if not lstg.var.rogue_run then
         P.score(alpha)
         if not lstg.var.__sequence_version then label('×1',w.scrr-14,w.scrt-28,1,alpha,{230,241,250},'right') end
     end
+end
+function P.growthStats(alpha,layout,preview)
+    local lifeX,lifeY=P.elementPosition('life',layout)
+    local bombX,bombY=P.elementPosition('bombs',layout)
+    local count=not preview and GameNet and GameNet.host() and 2 or 1
+    local top=math.min(lstg.world.scrt-52,math.max(lifeY,bombY)+count*44+4)
+    ui.RunHUD.growth(math.min(lifeX,bombX),top,alpha,preview)
 end
 function P.drawInventory(id,x,y,value,alpha,prefix)
     local life=id=='life'

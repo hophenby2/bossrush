@@ -323,6 +323,7 @@ function A.draw_vm(v,x,y,angle,sx,sy,alpha,tint,override,rotation)
     if not v.visible or not v.sprite then return end
     local s=A.sprite_resource(v)
     local color=override and override.color or (v.secondary and v.color2 or v.color)
+    local blend=override and override.blend or v.blend
     local cr,cg,cb=color[1],color[2],color[3]
     if override and override.mix then
         -- TH08 MixColors：先对VM顶点色乘/128并截断饱和，再与纹理相乘。
@@ -354,8 +355,8 @@ function A.draw_vm(v,x,y,angle,sx,sy,alpha,tint,override,rotation)
             local outerA,innerA=point(i,outer,u0),point(i,inner,u1)
             local outerB,innerB=point(i+1,outer,u0),point(i+1,inner,u1)
             -- Sub与Android的四边形三角化对角线不同，退化第四点固定原strip的两块三角形。
-            RenderTexture(s.tex,v.blend,outerA,innerA,outerB,outerB)
-            RenderTexture(s.tex,v.blend,innerA,outerB,innerB,innerB)
+            RenderTexture(s.tex,blend,outerA,innerA,outerB,outerB)
+            RenderTexture(s.tex,blend,innerA,outerB,innerB,innerB)
         end
         return
     end
@@ -377,7 +378,7 @@ function A.draw_vm(v,x,y,angle,sx,sy,alpha,tint,override,rotation)
             local aa,bb=first+i*step,first+(i+1)*step
             local vv,ww=(v.v+i*repeats/(count-1))*th,(v.v+(i+1)*repeats/(count-1))*th
             local u0,u1=s[2]*s.uvx+v.u*tw,(s[2]+s[4])*s.uvx+v.u*tw
-            RenderTexture(s.tex,v.blend,point(aa,outer,u0,vv),point(bb,outer,u0,ww),point(bb,inner,u1,ww),point(aa,inner,u1,vv))
+            RenderTexture(s.tex,blend,point(aa,outer,u0,vv),point(bb,outer,u0,ww),point(bb,inner,u1,ww),point(aa,inner,u1,vv))
         end
         return
     end
@@ -398,7 +399,7 @@ function A.draw_vm(v,x,y,angle,sx,sy,alpha,tint,override,rotation)
         local tw,th=GetTextureSize(s.tex)
         if lstg.SetTextureSamplerState then lstg.SetTextureSamplerState(s.tex,'linear+wrap') end
         local co=Color(ca,cr,cg,cb)
-        SetImageState(image,v.blend,co)
+        SetImageState(image,blend,co)
         local cr,sr=math.cos(rot*rad),math.sin(rot*rad)
         local function corner(dx,dy,u,w)
             return {px+dx*cr-dy*sr,py+dx*sr+dy*cr,.5,u,w,co}
@@ -408,12 +409,12 @@ function A.draw_vm(v,x,y,angle,sx,sy,alpha,tint,override,rotation)
         local points={corner(-s[4]*sx/2,s[5]*sy/2,u,w),
             corner(s[4]*sx/2,s[5]*sy/2,u+uw,w),corner(s[4]*sx/2,-s[5]*sy/2,u+uw,w+vh),
             corner(-s[4]*sx/2,-s[5]*sy/2,u,w+vh)}
-        if override and override.clip then clipped_quad(s.tex,v.blend,override.clip,points)
-        else RenderTexture(s.tex,v.blend,unpack(points)) end
+        if override and override.clip then clipped_quad(s.tex,blend,override.clip,points)
+        else RenderTexture(s.tex,blend,unpack(points)) end
     elseif lstg.AndroidRenderSprite then
-        lstg.AndroidRenderSprite(s.native_draw_resource,v.blend,px,py,rot,sx/s.uvx,sy/s.uvy,ca,cr,cg,cb)
+        lstg.AndroidRenderSprite(s.native_draw_resource,blend,px,py,rot,sx/s.uvx,sy/s.uvy,ca,cr,cg,cb)
     else
-        SetImageState(image,v.blend,Color(ca,cr,cg,cb))
+        SetImageState(image,blend,Color(ca,cr,cg,cb))
         Render(image,px,py,rot,sx/s.uvx,sy/s.uvy)
     end
 end

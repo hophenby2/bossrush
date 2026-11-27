@@ -97,6 +97,19 @@ function H.spareLives()
     local limit=lstg.var.rogue_run and (RogueTen.MISS_LIMIT-1) or s.AllowMissCount or 9
     return math.max(0,limit-(lstg.var.dead or 0)),limit
 end
+function H.growth(x,y,alpha,preview)
+    local D=GameDrops
+    if not preview and (not D or not D.enabled()) then return end
+    local count=not preview and GameNet and GameNet.host() and 2 or 1
+    local palette=D and D.palette or colors
+    for slot=1,count do
+        local power,rate=preview and 1 or D.power(slot),preview and 1 or D.recoveryRate(slot)
+        local prefix=count==2 and ('P'..slot..' ') or ''
+        local top=y-(slot-1)*44
+        text(prefix..('火力 ×%.1f'):format(power),x,top,.7,alpha,palette.red,'left','vcenter')
+        text(prefix..('雷填充速率 ×%.1f'):format(rate),x,top-22,.7,alpha,palette.blue,'left','vcenter')
+    end
+end
 function H.resources(x1,x2,top,alpha)
     if SequenceResources and SequenceResources.enabled() then return H.original(x1,x2,top,alpha) end
     local native=NativePlayers and NativePlayers.state()

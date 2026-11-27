@@ -307,6 +307,20 @@ for _,vm in ipairs(slowed.vms) do
     check(vm.alpha[1]==255 and vm.color[1]==255 and vm.color[2]==255 and vm.color[3]==255 and vm.blend=='','恢复时两层背景复原')
 end
 check(near(ring.omega[3],-.007853982),'恢复原作背景的负向旋转速度')
+-- 一念无量劫沿用六面贴图，但按需求也显示五面缓时的颜色/混合变化；不修改六面VM。
+slowed.vms={A.new(7,'eff06',0),A.new(7,'eff06',1)}
+for _=1,65 do for _,vm in ipairs(slowed.vms)do A.step(vm)end end
+V.interrupt_background(7,2,'eff05')
+for _,vm in ipairs(slowed.vms)do
+    check(vm.interrupt_style~=nil and vm.data.key=='7/eff06','六面背景保留原图并接入白弹表现')
+    for _=1,8 do A.step(vm);A.step(vm.interrupt_style)end
+end
+local base,ring=slowed.vms[1].interrupt_style,slowed.vms[2].interrupt_style
+check(base.alpha[1]==64 and base.color[2]==64,'一念无量劫底图没有变红')
+check(ring.color[2]==96 and ring.color[3]==255 and ring.blend=='mul+add','一念无量劫没有紫色加算层')
+V.interrupt_background(7,1)
+check(not slowed.vms[1].interrupt_style and not slowed.vms[2].interrupt_style,'恢复后残留背景表现')
+check(slowed.vms[1].alpha[1]==255 and slowed.vms[2].alpha[1]==224,'白弹结束后改坏六面背景原有透明度')
 ObjList=objectList
 local wrapped={init=function(o) o.x,o.y,o.timer,o.ani=0,0,0,0 end,
     frame=function() end,render=function() end,kill=function() end}

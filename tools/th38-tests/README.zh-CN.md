@@ -131,3 +131,13 @@ LuaSTG仍按60Hz宿主帧成对推进原作120Hz tick，存在一个宿主帧内
 流程宿主不受击，强化模式的伤害换算分别作用于两个真实身体。练习显示原prefab的独立短条，挑战/混沌显示各自的宿主血圈、底条和位置箭头。倒下、连接粒子、蓄力和复活爆发从同一发行包导出，特效不消耗弹幕随机数。
 
 `luajit tools/th38-tests/check_linked_boss.lua` 覆盖两路线的伤害隔离、400tick边界、运动、血条、特效和清场。Mac专项用 `BOSSRUSH_MAC_TEST=linked-boss` 与隔离的 `BOSSRUSH_MAC_DATA` 运行正式挑战入口，同时逐帧检查共用自机第1–8帧决死。安卓双击的跨命中输入与第9帧失败边界见 `tools/native-player-tests/check_deathbomb.lua`。
+
+## 五面关底非符的太阳力场
+
+38046、38048、38050、38052 使用的逻辑敌机类型20，经 `Basic` 选择的是 `emy41`，不是贴图表的第20项。`force_field.lua` 接入 `Enemy_lichang`：R/G通道控制世界大小，接触范围为半径6.4乘横向缩放并加自机判定；每原作tick扣500盾量。太阳关闭普通体术/受弹判定，不被雷和死亡消弹移除。各卡的数量、放大/缩小、移动仍由对应原始弹幕事件驱动。
+
+`export_force_field.py` 从发行包导出阴影和两个光环，保留切片中心、40tick明暗周期、20tick错相、每tick旋转0.1度和最暗时随机转向。阴影使用发行版 `ps_jianqu` 的DXBC与实际混合设置：结果等价于 `dst - tex.rgb * tex.a * alpha`，用 `mul+rev` 实现，避免为每个太阳复制屏幕。重建工程该shader的混合设置与发行版不同，不能直接沿用。来源哈希见 `force_field_sources.json`。
+
+挑战/混沌模式中，每tick改扣半个百分点雷条；耗尽时扣一颗库存雷并将下一条设置为99%，最后一颗雷也转换为可继续消耗的条，最低0雷0条。多个太阳重叠时分别扣量；强化开关不影响该规则。原作雪莲华机体的练习/顺序模式仍扣盾，盾耗尽后进入既有受击流程。
+
+`STAGE_STRICT_NEW=1 luajit tools/th38-tests/check_force_field.lua` 覆盖四张非符、两模式、强化开关、九太阳叠加、雷条边界、原作扣盾、绘制几何与清场。Mac真实挑战专项入口为 `BOSSRUSH_MAC_TEST=th38-force-field`，使用隔离存档，检查四张卡的横/竖屏绘制和实际接触耗雷；该平台结果不代表安卓设备实测。

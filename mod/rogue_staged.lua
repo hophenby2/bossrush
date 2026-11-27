@@ -80,7 +80,7 @@ function M.choiceFrame(run)
     local previous=q.previous or {x=p.x,y=p.y}
     local oldAge=q.age;q.age=q.age+1
     GameQuiz.selection('rogue-clear',q,'您已通关，是否进入无尽模式',q.choices)
-    q.answer=GameQuiz.contact(previous,p,oldAge,q.age,#q.choices,q.duration,q.linear)
+    q.answer=GameQuiz.contact(previous,p,oldAge,q.age,#q.choices,q.duration,q.linear,q.colorMask)
     q.previous={x=p.x,y=p.y}
 end
 function M.clearChoice(run)

@@ -1,0 +1,24 @@
+{
+  "resource": "xuelianhua/prefab/enemy/emy41",
+  "source_sha256": {
+    "globalgamemanagers": "8e64279df1ed55ab702aedabf40fc04c8eb5e0a40bd0751055f924570f18c4ee",
+    "resources.assets": "99df11eb0b282fefe4f9dc877e9d57ee5f6e4df4a75c0b412166dbe3b4b5f46c",
+    "resources.assets.resS": "f6dee62b054a6ff035e50ab63e9dc3fc4b39eeeda315125e2af15da1742291d6",
+    "Managed/Assembly-CSharp.dll": "93a96cffffb0edebec41d248c680666221dfd34f70499d9cfe6ea3931ab2d699"
+  },
+  "script_sha256": {
+    "Enemy_lichang.cs": "9c18dd8444c3885353455fc20c15f7668d852c8ee4786cf44dc4d46a035a8b5e",
+    "Enemymove.cs": "0c584fa5bb8afd02e29ffe80b58da5069dce66fb4072a1403325280c7ca8efc9",
+    "Basic.cs": "bdb0b0a6769cb0c003a9fc327c5fd532e4c16a573a41bfb05eeb77822e8e0b29",
+    "Tongyong_minganbianhua.cs": "ba58ab4d5342025ef88a58fb1b3c057f744fcb2bb2e80a3109f70f5aa127d134",
+    "Tongyong_xuanzhuan.cs": "2a7cade180cb9af20df15688472a6b142d706846db0ed5cfd0566938b001f1bf",
+    "Tongyong_sr_Alpha_to_shader.cs": "ac82371dff3e99e9ca27dc950e350460e22405586d03b4c99fcd851167f1719a"
+  },
+  "shadow": {
+    "shader_path_id": 1749,
+    "source_blend": "SrcAlpha OneMinusSrcAlpha",
+    "pixel_shader": "RGB = grab.rgb - texture.rgb * _Color.rgb; A = texture.a * _Color.a",
+    "equivalent": "dst - texture.rgb * _Color.rgb * texture.a * _Color.a (mul+rev)",
+    "note": "依据发行版 DXBC 反汇编及序列化 Blend，不使用重建工程 shader 的错误混合设置。"
+  }
+}

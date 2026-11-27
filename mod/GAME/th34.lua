@@ -5912,9 +5912,9 @@ end
 function class.th07_set_speed(owner, factor)
     if not owner.th07_slow_active then owner.th07_saved_timeslow = lstg.var.timeslow or 1 end
     owner.th07_slow_active, lstg.var.timeslow = true, factor
-    OriginalStageVisual.interrupt_background(7,2)
+    OriginalStageVisual.interrupt_background(7,2,owner.th07_motion_live==4391 and 'eff05' or nil)
     -- 原作ExIns10只将sprite96..111（type6大箭头）切到111；factor=1也必须换白。
-    -- 一念无量劫的ExIns10(1)/11(0)因此只变色，不改变弹速。
+    -- 一念无量劫的ExIns10(1)/11(0)不改变弹速；其六面背景按需求借用eff05的变色表现。
     for _, b in ipairs(pool4) do
         if IsValid(b) and (b.th07_sprite or TH07_SPRITE[b.imgclass]) == 6 then b.own_gray = true end
     end

@@ -19,6 +19,16 @@ function T.install()
     New=function(cls,...)local o=create(cls,...);if o then objects[o]=true end;return o end
     local report={platform='macOS Metal，共用移动端逻辑',machine=machine,cases={}}
     local current,started,ready,forcedChild=nil,false,false,false
+    local apply=GameDrops.apply
+    GameDrops.apply=function(slot,option)
+        if current then
+            local row=assert(lstg.var.upgrades.active)
+            assert(option==2 and player.y<GameQuiz.top(row.age,row.duration,row.linear)-GameQuiz.DEPTH+12,
+                '奖励没有在色块下沿接触时立即结算')
+            current.color_contact=true
+        end
+        return apply(slot,option)
+    end
     local titles=dofile('mod/rogue_titles.lua')
     local renderLabel=boss.sc_name.renderLabel
     boss.sc_name.renderLabel=function(name,p)
@@ -30,8 +40,10 @@ function T.install()
                 local a=state.animation
                 if a and (a.age==6 or a.age==31 or a.age==59) then
                     local rows=titles.nameLayout(lstg.var.rogue_run)
-                    assert(math.abs(p.size-rows[#rows].size)<1e-6,'倍率飞行字号与卡名不同')
-                    assert(math.abs(rows[#rows].y-p.y-p.size*32)<1e-6,'倍率飞行未保持在卡名下方')
+                    if a.age==6 then
+                        assert(math.abs(p.size-rows[#rows].size)<1e-6,'倍率入场字号与卡名不同')
+                        assert(math.abs(rows[#rows].y-p.y-p.size*32)<1e-6,'倍率没有从中央卡名下方开始')
+                    end
                     current.synchronized=current.synchronized+1
                 end
             end
@@ -93,7 +105,7 @@ function T.install()
             current.gauge=true
             local run=lstg.var.rogue_run
             if run.card_title.layout then current.title_size=run.card_title.layout.size end
-            if age==6 or age==31 or age==59 or age==66 or age==100 or age==340 then
+            if age==6 or age==31 or age==59 or age==66 or age==100 or age==160 or age==340 then
                 Snapshot('snapshot/rewards-'..phase..'-'..age..'.png')
             end
         end
@@ -130,6 +142,10 @@ function T.install()
                 end end
             else
                 age=age+1
+                if age==80 then
+                    local s=lstg.var.upgrades;s.count=s.count+1
+                    s.queue[#s.queue+1]={id=s.count,options={1,2,3},age=0,duration=120,linear=true,colorMask=true,picks={false,false}}
+                end
                 -- 自机模块缓存了New，按引擎对象池采集实际雷弹与命中特效。
                 for _,group in ipairs({GROUP.PLAYER_BULLET,GROUP.GHOST})do
                     for _,o in ObjList(group)do objects[o]=true end
@@ -145,6 +161,7 @@ function T.install()
                 if age==460 then
                     assert(current.shot_scale==5 and current.bomb_scale>0 and current.bomb_hits>0 and current.child,'没有覆盖实际雷/射击/子对象: '..Serialize(current))
                     assert(current.native_names>0 and current.native_timers>60 and current.hp_flight and current.gauge,'原生组件或倍率/圆槽没有绘制')
+                    assert(current.color_contact,'没有覆盖实际色块下沿立即接取')
                     assert(current.synchronized>=3,'没有覆盖卡名/倍率同帧出现、起飞与落位前一帧')
                     if phase==2 then
                         local f=assert(io.open('User/rogue-rewards.json','wb'));f:write(Serialize(report));f:close()

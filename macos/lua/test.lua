@@ -2,6 +2,8 @@
 local T={}
 function T.install()
     local mode=os.getenv('BOSSRUSH_MAC_TEST')
+    if mode=='th38-force-field' then return dofile('macos/th38_force_field_test.lua').install() end
+    if mode=='th07-white-phase' then return dofile('macos/th07_white_phase_test.lua').install() end
     if mode=='reported-cards' then return dofile('macos/reported_cards_test.lua').install() end
     if mode=='practice-players' then return dofile('macos/practice_players_test.lua').install() end
     if mode=='original-sounds' then return dofile('macos/original_sounds_test.lua').install() end

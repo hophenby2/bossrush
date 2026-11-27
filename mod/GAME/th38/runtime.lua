@@ -6,6 +6,7 @@ local Time=NativeTime or dofile('THlib/native_time.lua')
 local FixedLaser=dofile('mod/GAME/th38/fixed_laser.lua')
 local MovingLaser=dofile('mod/GAME/th38/moving_laser.lua')
 local Presentation=dofile('mod/GAME/th38/presentation.lua')
+local ForceField=dofile('mod/GAME/th38/force_field.lua')
 local Mist=dofile('mod/GAME/th38/mist.lua')
 local Pool=dofile('mod/GAME/ports/object_pool.lua')
 local bulletPool=Pool.new(1500,256)
@@ -15,6 +16,7 @@ R.effects=Effects
 local hostBindings=setmetatable({},{__mode='k'})
 R.statePoolStats=bulletPool.stats
 R.presentation=Presentation
+R.forceField=ForceField
 -- 共用单精度暂存格；逐弹、逐tick舍入不再反复创建标量cdata。
 local floatBox=require('ffi').new('float[1]')
 local function f32(x) floatBox[0]=x;return tonumber(floatBox[0]) end
@@ -89,6 +91,7 @@ end
 local function clean(b)
     local live=valid(b)
     local s=b.asl;if s then
+        if s.field then ForceField.clear(s) end
         release(s)
         s.alive=false;s.native=nil
         local bindings=hostBindings[s]
@@ -119,6 +122,7 @@ local function sync(b,s)
         return
     end
     b.x,b.y=project(s.x,s.y);b.vx,b.vy=0,0
+    if s.kind=='field' then b.colli,b.protect=false,true;return end
     if s.kind=='curve' then b.x,b.y=project(s.x,s.y);b.vx,b.vy=0,0;return end
     if s.kind=='beam' then
         if s.beamMode==1 then
@@ -188,6 +192,17 @@ R.classes.fairy=Class(enemy,{
         end
     end,
     del=function(b) clean(b) end,kill=function(b) R.enemyDeathEffect(b);clean(b) end,
+})
+R.classes.forceField=Class(object,{
+    init=function(b,s)
+        b.asl=s;s.native=b;R.objects[b]=true
+        b.bound,b.colli,b.protect=false,false,true
+        b.group,b.layer=GROUP.GHOST,LAYER.ENEMY+.05
+        ForceField.init(s);sync(b,s)
+    end,
+    frame=function(b) if not b.asl.alive or b.asl.c.closed then clean(b) end end,
+    render=function(b) if b.asl.alive then ForceField.draw(b.asl,1) end end,
+    del=function(b) clean(b) end,kill=function(b) clean(b) end,
 })
 R.classes.curve=Class(object,{
     init=function(b,s)
@@ -463,8 +478,12 @@ local function spawn(e,x,y,direction,speed)
         s.kind='time';s.slowLeft=s.life;s.slowScale=f32(e.a48_4*f32(.01))
         c.entities[#c.entities+1]=s;attach(e,s);return s
     end
-    local cls=s.kind=='enemy' and R.classes.fairy or s.kind=='curve' and R.classes.curve or s.kind=='beam' and R.classes.beam or R.classes.projectile
-    if s.kind=='enemy' then s.vars=c.vars end
+    if s.kind=='enemy' and s.enemyType==20 then
+        -- Basic 用零旋转实例化 emy41，Enemymove 不把朝向跟随速度。
+        s.kind,s.rotation,s.followSpeed='field',90,false
+    end
+    local cls=s.kind=='field' and R.classes.forceField or s.kind=='enemy' and R.classes.fairy or s.kind=='curve' and R.classes.curve or s.kind=='beam' and R.classes.beam or R.classes.projectile
+    if s.kind=='enemy' or s.kind=='field' then s.vars=c.vars end
     if s.kind=='bullet' then s.pooled=true;R.bulletCount=R.bulletCount+1 end
     local b=bulletPool.owns(s) and bulletPool.newObject(cls,s) or New(cls,s);c.entities[#c.entities+1]=s
     if e.a9_1==1 and e.emitHost then
@@ -651,6 +670,7 @@ local function move(s,deferBulletProjection)
         end
     end
     s.x,s.y=s.x+dx,s.y+dy
+    if s.kind=='field' then ForceField.step(s) end
     if s.kind=='curve' and s.path then
         local x,y=project(s.x,s.y);table.insert(s.path,1,{x=x,y=y})
         if #s.path>s.tailTicks then table.remove(s.path) end
@@ -664,8 +684,10 @@ local function move(s,deferBulletProjection)
             if R.actor then R.actor.tick(host,s) end
         end
     else
-        if s.kind~='enemy' then s.life=s.life-1 end
-        local out=s.x<0 or s.x>9.2 or s.y< -10 or s.y>.5
+        if s.kind~='enemy' and s.kind~='field' then s.life=s.life-1 end
+        local out
+        if s.kind=='field' then out=ForceField.outside(s)
+        else out=s.x<0 or s.x>9.2 or s.y< -10 or s.y>.5 end
         s.outTime=out and s.outTime+1 or 0
         local exited=s.age>0 and (s.exit==1 and out and (s.kind~='curve' or s.outTime>s.tailTicks) or s.delayExit==1 and s.outTime>50)
         if exited then s.alive=false
@@ -680,7 +702,11 @@ local function load(key)
     if not R.patterns[key] then R.patterns[key]=dofile('mod/GAME/th38/patterns/'..key:gsub('/','_')..'.lua') end
     return R.patterns[key]
 end
-R.preparePattern=load
+function R.preparePattern(key)
+    local pat=load(key)
+    for _,e in ipairs(pat.items) do if e.a47==1 and e.a48_1==20 then ForceField.prepare();break end end
+    return pat
+end
 function R.controller(host,key,first,retainedPositions)
     local c={host=host,time=first or 0,emitters={},entities={},byName={},vars={0,0,0,0},closed=false,key=key};R.controllers[c]=true
     local phase=R.actor and R.actor.data.phases[key]
@@ -850,7 +876,9 @@ function R.deathClear(x,y,r,outside,dropKind)
     for b in pairs(R.objects) do
         local s=b.asl
         if valid(b) and s and s.alive then
-            if s.kind=='enemy' or s.kind=='boss' then
+            if s.kind=='field' then
+                -- 原作 Enemy_lichang 强制无敌/关闭体术，不参与雷和死亡的普通消弹。
+            elseif s.kind=='enemy' or s.kind=='boss' then
                 if not outside and s.invincible~=1 and not b.protect and Dist(x,y,b.x,b.y)<r then
                     if s.kind=='enemy' then b.hp=b.hp-40
                     elseif s.c.linked then Damage(b,40)

@@ -93,6 +93,17 @@ function D.bombState(o)
     local s=peek();local p=s and s.players[D.slot(o)]
     return p and p.bombs or 0,p and p.bomb_fraction/(D.BOMB_FRAMES*10000) or 0
 end
+-- 持续消耗先扣恢复条；耗尽后拆一颗库存雷，下一条固定从99%开始。
+-- 最后一颗拆开后仍可消耗剩余条，直到0雷0条；不触发受击或残机逻辑。
+function D.drainBombGauge(o,numerator,denominator)
+    local s=ensure();if not s then return end
+    local p=s.players[D.slot(o)];local unit=D.BOMB_FRAMES*10000
+    local amount=math.floor(unit*numerator/denominator+.5)
+    if amount<=0 then return end
+    if p.bomb_fraction>amount then p.bomb_fraction=p.bomb_fraction-amount
+    elseif p.bombs>0 then p.bombs=p.bombs-1;p.bomb_fraction=unit*99/100
+    else p.bombs,p.bomb_fraction=0,0 end
+end
 function D.damage(amount,o) return amount*(o and o._drop_bomb and D.bombPower() or D.power(o)) end
 function D.renderBullet(o)
     local factor=D.bulletScale(o)
@@ -211,7 +222,7 @@ function D.frame(scene)
         if controllable(p) then
             local previous=row.previous[i] or {x=p.x,y=p.y}
             if not row.picks[i] then
-                local choice=GameQuiz.contact(previous,p,oldAge,row.age,#row.options,row.duration,row.linear)
+                local choice=GameQuiz.contact(previous,p,oldAge,row.age,#row.options,row.duration,row.linear,row.colorMask)
                 if choice then
                     row.picks[i]=choice;D.apply(i,row.options[choice]);p.protect=math.max(p.protect or 0,60)
                     D.updateHitbox(p)
@@ -229,10 +240,16 @@ end
 local function number(value)
     return (string.format('%.2f',value):gsub('%.?0+$',''))
 end
-function D.optionLines(id)
+function D.optionLines(id,owner)
     local out={}
     for _,op in ipairs(D.colorPool[id]) do
         local text=op[2]=='add' and ('+'..number(op[3]/100)) or ('×'..number(op[3]/op[4]))
+        if op[1]=='red' and op[2]=='mul' then
+            local s=peek();local p=s and s.players[D.slot(owner)]
+            local before=p and p.red or 10000
+            local after=math.floor(before*op[3]/op[4]+.5)
+            text=('+%.1f'):format((after-before)/10000)
+        end
         if op[1]=='bombs' then
             out[#out+1]={color='green',text='立即获得Bomb',scale=.5}
             out[#out+1]={color='green',text='+1'}

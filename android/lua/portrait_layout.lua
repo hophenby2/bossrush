@@ -68,6 +68,7 @@ return function(P)
             misc.RenderOutLine('white',x1,x2,y1,y2,0,1)
             P.bind(self.owner,x1,x2,y1,y2,function()end,function(px,py,phase) self:move(key,px,py,phase) end)
         end
+        P.growthStats(255,self.draft,true)
         if self.drag then text(names[self.drag.id],screen.width/2,100,.8,Color(255,255,222,120)) end
         for i,entry in ipairs({{'取消',function()self:close(false)end},{'恢复默认',function()self.draft={};self.drag=nil end},{'保存',function()self:close(true)end}}) do
             local x=screen.width/2+(i-2)*166

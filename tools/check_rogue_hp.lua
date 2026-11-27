@@ -148,10 +148,22 @@ for i=1,H.DURATION-1 do
     check(run.card_title.age==i and run.hp_growth.animation.age==i,'卡名与倍率共用时钟：'..i)
     if i==6 or i==31 or i==59 then
         local rows=titles.nameLayout(run);drawn={};H.render(144,165)
-        check(near(drawn[2].scale,rows[1].size),'卡名和倍率飞行字号相同：'..i)
-        check(near(rows[1].y-drawn[2].y,rows[1].size*32),'倍率始终跟随在卡名下方：'..i)
+        if i==6 then
+            check(near(drawn[2].scale,rows[1].size),'倍率入场与卡名共用字号')
+            check(near(rows[1].y-drawn[2].y,rows[1].size*32),'倍率从中央卡名下方开始飞')
+        end
     end
 end
+-- 落点分别对齐横屏常驻倍率的中心和竖屏常驻倍率的右端，而非卡名锚点。
+run.card_title.age=H.DURATION;run.hp_growth.animation.age=H.DURATION
+for _,layout in ipairs({{144,165,288,157,'centerpoint'},{481,792,165,44,'right'}})do
+    drawn={};H.render(unpack(layout))
+    local fly=drawn[2]
+    local right=layout[5]=='right' and layout[1] or layout[1]+titles.textWidth(fly.text,'sc_menu')*fly.scale/2
+    check(near(fly.x,right) and near(fly.y,layout[2]),'倍率飞行终点与实际显示锚点一致')
+    check(near(fly.scale,drawn[1].scale),'落位字号与常驻组件一致')
+end
+run.card_title.age=H.DURATION-1;run.hp_growth.animation.age=H.DURATION-1
 titles.frame(run);H.frame()
 check(run.card_title.age==H.DURATION and not run.hp_growth.animation and near(run.hp_growth.shown,1.01),'两条提示在同一帧落位')
 drawn={};H.render(144,165)

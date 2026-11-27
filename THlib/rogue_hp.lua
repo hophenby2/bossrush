@@ -120,12 +120,8 @@ function H.render(x,y,width,height,align)
         if not a or blocked then return end
         local text=('×%.2f'):format(a.factor)
         local right=align=='right' and x or x+Titles.textWidth(text,'sc_menu')*scale/2
-        local targetY,small=y,scale
-        if title then
-            local header=Titles.headerLayout(#title.groups)
-            right,targetY,small=header.nameRight,header.y-title.small*32,title.small
-        end
-        local p=Titles.flightLayout(text,a.age,right,targetY,small,nil,title and title.size,title and Titles.captionStartY(title))
+        -- 起点仍在中央卡名下方；终点与常驻倍率共用本次render传入的锚点和字号。
+        local p=Titles.flightLayout(text,a.age,right,y,scale,nil,title and title.size,title and Titles.captionStartY(title))
         p.color=Color(p.alpha,H.rgb(a.stage))
         boss.sc_name.renderLabel(text,p)
     end)

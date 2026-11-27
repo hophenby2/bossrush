@@ -151,7 +151,7 @@ function Q.selection(key,state,text,choices,alpha)
         board.mask.y=Q.TOP-offset;board.mask.alpha=alpha
     end
     if board.question then board.question.y=Q.QUESTION_Y-offset;board.question.alpha=alpha end
-    for _,o in ipairs(board.labels) do o.y=Q.CHOICE_Y-offset;o.alpha=alpha end
+    for i,o in ipairs(board.labels) do o.text=choices[i];o.y=Q.CHOICE_Y-offset;o.alpha=alpha end
     for i,o in ipairs(board.walls) do
         o.y=Q.TOP-(i<=33 and 0 or ((i-34)%8+1)*Q.STEP)-offset;o._a=alpha*255
     end
@@ -166,7 +166,27 @@ function Q.clearSelection(key,fading)
     local function remove(o) if o and IsValid(o) then object.RawDel(o) end end
     remove(board.mask);remove(board.question);for _,o in ipairs(board.labels) do remove(o) end
 end
-function Q.contact(previous,p,oldAge,age,count,duration,linear)
+function Q.contact(previous,p,oldAge,age,count,duration,linear,colorMask)
+    if colorMask then
+        -- 用相对下落遮罩的扫掠线段检测整个色块，包含下边缘，不能只碰顶端弹墙。
+        local rx,ry=math.max(p.A or 0,3),math.max(p.B or p.A or 0,3)
+        local x,y=previous.x,previous.y-Q.top(oldAge,duration,linear)
+        local dx,dy=p.x-x,p.y-Q.top(age,duration,linear)-y
+        local enter,leave=0,1
+        local function clip(at,delta,lo,hi)
+            if delta==0 then return at>=lo and at<=hi end
+            local a,b=(lo-at)/delta,(hi-at)/delta
+            if a>b then a,b=b,a end
+            enter,leave=math.max(enter,a),math.min(leave,b)
+            return enter<=leave
+        end
+        if clip(x,dx,-192-rx,192+rx) and clip(y,dy,-Q.DEPTH-ry,ry) then
+            return Q.answer(x+dx*enter,count)
+        end
+        -- 保留选项下落完毕后的自动选择。
+        if age>=(duration or Q.TIME) then return Q.answer(p.x,count) end
+        return
+    end
     local radius=6+math.max(p.A or 0,p.B or 0,3)
     local a,b=previous.y-Q.top(oldAge,duration,linear),p.y-Q.top(age,duration,linear)
     if math.min(a,b)<=radius and math.max(a,b)>=-radius then

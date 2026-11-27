@@ -680,8 +680,9 @@ local function emit(o,bound)
         s.type=trunc(o.type)
         local radialAngle=f32(radial+fan)
         if bound then
-            s.fx=f32(bound.fx+f32(r*sourceCos(radialAngle)))
-            s.fy=f32(bound.fy+f32(r*sourceSin(radialAngle)))
+            -- Batch.Shoot 的绑定分支同样叠加 num4/num5；随机偏移属于本轮齐射。
+            s.fx=f32(f32(bound.fx+f32(r*sourceCos(radialAngle)))+jx)
+            s.fy=f32(f32(bound.fy+f32(r*sourceSin(radialAngle)))+jy)
         else
             s.fx=f32(f32(f32(fx+f32(r*sourceCos(radialAngle)))+jx)+ox)
             s.fy=f32(f32(f32(fy+f32(r*sourceSin(radialAngle)))+jy)+oy)

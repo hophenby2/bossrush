@@ -1,0 +1,125 @@
+{
+  "date": "2026-11-27",
+  "version": "2026.11.27.10",
+  "scope": [
+    "千樱华宴绑定发射器随机出生偏移",
+    "倍率入场动画终点",
+    "一念无量劫背景变色且不缓时",
+    "竖屏火力与雷恢复速率显示",
+    "火力奖励实际增量",
+    "色区扫掠接取"
+  ],
+  "checks": [
+    {
+      "command": "STAGE_STRICT_NEW=1 luajit tools/th37-tests/check_bound_offsets.lua",
+      "result": "passed"
+    },
+    {
+      "command": "STAGE_STRICT_NEW=1 luajit tools/check_reward_contact.lua",
+      "result": "passed"
+    },
+    {
+      "command": "luajit tools/check_rogue_hp.lua",
+      "result": "passed",
+      "checks": 292
+    },
+    {
+      "command": "luajit tools/check_rogue_titles.lua",
+      "result": "passed"
+    },
+    {
+      "command": "luajit tools/check_original_anm.lua",
+      "result": "passed",
+      "checks": 557
+    },
+    {
+      "command": "luajit tools/check_rogue_rewards.lua",
+      "result": "passed"
+    },
+    {
+      "command": "STAGE_STRICT_NEW=1 luajit tools/th38-tests/check_force_field.lua",
+      "result": "passed"
+    },
+    {
+      "command": "luajit -b <file> /dev/null",
+      "result": "passed",
+      "files": 24
+    }
+  ],
+  "native_runs": {
+    "th07-white-phase": {
+      "card": 4391,
+      "platform": "macOS Metal，共用移植绘制",
+      "draws": 100,
+      "restored": true,
+      "active": true
+    },
+    "rogue-rewards": {
+      "platform": "macOS Metal，共用移动端逻辑",
+      "cases": [
+        {
+          "bomb_scale": 1.0302,
+          "shot_scale": 5,
+          "bomb_hits": 2125,
+          "shot_hits": 23,
+          "native_names": 463,
+          "hp_flight": true,
+          "color_contact": true,
+          "factor": 1.0302,
+          "gauge": true,
+          "child": true,
+          "title_size": 3.2,
+          "synchronized": 3,
+          "native_timers": 460,
+          "portrait": false
+        },
+        {
+          "bomb_scale": 5,
+          "shot_scale": 5,
+          "bomb_hits": 712,
+          "shot_hits": 10,
+          "native_names": 463,
+          "hp_flight": true,
+          "color_contact": true,
+          "factor": 7.167871194206,
+          "gauge": true,
+          "child": true,
+          "title_size": 2.5230769230769,
+          "synchronized": 3,
+          "native_timers": 460,
+          "portrait": true
+        }
+      ],
+      "machine": "reimu_player"
+    }
+  },
+  "limits": [
+    "原生运行是macOS Metal，不是安卓真机实测。",
+    "仅覆盖本次问题的针对性检查。"
+  ],
+  "source_sha256": {
+    "THlib/UI/UI.lua": "3f0781e5a536797c01c9b6ca793cb6a219f571af9e04018f711720064a3648ba",
+    "THlib/UI/run_hud.lua": "7116eee939ae7e06b78f440d4f9819c74f92a03505ee851e9e007cdab7f15d76",
+    "THlib/anm/original.lua": "84dc18959fd12dcf08617769d466df9281ff7c53fadd594606c5474c6ec50db8",
+    "THlib/anm/stage_visual.lua": "6055bd0d8cd73172f506445c55884c961cc2aebd4c00331ef26291ef4c131cb5",
+    "THlib/drops.lua": "8256264bd18327241ad22434fb98188bffd8e9d06af659de31a1ca3c91c258d3",
+    "THlib/ext/ext_quiz.lua": "d5c83dfefd6a35dc894a77938e9aa8be0699acd9d05d8e4a9f4ba67d2ed4b3b0",
+    "THlib/rogue_hp.lua": "8986f5aebefc15d001eba14a542d7f8dd4673427a2f022ee8a292c4bf15516c3",
+    "android/lua/portrait.lua": "5905b55d1c10ba6413e4d9640bfc34cf7753e07606f3147d0282cebded99ea49",
+    "android/lua/portrait_layout.lua": "c679c226bf0979c2221f4edc6b12c72520a660cab7b6a2a38eaee62d52362130",
+    "macos/lua/rogue_rewards_test.lua": "f78a28649c7fff8e619ff803b84239c13f1a4fc034d7cf89c1ae5856834b2248",
+    "macos/lua/test.lua": "5010eb3120bf8d94eeb1e00c839d89950f3cbce7f44d1772e478da937e8f35f4",
+    "mod/GAME/th34.lua": "39bf0882107347addb4d97bb3104b55880ae34f82c6f94f20275c4178b297bed",
+    "mod/GAME/th37/runtime.lua": "67c855d5e3c28298d9691ee86285af12cfcd92fb8681c5e5c524812e17ab8b31",
+    "mod/GAME/th38/runtime.lua": "c27f130ea6aaa55cf22268e8768c12198ac3d40e597e95c48fc611b9b9ebb026",
+    "mod/rogue_staged.lua": "2edf8a331875faba7e97f9038f97ba4887bc65307be9d7e3a87b8098343a53be",
+    "tools/check_original_anm.lua": "0fe364a5958eaedfdf839316ddb3c21dbee683a5c3f2e8882af23450a78c5cf8",
+    "tools/check_rogue_hp.lua": "f74c48c1f874784bd4eb8fff33fb4f56965ef7cdf61bf069840bc48ef4d5299a",
+    "macos/lua/th07_white_phase_test.lua": "b759c8f756c2b4b4ec418e1ab1292c8cb1fc46e4a5e45afa6879761540f22df5",
+    "macos/lua/th38_force_field_test.lua": "3d2273f4b42fba10d6489742cf10c4bc0dc0851e86bf8dd66c5e2adc84ccdfbd",
+    "mod/GAME/th38/force_field.lua": "0aa286e91c6ce32aa1d3bde1033a8333e1f3813785da5235bb7d5b326a149037",
+    "mod/GAME/th38/force_field_data.lua": "dab7c5237ace1e82c75f6ad49a69a059db5a25f42eb17e10c44af3f60f05ce13",
+    "tools/check_reward_contact.lua": "dea0da718e0e1e322317911936670aff52ea22a5d10b6117e47fcfa347bdf399",
+    "tools/th37-tests/check_bound_offsets.lua": "1f7abb773467ce7981c46543d258208dcb75604866ef8b70127636bb7eaa0614"
+  }
+}

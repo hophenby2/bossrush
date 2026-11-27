@@ -624,7 +624,10 @@ local function background_class(game,archive,name)
                 -- 淡入已由原作 ANM 的 60 帧 alpha 控制，不能再乘本项目的 40 帧淡入。
                 o.age=o.age+1;o.alpha=math.min(1,o.age/60)
                 local rate=owner._native_rate_source and owner._native_rate_source.fm
-                for _,vm in ipairs(o.vms) do A.step(vm,rate) end
+                for _,vm in ipairs(o.vms) do
+                    A.step(vm,rate)
+                    if vm.interrupt_style then A.step(vm.interrupt_style,rate) end
+                end
             else o.alpha=0 end
         end,
         render=function(o)
@@ -636,17 +639,32 @@ local function background_class(game,archive,name)
             for _,vm in ipairs(o.vms) do
                 -- 红/妖/永/风使用640×480屏幕坐标；文花帖则是场地上沿中心(0,0)。
                 -- 必须分别换算，不能把风神录的(224,240)再当局部坐标叠加一次。
-                if game==95 then A.draw(vm,0,224) else A.draw(vm,-224,240,nil,nil,nil,nil,nil,mixed) end
+                local style=vm.interrupt_style
+                local overlay=style and {color=style.color,alpha=style.alpha[1],blend=style.blend} or mixed
+                local rotation=style and -math.deg(vm.rotation[3]+style.rotation[3]) or nil
+                if game==95 then A.draw(vm,0,224) else A.draw(vm,-224,240,nil,nil,nil,nil,nil,overlay,rotation) end
             end
             if game==8 then S.presentation.draw_warp_background(boss_group[1],o.vms) end
         end,
     },true)
     backgrounds[key]=bg;return bg
 end
-function S.interrupt_background(game,label)
+function S.interrupt_background(game,label,fallbackStyle)
     for _,o in ObjList(GROUP.GHOST) do
         if o._original_background and o._original_background_game==game then
-            for _,vm in ipairs(o.vms) do A.interrupt(vm,label) end
+            for i,vm in ipairs(o.vms) do
+                if label==1 then vm.interrupt_style=nil end
+                if not A.interrupt(vm,label) and fallbackStyle then
+                    -- 六面背景没有缓时标签；按需求借用五面同层的颜色/混合/转速指令，
+                    -- 保留六面贴图、位置、尺寸和正常时间轴，不制造缓时。
+                    local style=vm.interrupt_style
+                    if not style then
+                        style=A.new(game,fallbackStyle,i-1)
+                        style.interps={} -- 仅借用中断指令，不重新播放60帧背景淡入。
+                    end
+                    A.interrupt(style,label);vm.interrupt_style=style
+                end
+            end
         end
     end
 end
