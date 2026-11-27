@@ -27,6 +27,9 @@
 #include <atomic>
 #include <thread>
 #include <memory>
+#if CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID
+#include <sys/system_properties.h>
+#endif
 #include "LSTG/ResourceMgr.h"
 #include "LSTG/Object/GameObjectManager.h"
 
@@ -144,6 +147,19 @@ LUA_REGISTER_FUNC_DEF(lstg, AndroidBatchProfile) {
     return 1;
 }
 #if CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID
+LUA_REGISTER_FUNC_DEF(lstg, AndroidUsesArmTranslation) {
+    char bridge[PROP_VALUE_MAX]={};
+    char abis[PROP_VALUE_MAX]={};
+    __system_property_get("ro.dalvik.vm.native.bridge",bridge);
+    __system_property_get("ro.product.cpu.abilist",abis);
+    // 只给ARM转译器使用小机器码块，不能把模拟器配置套到原生ARM设备。
+    bool translated=false;
+#if defined(__aarch64__)
+    translated=(bridge[0] && std::strcmp(bridge,"0")!=0) || std::strstr(abis,"x86")!=nullptr;
+#endif
+    lua_pushboolean(L,translated);
+    return 1;
+}
 extern "C" void bossrush_luajit_mcode_stats(uint64_t*);
 LUA_REGISTER_FUNC_DEF(lstg, AndroidJitMcodeStats) {
     uint64_t values[11]; bossrush_luajit_mcode_stats(values);

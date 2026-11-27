@@ -147,6 +147,21 @@ def main():
         '        // 主线程保留系统默认亲和性，由调度器选择核心。',1)
     patched_application=output/'ApplicationManager.cpp';patched_application.write_text(application_source,encoding='utf-8')
 
+    # 精简包的PNG逻辑路径可能保存WebP。WIC会先枚举系统安装的解码器，
+    # 每次探测都有额外等待；识别文件头后直接复用引擎自带的libwebp解码与上传。
+    texture_original=engine/'engine/graphics/d3d11/Texture2D.cpp'
+    texture_source=texture_original.read_text(encoding='utf-8-sig')
+    texture_anchor='        win32::com_ptr<ID3D11Resource> resource;\n\n        // DDS'
+    if texture_source.count(texture_anchor)!=1:
+        raise RuntimeError('官方纹理解码入口不匹配')
+    texture_source='#include <cstring>\n'+texture_source.replace(texture_anchor,
+        '        if (data->size() >= 12 &&\n'
+        '            std::memcmp(data->data(), "RIFF", 4) == 0 &&\n'
+        '            std::memcmp(static_cast<const unsigned char*>(data->data()) + 8, "WEBP", 4) == 0) {\n'
+        '            return createFromImage(data.get());\n'
+        '        }\n\n'+texture_anchor,1)
+    patched_texture=output/'Texture2D.cpp';patched_texture.write_text(texture_source,encoding='utf-8')
+
     # 在刚完成的官方构建上接入独立补丁，不改写上游源码。
     objects=sorted(object_dir.rglob('*.obj'))
     old_renderer=[p for p in objects if p.name=='LW_Renderer.obj']
@@ -185,7 +200,7 @@ def main():
         elif name in {'ProgramDataBaseFile','ImportLibrary'} and item.text:
             item.text=str(output/Path(item.text.replace('\\','/')).name)
     group=ET.SubElement(root,tag('ItemGroup'))
-    for source_file in (patched,patched_pacer,patched_app,patched_swap,patched_application):
+    for source_file in (patched,patched_pacer,patched_app,patched_swap,patched_application,patched_texture):
         item=ET.SubElement(group,tag('ClCompile'),{'Include':str(source_file)})
         ET.SubElement(item,tag('PrecompiledHeader')).text='NotUsing'
         ET.SubElement(item,tag('ForcedIncludeFiles')).text=str(project.parent/'CMakeFiles/LuaSTG.dir/Release/cmake_pch.hxx')
@@ -216,6 +231,9 @@ def main():
         'main_thread_affinity':'系统默认亲和性，不固定 CPU 0',
         'application_source_sha256':hashlib.sha256(application_original.read_bytes()).hexdigest(),
         'application_patch_sha256':hashlib.sha256(patched_application.read_bytes()).hexdigest(),
+        'texture_source_sha256':hashlib.sha256(texture_original.read_bytes()).hexdigest(),
+        'texture_patch_sha256':hashlib.sha256(patched_texture.read_bytes()).hexdigest(),
+        'texture_loading':'WebP按文件头直接使用引擎libwebp，其他格式保留官方加载路径',
         'patch_sha256':hashlib.sha256(header.read_bytes()).hexdigest(),'exe_sha256':hashlib.sha256(built.read_bytes()).hexdigest()}
     record['sound_volume']='独立音效资源音量；不改动全局音效混音器'
     record['sound_header_sha256']=hashlib.sha256(audio_header.read_bytes()).hexdigest()

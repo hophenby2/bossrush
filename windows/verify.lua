@@ -28,7 +28,8 @@ function GameInit()
         local initialize=GameInit;initialize()
         setting.mod='Boss Rush HD';cur_setting=DeSerialize(Serialize(setting))
         Include('mod/root.lua');InitAllClass();InitGameSaveData();stage.next_stage=stage.stages.init
-        scoredata.PlayerBrand='Windows发行验证';scoredata.version=ui.version
+        -- 旧Score.dat编码只支持ASCII；测试标记也不能写坏下次运行的隔离存档。
+        scoredata.PlayerBrand='Windows release probe';scoredata.version=ui.version
         local frame,render=FrameFunc,RenderFunc
         local index,active,ticks=1,false,0
         local cases={}

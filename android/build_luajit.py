@@ -77,16 +77,10 @@ void bossrush_luajit_mcode_stats(uint64_t *out)
         if path.read_text(encoding='utf-8') != content:
             path.write_text(content, encoding='utf-8', newline='\n')
 
-    # 安卓ARM64远地址使用完整64位常量；保留近地址的ADR/ADRP优化。
+    # ARM64地址指令沿用锁定的上游实现，恢复完整ADR/ADRP选择。
+    # 从压缩包还原，确保已有构建缓存也移除先前针对模拟器的地址范围限制。
     with tarfile.open(archive) as package:
         emitter = package.extractfile(source.name + '/src/lj_emit_arm64.h').read().decode()
-    anchor = '    if (!A64F_S_OK(ofs, 21))\n      return 0;  /* Failed. */'
-    assert emitter.count(anchor) == 1, 'LuaJIT ARM64页相对常量入口上下文变化'
-    emitter = emitter.replace(anchor, '''#if defined(__ANDROID__)
-    if (ofs < -0x80000 || ofs > 0x7ffff)
-      return 0;
-#endif
-''' + anchor)
     target = source / 'src/lj_emit_arm64.h'
     if target.read_text(encoding='utf-8') != emitter:
         target.write_text(emitter, encoding='utf-8', newline='\n')

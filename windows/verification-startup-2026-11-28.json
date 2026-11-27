@@ -1,0 +1,297 @@
+{
+  "date": "2026-11-28",
+  "platform": "Windows x64 / LuaSTG Sub 0.21.129 / Direct3D 11",
+  "fixture_package": "2026.11.27.10-500MB",
+  "scope": "同一隔离发行包、相同脚本和压缩媒体，只替换原生引擎；私有空存档，启动至首次进入菜单，不运行攻击",
+  "timing_scope": "从launch.lua之后安装探针到首次进入菜单；不含原生程序初始化与退出清理",
+  "before": {
+    "menu_seconds": 39.0982672,
+    "process_cpu_seconds": 5.390625,
+    "components": {
+      "LoadPS": {
+        "calls": 6,
+        "seconds": 0.00093329999999958,
+        "max": 0.00023589999999984,
+        "own": 0.00093329999999958
+      },
+      "files.EnumFiles": {
+        "calls": 3,
+        "seconds": 0.0069564000000004,
+        "max": 0.0060566,
+        "own": 0.0069564000000004
+      },
+      "LoadAnimation": {
+        "calls": 297,
+        "seconds": 0.0016163000000144,
+        "max": 0.00014629999999904,
+        "own": 0.0016163000000144
+      },
+      "LoadTexture": {
+        "calls": 2074,
+        "seconds": 34.0584908,
+        "max": 0.2056516,
+        "own": 34.0584908
+      },
+      "LoadImage": {
+        "calls": 12882,
+        "seconds": 0.059804000000013,
+        "max": 0.00031979999999976,
+        "own": 0.059804000000013
+      },
+      "CheckRes": {
+        "calls": 23890,
+        "seconds": 0.0088828000002541,
+        "max": 8.0800000002768e-05,
+        "own": 0.0088828000002541
+      },
+      "files.FileExist": {
+        "calls": 87,
+        "seconds": 0.0049112999999982,
+        "max": 0.00013979999999947,
+        "own": 0.0049112999999982
+      },
+      "DoFile": {
+        "calls": 129,
+        "seconds": 12.3533365,
+        "max": 3.076269,
+        "own": 0.86439070000002
+      },
+      "LoadSound": {
+        "calls": 704,
+        "seconds": 1.2168267,
+        "max": 0.035560600000004,
+        "own": 1.2168267
+      },
+      "LoadMusic": {
+        "calls": 16,
+        "seconds": 0.0139645,
+        "max": 0.0012036000000002,
+        "own": 0.0139645
+      },
+      "LoadFont": {
+        "calls": 8,
+        "seconds": 0.017368099999998,
+        "max": 0.0058942000000002,
+        "own": 0.017368099999998
+      },
+      "LoadTTF": {
+        "calls": 1,
+        "seconds": 0.0091789000000002,
+        "max": 0.0091789000000002,
+        "own": 0.0091789000000002
+      },
+      "GetTextureSize": {
+        "calls": 2074,
+        "seconds": 0.0039522999999814,
+        "max": 0.00012279999999976,
+        "own": 0.0039522999999814
+      },
+      "LoadFX": {
+        "calls": 6,
+        "seconds": 0.0670031,
+        "max": 0.0482284,
+        "own": 0.0670031
+      }
+    }
+  },
+  "after": {
+    "menu_seconds": 16.1823263,
+    "process_cpu_seconds": 11.40625,
+    "components": {
+      "LoadImage": {
+        "calls": 12882,
+        "seconds": 0.063093500000009,
+        "max": 0.0010668999999996,
+        "own": 0.063093500000009
+      },
+      "files.FileExist": {
+        "calls": 87,
+        "seconds": 0.004399599999995,
+        "max": 0.00011649999999896,
+        "own": 0.004399599999995
+      },
+      "LoadAnimation": {
+        "calls": 297,
+        "seconds": 0.001561899999999,
+        "max": 3.9099999999515e-05,
+        "own": 0.001561899999999
+      },
+      "LoadPS": {
+        "calls": 6,
+        "seconds": 0.00096789999999991,
+        "max": 0.00023470000000003,
+        "own": 0.00096789999999991
+      },
+      "LoadSound": {
+        "calls": 704,
+        "seconds": 1.2820992,
+        "max": 0.0366128,
+        "own": 1.2820992
+      },
+      "LoadMusic": {
+        "calls": 16,
+        "seconds": 0.019712800000002,
+        "max": 0.0034826999999993,
+        "own": 0.019712800000002
+      },
+      "DoFile": {
+        "calls": 129,
+        "seconds": 5.6648243,
+        "max": 1.2717273,
+        "own": 0.86658830000004
+      },
+      "LoadTTF": {
+        "calls": 1,
+        "seconds": 0.0097681000000001,
+        "max": 0.0097681000000001,
+        "own": 0.0097681000000001
+      },
+      "LoadFX": {
+        "calls": 6,
+        "seconds": 0.0664838,
+        "max": 0.0470382,
+        "own": 0.0664838
+      },
+      "files.EnumFiles": {
+        "calls": 3,
+        "seconds": 0.0077665,
+        "max": 0.0068714999999999,
+        "own": 0.0077665
+      },
+      "LoadFont": {
+        "calls": 8,
+        "seconds": 0.021251699999998,
+        "max": 0.0073420999999989,
+        "own": 0.021251699999998
+      },
+      "GetTextureSize": {
+        "calls": 2074,
+        "seconds": 0.0034206999999775,
+        "max": 2.3700000001625e-05,
+        "own": 0.0034206999999775
+      },
+      "CheckRes": {
+        "calls": 23434,
+        "seconds": 0.009656899999926,
+        "max": 0.00015469999999995,
+        "own": 0.009656899999926
+      },
+      "LoadTexture": {
+        "calls": 2074,
+        "seconds": 11.049188,
+        "max": 0.1725773,
+        "own": 11.049188
+      }
+    }
+  },
+  "preloaded_cards": 914,
+  "deferred_loading": false,
+  "loading_schedule_changed": false,
+  "resource_call_counts_equal": true,
+  "cause": "原加载器对WebP先走Windows WIC。独立COM测量中，仅解码器发现与创建每次就约12至13毫秒；按RIFF/WEBP头分派至引擎自带libwebp后省掉等待。",
+  "wic_decoder_probe": [
+    {
+      "file": "Resources/th39/bosses.png",
+      "format": "52494646be0f3d0057454250",
+      "bytes": 4001734,
+      "wic_ms": 12.359100001049228,
+      "pillow_ms": 187.92340000800323,
+      "wic_hresult": [
+        "0x0"
+      ]
+    },
+    {
+      "file": "Resources/ports/dreamer/res/likedreamer/effect/Effect_l.png",
+      "format": "52494646020d120057454250",
+      "bytes": 1182986,
+      "wic_ms": 13.469600002281368,
+      "pillow_ms": 103.45939999388065,
+      "wic_hresult": [
+        "0x0"
+      ]
+    },
+    {
+      "file": "Resources/ports/theis/res/stage/stage6/s6_boss_show_eff.png",
+      "format": "52494646ba72150057454250",
+      "bytes": 1405634,
+      "wic_ms": 12.544199998956174,
+      "pillow_ms": 61.40080001205206,
+      "wic_hresult": [
+        "0x0"
+      ]
+    },
+    {
+      "file": "Resources/ports/dreamer/res/likedreamer/stage/Boss.png",
+      "format": "52494646b09c260057454250",
+      "bytes": 2530488,
+      "wic_ms": 12.582799987285398,
+      "pillow_ms": 80.80379999591969,
+      "wic_hresult": [
+        "0x0"
+      ]
+    }
+  ],
+  "rgba_comparison": [
+    {
+      "file": "Resources/ports/dreamer/res/likedreamer/optimized/gameplay/enemy_l/enemy_l_035.png",
+      "width": 600,
+      "height": 600,
+      "rgba_bytes": 1440000,
+      "different_bytes": 0
+    },
+    {
+      "file": "Resources/ports/dreamer/res/likedreamer/optimized/gameplay/enemy_l/enemy_l_040.png",
+      "width": 600,
+      "height": 600,
+      "rgba_bytes": 1440000,
+      "different_bytes": 0
+    },
+    {
+      "file": "Resources/ports/dreamer/res/likedreamer/optimized/gameplay/enemy_l/enemy_l_041.png",
+      "width": 600,
+      "height": 600,
+      "rgba_bytes": 1440000,
+      "different_bytes": 0
+    },
+    {
+      "file": "Resources/th38/custom91.png",
+      "width": 512,
+      "height": 512,
+      "rgba_bytes": 1048576,
+      "different_bytes": 0
+    }
+  ],
+  "before_engine_sha256": "42e1bf0b805b80d4a07ebd61098c714c664ee98810e1e4a635dd3e230850fc0b",
+  "after_engine_sha256": "2aa7f55f1e6c86b3f84dca2c1375227415271a95836848bddfd2fec18836e8c8",
+  "build_script_sha256": "8397b050a79b65fc5a9fa8b261331a0dd9c1dfe87641635632f6a75c4be08015",
+  "native_build_record": {
+    "engine": "E:\\fork\\bossrush\\windows\\build\\official-sub",
+    "version": "0.21.129",
+    "repository": "https://github.com/Legacy-LuaSTG-Engine/LuaSTG-Sub.git",
+    "ref": "master",
+    "commit": "8728b3f9e91e6cd577665a7f5777c6c7c23b5f31",
+    "submodules": "b734d3bb5b05ca4c3859bb174b131139fc72bd4d external/beautiful-win32-api (heads/main)\n 019020993ce33bdf56c876004e8b27139a0d011f external/image.qoi (0190209)\n 91ca29db9a4a4fd0eedaebcd5d5f3ba2ace5ae63 external/lua-cjson (2.1.0.8-43-g91ca29d)\n fff48de34357e8e86197a45f5b4bc2b1b28cce53 external/luajit2 (luastg-sub-20251111)\n d63939b5b5cd69ffeaa908f2ec38708a62ad3139 external/xmath (d63939b)\n f1cc2ae15e53a861a874c3034aae6798fde194ab imgui/imgui (v1.62-5575-gf1cc2ae15)\n 7eeb9168d2e5e6b14e266d8782ecf7e649dfc3a4 imgui/implot (v1.0-8-g7eeb916)",
+    "renderer_sha256": "b61881e2d12539a8d6ff00d04aacfaf86f136cd5fdea788625a3983ef61ccc94",
+    "pacer_source_sha256": "481f7daad5524b0ec6e7000d9aa5510f9c7e2d0e5c92acec232ea800f4114086",
+    "pacer_patch_sha256": "c64a9dc6f7180dbc61ba4636804ebe7db2da67599ceb15c85968f3d5fb7ce2e3",
+    "frame_pacing": "按上一帧实际起点限帧，不追赶旧截止时间",
+    "presentation": "无垂直同步时不在更新前等待 DXGI 队列；Present 必要时阻塞，保留画面提交",
+    "app_source_sha256": "0c9e9a716d0161c643659946cbf75f3186d66198acd05919e7287b286dcb5eb1",
+    "app_patch_sha256": "fdc23f5d17940275c0ea8f86f8242ab1f2b45ba4a8981ebf5f70078183479db4",
+    "swap_source_sha256": "1028b6c31aaaae779725be8ed7cb4dd015a8cae075722007e05268a4cddbc4dd",
+    "swap_patch_sha256": "8de32216422a975a5fcbc6144a1221d3c16c5211298e73d7a8f717501315f346",
+    "main_thread_affinity": "系统默认亲和性，不固定 CPU 0",
+    "application_source_sha256": "eed00dc8760a9fce50482b0f8c64ba37bf64b9625db92bfe44b2ceacce9e5b24",
+    "application_patch_sha256": "1c7df76c8d1868f78da8b9289c5699effdbce5d9a28bbf807add1b455c3e3a0d",
+    "texture_source_sha256": "af380c671c0dd73f48b5ea578b068f39b8dba3cafce2e49f1646749138416c45",
+    "texture_patch_sha256": "6129a4509068e4baf3b17814a1aeaddf6a9ffbeb8e2e37e121e7dadab62bca07",
+    "texture_loading": "WebP按文件头直接使用引擎libwebp，其他格式保留官方加载路径",
+    "patch_sha256": "7bb81417644b01a1d198b1dddb4c8d2a4e456d240e5a7e1defd709198649621c",
+    "exe_sha256": "2aa7f55f1e6c86b3f84dca2c1375227415271a95836848bddfd2fec18836e8c8",
+    "sound_volume": "独立音效资源音量；不改动全局音效混音器",
+    "sound_header_sha256": "dcfa7a1b858f6757b21cd765f47a20270b3840ee8c9ca211f483afb5691325ab",
+    "sound_patch_sha256": "8bc51dfa595404bd23e5cae70cb215e55c5066018fe1d82acd0cdadc6efa5e05"
+  },
+  "android_note": "另已撤掉ARM64地址范围限制并编译安卓引擎；本报告不证明安卓帧率。",
+  "discarded_run": "首次批次调度对照中的第二次启动因测试Score.dat编码失败阻塞，未作为性能数据；后续计时都使用独立空测试存档。"
+}

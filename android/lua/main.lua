@@ -9,10 +9,13 @@ __G__TRACKBACK__ = function(message)
 end
 local bootError = __G__TRACKBACK__
 local function bootstrap()
--- 两端都保留16MiB总缓存；Apple Silicon使用大块MAP_JIT，安卓连续区域按64KiB分块。
--- 安卓缩小单次W^X切换范围，避免编译新trace时让转译器反复丢弃整块16MiB的热代码。
+-- 原生ARM设备使用大块机器码；只有ARM转译器需要缩小W^X切换范围。
+-- 与Windows保留相同的总容量和分支轨迹上限，不能因模拟器问题限制真机热代码。
 if jit and jit.status() then
-    require('jit.opt').start(desktop and 'sizemcode=16384' or 'sizemcode=64','maxmcode=16384','maxtrace=8000')
+    local translated=not desktop and lstg.AndroidUsesArmTranslation and lstg.AndroidUsesArmTranslation() or false
+    local block=translated and 64 or 16384
+    require('jit.opt').start(3,'sizemcode='..block,'maxmcode=16384','maxtrace=8192','maxside=1024')
+    lstg.SystemLog(('BOSSRUSH_JIT: enabled=true arm_translation=%s sizemcode=%d maxside=1024'):format(tostring(translated),block))
 end
 local bootClock = lstg.AndroidClock or os.clock
 local bootStart = bootClock()
