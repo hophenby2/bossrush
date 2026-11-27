@@ -77,9 +77,12 @@ function stage_init:frame()
 
     self.timer = int((clock() - self.start_time) * 60)
     if self.timer - self.settime > 150 then
-        local t = self.textindex
-        while self.textindex == t do
-            self.textindex = math.random(1, #TIP)
+        -- 单条直接使用；多条只抽一次，在索引映射时排除上一条，避免重试死循环。
+        if #TIP>1 then
+            local index=math.random(1,#TIP-1)
+            self.textindex=index>=self.textindex and index+1 or index
+        else
+            self.textindex=1
         end
         self.text = TIP[self.textindex]
         self.settime = self.timer

@@ -319,9 +319,12 @@ end
 function pausemenu:FlyIn()
     --清除一些flag
     ext.pop_pause_menu = nil
-    local t = self.textindex
-    while self.textindex == t do
-        self.textindex = math.random(1, #TIP)
+    -- 单条不轮换；多条直接抽取其余索引，不使用随机重试循环。
+    if #TIP>1 then
+        local index=math.random(1,#TIP-1)
+        self.textindex=index>=self.textindex and index+1 or index
+    else
+        self.textindex=1
     end
     self.tip = TIP[self.textindex]
 
