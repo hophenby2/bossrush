@@ -7,7 +7,7 @@ ui.RenderStatusRow=dofile('THlib/UI/status_row.lua')
 ui.NativeHUD=dofile('THlib/UI/native/hud.lua')
 ui.RunHUD=dofile('THlib/UI/run_hud.lua')
 ui.OriginalHUD=dofile('THlib/UI/original_hud.lua')
-ui.version = "2026.11.28.2"
+ui.version = "2026.11.28.3"
 local LoadImage = LoadImage
 LoadTexture("hint", "THlib\\UI\\hint.png", true)
 LoadImage("hint.bonusfail", "hint", 0, 64, 256, 64)

@@ -62,26 +62,7 @@ end
 local function visible(b)
     return IsValid(b) and b.status~='del' and b.status~='kill' and not b.hide and not b.mhj3_hidden
 end
-local function actors(b)
-    local result,seen,ownHealth={},{},{}
-    local function add(o,independent)
-        if o~=b and not seen[o] and visible(o) then
-            seen[o]=true;result[#result+1]=o;ownHealth[o]=independent
-        end
-    end
-    if b.mhj3_card then for _,a in ipairs(b.mhj3_card.actors) do add(a.object) end end
-    if b.asl_controller then for _,s in ipairs(b.asl_controller.entities) do
-        if s.kind=='boss' and (b.asl_controller.linked or not s.main) and s.alive then
-            add(s.native,b.asl_controller.linked)
-        end
-    end end
-    if b.th07_instruments then for _,o in pairs(b.th07_instruments.roles or {}) do add(o) end end
-    -- 红魔乡入场时先建立控制状态，ECL执行器随后才建立actors。
-    if b.th06 and b.th06.actors then for _,a in ipairs(b.th06.actors) do
-        if a.clone and not a.dead then add(a.object,true) end
-    end end
-    return result,ownHealth
-end
+local actors=dofile('THlib/enemy/boss_actors.lua')
 local sharedFields={'hp','maxhp','is_combat','__is_waiting','time_sc','no_hp_render','__hpbar_timer','sp_point','_sp_point_auto'}
 local function synchronizeActors(self,advance)
     local owner=self.actorBoss or self.boss

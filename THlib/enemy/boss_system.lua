@@ -1,4 +1,5 @@
 local StopWatch = StopWatch
+local extraActors=dofile('THlib/enemy/boss_actors.lua')
 
 local CardsSystem = plus.Class()
 boss._cards_system = CardsSystem
@@ -111,14 +112,14 @@ end
 function system:frame()
     --执行自身task
     local b = self.boss
-    local frozen=b._original_ecl_hold and b._original_ecl_hold(b) or false
+    local frozen=not b.is_exploding and b._original_ecl_hold and b._original_ecl_hold(b) or false
     b._original_ecl_frozen=frozen
     if b._original_ecl_hold then
         if frozen then b._original_ecl_held_frames=(b._original_ecl_held_frames or 0)+1 end
         b._original_ecl_timer=b.timer-(b._original_ecl_held_frames or 0)
     end
     if not frozen then
-        b.__card_timer=b.__card_timer+1
+        if not b.is_exploding then b.__card_timer=b.__card_timer+1 end
         if b.is_combat then self:checkHP() end
         self:checkAutoSPPoint()
         self:doTask()
@@ -135,11 +136,11 @@ function system:frame()
         b.hpbarlen = 0
     end
     --符卡逻辑
-    if b.current_card and not frozen then
+    if b.current_card and not frozen and not b.is_exploding then
         b.current_card.frame(b)
     end
     --阶段逻辑
-    if not (b.__is_waiting) and b.is_combat then
+    if not (b.__is_waiting) and b.is_combat and not b.is_exploding then
         -- 原作停时/倍率按敌机计时，不改变引擎对象的真实帧timer。
         local timer=b._original_ecl_timer or b.timer
         --高防时间计算
@@ -192,7 +193,7 @@ function system:frame()
             b.ui.countdown = (b.t3 - timer) / 60
         end
         self:checkBonus()
-    else
+    elseif not b.is_exploding then
         b.dmg_factor = 0
         b.DMG_factor = 1
         b.time_sc = false
@@ -246,11 +247,23 @@ end
 ---boss系统击破结算逻辑
 function system:kill()
     local b = self.boss
+    if b.is_exploding then object.Preserve(b);return end
     if b.is_combat then
         b.ui.drawtimesaver = b.countdown
     end
     if b.timeout and not b.time_sc then
         self:clearBonus("all")
+    end
+    -- 卡片del会回收独立身体，必须在清场前保存各Boss的死亡演出位置。
+    if b.is_final and not b.no_killeff and not b.killed then
+        local bodies=extraActors(b)
+        if #bodies>0 then
+            local origins={}
+            b.__death_hidden=b.hide or b.mhj3_hidden
+            if not b.__death_hidden then origins[#origins+1]={b.x,b.y} end
+            for _,o in ipairs(bodies) do origins[#origins+1]={o.x,o.y} end
+            b.__death_origins=origins
+        end
     end
     --符卡逻辑
     if b.current_card then
@@ -324,12 +337,16 @@ function system:explode()
     b.is_exploding = true
     b.killed = true
     b.no_killeff = true
+    if b.__death_hidden then b.hide=true end
     if not (OriginalStageVisual and OriginalStageVisual.death.boss_sound(b)) then
         PlaySound("enep01", 0.3, 0, true)
     end
     b._colli = false
     b.hp = 0
+    b.dmg_factor = 0
     task.New(b, function()
+        local origins=b.__death_origins
+        local startX,startY=b.x,b.y
         local angle = ran:Float(-15, 15)
         local sign, v = ran:Sign(), 1.5
         local lifetime, l
@@ -348,7 +365,13 @@ function system:explode()
                 b.timer = b.timer - 1
                 lifetime = ran:Int(60, 90)
                 l = ran:Float(100, 250)
-                New(boss_death_ef_unit, b.x, b.y, l / lifetime, math.random() * 360, lifetime, math.random() + 2, "cherry_bullet")
+                if origins then
+                    for _,p in ipairs(origins) do
+                        New(boss_death_ef_unit,p[1]+b.x-startX,p[2]+b.y-startY,l/lifetime,math.random()*360,lifetime,math.random()+2,"cherry_bullet")
+                    end
+                else
+                    New(boss_death_ef_unit, b.x, b.y, l / lifetime, math.random() * 360, lifetime, math.random() + 2, "cherry_bullet")
+                end
                 task.Wait()
             end
         end
@@ -356,7 +379,9 @@ function system:explode()
             PlaySound("enep01", 0.2, b.x / 256, true)
         end
         if not b.__no_drop_explode_cherry then
-            New(boss_explode_cherry, b.x, b.y)
+            if origins then
+                for _,p in ipairs(origins) do New(boss_explode_cherry,p[1]+b.x-startX,p[2]+b.y-startY) end
+            else New(boss_explode_cherry, b.x, b.y) end
         end
         self:popSpellResult()
         self:popResult(false)

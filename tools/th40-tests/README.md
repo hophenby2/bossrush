@@ -108,3 +108,19 @@ luajit tools/check_portrait_spare_lives.lua
 `visual.lua`按原BackgroundMove2/Rotate/SC参数绘制，不再将符卡图拉伸铺满并套用统一滚动。
 Boss沿用BaseBossTouhou的左右镜像、转向帧、施法帧和8帧间隔；OnAction从原Shoot条件导出。
 道中由`scene_state.lua`逐项移植EnvironmentSSS01–06/Ex，保留原相机、雾、对象生成、旋转中心及转场。`export_scene.py`导出27个模型/背景素材，其中阶梯344个、祭坛156个原始三角形，不做模型简化。
+
+## 激光绘制修正（2026-11-28）
+
+本次对照本地 ver1.01 补丁中的 `THSSS.exe`，SHA-256 为
+`a418cdf9cc20f78ca7907615fd631b2ffd59a7a97b40ae6af40eea62eaeaa580`。
+依据 `BaseStraightLaser_CS.Type`、`BaseRadialLaser_CS.Type` 的颜色表
+`1,3,5,7,9,13,14,15` 选择纹理；曲线也按同表取图集区域。
+`BaseEmitter_CS` 的发射分支对直线、射线分别写入 −π/2、π/2，故二者贴图长轴首尾方向相反，
+运动与判定方向保持原值。修正在运行时桥接层，不重写原 MBG 参数。
+
+`Bullet_StraightLaser.Ctrl/Show` 的 LaserHead 光点随弹头绘制：保留原纹理选择、0.4 倍大小、
+每 tick 的 150–254 随机透明度和旋转；透明度在逻辑更新中取样，渲染不消耗随机数。
+
+`luajit tools/th40-tests/laser.lua` 覆盖八色直线/射线绘制参数、曲线 UV、透明度与生效帧、
+回收，以及「白夜永昼之光」实际 Lunatic MBG 的 450 帧光点路径。
+这些是 LuaJIT 桩件和绘制参数检查，没有进行安卓实机画面验证。

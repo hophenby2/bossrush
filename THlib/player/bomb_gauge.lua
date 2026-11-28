@@ -55,8 +55,7 @@ local function dots(p,count,alpha)
     end
 end
 function G.render(p,stock,fraction)
-    local death=p.death or 0
-    if p.hide or p.realrealreal_lock or p.dialog or (death>=50 and death<=90) then return end
+    if p.hide or p.realrealreal_lock or p.dialog then return end
     local r=G.RADIUS;local color=Color(145,220,240,225)
     RenderTexture(texture,'',{p.x-r,p.y+r,.5,0,0,color},{p.x+r,p.y+r,.5,160,0,color},
         {p.x+r,p.y-r,.5,160,160,color},{p.x-r,p.y-r,.5,0,160,color})

@@ -254,8 +254,12 @@ function I.touch(id, x, y, event)
             local w, offset = lstg.world, lstg.worldoffset or {}
             local sx = (w.r-w.l)/(w.scrr-w.scrl)/(offset.hscale or 1)
             local sy = (w.t-w.b)/(w.scrt-w.scrb)/(offset.vscale or 1)
-            t.targetX = math.max(w.pl+8, math.min(w.pr-8, t.targetX+(x-t.x)*sx))
-            t.targetY = math.max(w.pb+16, math.min(w.pt-32, t.targetY+(y-t.y)*sy))
+            local rate=TouchInputTimeScale and TouchInputTimeScale(player) or 1
+            if rate==0 then t.targetX,t.targetY=player.x,player.y
+            else
+                t.targetX = math.max(w.pl+8, math.min(w.pr-8, t.targetX+(x-t.x)*sx*rate))
+                t.targetY = math.max(w.pb+16, math.min(w.pt-32, t.targetY+(y-t.y)*sy*rate))
+            end
         elseif not t.button and not t.drag and not t.ignored then
             if not t.spellMenu or math.abs(x-t.startX)<=math.abs(y-t.startY)*1.3 then
                 I.wheel = I.wheel - (y-t.y)*8
@@ -307,6 +311,8 @@ function I.beginFrame()
     if t and t.drag then
         if t.player ~= player then
             t.drag, t.ignored, I.movementId = nil, true, nil
+        elseif TouchInputTimeScale and TouchInputTimeScale(player)==0 then
+            t.targetX,t.targetY=player.x,player.y
         end
     end
     rebuild()

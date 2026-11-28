@@ -365,8 +365,9 @@ local function move(p,key)
         speed=(p.__slow_flag and data.diagonal_slow or data.diagonal) or speed*2^-.5
     end
     dx,dy=dx*speed,dy*speed
-    if TouchInputMovement then local tx,ty=TouchInputMovement(p,p.key or KeyState,speed);if tx then dx,dy=tx,ty end end
-    local rate=(p.th08_move_time_scale or 1)*(p.original_bomb_speed or 1)
+    local rate=p.th08_move_time_scale or 1
+    if TouchInputMovement then local tx,ty=TouchInputMovement(p,p.key or KeyState,speed);if tx then dx,dy,rate=tx,ty,1 end end
+    rate=rate*(p.original_bomb_speed or 1)
     dx,dy=dx*rate,dy*rate
     if p.original_game==10 then
         local function fixed(v) return (v<0 and math.ceil(v*100) or floor(v*100))/100 end

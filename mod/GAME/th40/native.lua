@@ -212,17 +212,27 @@ local Curve=Class(bent_laser,{init=function(o,run,data)
     o.history={};for i=1,max(1,o.length or 30) do o.history[i]={o.x,o.y} end
 end,frame=function() end})
 Line.render=function(o)
-    local img=N.images['Laser0_'..(o.type or 0)]
+    local color=assert(laserColors[(o.type or 0)+1],'未登记的夏夜祭激光颜色')
+    local img=N.images['Laser0_'..color]
     if img then
         SetImageState(img,o.blend and 'mul+add' or '',o.alpha,o.red,o.green,o.blue)
-        local d=o.rot*R;Render(img,o.x+o.l2*cos(d)/2,o.y+o.l2*sin(d)/2,o.rot,o.l2/256,o.height)
+        -- StraightLaser 的纹理从弹头向尾部绘制，射线则从发射点向前；判定方向不跟着翻转。
+        local rotation=-(o.direction+o.angle-90)
+        local d=o.rot*R;Render(img,o.x+o.l2*cos(d)/2,o.y+o.l2*sin(d)/2,rotation,o.l2/256,o.height)
+        if o.mode=='laser' and o.head and o.head_alpha then
+            local name=color<=2 and 'FY_Particle6_0' or color<=4 and 'FY_Particle4_0'
+                or color<=8 and 'FY_Particle5_0' or '光点'
+            local head=assert(N.images[name],'缺少夏夜祭激光头贴图')
+            SetImageState(head,o.blend and 'mul+add' or '',o.head_alpha,o.red,o.green,o.blue)
+            Render(head,o.cx-320,240-o.cy,rotation-math.deg(o.age/10),.4,.4)
+        end
     end
 end
 Curve.render=function(o)
-    local a=o.alpha;o.alpha=a/255;o.index=laserColors[(o.type or 0)+1] or 1
+    local a=o.alpha;o.alpha=a/255;o.index=assert(laserColors[(o.type or 0)+1],'未登记的夏夜祭激光颜色')
     o._r,o._g,o._b=o.red,o.green,o.blue
     -- 原曲线纹理为16*ScaleLength宽，碰撞半径为1*ScaleLength；渲染后恢复碰撞宽度。
-    local region=N.regions['Laser0_'..(o.type or 0)]
+    local region=N.regions['Laser0_'..o.index]
     if region then
         o.data:SetAllWidth(16*o.height)
         o.data:Render('th38.tex.'..region[2],o.blend and 'mul+add' or '',Color(a,o.red,o.green,o.blue),region[3],region[4],region[5],region[6])
@@ -326,6 +336,8 @@ function N.emit(o)
         for j=0,(o.count or 1)-1 do
             local data=copy(o.p);data.p={};data.cx,data.cy=x,y;data.mode=o.mode;data.id,data.layer=o.id,o.layer;data.speed=speed-j*(o.delta_v or 0);data.direction=direction;data.accel,data.accel_angle=acceleration,acc_angle;data.controller=o.controller
             if o.mode=='enemy' then data.life=0 end
+            if o.mode=='laser' then data.head=o.head;data.angle=-90
+            elseif o.mode=='ray' then data.angle=90 end
             data.angle=(data.angle or 0)+((o.mode=='bullet' or o.mode=='effect') and r(o,'p.angle') or 0)
             data.region_override=o.p.region
             local b=spawn(run,data,false);b.events=o.p.events
@@ -404,6 +416,7 @@ update=function(o)
             table.insert(o.history,1,{o.x,o.y});if #o.history>max(1,o.length or 30) then table.remove(o.history) end
             p=o.history[#o.history];dx,dy=o.x-p[1],o.y-p[2];length=sqrt(dx*dx+dy*dy)
             o.colli=o.age>=9
+            if o.head then o.head_alpha=integer(o.run,150,255) end
         end
         o.x,o.y=p[1],p[2];o.rot=math.deg(atan2(dy,dx));o.l1,o.l2,o.l3=0,length,0;o.w=2*(o.mode=='ray' and 3 or 1)*o.height
         -- 原作透明度不控制激光生效；LuaSTG的alpha门限仅用于其自身预警系统。

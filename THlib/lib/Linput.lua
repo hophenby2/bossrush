@@ -82,10 +82,21 @@ function KeyCodeToName()
     return key2name
 end
 
+-- 拖动按触点增量缩放，停时不积攒目标；键盘和原作逻辑的时间倍率仍由各后端处理。
+function TouchInputTimeScale(p)
+    if p.time_stop or GetCurrentSuperPause and GetCurrentSuperPause()>0 then return 0 end
+    local time=NativeTime
+    local scale=time and time.owner and not time.owner.closed and time.scale or 1
+    if scale<=.01 then return 0 end
+    if scale<1 or (p.th08_move_time_scale or 1)<1 or (lstg.var.timeslow or 1)>1 then return 1/3 end
+    return 1
+end
+
 -- 返回自机追随拖拽目标的一帧位移；末帧截断到目标，手指抬起后不保留惯性。
 function TouchInputMovement(p,key,speed)
     if not key or type(key.touch_x)~='number' or type(key.touch_y)~='number' then return end
     p._touch_movement_used=true
+    if TouchInputTimeScale(p)==0 then return 0,0 end
     local dx,dy=key.touch_x-p.x,key.touch_y-p.y
     local unlimited=key.touch_unlimited
     if unlimited==nil then unlimited=lstg.var and lstg.var.__touch_unlimited end
@@ -102,8 +113,6 @@ function ApplyPendingTouchMovement(p)
     local speed=p.slow==2 and p.llspeed or p.slow==1 and p.lspeed or p.hspeed
     local dx,dy=TouchInputMovement(p,key,speed or 4)
     if not dx then return end
-    local rate=p.th08_move_time_scale or 1
-    dx,dy=dx*rate,dy*rate
     local w=lstg.world
     local x,y=p.x,p.y
     p.x=math.max(w.pl+8,math.min(w.pr-8,x+dx))
